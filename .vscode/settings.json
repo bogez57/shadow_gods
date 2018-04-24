@@ -1,0 +1,36 @@
+{
+    "debug.allowBreakpointsEverywhere": true,
+    "terminal.integrated.shell.windows": "C:\\WINDOWS\\System32\\cmd.exe",
+    "C_Cpp.errorSquiggles": "Disabled",
+    "editor.formatOnType": false,
+    "editor.fontSize": 18,
+    "files.associations": {
+        "cstdio": "cpp",
+        "*.rh": "cpp"
+    },
+
+    /********************
+        Vim Settings
+    *********************/
+
+    "vim.otherModesKeyBindingsNonRecursive": [
+        {
+            "before" : ["j"],
+            "after" : ["g", "j"],
+        },
+        {
+            "before" : ["k"],
+            "after" : ["g", "k"]
+        },
+    ],
+    "vim.otherModesKeyBindings": [
+        {
+            "before" : ["J"],
+            "after" : ["<C-f>"]
+        },
+        {
+            "before" : ["K"],
+            "after" : ["<C-b>"]
+        },
+    ]
+}
