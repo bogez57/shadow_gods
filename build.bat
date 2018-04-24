@@ -14,7 +14,7 @@ REM Debug/Development build
 set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505
 set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -opt:ref -debug:fastlink 
 
-set IncludePaths=
+set IncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" 
 set LibraryPaths=
 
 set ImportLibraries="user32.lib" "OpenGL32.lib" "gdi32.lib"  

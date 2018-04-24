@@ -1,6 +1,16 @@
+#if (DEVELOPMENT_BUILD)
+    #define BGZ_LOGGING_ON true
+    #define BGZ_ERRHANDLING_ON true
+#else
+    #define BGZ_LOGGING_ON false
+    #define BGZ_ERRHANDLING_ON false
+#endif
+
 #include <Windows.h>
 #include <gl/gl.h>
 #include <cassert>
+#include <boagz/error_handling.h>
+#include <boagz/error_context.cpp>
 
 #include "types.h"
 
@@ -165,20 +175,25 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 {
                     HGLRC OpenGLRenderingContext = wglCreateContext(WindowDeviceContext);
 
-                    if (wglMakeCurrent(WindowDeviceContext, OpenGLRenderingContext))
+                    if (OpenGLRenderingContext)
                     {
-                        //Success!
+                        if (wglMakeCurrent(WindowDeviceContext, OpenGLRenderingContext))
+                        {
+                            //Success!
+                        }
+                        else
+                        {
+                            InvalidCodePath;
+                        }
                     }
                     else
                     {
-                        //Log error
-                        assert(1 == 0);
+                        InvalidCodePath;
                     }
                 }
                 else
                 {
-                    //Log error
-                    assert(1 == 0);
+                    InvalidCodePath;
                 }
             }
 
