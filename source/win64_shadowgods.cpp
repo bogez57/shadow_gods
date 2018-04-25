@@ -16,7 +16,7 @@ namespace Win64
     ProcessPendingMessages()
     {
         MSG Message;
-        while(GetMessageA(&Message, 0, 0, 0))
+        while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
         {
             switch(Message.message)
             {
@@ -105,25 +105,6 @@ namespace Win64
                 OutputDebugStringA("WM_ACTIVATEAPP\n");
             }break;
 
-            case WM_PAINT:
-            {
-                PAINTSTRUCT Paint;
-                RECT ClientRect;
-                GetClientRect(WindowHandle, &ClientRect);
-
-                HDC DeviceContext = BeginPaint(WindowHandle, &Paint);
-
-                LONG Width = ClientRect.right - ClientRect.left;
-                LONG Height = ClientRect.bottom - ClientRect.top;
-
-                glViewport(0, 0, Width, Height);
-                glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
-                SwapBuffers(DeviceContext);
-
-                EndPaint(WindowHandle, &Paint);
-            }break;
-
             default:
             {
                 Result = DefWindowProc(WindowHandle, Message, wParam, lParam);
@@ -149,8 +130,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
     if(RegisterClass(&WindowProperties))
     {
+        int WindowWidth{CW_USEDEFAULT};
+        int WindowHeight{CW_USEDEFAULT};
+
         HWND Window = CreateWindowEx(0, WindowProperties.lpszClassName, "Memo", WS_OVERLAPPEDWINDOW|WS_VISIBLE, 
-                                     CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, CurrentProgramInstance, 0);
+                                     CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth, WindowHeight, 0, 0, CurrentProgramInstance, 0);
 
         if(Window)
         {
@@ -203,7 +187,15 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 }
             }//Init OpenGL 
 
-            Win64::ProcessPendingMessages();
+            for(;;)
+            {
+                Win64::ProcessPendingMessages();
+
+                glViewport(0, 0, WindowWidth, WindowHeight);
+                glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
+                SwapBuffers(WindowDeviceContext);
+            };
         }
     }
     else
