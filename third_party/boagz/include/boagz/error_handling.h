@@ -57,7 +57,7 @@ namespace Bgz
 		scanf_s("%d", &dummy);
 	}
 
-	void RedirectIOToConsole()
+	void UseDefaultOSConsole()
 	{
 		//Create a console for this application
 		AllocConsole();

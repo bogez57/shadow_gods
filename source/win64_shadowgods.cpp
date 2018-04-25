@@ -137,9 +137,7 @@ namespace Win64
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
     //Needed to setup console for windows app
-    Bgz::RedirectIOToConsole();
-
-    BGZ_CONSOLE("haheha");
+    Bgz::UseDefaultOSConsole();
 
     WNDCLASS WindowProperties{};
 
@@ -159,7 +157,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             HDC WindowDeviceContext = GetDC(Window);
 
             { //Init OpenGL
+                //Pixel format you would like to have if possible
                 PIXELFORMATDESCRIPTOR DesiredPixelFormat{};
+                //Pixel format that windows actually gives you based on your desired pixel format and what the system 
+                //acutally has available (32 bit color capabilites? etc.)
+                PIXELFORMATDESCRIPTOR SuggestedPixelFormat{};
+
                 DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
                 DesiredPixelFormat.nVersion = 1;
                 DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
@@ -169,7 +172,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
 
                 int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowDeviceContext, &DesiredPixelFormat);
-                PIXELFORMATDESCRIPTOR SuggestedPixelFormat{};
                 DescribePixelFormat(WindowDeviceContext, SuggestedPixelFormatIndex, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
 
                 if (SetPixelFormat(WindowDeviceContext, SuggestedPixelFormatIndex, &SuggestedPixelFormat))
@@ -184,22 +186,30 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                         }
                         else
                         {
+                            BGZ_CONSOLE("Windows error code: %d", GetLastError());
                             InvalidCodePath;
                         }
                     }
                     else
                     {
+                        BGZ_CONSOLE("Windows error code: %d", GetLastError());
                         InvalidCodePath;
                     }
                 }
                 else
                 {
+                    BGZ_CONSOLE("Windows error code: %d", GetLastError());
                     InvalidCodePath;
                 }
-            }
+            }//Init OpenGL 
 
             Win64::ProcessPendingMessages();
         }
+    }
+    else
+    {
+        BGZ_CONSOLE("Windows error code: %d", GetLastError());
+        InvalidCodePath;
     }
 
     return 0;
