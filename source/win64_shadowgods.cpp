@@ -83,8 +83,74 @@ namespace Win64
     {
         LRESULT Result{0};
 
+        HDC WindowContext = GetDC(WindowHandle);
+
         switch(Message)
         {
+            case WM_CREATE:
+            {
+                if(WindowContext)
+                {
+                    { //Init OpenGL
+                        //Pixel format you would like to have if possible
+                        PIXELFORMATDESCRIPTOR DesiredPixelFormat{};
+                        //Pixel format that windows actually gives you based on your desired pixel format and what the system
+                        //acutally has available (32 bit color capabilites? etc.)
+                        PIXELFORMATDESCRIPTOR SuggestedPixelFormat{};
+
+                        DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
+                        DesiredPixelFormat.nVersion = 1;
+                        DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
+                        DesiredPixelFormat.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+                        DesiredPixelFormat.cColorBits = 32;
+                        DesiredPixelFormat.cAlphaBits = 8;
+                        DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
+
+                        int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowContext, &DesiredPixelFormat);
+                        DescribePixelFormat(WindowContext, SuggestedPixelFormatIndex, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
+
+                        if (SetPixelFormat(WindowContext, SuggestedPixelFormatIndex, &SuggestedPixelFormat))
+                        {
+                            HGLRC OpenGLRenderingContext = wglCreateContext(WindowContext);
+
+                            if (OpenGLRenderingContext)
+                            {
+                                if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
+                                {
+                                    //Success!
+                                }
+                                else
+                                {
+                                    ReleaseDC(WindowHandle, WindowContext);
+                                    BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                                    InvalidCodePath;
+                                }
+                            }
+                            else
+                            {
+                                ReleaseDC(WindowHandle, WindowContext);
+                                BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                                InvalidCodePath;
+                            }
+                        }
+                        else
+                        {        
+                            ReleaseDC(WindowHandle, WindowContext);
+                            BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                            InvalidCodePath;
+                        }
+
+                        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+                    }//Init OpenGL 
+                }
+                else
+                {
+                    BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                    InvalidCodePath;
+                }
+
+            }break;
+
             case WM_SIZE:
             {
                 OutputDebugStringA("WM_SIZE\n");
@@ -138,64 +204,19 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
         if(Window)
         {
-            HDC WindowDeviceContext = GetDC(Window);
+            HDC WindowContext = GetDC(Window);
 
-            { //Init OpenGL
-                //Pixel format you would like to have if possible
-                PIXELFORMATDESCRIPTOR DesiredPixelFormat{};
-                //Pixel format that windows actually gives you based on your desired pixel format and what the system 
-                //acutally has available (32 bit color capabilites? etc.)
-                PIXELFORMATDESCRIPTOR SuggestedPixelFormat{};
-
-                DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
-                DesiredPixelFormat.nVersion = 1;
-                DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
-                DesiredPixelFormat.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
-                DesiredPixelFormat.cColorBits = 32;
-                DesiredPixelFormat.cAlphaBits = 8;
-                DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
-
-                int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowDeviceContext, &DesiredPixelFormat);
-                DescribePixelFormat(WindowDeviceContext, SuggestedPixelFormatIndex, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
-
-                if (SetPixelFormat(WindowDeviceContext, SuggestedPixelFormatIndex, &SuggestedPixelFormat))
-                {
-                    HGLRC OpenGLRenderingContext = wglCreateContext(WindowDeviceContext);
-
-                    if (OpenGLRenderingContext)
-                    {
-                        if (wglMakeCurrent(WindowDeviceContext, OpenGLRenderingContext))
-                        {
-                            //Success!
-                        }
-                        else
-                        {
-                            BGZ_CONSOLE("Windows error code: %d", GetLastError());
-                            InvalidCodePath;
-                        }
-                    }
-                    else
-                    {
-                        BGZ_CONSOLE("Windows error code: %d", GetLastError());
-                        InvalidCodePath;
-                    }
-                }
-                else
-                {
-                    BGZ_CONSOLE("Windows error code: %d", GetLastError());
-                    InvalidCodePath;
-                }
-            }//Init OpenGL 
-
-            for(;;)
+            if (WindowContext)
             {
-                Win64::ProcessPendingMessages();
+                for (;;)
+                {
+                    Win64::ProcessPendingMessages();
 
-                glViewport(0, 0, WindowWidth, WindowHeight);
-                glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
-                SwapBuffers(WindowDeviceContext);
-            };
+                    glViewport(0, 0, WindowWidth, WindowHeight);
+                    glClear(GL_COLOR_BUFFER_BIT);
+                    SwapBuffers(WindowContext);
+                };
+            }
         }
     }
     else
