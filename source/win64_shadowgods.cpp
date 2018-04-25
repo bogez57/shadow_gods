@@ -8,11 +8,38 @@
 
 #include <Windows.h>
 #include <gl/gl.h>
-#include <cassert>
+#include <io.h>
+#include <fcntl.h>
 #include <boagz/error_handling.h>
 #include <boagz/error_context.cpp>
 
 #include "types.h"
+
+void RedirectIOToConsole()
+{
+    //Create a console for this application
+    AllocConsole();
+
+    // Get STDOUT handle
+    HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    int SystemOutput = _open_osfhandle(intptr_t(ConsoleOutput), _O_TEXT);
+    FILE *COutputHandle = _fdopen(SystemOutput, "w");
+
+    // Get STDERR handle
+    HANDLE ConsoleError = GetStdHandle(STD_ERROR_HANDLE);
+    int SystemError = _open_osfhandle(intptr_t(ConsoleError), _O_TEXT);
+    FILE *CErrorHandle = _fdopen(SystemError, "w");
+
+    // Get STDIN handle
+    HANDLE ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
+    int SystemInput = _open_osfhandle(intptr_t(ConsoleInput), _O_TEXT);
+    FILE *CInputHandle = _fdopen(SystemInput, "r");
+
+    // Redirect the CRT standard input, output, and error handles to the console
+    freopen_s(&CInputHandle, "CONIN$", "r", stdin);
+    freopen_s(&COutputHandle, "CONOUT$", "w", stdout);
+    freopen_s(&CErrorHandle, "CONOUT$", "w", stderr);
+};
 
 namespace Win64
 {
@@ -140,6 +167,13 @@ namespace Win64
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
+    BGZ_ERRCTXT1("When entering program main");
+
+    RedirectIOToConsole();
+
+    BGZ_CONSOLE("ahahah");
+    BGZ_ERRASSERT(1 == 0, "ahhh");
+
     WNDCLASS WindowProperties{};
 
     //TODO: Check if OWNDC/HREDRAW/VEDRAW matter

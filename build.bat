@@ -11,7 +11,7 @@ set PreProcessorSwitches=-DDEVELOPMENT_BUILD=1
 
 REM If you need a console window: -subsytem:console ::: otherwise: -subsystem:windows plus -entry:mainCRTStartup
 REM Debug/Development build 
-set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505
+set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505 -wd4311 -wd4302
 set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -opt:ref -debug:fastlink 
 
 set IncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" 
