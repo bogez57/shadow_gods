@@ -10,7 +10,9 @@
 
 #include "types.h"
 
-namespace Win64
+global_variable bool GameRunning{};
+
+namespace Win32
 {
     local_func void
     ProcessPendingMessages()
@@ -22,6 +24,7 @@ namespace Win64
             {
                 case WM_QUIT:
                 {
+                    GameRunning = false;
                 } break;
             
                 case WM_SYSKEYDOWN:
@@ -151,19 +154,14 @@ namespace Win64
 
             }break;
 
-            case WM_SIZE:
-            {
-                OutputDebugStringA("WM_SIZE\n");
-            }break;
-
             case WM_DESTROY:
             {
-                OutputDebugStringA("WM_DESTROY\n");
+                GameRunning = false;
             }break;
 
             case WM_CLOSE:
             {
-                OutputDebugStringA("WM_CLOSE\n");
+                GameRunning = false;
             }break;
 
             case WM_ACTIVATEAPP:
@@ -179,6 +177,13 @@ namespace Win64
 
         return Result;
     };
+
+    local_func void
+    LogErr(const char* ErrMessage)
+    {
+        BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
+        BGZ_CONSOLE(ErrMessage);
+    }
 }
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
@@ -190,7 +195,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
     //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
     WindowProperties.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
-    WindowProperties.lpfnWndProc = Win64::ProgramWindowCallback;
+    WindowProperties.lpfnWndProc = Win32::ProgramWindowCallback;
     WindowProperties.hInstance = CurrentProgramInstance;
     WindowProperties.lpszClassName = "MemoWindowClass";
 
@@ -202,26 +207,35 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         HWND Window = CreateWindowEx(0, WindowProperties.lpszClassName, "Memo", WS_OVERLAPPEDWINDOW|WS_VISIBLE, 
                                      CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth, WindowHeight, 0, 0, CurrentProgramInstance, 0);
 
-        if(Window)
-        {
-            HDC WindowContext = GetDC(Window);
+        HDC WindowContext = GetDC(Window);
 
+        if(Window && WindowContext)
+        {
             if (WindowContext)
             {
-                for (;;)
+                GameRunning = true;
+                while(GameRunning)
                 {
-                    Win64::ProcessPendingMessages();
+                    Win32::ProcessPendingMessages();
 
                     glViewport(0, 0, WindowWidth, WindowHeight);
                     glClear(GL_COLOR_BUFFER_BIT);
                     SwapBuffers(WindowContext);
                 };
+
+                wglMakeCurrent(NULL, NULL);
+                ReleaseDC(Window, WindowContext);
             }
+        }
+        else
+        {
+            Win32::LogErr("Window could not be created!");
+            InvalidCodePath;
         }
     }
     else
     {
-        BGZ_CONSOLE("Windows error code: %d", GetLastError());
+        Win32::LogErr("Window properties could not be registered!");
         InvalidCodePath;
     }
 
