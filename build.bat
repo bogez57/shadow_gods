@@ -11,7 +11,7 @@ set PreProcessorSwitches=-DDEVELOPMENT_BUILD=1
 
 REM If you need a console window: -subsytem:console ::: otherwise: -subsystem:windows plus -entry:mainCRTStartup
 REM Debug/Development build 
-set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505 -wd4311 -wd4302
+set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505
 set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -opt:ref -debug:fastlink 
 
 set IncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" 
@@ -24,9 +24,9 @@ IF NOT EXIST build mkdir build
 pushd build
 
 REM Clear out pdb files so build directory doesn't get too huge and build app DLL
-REM del *.pdb > NUL 2> NUL
-REM cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %IncludePaths% %PreProcessorSwitches%
-REM link -dll -PDB:memo_%random%.pdb -export:AppUpdateAndRender %CommonLinkerFlags% %LibraryPaths%
+del *.pdb > NUL 2> NUL
+cl /c ..\source\gamecode.cpp %CommonCompilerFlags% %IncludePaths% %PreProcessorSwitches%
+link gamecode.obj -dll -PDB:memo_%random%.pdb -export:GameUpdate %CommonLinkerFlags% %LibraryPaths%
 
 REM Build exe
 cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %IncludePaths% %PreProcessorSwitches% 

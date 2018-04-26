@@ -9,13 +9,22 @@
 #include <boagz/error_handling.h>
 
 #include "types.h"
+#include "win64_shadowgods.h"
+#include "shared.h"
 
 global_variable bool GameRunning{};
 
 namespace Win32
 {
-    local_func void
-    ProcessPendingMessages()
+    local_func auto 
+    LogErr(const char* ErrMessage) -> void
+    {
+        BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
+        BGZ_CONSOLE(ErrMessage);
+    };
+
+    local_func auto 
+    ProcessPendingMessages() -> void
     {
         MSG Message;
         while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -125,21 +134,21 @@ namespace Win32
                                 else
                                 {
                                     ReleaseDC(WindowHandle, WindowContext);
-                                    Win32::LogErr("Unable to make opengl context the current context!")
+                                    Win32::LogErr("Unable to make opengl context the current context!");
                                     InvalidCodePath;
                                 }
                             }
                             else
                             {
                                 ReleaseDC(WindowHandle, WindowContext);
-                                Win32::LogErr("Unable to create an opengl rendering context!")
+                                Win32::LogErr("Unable to create an opengl rendering context!");
                                 InvalidCodePath;
                             }
                         }
                         else
                         {        
                             ReleaseDC(WindowHandle, WindowContext);
-                            Win32::LogErr("Unable to set the pixel format for potential opengl window!")
+                            Win32::LogErr("Unable to set the pixel format for potential opengl window!");
                             InvalidCodePath;
                         }
 
@@ -178,11 +187,81 @@ namespace Win32
         return Result;
     };
 
-    local_func void
-    LogErr(const char* ErrMessage)
+    namespace Dbg
     {
-        BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
-        BGZ_CONSOLE(ErrMessage);
+        inline auto
+        GetFileTime(const char *FileName) -> FILETIME
+        {
+            FILETIME TimeFileWasLastWrittenTo{};
+            WIN32_FILE_ATTRIBUTE_DATA FileData{};
+
+            if (GetFileAttributesEx(FileName, GetFileExInfoStandard, &FileData))
+            {
+                TimeFileWasLastWrittenTo = FileData.ftLastWriteTime;
+            }
+
+            return TimeFileWasLastWrittenTo;
+        }
+
+        local_func auto
+        LoadGameCodeDLL(const char *GameCodeDLL) -> Game_Code 
+        {
+            Game_Code GameCode{};
+            const char *GameCodeTempDLL = "build/game_temp.dll";
+
+            GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
+
+            //Copy app code dll file to a temp file and load that temp file so that original app code dll can be written to while exe
+            //is running. This is For live editing purposes. Code is currently being looped because the modified source dll that gets compiled
+            //apparently isn't unlocked by Windows in time for it to be copied upon the first few CopyFile() function calls.
+            bool CopyFileFuncNotWorking{true};
+            uint32 Counter{};
+            uint32 MaxAllowedLoops{5000};
+
+            while (CopyFileFuncNotWorking)
+            {
+                if (CopyFile(GameCodeDLL, GameCodeTempDLL, FALSE) != 0)
+                {
+                    GameCode.DLLHandle = LoadLibrary(GameCodeTempDLL);
+
+                    if (GameCode.DLLHandle)
+                    {
+                        GameCode.UpdateFunc = (GameUpdateFuncPtr)GetProcAddress(GameCode.DLLHandle, "GameUpdate");
+                        CopyFileFuncNotWorking = false;
+
+                        if (!GameCode.UpdateFunc)
+                        {
+                            InvalidCodePath;
+                        }
+                    }
+                    else
+                    {
+                        InvalidCodePath;
+                    }
+                };
+
+                ++Counter;
+
+                if (Counter == MaxAllowedLoops)
+                {
+                    //DLL took too long to be unlocked by windows so breaking exe to avoid possible infinite loop
+                    InvalidCodePath;
+                }
+            };
+
+            return GameCode;
+        };
+
+        local_func auto
+        FreeGameCodeDLL(Game_Code *GameCode) -> void
+        {
+            if (GameCode->DLLHandle != INVALID_HANDLE_VALUE)
+            {
+                FreeLibrary(GameCode->DLLHandle);
+                GameCode->DLLHandle = 0;
+                GameCode->UpdateFunc = nullptr;
+            };
+        };
     }
 }
 
@@ -211,21 +290,41 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
         if(Window && WindowContext)
         {
-            if (WindowContext)
+
+#if DEVELOPMENT_BUILD
+            void *BaseAddress{(void *)Terabytes(2)};
+#else
+            void *BaseAddress{(void *)0};
+#endif
+
+            Game_Memory GameMemory{};
+            GameMemory.PermanentStorageSize = Megabytes(64);
+            GameMemory.TemporaryStorageSize = Gigabytes(1);
+            uint64 TotalStorageSize = GameMemory.PermanentStorageSize + GameMemory.TemporaryStorageSize;
+            GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, TotalStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.TemporaryStorageSize);
+
+            Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
+
+            Game_Sound_Output_Buffer SoundBuffer{};
+            Game_Render_Cmd_Buffer RenderCmdBuffer{};
+            Platform_Services PlatformServices{};
+            Game_Input Input{};
+
+            GameRunning = true;
+            while (GameRunning)
             {
-                GameRunning = true;
-                while(GameRunning)
-                {
-                    Win32::ProcessPendingMessages();
+                Win32::ProcessPendingMessages();
 
-                    glViewport(0, 0, WindowWidth, WindowHeight);
-                    glClear(GL_COLOR_BUFFER_BIT);
-                    SwapBuffers(WindowContext);
-                };
+                GameCode.UpdateFunc(&GameMemory, PlatformServices, &RenderCmdBuffer, &SoundBuffer, &Input);
 
-                wglMakeCurrent(NULL, NULL);
-                ReleaseDC(Window, WindowContext);
-            }
+                glViewport(0, 0, WindowWidth, WindowHeight);
+                glClear(GL_COLOR_BUFFER_BIT);
+                SwapBuffers(WindowContext);
+            };
+
+            wglMakeCurrent(NULL, NULL);
+            ReleaseDC(Window, WindowContext);
         }
         else
         {
