@@ -125,21 +125,21 @@ namespace Win32
                                 else
                                 {
                                     ReleaseDC(WindowHandle, WindowContext);
-                                    BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                                    Win32::LogErr("Unable to make opengl context the current context!")
                                     InvalidCodePath;
                                 }
                             }
                             else
                             {
                                 ReleaseDC(WindowHandle, WindowContext);
-                                BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                                Win32::LogErr("Unable to create an opengl rendering context!")
                                 InvalidCodePath;
                             }
                         }
                         else
                         {        
                             ReleaseDC(WindowHandle, WindowContext);
-                            BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                            Win32::LogErr("Unable to set the pixel format for potential opengl window!")
                             InvalidCodePath;
                         }
 
@@ -148,7 +148,7 @@ namespace Win32
                 }
                 else
                 {
-                    BGZ_CONSOLE("Windows error code: %d", GetLastError());
+                    Win32::LogErr("Unable to get window context from window!");
                     InvalidCodePath;
                 }
 
