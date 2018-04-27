@@ -26,7 +26,10 @@ struct Game_Render_Cmd_Buffer
 
 };
 
+struct Read_File_Result {void* FileContents{nullptr}; uint32 FileContentsSize{};};
 struct Platform_Services
 {
-
+    Read_File_Result (*ReadEntireFile)(const char*);
+    bool (*WriteEntireFile)(const char*, void*, uint32);
+    void (*FreeFileMemory)(void*);
 };

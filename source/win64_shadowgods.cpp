@@ -11,6 +11,7 @@
 #include <boagz/error_handling.h>
 
 #include "types.h"
+#include "utilities.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
 
@@ -192,6 +193,97 @@ namespace Win32
     namespace Dbg
     {
         local_func auto
+        FreeFileMemory(void* FileMemory)
+        {
+            if(FileMemory)
+            {
+                VirtualFree(FileMemory, 0, MEM_RELEASE);
+            }
+        };
+
+        local_func auto
+        WriteEntireFile(const char* FileName, void* Memory, uint32 MemorySize) -> bool 
+        {
+            bool32 Result = false;
+
+            HANDLE FileHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+            if (FileHandle != INVALID_HANDLE_VALUE)
+            {
+                DWORD BytesWritten;
+                if (WriteFile(FileHandle, Memory, MemorySize, &BytesWritten, 0))
+                {
+                    //File read successfully
+                    Result = (BytesWritten == MemorySize);
+                }
+                else
+                {
+                    Win32::LogErr("Unable to write to file!");
+                    InvalidCodePath;
+                }
+
+                CloseHandle(FileHandle);
+            }
+            else
+            {
+                Win32::LogErr("Unable to create file handle!");
+                InvalidCodePath;
+            }
+
+            return (Result);
+        };
+
+        local_func auto
+        ReadEntireFile(const char *FileName) -> auto
+        {
+            Read_File_Result Result{};
+
+            HANDLE FileHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+
+            if(FileHandle != INVALID_HANDLE_VALUE)
+            {
+                LARGE_INTEGER FileSize{};
+                if(GetFileSizeEx(FileHandle, &FileSize))
+                {
+                    uint32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
+                    Result.FileContents = VirtualAlloc(0, FileSize32, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+
+                    if(Result.FileContents)
+                    {
+                        DWORD BytesRead;
+                        if (ReadFile(FileHandle, Result.FileContents, FileSize32, &BytesRead, 0) &&
+                            (FileSize32 == BytesRead))
+                        {
+                            //File read successfully 
+                            Result.FileContentsSize = FileSize32;
+                        }
+                        else
+                        {
+                            FreeFileMemory(Result.FileContents);
+                            Result.FileContents = 0;
+                        }
+                    }
+                    else
+                    {
+                        Win32::LogErr("Unable to allocate memory for read file!");
+                        InvalidCodePath;
+                    }
+                }
+                else
+                {
+                    Win32::LogErr("Unable to get size of the file!");
+                    InvalidCodePath;
+                }
+            }
+            else
+            {
+                Win32::LogErr("Unable to get file handle!");
+                InvalidCodePath;
+            }
+
+            return Result;
+        }
+
+        local_func auto
         UseConsole() -> void
 	    {
 		    //Create a console for this application
@@ -296,7 +388,6 @@ namespace Win32
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
-    //Needed to setup console for windows app
     Win32::Dbg::UseConsole();
 
     WNDCLASS WindowProperties{};
@@ -339,6 +430,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Game_Render_Cmd_Buffer RenderCmdBuffer{};
             Platform_Services PlatformServices{};
             Game_Input Input{};
+
+            PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
+            PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
+            PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
 
             GameRunning = true;
             while (GameRunning)
