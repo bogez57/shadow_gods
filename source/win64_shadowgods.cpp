@@ -27,7 +27,7 @@ namespace Win32
     };
 
     local_func auto 
-    ProcessPendingMessages() -> void
+    ProcessPendingMessages(Game_Input* Input) -> void
     {
         MSG Message;
         while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -46,41 +46,54 @@ namespace Win32
                 {
                     uint32 VKCode = (uint32)Message.wParam;
 
-                    if(VKCode == 'W')
+                    //lParam is basically a bit field and part of that bit field has bits specifying 
+                    //if the certain VKcode is down now and if it was down previously. Just filtering
+                    //those out more explicitly here
+                    bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
+                    bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
+
+                    if (WasDown != IsDown) //Filter out key repeats
                     {
-                    }
-                    else if(VKCode == 'A')
-                    {
-                    }
-                    else if(VKCode == 'S')
-                    {
-                    }
-                    else if(VKCode == 'D')
-                    {
-                    }
-                    else if(VKCode == 'Q')
-                    {
-                    }
-                    else if(VKCode == 'E')
-                    {
-                    }
-                    else if(VKCode == VK_UP)
-                    {
-                    }
-                    else if(VKCode == VK_LEFT)
-                    {
-                    }
-                    else if(VKCode == VK_DOWN)
-                    {
-                    }
-                    else if(VKCode == VK_RIGHT)
-                    {
-                    }
-                    else if(VKCode == VK_ESCAPE)
-                    {
-                    }
-                    else if(VKCode == VK_SPACE)
-                    {
+                        if (VKCode == 'W')
+                        {
+                            if(IsDown)
+                                Input->Controllers[0].MoveUp.Pressed = true;
+                            else
+                                Input->Controllers[0].MoveUp.Pressed = false;
+                        }
+                        else if (VKCode == 'A')
+                        {
+                        }
+                        else if (VKCode == 'S')
+                        {
+                        }
+                        else if (VKCode == 'D')
+                        {
+                        }
+                        else if (VKCode == 'Q')
+                        {
+                        }
+                        else if (VKCode == 'E')
+                        {
+                        }
+                        else if (VKCode == VK_UP)
+                        {
+                        }
+                        else if (VKCode == VK_LEFT)
+                        {
+                        }
+                        else if (VKCode == VK_DOWN)
+                        {
+                        }
+                        else if (VKCode == VK_RIGHT)
+                        {
+                        }
+                        else if (VKCode == VK_ESCAPE)
+                        {
+                        }
+                        else if (VKCode == VK_SPACE)
+                        {
+                        }
                     }
                 }
 
@@ -233,7 +246,7 @@ namespace Win32
         };
 
         local_func auto
-        ReadEntireFile(const char *FileName) -> auto
+        ReadEntireFile(const char *FileName) -> Read_File_Result
         {
             Read_File_Result Result{};
 
@@ -254,7 +267,7 @@ namespace Win32
                             (FileSize32 == BytesRead))
                         {
                             //File read successfully 
-                            Result.FileContentsSize = FileSize32;
+                            Result.FileSize = FileSize32;
                         }
                         else
                         {
@@ -431,14 +444,16 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Platform_Services PlatformServices{};
             Game_Input Input{};
 
-            PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
-            PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
-            PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
+            {//Init game services
+                PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
+                PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
+                PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
+            }
 
             GameRunning = true;
             while (GameRunning)
             {
-                Win32::ProcessPendingMessages();
+                Win32::ProcessPendingMessages(&Input);
 
                 GameCode.UpdateFunc(&GameMemory, PlatformServices, &RenderCmdBuffer, &SoundBuffer, &Input);
 

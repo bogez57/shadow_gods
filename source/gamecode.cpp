@@ -13,6 +13,12 @@
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmd_Buffer* RenderCmds, 
-                    Game_Sound_Output_Buffer* SoundOutput, Game_Input* Input)
+                    Game_Sound_Output_Buffer* SoundOutput, Game_Input* GameInput)
 {
+    Game_Controller* Keyboard = &GameInput->Controllers[0];
+
+    if(Keyboard->MoveUp.Pressed)
+    {
+        BGZ_CONSOLE("Character Moves up");
+    }
 }
