@@ -1,5 +1,7 @@
 #pragma once
+
 #include "types.h"
+#include "utilities.h"
 
 struct Game_Memory
 {
@@ -13,8 +15,9 @@ struct Game_Memory
 
 struct Button_State
 {
-    int NumberOfHalfTransitions;
-    bool Pressed;
+    //1 button transition == from button up to down or vice versa, NOT up->down->up (which would be one full button press and release)
+    int NumTransitionsPerFrame;
+    bool32 Pressed;
 };
 
 struct Game_Controller
@@ -45,6 +48,14 @@ struct Game_Controller
             //All buttons must be added above this line
         };
     }; 
+
+    auto ClearTransitionCounts() -> void
+    {
+        for(int ButtonIndex = 0; ButtonIndex < ArrayCount(this->Buttons); ++ButtonIndex)
+        {
+            this->Buttons[ButtonIndex].NumTransitionsPerFrame = 0;            
+        };
+    };
 };
 
 struct Game_Input

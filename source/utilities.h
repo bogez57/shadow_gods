@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+
 inline uint32
 SafeTruncateUInt64(uint64 Value)
 {

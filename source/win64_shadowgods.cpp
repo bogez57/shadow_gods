@@ -26,8 +26,18 @@ namespace Win32
         BGZ_CONSOLE(ErrMessage);
     };
 
+    local_func auto
+    ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
+    {
+        if (NewState->Pressed != IsDown)
+        {
+            NewState->Pressed = IsDown;
+            ++NewState->NumTransitionsPerFrame;
+        }
+    }
+
     local_func auto 
-    ProcessPendingMessages(Game_Input* Input) -> void
+    ProcessPendingMessages(Game_Controller* Keyboard) -> void
     {
         MSG Message;
         while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -52,14 +62,11 @@ namespace Win32
                     bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
                     bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
 
-                    if (WasDown != IsDown) //Filter out key repeats
+                    if (WasDown != IsDown) //Filter out key repeats as my current input scheme is already able to react to held down inputs properly
                     {
                         if (VKCode == 'W')
                         {
-                            if(IsDown)
-                                Input->Controllers[0].MoveUp.Pressed = true;
-                            else
-                                Input->Controllers[0].MoveUp.Pressed = false;
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveUp, IsDown);
                         }
                         else if (VKCode == 'A')
                         {
@@ -443,6 +450,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Game_Render_Cmd_Buffer RenderCmdBuffer{};
             Platform_Services PlatformServices{};
             Game_Input Input{};
+            Game_Controller* Keyboard{nullptr};
 
             {//Init game services
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
@@ -453,7 +461,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             GameRunning = true;
             while (GameRunning)
             {
-                Win32::ProcessPendingMessages(&Input);
+                Keyboard = &Input.Controllers[0];
+                Keyboard->ClearTransitionCounts();//Since I want transistions counted on per frame basis
+
+                Win32::ProcessPendingMessages(Keyboard);
 
                 GameCode.UpdateFunc(&GameMemory, PlatformServices, &RenderCmdBuffer, &SoundBuffer, &Input);
 
