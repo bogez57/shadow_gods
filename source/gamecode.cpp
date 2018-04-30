@@ -17,7 +17,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 {
     Game_Controller* Keyboard = &GameInput->Controllers[0];
 
-    if(Keyboard->MoveUp.Pressed)
+    if(Keyboard->MoveUp.Pressed && Keyboard->MoveUp.NumTransitionsPerFrame > 0)
     {
         BGZ_CONSOLE("Character Moves up");
     }

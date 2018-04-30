@@ -17,7 +17,7 @@ set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -o
 set IncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" 
 set LibraryPaths=
 
-set ImportLibraries="user32.lib" "OpenGL32.lib" "gdi32.lib"  
+set ImportLibraries="user32.lib" "OpenGL32.lib" "gdi32.lib" "xinput.lib" 
 set StaticLibraries=
 
 IF NOT EXIST build mkdir build

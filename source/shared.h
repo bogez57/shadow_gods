@@ -16,7 +16,8 @@ struct Game_Memory
 struct Button_State
 {
     //1 button transition == from button up to down or vice versa, NOT up->down->up (which would be one full button press and release)
-    int NumTransitionsPerFrame;
+    //Storing these transisitons is probably more of an issue at lower frame rates (sub 60fps)
+    int NumTransitionsPerFrame; 
     bool32 Pressed;
 };
 
@@ -27,7 +28,7 @@ struct Game_Controller
     
     union
     {
-        Button_State Buttons[12];
+        Button_State Buttons[14];
         struct
         {
             Button_State MoveUp;
@@ -42,21 +43,22 @@ struct Game_Controller
             
             Button_State LeftShoulder;
             Button_State RightShoulder;
+            Button_State LeftTrigger;
+            Button_State RightTrigger;
 
             Button_State Back;
             Button_State Start;
             //All buttons must be added above this line
         };
     }; 
-
-    auto ClearTransitionCounts() -> void
-    {
-        for(int ButtonIndex = 0; ButtonIndex < ArrayCount(this->Buttons); ++ButtonIndex)
-        {
-            this->Buttons[ButtonIndex].NumTransitionsPerFrame = 0;            
-        };
-    };
 };
+auto ClearTransitionCounts(Game_Controller* Controller) -> void
+{
+    for (int ButtonIndex = 0; ButtonIndex < ArrayCount(Controller->Buttons); ++ButtonIndex)
+    {
+        Controller->Buttons[ButtonIndex].NumTransitionsPerFrame = 0;
+    };
+}
 
 struct Game_Input
 {
