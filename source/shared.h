@@ -62,7 +62,8 @@ auto ClearTransitionCounts(Game_Controller* Controller) -> void
 
 struct Game_Input
 {
-    Game_Controller Controllers[2];
+    const uint MaxControllerCount{5};
+    Game_Controller Controllers[5];
 };
 
 struct Game_Sound_Output_Buffer

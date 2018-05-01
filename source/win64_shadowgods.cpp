@@ -1,3 +1,9 @@
+/*
+    ToDo List:
+
+    - Load XInput through LoadLibrary() (To help avoid likely "Xinput.dll not found on certain windows platforms")
+*/
+
 #if (DEVELOPMENT_BUILD)
     #define BGZ_LOGGING_ON true
 #else
@@ -34,6 +40,16 @@ namespace Win32
         {
             NewState->Pressed = IsDown;
             ++NewState->NumTransitionsPerFrame;
+        }
+    }
+
+    local_func auto
+    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State* GameButtonState, DWORD XInputButtonBit)
+    {
+        if(GameButtonState->Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
+        {
+            GameButtonState->Pressed = ((XInputButtonState & XInputButtonBit) == XInputButtonBit);
+            ++GameButtonState->NumTransitionsPerFrame;
         }
     }
 
@@ -462,38 +478,43 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             GameRunning = true;
             while (GameRunning)
             {
+                for(uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
+                {
+                    ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
+                }
+
                 Keyboard = &Input.Controllers[0];
-                ClearTransitionCounts(Keyboard);//Since I want transistions counted on per frame basis
 
                 Win32::ProcessPendingMessages(Keyboard);
 
                  //TODO: Should we poll this more frequently?
-                for (DWORD ControllerIndex = 0; ControllerIndex < XUSER_MAX_COUNT; ++ControllerIndex)
+                for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
                 {
                     XINPUT_STATE ControllerState;
                     if(XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
                     {
+                        if(ControllerIndex == Input.MaxControllerCount)//Since index 0 is reserved for keyboard
+                            break;
+
                         //This controller is plugged in
                         XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
+                        Game_Controller *Controller = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
 
-                        bool Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
-                        bool Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
-                        bool Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-                        bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
-                        bool LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
-                        bool RightShoulder = (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
-                        bool AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
-                        bool BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
-                        bool XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
-                        bool YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
-                        bool Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
-                        bool Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
-                                        
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveUp, XINPUT_GAMEPAD_DPAD_UP);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveDown, XINPUT_GAMEPAD_DPAD_DOWN);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveLeft, XINPUT_GAMEPAD_DPAD_LEFT);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveRight, XINPUT_GAMEPAD_DPAD_RIGHT);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->LeftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->RightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionUp, XINPUT_GAMEPAD_Y);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionDown, XINPUT_GAMEPAD_A);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionLeft, XINPUT_GAMEPAD_X);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionRight, XINPUT_GAMEPAD_B);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Start, XINPUT_GAMEPAD_START);
+                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Back, XINPUT_GAMEPAD_BACK);
+
                         int16 StickX = Pad->sThumbLX;
                         int16 StickY = Pad->sThumbLY;
-
-                        if(AButton)
-                            BGZ_CONSOLE("Hello!!\n");
                     }
                     else
                     {

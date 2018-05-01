@@ -16,9 +16,25 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                     Game_Sound_Output_Buffer* SoundOutput, Game_Input* GameInput)
 {
     Game_Controller* Keyboard = &GameInput->Controllers[0];
+    Game_Controller* GamePad = &GameInput->Controllers[1];
 
     if(Keyboard->MoveUp.Pressed && Keyboard->MoveUp.NumTransitionsPerFrame > 0)
     {
-        BGZ_CONSOLE("Character Moves up");
+        BGZ_CONSOLE("Ahhhhh");
+    }
+
+    if(GamePad->MoveUp.Pressed)
+    {
+        BGZ_CONSOLE("Character Moves up\n");
+    }
+
+    if(GamePad->ActionUp.Pressed)
+    {
+        BGZ_CONSOLE("Character PunchesQ\n");
+    }
+
+    if(GamePad->LeftShoulder.Pressed)
+    {
+        BGZ_CONSOLE("Character vomits\n");
     }
 }
