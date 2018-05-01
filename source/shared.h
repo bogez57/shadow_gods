@@ -16,7 +16,9 @@ struct Game_Memory
 struct Button_State
 {
     //1 button transition == from button up to down or vice versa, NOT up->down->up (which would be one full button press and release)
-    //Storing these transisitons is probably more of an issue at lower frame rates (sub 60fps)
+    //Capturing these transistions just helps to ensure we do not miss a button press (e.g. if user presses button once at
+    //beginning of the frame, and then again at the end assuming multiple polling, with this scheme we would be able to capture 
+    //both presses instead of just the one at the beginning).
     int NumTransitionsPerFrame; 
     bool32 Pressed;
 };
