@@ -10,6 +10,7 @@
 #include <boagz/error_context.cpp>
 
 #include "shared.h"
+#include "math.h"
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmd_Buffer* RenderCmds, 
@@ -20,7 +21,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveUp.Pressed && Keyboard->MoveUp.NumTransitionsPerFrame > 0)
     {
-        BGZ_CONSOLE("Ahhhhh");
+        BGZ_CONSOLE("Ahhhhh ");
     }
 
     if(GamePad->MoveUp.Pressed && GamePad->MoveUp.NumTransitionsPerFrame > 0)
