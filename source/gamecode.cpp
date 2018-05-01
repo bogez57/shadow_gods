@@ -23,7 +23,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         BGZ_CONSOLE("Ahhhhh");
     }
 
-    if(GamePad->MoveUp.Pressed)
+    if(GamePad->MoveUp.Pressed && GamePad->MoveUp.NumTransitionsPerFrame > 0)
     {
         BGZ_CONSOLE("Character Moves up\n");
     }

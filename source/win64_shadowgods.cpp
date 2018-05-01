@@ -466,8 +466,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Game_Sound_Output_Buffer SoundBuffer{};
             Game_Render_Cmd_Buffer RenderCmdBuffer{};
             Platform_Services PlatformServices{};
-            Game_Input Input{};
-            Game_Controller* Keyboard{nullptr};
+            Game_Input OldInput{};
 
             {//Init game services
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
@@ -478,51 +477,58 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             GameRunning = true;
             while (GameRunning)
             {
-                for(uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
+                Game_Input UpdatedInput = [](Game_Input Input) -> Game_Input
                 {
-                    ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
-                }
-
-                Keyboard = &Input.Controllers[0];
-
-                Win32::ProcessPendingMessages(Keyboard);
-
-                 //TODO: Should we poll this more frequently?
-                for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
-                {
-                    XINPUT_STATE ControllerState;
-                    if(XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
+                    for (uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
                     {
-                        if(ControllerIndex == Input.MaxControllerCount)//Since index 0 is reserved for keyboard
-                            break;
-
-                        //This controller is plugged in
-                        XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
-                        Game_Controller *Controller = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
-
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveUp, XINPUT_GAMEPAD_DPAD_UP);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveDown, XINPUT_GAMEPAD_DPAD_DOWN);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveLeft, XINPUT_GAMEPAD_DPAD_LEFT);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveRight, XINPUT_GAMEPAD_DPAD_RIGHT);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->LeftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->RightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionUp, XINPUT_GAMEPAD_Y);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionDown, XINPUT_GAMEPAD_A);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionLeft, XINPUT_GAMEPAD_X);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionRight, XINPUT_GAMEPAD_B);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Start, XINPUT_GAMEPAD_START);
-                        Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Back, XINPUT_GAMEPAD_BACK);
-
-                        int16 StickX = Pad->sThumbLX;
-                        int16 StickY = Pad->sThumbLY;
+                        ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                     }
-                    else
+
+                    Game_Controller* Keyboard = &Input.Controllers[0];
+
+                    Win32::ProcessPendingMessages(Keyboard);
+
+                    //TODO: Should we poll this more frequently?
+                    for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
                     {
-                        //Controller not available
-                    }
-                }
+                        XINPUT_STATE ControllerState;
+                        if (XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
+                        {
+                            if (ControllerIndex == Input.MaxControllerCount) //Since index 0 is reserved for keyboard
+                                break;
 
-                GameCode.UpdateFunc(&GameMemory, PlatformServices, &RenderCmdBuffer, &SoundBuffer, &Input);
+                            //This controller is plugged in
+                            XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
+                            Game_Controller *Controller = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
+
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveUp, XINPUT_GAMEPAD_DPAD_UP);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveDown, XINPUT_GAMEPAD_DPAD_DOWN);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveLeft, XINPUT_GAMEPAD_DPAD_LEFT);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveRight, XINPUT_GAMEPAD_DPAD_RIGHT);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->LeftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->RightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionUp, XINPUT_GAMEPAD_Y);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionDown, XINPUT_GAMEPAD_A);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionLeft, XINPUT_GAMEPAD_X);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionRight, XINPUT_GAMEPAD_B);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Start, XINPUT_GAMEPAD_START);
+                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Back, XINPUT_GAMEPAD_BACK);
+
+                            int16 StickX = Pad->sThumbLX;
+                            int16 StickY = Pad->sThumbLY;
+                        }
+                        else
+                        {
+                            //Controller not available
+                        }
+                    }
+
+                    return Input;
+                }(OldInput);
+
+                GameCode.UpdateFunc(&GameMemory, PlatformServices, &RenderCmdBuffer, &SoundBuffer, &UpdatedInput);
+
+                OldInput = UpdatedInput;
 
                 glViewport(0, 0, WindowWidth, WindowHeight);
                 glClear(GL_COLOR_BUFFER_BIT);
