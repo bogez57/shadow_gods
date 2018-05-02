@@ -25,7 +25,90 @@ typedef double float64;
 #define global_variable static
 #define global_func
 
-#define Kilobytes(Value) ((Value)*1024LL)
-#define Megabytes(Value) (Kilobytes(Value)*1024LL)
-#define Gigabytes(Value) (Megabytes(Value)*1024LL)
-#define Terabytes(Value) (Gigabytes(Value)*1024LL)
+struct vec2
+{
+    vec2() = default;
+    vec2(float32 X, float32 Y);
+
+    union
+    {
+        float32 Elem[2];
+        struct
+        {
+            float32 X, Y;
+        };
+    };
+};
+
+vec2::vec2(float32 X, float32 Y) :
+    X(X),
+    Y(Y)
+{}
+
+inline vec2
+operator*(float32 A,  vec2 B)
+{
+    vec2 Result;
+
+    Result.X = A*B.X;
+    Result.Y = A*B.Y;
+
+    return(Result);
+}
+
+inline vec2
+operator*(vec2 B, float32 A)
+{
+    vec2 Result = A*B;
+
+    return(Result);
+}
+
+inline  vec2&
+operator*=(vec2& B, float32 A)
+{
+    B = A * B;
+
+    return(B);
+}
+
+inline vec2
+operator-(vec2 A)
+{
+    vec2 Result;
+
+    Result.X = -A.X;
+    Result.Y = -A.Y;
+
+    return(Result);
+}
+
+inline vec2
+operator+(vec2 A, vec2 B)
+{
+    vec2 Result;
+
+    Result.X = A.X + B.X;
+    Result.Y = A.Y + B.Y;
+
+    return(Result);
+}
+
+inline  vec2&
+operator+=(vec2& A, vec2 B)
+{
+    A = A + B;
+
+    return(A);
+}
+
+inline vec2
+operator-(vec2 A, vec2 B)
+{
+    vec2 Result;
+
+    Result.X = A.X - B.X;
+    Result.Y = A.Y - B.Y;
+
+    return(Result);
+}

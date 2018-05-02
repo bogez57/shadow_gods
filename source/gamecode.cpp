@@ -19,6 +19,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     Game_Controller* Keyboard = &GameInput->Controllers[0];
     Game_Controller* GamePad = &GameInput->Controllers[1];
 
+    if(GamePad->LThumbStick.X > .5f)
+    {
+        BGZ_CONSOLE("ThmbsssstiickX\n");
+    }
+
+    if(GamePad->LThumbStick.X < -.5f)
+    {
+        BGZ_CONSOLE("Thmbsssstiick-X\n");
+    }
+
     if(Keyboard->MoveUp.Pressed && Keyboard->MoveUp.NumTransitionsPerFrame > 0)
     {
         BGZ_CONSOLE("Ahhhhh ");

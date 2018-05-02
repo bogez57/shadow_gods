@@ -27,7 +27,10 @@ struct Game_Controller
 {
     bool32 IsConnected;
     bool32 IsAnalog;    
-    
+
+    vec2 LThumbStick;
+    vec2 RThumbStick;
+
     union
     {
         Button_State Buttons[14];

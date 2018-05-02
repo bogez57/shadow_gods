@@ -18,6 +18,7 @@
 #include <boagz/error_handling.h>
 
 #include "types.h"
+#include "math.h"
 #include "utilities.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
@@ -40,16 +41,6 @@ namespace Win32
         {
             NewState->Pressed = IsDown;
             ++NewState->NumTransitionsPerFrame;
-        }
-    }
-
-    local_func auto
-    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State* GameButtonState, DWORD XInputButtonBit)
-    {
-        if(GameButtonState->Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
-        {
-            GameButtonState->Pressed = ((XInputButtonState & XInputButtonBit) == XInputButtonBit);
-            ++GameButtonState->NumTransitionsPerFrame;
         }
     }
 
@@ -226,6 +217,33 @@ namespace Win32
 
         return Result;
     };
+
+    local_func auto
+    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State* GameButtonState, DWORD XInputButtonBit)
+    {
+        if(GameButtonState->Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
+        {
+            GameButtonState->Pressed = ((XInputButtonState & XInputButtonBit) == XInputButtonBit);
+            ++GameButtonState->NumTransitionsPerFrame;
+        }
+    }
+
+    local_func auto
+    NormalizeAnalogStickValue(SHORT Value, SHORT DeadZoneThreshold) -> float32
+    {
+        float32 Result = 0;
+
+        if (Value < -DeadZoneThreshold)
+        {
+            Result = (float32)((Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold));
+        }
+        else if (Value > DeadZoneThreshold)
+        {
+            Result = (float32)((Value - DeadZoneThreshold) / (32767.0f - DeadZoneThreshold));
+        }
+
+        return (Result);
+    }
 
     namespace Dbg
     {
@@ -514,8 +532,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                             Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Start, XINPUT_GAMEPAD_START);
                             Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Back, XINPUT_GAMEPAD_BACK);
 
-                            int16 StickX = Pad->sThumbLX;
-                            int16 StickY = Pad->sThumbLY;
+                            Controller->LThumbStick.X = 0.0f;
+                            Controller->LThumbStick.Y = 0.0f;
+
+                            Controller->LThumbStick.X = Win32::NormalizeAnalogStickValue(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                            Controller->LThumbStick.Y = Win32::NormalizeAnalogStickValue(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
                         }
                         else
                         {
