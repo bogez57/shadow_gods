@@ -2,6 +2,7 @@
     ToDo List:
 
     - Load XInput through LoadLibrary() (To help avoid likely "Xinput.dll not found on certain windows platforms")
+    - Have it so I handle a game controller being disconnected at any point while the game is running
 */
 
 #if (DEVELOPMENT_BUILD)
@@ -76,14 +77,17 @@ namespace Win32
                         {
                             Win32::ProcessKeyboardMessage(&Keyboard->MoveUp, IsDown);
                         }
-                        else if (VKCode == 'A')
-                        {
-                        }
                         else if (VKCode == 'S')
                         {
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveDown, IsDown);
+                        }
+                        else if (VKCode == 'A')
+                        {
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveLeft, IsDown);
                         }
                         else if (VKCode == 'D')
                         {
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveRight, IsDown);
                         }
                         else if (VKCode == 'Q')
                         {
@@ -509,6 +513,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     //TODO: Should we poll this more frequently?
                     for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
                     {
+                        Game_Controller *MyGamePad = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
+
                         XINPUT_STATE ControllerState;
                         if (XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
                         {
@@ -516,31 +522,32 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                                 break;
 
                             //This controller is plugged in
-                            XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
-                            Game_Controller *Controller = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
+                            XINPUT_GAMEPAD *XGamePad = &ControllerState.Gamepad;
+                            MyGamePad->IsConnected = true;
 
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveUp, XINPUT_GAMEPAD_DPAD_UP);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveDown, XINPUT_GAMEPAD_DPAD_DOWN);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveLeft, XINPUT_GAMEPAD_DPAD_LEFT);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->MoveRight, XINPUT_GAMEPAD_DPAD_RIGHT);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->LeftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->RightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionUp, XINPUT_GAMEPAD_Y);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionDown, XINPUT_GAMEPAD_A);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionLeft, XINPUT_GAMEPAD_X);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->ActionRight, XINPUT_GAMEPAD_B);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Start, XINPUT_GAMEPAD_START);
-                            Win32::ProcessXInputDigitalButton(Pad->wButtons, &Controller->Back, XINPUT_GAMEPAD_BACK);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveUp, XINPUT_GAMEPAD_DPAD_UP);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveDown, XINPUT_GAMEPAD_DPAD_DOWN);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveLeft, XINPUT_GAMEPAD_DPAD_LEFT);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveRight, XINPUT_GAMEPAD_DPAD_RIGHT);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->LeftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->RightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionUp, XINPUT_GAMEPAD_Y);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionDown, XINPUT_GAMEPAD_A);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionLeft, XINPUT_GAMEPAD_X);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionRight, XINPUT_GAMEPAD_B);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->Start, XINPUT_GAMEPAD_START);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->Back, XINPUT_GAMEPAD_BACK);
 
-                            Controller->LThumbStick.X = 0.0f;
-                            Controller->LThumbStick.Y = 0.0f;
+                            MyGamePad->LThumbStick.X = 0.0f;
+                            MyGamePad->LThumbStick.Y = 0.0f;
 
-                            Controller->LThumbStick.X = Win32::NormalizeAnalogStickValue(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-                            Controller->LThumbStick.Y = Win32::NormalizeAnalogStickValue(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                            MyGamePad->LThumbStick.X = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                            MyGamePad->LThumbStick.Y = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
                         }
                         else
                         {
                             //Controller not available
+                            MyGamePad->IsConnected = false;
                         }
                     }
 
