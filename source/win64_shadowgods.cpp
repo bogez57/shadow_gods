@@ -27,298 +27,297 @@
 
 global_variable bool GlobalGameRunning{};
 
-namespace Win32
+namespace Win32::Dbg
 {
-    namespace Dbg
+    local_func auto
+    LogErr(const char *ErrMessage) -> void
     {
-        local_func auto 
-        LogErr(const char* ErrMessage) -> void
+        BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
+        BGZ_CONSOLE(ErrMessage);
+    };
+
+    local_func auto
+    FreeFileMemory(void *FileMemory)
+    {
+        if (FileMemory)
         {
-            BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
-            BGZ_CONSOLE(ErrMessage);
+            VirtualFree(FileMemory, 0, MEM_RELEASE);
         }
+    };
 
-        local_func auto
-        FreeFileMemory(void* FileMemory)
-        {
-            if(FileMemory)
-            {
-                VirtualFree(FileMemory, 0, MEM_RELEASE);
-            }
-        };
+    local_func auto
+    WriteEntireFile(const char *FileName, void *Memory, uint32 MemorySize) -> bool
+    {
+        bool32 Result = false;
 
-        local_func auto
-        WriteEntireFile(const char* FileName, void* Memory, uint32 MemorySize) -> bool 
-        {
-            bool32 Result = false;
-
-            HANDLE FileHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
-            if (FileHandle != INVALID_HANDLE_VALUE)
-            {
-                DWORD BytesWritten;
-                if (WriteFile(FileHandle, Memory, MemorySize, &BytesWritten, 0))
-                {
-                    //File read successfully
-                    Result = (BytesWritten == MemorySize);
-                }
-                else
-                {
-                    Win32::Dbg::LogErr("Unable to write to file!");
-                    InvalidCodePath;
-                }
-
-                CloseHandle(FileHandle);
-            }
-            else
-            {
-                Win32::Dbg::LogErr("Unable to create file handle!");
-                InvalidCodePath;
-            }
-
-            return (Result);
-        };
-
-        local_func auto
-        ReadEntireFile(const char *FileName) -> Read_File_Result
-        {
-            Read_File_Result Result{};
-
-            HANDLE FileHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-
-            if(FileHandle != INVALID_HANDLE_VALUE)
-            {
-                LARGE_INTEGER FileSize{};
-                if(GetFileSizeEx(FileHandle, &FileSize))
-                {
-                    uint32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
-                    Result.FileContents = VirtualAlloc(0, FileSize32, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-
-                    if(Result.FileContents)
-                    {
-                        DWORD BytesRead;
-                        if (ReadFile(FileHandle, Result.FileContents, FileSize32, &BytesRead, 0) &&
-                            (FileSize32 == BytesRead))
-                        {
-                            //File read successfully 
-                            Result.FileSize = FileSize32;
-                        }
-                        else
-                        {
-                            FreeFileMemory(Result.FileContents);
-                            Result.FileContents = 0;
-                        }
-                    }
-                    else
-                    {
-                        Win32::Dbg::LogErr("Unable to allocate memory for read file!");
-                        InvalidCodePath;
-                    }
-                }
-                else
-                {
-                    Win32::Dbg::LogErr("Unable to get size of the file!");
-                    InvalidCodePath;
-                }
-            }
-            else
-            {
-                Win32::Dbg::LogErr("Unable to get file handle!");
-                InvalidCodePath;
-            }
-
-            return Result;
-        }
-
-        local_func auto
-        UseConsole() -> void
-	    {
-		    //Create a console for this application
-		    AllocConsole();
-
-		    // Get STDOUT handle
-		    HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-		    int SystemOutput = _open_osfhandle(intptr_t(ConsoleOutput), _O_TEXT);
-		    FILE *COutputHandle = _fdopen(SystemOutput, "w");
-
-    		// Get STDERR handle
-	    	HANDLE ConsoleError = GetStdHandle(STD_ERROR_HANDLE);
-		    int SystemError = _open_osfhandle(intptr_t(ConsoleError), _O_TEXT);
-		    FILE *CErrorHandle = _fdopen(SystemError, "w");
-
-    		// Get STDIN handle
-	    	HANDLE ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
-		    int SystemInput = _open_osfhandle(intptr_t(ConsoleInput), _O_TEXT);
-		    FILE *CInputHandle = _fdopen(SystemInput, "r");
-
-    		// Redirect the CRT standard input, output, and error handles to the console
-	    	freopen_s(&CInputHandle, "CONIN$", "r", stdin);
-		    freopen_s(&COutputHandle, "CONOUT$", "w", stdout);
-		    freopen_s(&CErrorHandle, "CONOUT$", "w", stderr);
-	    };
-
-        inline auto
-        GetFileTime(const char *FileName) -> FILETIME
-        {
-            FILETIME TimeFileWasLastWrittenTo{};
-            WIN32_FILE_ATTRIBUTE_DATA FileData{};
-
-            if (GetFileAttributesEx(FileName, GetFileExInfoStandard, &FileData))
-            {
-                TimeFileWasLastWrittenTo = FileData.ftLastWriteTime;
-            }
-
-            return TimeFileWasLastWrittenTo;
-        }
-
-        local_func auto
-        LoadGameCodeDLL(const char *GameCodeDLL) -> Game_Code 
-        {
-            Game_Code GameCode{};
-            const char *GameCodeTempDLL = "build/game_temp.dll";
-
-            GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
-
-            //Copy app code dll file to a temp file and load that temp file so that original app code dll can be written to while exe
-            //is running. This is For live editing purposes. Code is currently being looped because the modified source dll that gets compiled
-            //apparently isn't unlocked by Windows in time for it to be copied upon the first few CopyFile() function calls.
-            bool CopyFileFuncNotWorking{true};
-            uint32 Counter{};
-            uint32 MaxAllowedLoops{5000};
-
-            while (CopyFileFuncNotWorking)
-            {
-                if (CopyFile(GameCodeDLL, GameCodeTempDLL, FALSE) != 0)
-                {
-                    GameCode.DLLHandle = LoadLibrary(GameCodeTempDLL);
-
-                    if (GameCode.DLLHandle)
-                    {
-                        GameCode.UpdateFunc = (GameUpdateFuncPtr)GetProcAddress(GameCode.DLLHandle, "GameUpdate");
-                        CopyFileFuncNotWorking = false;
-
-                        if (!GameCode.UpdateFunc)
-                        {
-                            InvalidCodePath;
-                        }
-                    }
-                    else
-                    {
-                        InvalidCodePath;
-                    }
-                };
-
-                ++Counter;
-
-                if (Counter == MaxAllowedLoops)
-                {
-                    //DLL took too long to be unlocked by windows so breaking exe to avoid possible infinite loop
-                    InvalidCodePath;
-                }
-            };
-
-            return GameCode;
-        };
-
-        local_func auto
-        FreeGameCodeDLL(Game_Code *GameCode) -> void
-        {
-            if (GameCode->DLLHandle != INVALID_HANDLE_VALUE)
-            {
-                FreeLibrary(GameCode->DLLHandle);
-                GameCode->DLLHandle = 0;
-                GameCode->UpdateFunc = nullptr;
-            };
-        };
-
-        local_func auto
-        InitInputRecording(Win32::Dbg::Game_Replay_State* GameReplayState)
-        {
-            GameReplayState->InputRecording = true;
-            GameReplayState->InputFile = CreateFileA("InputData.sgi", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
-
-            CopyMemory(GameReplayState->GameStateDataForReplay, GameReplayState->GameMemoryBlock, GameReplayState->TotalGameMemorySize);
-        }
-
-        local_func auto
-        EndInputRecording(Win32::Dbg::Game_Replay_State* GameReplayState)
-        {
-            if(GameReplayState->InputRecording)
-            {
-                GameReplayState->InputRecording = false;
-                CloseHandle(GameReplayState->InputFile);
-            }
-        }
-
-        local_func auto
-        RecordInput(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
+        HANDLE FileHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+        if (FileHandle != INVALID_HANDLE_VALUE)
         {
             DWORD BytesWritten;
-            if(WriteFile(GameReplayState->InputFile, Input, sizeof(*Input), &BytesWritten, 0))
+            if (WriteFile(FileHandle, Memory, MemorySize, &BytesWritten, 0))
             {
-                if((sizeof(*Input)) == BytesWritten)
+                //File read successfully
+                Result = (BytesWritten == MemorySize);
+            }
+            else
+            {
+                Win32::Dbg::LogErr("Unable to write to file!");
+                InvalidCodePath;
+            }
+
+            CloseHandle(FileHandle);
+        }
+        else
+        {
+            Win32::Dbg::LogErr("Unable to create file handle!");
+            InvalidCodePath;
+        }
+
+        return (Result);
+    };
+
+    local_func auto
+    ReadEntireFile(const char *FileName) -> Read_File_Result
+    {
+        Read_File_Result Result{};
+
+        HANDLE FileHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+
+        if (FileHandle != INVALID_HANDLE_VALUE)
+        {
+            LARGE_INTEGER FileSize{};
+            if (GetFileSizeEx(FileHandle, &FileSize))
+            {
+                uint32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
+                Result.FileContents = VirtualAlloc(0, FileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+                if (Result.FileContents)
                 {
-                    //Success
+                    DWORD BytesRead;
+                    if (ReadFile(FileHandle, Result.FileContents, FileSize32, &BytesRead, 0) &&
+                        (FileSize32 == BytesRead))
+                    {
+                        //File read successfully
+                        Result.FileSize = FileSize32;
+                    }
+                    else
+                    {
+                        FreeFileMemory(Result.FileContents);
+                        Result.FileContents = 0;
+                    }
                 }
                 else
                 {
-                    Win32::Dbg::LogErr("Not all inputs were successfully recorded!");
+                    Win32::Dbg::LogErr("Unable to allocate memory for read file!");
+                    InvalidCodePath;
                 }
             }
             else
             {
-                Win32::Dbg::LogErr("Unable to write input to file!");
+                Win32::Dbg::LogErr("Unable to get size of the file!");
+                InvalidCodePath;
             }
         }
-
-        local_func auto
-        InitInputPlayBack(Win32::Dbg::Game_Replay_State* GameReplayState)
+        else
         {
-            GameReplayState->InputPlayBack = true;
-            GameReplayState->InputPlayBackFile = CreateFile("InputData.sgi", GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-
-            //Since Windows Read/Write functions only take DWORD(32 bit) sizes need to make sure we don't try and read/write anything larger than 4 GB
-            BGZ_ASSERT(GameReplayState->TotalGameMemorySize <= Gigabytes(4));
-
-            CopyMemory(GameReplayState->GameMemoryBlock, GameReplayState->GameStateDataForReplay, GameReplayState->TotalGameMemorySize);
+            Win32::Dbg::LogErr("Unable to get file handle!");
+            InvalidCodePath;
         }
 
-        local_func auto
-        EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
-        {
-            if(GameReplayState->InputPlayBack)
-            {
-                GameReplayState->InputPlayBack = false;
-                CloseHandle(GameReplayState->InputPlayBackFile);
+        return Result;
+    };
 
-                for(int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
+    local_func auto
+    UseConsole() -> void
+    {
+        //Create a console for this application
+        AllocConsole();
+
+        // Get STDOUT handle
+        HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+        int SystemOutput = _open_osfhandle(intptr_t(ConsoleOutput), _O_TEXT);
+        FILE *COutputHandle = _fdopen(SystemOutput, "w");
+
+        // Get STDERR handle
+        HANDLE ConsoleError = GetStdHandle(STD_ERROR_HANDLE);
+        int SystemError = _open_osfhandle(intptr_t(ConsoleError), _O_TEXT);
+        FILE *CErrorHandle = _fdopen(SystemError, "w");
+
+        // Get STDIN handle
+        HANDLE ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
+        int SystemInput = _open_osfhandle(intptr_t(ConsoleInput), _O_TEXT);
+        FILE *CInputHandle = _fdopen(SystemInput, "r");
+
+        // Redirect the CRT standard input, output, and error handles to the console
+        freopen_s(&CInputHandle, "CONIN$", "r", stdin);
+        freopen_s(&COutputHandle, "CONOUT$", "w", stdout);
+        freopen_s(&CErrorHandle, "CONOUT$", "w", stderr);
+    };
+
+    inline auto
+    GetFileTime(const char *FileName) -> FILETIME
+    {
+        FILETIME TimeFileWasLastWrittenTo{};
+        WIN32_FILE_ATTRIBUTE_DATA FileData{};
+
+        if (GetFileAttributesEx(FileName, GetFileExInfoStandard, &FileData))
+        {
+            TimeFileWasLastWrittenTo = FileData.ftLastWriteTime;
+        }
+
+        return TimeFileWasLastWrittenTo;
+    }
+
+    local_func auto
+    LoadGameCodeDLL(const char *GameCodeDLL) -> Game_Code
+    {
+        Game_Code GameCode{};
+        const char *GameCodeTempDLL = "build/game_temp.dll";
+
+        GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
+
+        //Copy app code dll file to a temp file and load that temp file so that original app code dll can be written to while exe
+        //is running. This is For live editing purposes. Code is currently being looped because the modified source dll that gets compiled
+        //apparently isn't unlocked by Windows in time for it to be copied upon the first few CopyFile() function calls.
+        bool CopyFileFuncNotWorking{true};
+        uint32 Counter{};
+        uint32 MaxAllowedLoops{5000};
+
+        while (CopyFileFuncNotWorking)
+        {
+            if (CopyFile(GameCodeDLL, GameCodeTempDLL, FALSE) != 0)
+            {
+                GameCode.DLLHandle = LoadLibrary(GameCodeTempDLL);
+
+                if (GameCode.DLLHandle)
                 {
-                    for(int ButtonIndex = 0; ButtonIndex < ArrayCount(Input->Controllers[0].Buttons); ++ButtonIndex)
+                    GameCode.UpdateFunc = (GameUpdateFuncPtr)GetProcAddress(GameCode.DLLHandle, "GameUpdate");
+                    CopyFileFuncNotWorking = false;
+
+                    if (!GameCode.UpdateFunc)
                     {
-                        Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
+                        InvalidCodePath;
                     }
                 }
+                else
+                {
+                    InvalidCodePath;
+                }
+            };
+
+            ++Counter;
+
+            if (Counter == MaxAllowedLoops)
+            {
+                //DLL took too long to be unlocked by windows so breaking exe to avoid possible infinite loop
+                InvalidCodePath;
+            }
+        };
+
+        return GameCode;
+    };
+
+    local_func auto
+    FreeGameCodeDLL(Game_Code *GameCode) -> void
+    {
+        if (GameCode->DLLHandle != INVALID_HANDLE_VALUE)
+        {
+            FreeLibrary(GameCode->DLLHandle);
+            GameCode->DLLHandle = 0;
+            GameCode->UpdateFunc = nullptr;
+        };
+    };
+
+    local_func auto
+    InitInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState)
+    {
+        GameReplayState->InputRecording = true;
+        GameReplayState->InputFile = CreateFileA("InputData.sgi", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+
+        CopyMemory(GameReplayState->GameStateDataForReplay, GameReplayState->GameMemoryBlock, GameReplayState->TotalGameMemorySize);
+    };
+
+    local_func auto
+    EndInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState)
+    {
+        if (GameReplayState->InputRecording)
+        {
+            GameReplayState->InputRecording = false;
+            CloseHandle(GameReplayState->InputFile);
+        }
+    };
+
+    local_func auto
+    RecordInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState) -> void
+    {
+        DWORD BytesWritten;
+        if (WriteFile(GameReplayState->InputFile, Input, sizeof(*Input), &BytesWritten, 0))
+        {
+            if ((sizeof(*Input)) == BytesWritten)
+            {
+                //Success
+            }
+            else
+            {
+                Win32::Dbg::LogErr("Not all inputs were successfully recorded!");
             }
         }
-
-        local_func auto
-        PlayBackInput(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
+        else
         {
-            DWORD BytesRead{};
-            //We're only reading sizeof(Input) every frame. So we're only storing one Input struct worth of inforamtion each frame
-            if(ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0))
+            Win32::Dbg::LogErr("Unable to write input to file!");
+        }
+    };
+
+    local_func auto
+    InitInputPlayBack(Win32::Dbg::Game_Replay_State *GameReplayState)
+    {
+        GameReplayState->InputPlayBack = true;
+        GameReplayState->InputPlayBackFile = CreateFile("InputData.sgi", GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+
+        //Since Windows Read/Write functions only take DWORD(32 bit) sizes need to make sure we don't try and read/write anything larger than 4 GB
+        BGZ_ASSERT(GameReplayState->TotalGameMemorySize <= Gigabytes(4));
+
+        CopyMemory(GameReplayState->GameMemoryBlock, GameReplayState->GameStateDataForReplay, GameReplayState->TotalGameMemorySize);
+    }
+
+    local_func auto
+    EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
+    {
+        if (GameReplayState->InputPlayBack)
+        {
+            GameReplayState->InputPlayBack = false;
+            CloseHandle(GameReplayState->InputPlayBackFile);
+
+            for (int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
             {
-                //There are no more new inputs that need reading so loop back to beginning and read inputs again
-                if(BytesRead == 0)
+                for (int ButtonIndex = 0; ButtonIndex < ArrayCount(Input->Controllers[0].Buttons); ++ButtonIndex)
                 {
-                    Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
-                    Win32::Dbg::InitInputPlayBack(GameReplayState);
-                    ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0);
+                    Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
                 }
             }
         }
-    }//End Dbg namespace
-   
+    };
 
+    local_func auto
+    PlayBackInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState)
+    {
+        DWORD BytesRead{};
+        //We're only reading sizeof(Input) every frame. So we're only storing one Input struct worth of inforamtion each frame
+        if (ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0))
+        {
+            //There are no more new inputs that need reading so loop back to beginning and read inputs again
+            if (BytesRead == 0)
+            {
+                Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
+                Win32::Dbg::InitInputPlayBack(GameReplayState);
+                ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0);
+            }
+        }
+    };
+}   
+
+namespace Win32
+{
     local_func auto
     ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
     {
@@ -554,7 +553,7 @@ namespace Win32
 
         return (Result);
     }
-}//End Win32 namespace
+}
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
