@@ -26,7 +26,7 @@ pushd build
 REM Clear out pdb files so build directory doesn't get too huge and build app DLL
 del *.pdb > NUL 2> NUL
 cl /c ..\source\gamecode.cpp %CommonCompilerFlags% %IncludePaths% %PreProcessorSwitches%
-link gamecode.obj -dll -PDB:memo_%random%.pdb -export:GameUpdate %CommonLinkerFlags% %LibraryPaths%
+link gamecode.obj -dll -PDB:gamecode_%random%.pdb -export:GameUpdate %CommonLinkerFlags% %LibraryPaths%
 
 REM Build exe
 cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %IncludePaths% %PreProcessorSwitches% 

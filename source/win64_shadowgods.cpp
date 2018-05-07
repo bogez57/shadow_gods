@@ -11,6 +11,7 @@
     #define BGZ_LOGGING_ON false
 #endif
 
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <xinput.h>
 #include <io.h> 
@@ -499,6 +500,14 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             GameRunning = true;
             while (GameRunning)
             {
+                //Hot reloading
+                FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
+                if(CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
+                {
+                    Win32::Dbg::FreeGameCodeDLL(&GameCode);
+                    GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
+                }
+
                 Game_Input UpdatedInput = [](Game_Input Input) -> Game_Input
                 {
                     for (uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)

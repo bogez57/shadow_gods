@@ -31,7 +31,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveUp.Pressed && Keyboard->MoveUp.NumTransitionsPerFrame > 0)
     {
-        BGZ_CONSOLE("Ahhhhh ");
+        BGZ_CONSOLE("Keyboard pressed!");
     }
 
     if(GamePad->MoveUp.Pressed && GamePad->MoveUp.NumTransitionsPerFrame > 0)
