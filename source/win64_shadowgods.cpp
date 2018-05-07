@@ -25,233 +25,19 @@
 #include "win64_shadowgods.h"
 #include "shared.h"
 
-global_variable bool GameRunning{};
+global_variable bool GlobalGameRunning{};
 
 namespace Win32
 {
-    local_func auto 
-    LogErr(const char* ErrMessage) -> void
-    {
-        BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
-        BGZ_CONSOLE(ErrMessage);
-    };
-
-    local_func auto
-    ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
-    {
-        if (NewState->Pressed != IsDown)
-        {
-            NewState->Pressed = IsDown;
-            ++NewState->NumTransitionsPerFrame;
-        }
-    }
-
-    local_func auto 
-    ProcessPendingMessages(Game_Controller* Keyboard) -> void
-    {
-        MSG Message;
-        while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
-        {
-            switch(Message.message)
-            {
-                case WM_QUIT:
-                {
-                    GameRunning = false;
-                } break;
-            
-                case WM_SYSKEYDOWN:
-                case WM_SYSKEYUP:
-                case WM_KEYDOWN:
-                case WM_KEYUP:
-                {
-                    uint32 VKCode = (uint32)Message.wParam;
-
-                    //lParam is basically a bit field and part of that bit field has bits specifying 
-                    //if the certain VKcode is down now and if it was down previously. Just filtering
-                    //those out more explicitly here
-                    bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
-                    bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
-
-                    if (WasDown != IsDown) //Filter out key repeats as my current input scheme is already able to react to held down inputs properly
-                    {
-                        if (VKCode == 'W')
-                        {
-                            Win32::ProcessKeyboardMessage(&Keyboard->MoveUp, IsDown);
-                        }
-                        else if (VKCode == 'S')
-                        {
-                            Win32::ProcessKeyboardMessage(&Keyboard->MoveDown, IsDown);
-                        }
-                        else if (VKCode == 'A')
-                        {
-                            Win32::ProcessKeyboardMessage(&Keyboard->MoveLeft, IsDown);
-                        }
-                        else if (VKCode == 'D')
-                        {
-                            Win32::ProcessKeyboardMessage(&Keyboard->MoveRight, IsDown);
-                        }
-                        else if (VKCode == 'Q')
-                        {
-                        }
-                        else if (VKCode == 'E')
-                        {
-                        }
-                        else if (VKCode == VK_UP)
-                        {
-                        }
-                        else if (VKCode == VK_LEFT)
-                        {
-                        }
-                        else if (VKCode == VK_DOWN)
-                        {
-                        }
-                        else if (VKCode == VK_RIGHT)
-                        {
-                        }
-                        else if (VKCode == VK_ESCAPE)
-                        {
-                        }
-                        else if (VKCode == VK_SPACE)
-                        {
-                        }
-                    }
-                }
-
-                default:
-                {
-                    TranslateMessage(&Message);
-                    DispatchMessageA(&Message);
-                } break;
-            }
-        }
-    };
-
-    LRESULT CALLBACK
-    ProgramWindowCallback(HWND WindowHandle, UINT Message, WPARAM wParam, LPARAM lParam)
-    {
-        LRESULT Result{0};
-
-        HDC WindowContext = GetDC(WindowHandle);
-
-        switch(Message)
-        {
-            case WM_CREATE:
-            {
-                if(WindowContext)
-                {
-                    { //Init OpenGL
-                        //Pixel format you would like to have if possible
-                        PIXELFORMATDESCRIPTOR DesiredPixelFormat{};
-                        //Pixel format that windows actually gives you based on your desired pixel format and what the system
-                        //acutally has available (32 bit color capabilites? etc.)
-                        PIXELFORMATDESCRIPTOR SuggestedPixelFormat{};
-
-                        DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
-                        DesiredPixelFormat.nVersion = 1;
-                        DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
-                        DesiredPixelFormat.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
-                        DesiredPixelFormat.cColorBits = 32;
-                        DesiredPixelFormat.cAlphaBits = 8;
-                        DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
-
-                        int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowContext, &DesiredPixelFormat);
-                        DescribePixelFormat(WindowContext, SuggestedPixelFormatIndex, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
-
-                        if (SetPixelFormat(WindowContext, SuggestedPixelFormatIndex, &SuggestedPixelFormat))
-                        {
-                            HGLRC OpenGLRenderingContext = wglCreateContext(WindowContext);
-
-                            if (OpenGLRenderingContext)
-                            {
-                                if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
-                                {
-                                    //Success!
-                                }
-                                else
-                                {
-                                    ReleaseDC(WindowHandle, WindowContext);
-                                    Win32::LogErr("Unable to make opengl context the current context!");
-                                    InvalidCodePath;
-                                }
-                            }
-                            else
-                            {
-                                ReleaseDC(WindowHandle, WindowContext);
-                                Win32::LogErr("Unable to create an opengl rendering context!");
-                                InvalidCodePath;
-                            }
-                        }
-                        else
-                        {        
-                            ReleaseDC(WindowHandle, WindowContext);
-                            Win32::LogErr("Unable to set the pixel format for potential opengl window!");
-                            InvalidCodePath;
-                        }
-
-                        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
-                    }//Init OpenGL 
-                }
-                else
-                {
-                    Win32::LogErr("Unable to get window context from window!");
-                    InvalidCodePath;
-                }
-
-            }break;
-
-            case WM_DESTROY:
-            {
-                GameRunning = false;
-            }break;
-
-            case WM_CLOSE:
-            {
-                GameRunning = false;
-            }break;
-
-            case WM_ACTIVATEAPP:
-            {
-                OutputDebugStringA("WM_ACTIVATEAPP\n");
-            }break;
-
-            default:
-            {
-                Result = DefWindowProc(WindowHandle, Message, wParam, lParam);
-            }break;
-        }
-
-        return Result;
-    };
-
-    local_func auto
-    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State* GameButtonState, DWORD XInputButtonBit)
-    {
-        if(GameButtonState->Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
-        {
-            GameButtonState->Pressed = ((XInputButtonState & XInputButtonBit) == XInputButtonBit);
-            ++GameButtonState->NumTransitionsPerFrame;
-        }
-    }
-
-    local_func auto
-    NormalizeAnalogStickValue(SHORT Value, SHORT DeadZoneThreshold) -> float32
-    {
-        float32 Result = 0;
-
-        if (Value < -DeadZoneThreshold)
-        {
-            Result = (float32)((Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold));
-        }
-        else if (Value > DeadZoneThreshold)
-        {
-            Result = (float32)((Value - DeadZoneThreshold) / (32767.0f - DeadZoneThreshold));
-        }
-
-        return (Result);
-    }
-
     namespace Dbg
     {
+        local_func auto 
+        LogErr(const char* ErrMessage) -> void
+        {
+            BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
+            BGZ_CONSOLE(ErrMessage);
+        }
+
         local_func auto
         FreeFileMemory(void* FileMemory)
         {
@@ -277,7 +63,7 @@ namespace Win32
                 }
                 else
                 {
-                    Win32::LogErr("Unable to write to file!");
+                    Win32::Dbg::LogErr("Unable to write to file!");
                     InvalidCodePath;
                 }
 
@@ -285,7 +71,7 @@ namespace Win32
             }
             else
             {
-                Win32::LogErr("Unable to create file handle!");
+                Win32::Dbg::LogErr("Unable to create file handle!");
                 InvalidCodePath;
             }
 
@@ -324,19 +110,19 @@ namespace Win32
                     }
                     else
                     {
-                        Win32::LogErr("Unable to allocate memory for read file!");
+                        Win32::Dbg::LogErr("Unable to allocate memory for read file!");
                         InvalidCodePath;
                     }
                 }
                 else
                 {
-                    Win32::LogErr("Unable to get size of the file!");
+                    Win32::Dbg::LogErr("Unable to get size of the file!");
                     InvalidCodePath;
                 }
             }
             else
             {
-                Win32::LogErr("Unable to get file handle!");
+                Win32::Dbg::LogErr("Unable to get file handle!");
                 InvalidCodePath;
             }
 
@@ -443,8 +229,332 @@ namespace Win32
                 GameCode->UpdateFunc = nullptr;
             };
         };
+
+        local_func auto
+        InitInputRecording(Win32::Dbg::Game_Replay_State* GameReplayState)
+        {
+            GameReplayState->InputRecording = true;
+            GameReplayState->InputFile = CreateFileA("InputData.sgi", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+
+            CopyMemory(GameReplayState->GameStateDataForReplay, GameReplayState->GameMemoryBlock, GameReplayState->TotalGameMemorySize);
+        }
+
+        local_func auto
+        EndInputRecording(Win32::Dbg::Game_Replay_State* GameReplayState)
+        {
+            if(GameReplayState->InputRecording)
+            {
+                GameReplayState->InputRecording = false;
+                CloseHandle(GameReplayState->InputFile);
+            }
+        }
+
+        local_func auto
+        RecordInput(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
+        {
+            DWORD BytesWritten;
+            if(WriteFile(GameReplayState->InputFile, Input, sizeof(*Input), &BytesWritten, 0))
+            {
+                if((sizeof(*Input)) == BytesWritten)
+                {
+                    //Success
+                }
+                else
+                {
+                    Win32::Dbg::LogErr("Not all inputs were successfully recorded!");
+                }
+            }
+            else
+            {
+                Win32::Dbg::LogErr("Unable to write input to file!");
+            }
+        }
+
+        local_func auto
+        InitInputPlayBack(Win32::Dbg::Game_Replay_State* GameReplayState)
+        {
+            GameReplayState->InputPlayBack = true;
+            GameReplayState->InputPlayBackFile = CreateFile("InputData.sgi", GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+
+            //Since Windows Read/Write functions only take DWORD(32 bit) sizes need to make sure we don't try and read/write anything larger than 4 GB
+            BGZ_ASSERT(GameReplayState->TotalGameMemorySize <= Gigabytes(4));
+
+            CopyMemory(GameReplayState->GameMemoryBlock, GameReplayState->GameStateDataForReplay, GameReplayState->TotalGameMemorySize);
+        }
+
+        local_func auto
+        EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
+        {
+            if(GameReplayState->InputPlayBack)
+            {
+                GameReplayState->InputPlayBack = false;
+                CloseHandle(GameReplayState->InputPlayBackFile);
+
+                for(int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
+                {
+                    for(int ButtonIndex = 0; ButtonIndex < ArrayCount(Input->Controllers[0].Buttons); ++ButtonIndex)
+                    {
+                        Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
+                    }
+                }
+            }
+        }
+
+        local_func auto
+        PlayBackInput(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
+        {
+            DWORD BytesRead{};
+            //We're only reading sizeof(Input) every frame. So we're only storing one Input struct worth of inforamtion each frame
+            if(ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0))
+            {
+                //There are no more new inputs that need reading so loop back to beginning and read inputs again
+                if(BytesRead == 0)
+                {
+                    Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
+                    Win32::Dbg::InitInputPlayBack(GameReplayState);
+                    ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0);
+                }
+            }
+        }
+    }//End Dbg namespace
+   
+
+    local_func auto
+    ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
+    {
+        if (NewState->Pressed != IsDown)
+        {
+            NewState->Pressed = IsDown;
+            ++NewState->NumTransitionsPerFrame;
+        }
     }
-}
+
+    local_func auto 
+    ProcessPendingMessages(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
+    {
+        MSG Message;
+        while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
+        {
+            switch(Message.message)
+            {
+                case WM_QUIT:
+                {
+                    GlobalGameRunning = false;
+                } break;
+            
+                case WM_SYSKEYDOWN:
+                case WM_SYSKEYUP:
+                case WM_KEYDOWN:
+                case WM_KEYUP:
+                {
+                    uint32 VKCode = (uint32)Message.wParam;
+
+                    Game_Controller* Keyboard = &Input->Controllers[0];
+
+                    //lParam is basically a bit field and part of that bit field has bits specifying 
+                    //if the certain VKcode is down now and if it was down previously. Just filtering
+                    //those out more explicitly here
+                    bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
+                    bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
+
+                    if (WasDown != IsDown) //Filter out key repeats as my current input scheme is already able to react to held down inputs properly
+                    {
+                        if (VKCode == 'W')
+                        {
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveUp, IsDown);
+                        }
+                        else if (VKCode == 'S')
+                        {
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveDown, IsDown);
+                        }
+                        else if (VKCode == 'A')
+                        {
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveLeft, IsDown);
+                        }
+                        else if (VKCode == 'D')
+                        {
+                            Win32::ProcessKeyboardMessage(&Keyboard->MoveRight, IsDown);
+                        }
+                        else if (VKCode == 'Q')
+                        {
+                        }
+                        else if (VKCode == 'E')
+                        {
+                        }
+                        else if(VKCode == 'L')
+                        {
+                            if(!GameReplayState->InputRecording)
+                            {
+                                if(GameReplayState->InputPlayBack)
+                                {
+                                    Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
+                                }
+                                Win32::Dbg::InitInputRecording(GameReplayState);
+                            }
+                            else
+                            {
+                                Win32::Dbg::EndInputRecording(GameReplayState);
+                                Win32::Dbg::InitInputPlayBack(GameReplayState);
+                            }
+                        }
+                        else if(VKCode == 'M')
+                        {
+                            Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
+                        }
+                        else if (VKCode == VK_UP)
+                        {
+                        }
+                        else if (VKCode == VK_LEFT)
+                        {
+                        }
+                        else if (VKCode == VK_DOWN)
+                        {
+                        }
+                        else if (VKCode == VK_RIGHT)
+                        {
+                        }
+                        else if (VKCode == VK_ESCAPE)
+                        {
+                        }
+                        else if (VKCode == VK_SPACE)
+                        {
+                        }
+                    }
+                }
+
+                default:
+                {
+                    TranslateMessage(&Message);
+                    DispatchMessageA(&Message);
+                } break;
+            }
+        }
+    };
+
+    LRESULT CALLBACK
+    ProgramWindowCallback(HWND WindowHandle, UINT Message, WPARAM wParam, LPARAM lParam)
+    {
+        LRESULT Result{0};
+
+        HDC WindowContext = GetDC(WindowHandle);
+
+        switch(Message)
+        {
+            case WM_CREATE:
+            {
+                if(WindowContext)
+                {
+                    { //Init OpenGL
+                        //Pixel format you would like to have if possible
+                        PIXELFORMATDESCRIPTOR DesiredPixelFormat{};
+                        //Pixel format that windows actually gives you based on your desired pixel format and what the system
+                        //acutally has available (32 bit color capabilites? etc.)
+                        PIXELFORMATDESCRIPTOR SuggestedPixelFormat{};
+
+                        DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
+                        DesiredPixelFormat.nVersion = 1;
+                        DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
+                        DesiredPixelFormat.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+                        DesiredPixelFormat.cColorBits = 32;
+                        DesiredPixelFormat.cAlphaBits = 8;
+                        DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
+
+                        int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowContext, &DesiredPixelFormat);
+                        DescribePixelFormat(WindowContext, SuggestedPixelFormatIndex, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
+
+                        if (SetPixelFormat(WindowContext, SuggestedPixelFormatIndex, &SuggestedPixelFormat))
+                        {
+                            HGLRC OpenGLRenderingContext = wglCreateContext(WindowContext);
+
+                            if (OpenGLRenderingContext)
+                            {
+                                if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
+                                {
+                                    //Success!
+                                }
+                                else
+                                {
+                                    ReleaseDC(WindowHandle, WindowContext);
+                                    Win32::Dbg::LogErr("Unable to make opengl context the current context!");
+                                    InvalidCodePath;
+                                }
+                            }
+                            else
+                            {
+                                ReleaseDC(WindowHandle, WindowContext);
+                                Win32::Dbg::LogErr("Unable to create an opengl rendering context!");
+                                InvalidCodePath;
+                            }
+                        }
+                        else
+                        {        
+                            ReleaseDC(WindowHandle, WindowContext);
+                            Win32::Dbg::LogErr("Unable to set the pixel format for potential opengl window!");
+                            InvalidCodePath;
+                        }
+
+                        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+                    }//Init OpenGL 
+                }
+                else
+                {
+                    Win32::Dbg::LogErr("Unable to get window context from window!");
+                    InvalidCodePath;
+                }
+
+            }break;
+
+            case WM_DESTROY:
+            {
+                GlobalGameRunning = false;
+            }break;
+
+            case WM_CLOSE:
+            {
+                GlobalGameRunning = false;
+            }break;
+
+            case WM_ACTIVATEAPP:
+            {
+                OutputDebugStringA("WM_ACTIVATEAPP\n");
+            }break;
+
+            default:
+            {
+                Result = DefWindowProc(WindowHandle, Message, wParam, lParam);
+            }break;
+        }
+
+        return Result;
+    };
+
+    local_func auto
+    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State* GameButtonState, DWORD XInputButtonBit)
+    {
+        if(GameButtonState->Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
+        {
+            GameButtonState->Pressed = ((XInputButtonState & XInputButtonBit) == XInputButtonBit);
+            ++GameButtonState->NumTransitionsPerFrame;
+        }
+    }
+
+    local_func auto
+    NormalizeAnalogStickValue(SHORT Value, SHORT DeadZoneThreshold) -> float32
+    {
+        float32 Result = 0;
+
+        if (Value < -DeadZoneThreshold)
+        {
+            Result = (float32)((Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold));
+        }
+        else if (Value > DeadZoneThreshold)
+        {
+            Result = (float32)((Value - DeadZoneThreshold) / (32767.0f - DeadZoneThreshold));
+        }
+
+        return (Result);
+    }
+}//End Win32 namespace
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
@@ -477,19 +587,32 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             void *BaseAddress{(void *)0};
 #endif
 
+            Win32::Dbg::Game_Replay_State GameReplayState{};
+            Game_Input Input{};
+
             Game_Memory GameMemory{};
             GameMemory.PermanentStorageSize = Megabytes(64);
             GameMemory.TemporaryStorageSize = Gigabytes(1);
             uint64 TotalStorageSize = GameMemory.PermanentStorageSize + GameMemory.TemporaryStorageSize;
+
             GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, TotalStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.TemporaryStorageSize);
 
-            Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
+            GameReplayState.GameMemoryBlock = GameMemory.PermanentStorage;
+            GameReplayState.TotalGameMemorySize = TotalStorageSize;
+
+            GameReplayState.GameStateFile = CreateFile("GameStateReplayData.sgi", GENERIC_READ|GENERIC_WRITE, 0, 0, 
+                                                        CREATE_ALWAYS, 0, 0);
+            GameReplayState.GameStateFile = CreateFileMapping(GameReplayState.GameStateFile, 0, PAGE_READWRITE, 0, 
+                                                              GameReplayState.TotalGameMemorySize & 0xFFFFFFFF, 0);
+            GameReplayState.GameStateDataForReplay = MapViewOfFile(GameReplayState.GameStateFile, FILE_MAP_ALL_ACCESS, 0, 0,
+                                                                   GameReplayState.TotalGameMemorySize);
+
+            Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
 
             Game_Sound_Output_Buffer SoundBuffer{};
             Game_Render_Cmd_Buffer RenderCmdBuffer{};
             Platform_Services PlatformServices{};
-            Game_Input OldInput{};
 
             {//Init game services
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
@@ -497,8 +620,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
             }
 
-            GameRunning = true;
-            while (GameRunning)
+            GlobalGameRunning = true;
+            while (GlobalGameRunning)
             {
                 //Hot reloading
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
@@ -508,16 +631,17 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
                 }
 
-                Game_Input UpdatedInput = [](Game_Input Input) -> Game_Input
+                auto [UpdatedInput, UpdatedGameReplayState] = [](Game_Input Input, Win32::Dbg::Game_Replay_State GameReplayState) -> auto
                 {
+                    struct Input_Result { Game_Input NewInput; Win32::Dbg::Game_Replay_State NewReplayState; };
+                    Input_Result Result{};
+
                     for (uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
                     {
                         ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                     }
 
-                    Game_Controller* Keyboard = &Input.Controllers[0];
-
-                    Win32::ProcessPendingMessages(Keyboard);
+                    Win32::ProcessPendingMessages(&Input, &GameReplayState);
 
                     //TODO: Should we poll this more frequently?
                     for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
@@ -560,12 +684,26 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                         }
                     }
 
-                    return Input;
-                }(OldInput);
+                    Result.NewInput = Input;
+                    Result.NewReplayState = GameReplayState;
+
+                    return Result;
+                }(Input, GameReplayState);
+
+                if(UpdatedGameReplayState.InputRecording)
+                {
+                    Win32::Dbg::RecordInput(&UpdatedInput, &UpdatedGameReplayState);
+                }
+
+                if(UpdatedGameReplayState.InputPlayBack)
+                {
+                    Win32::Dbg::PlayBackInput(&Input, &UpdatedGameReplayState);
+                }
 
                 GameCode.UpdateFunc(&GameMemory, PlatformServices, &RenderCmdBuffer, &SoundBuffer, &UpdatedInput);
 
-                OldInput = UpdatedInput;
+                Input = UpdatedInput;
+                GameReplayState = UpdatedGameReplayState;
 
                 glViewport(0, 0, WindowWidth, WindowHeight);
                 glClear(GL_COLOR_BUFFER_BIT);
@@ -577,13 +715,13 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         }
         else
         {
-            Win32::LogErr("Window could not be created!");
+            Win32::Dbg::LogErr("Window could not be created!");
             InvalidCodePath;
         }
     }
     else
     {
-        Win32::LogErr("Window properties could not be registered!");
+        Win32::Dbg::LogErr("Window properties could not be registered!");
         InvalidCodePath;
     }
 
