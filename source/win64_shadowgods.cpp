@@ -16,6 +16,7 @@
 #include <xinput.h>
 #include <io.h> 
 #include <fcntl.h> 
+#include <GL/glew.h>
 #include <gl/gl.h>
 #include <boagz/error_handling.h>
 
@@ -469,7 +470,12 @@ namespace Win32
                             {
                                 if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
                                 {
-                                    //Success!
+                                    //Success! We have a current openGL context. Now setup glew
+                                    if(glewInit() != GLEW_OK)
+                                    {
+                                        ReleaseDC(WindowHandle, WindowContext);
+                                        InvalidCodePath;
+                                    }
                                 }
                                 else
                                 {
@@ -706,6 +712,23 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 glViewport(0, 0, WindowWidth, WindowHeight);
                 glClear(GL_COLOR_BUFFER_BIT);
+
+                GLfloat verts[] = 
+                {
+                    +0.0f, +1.0f,
+                    -1.0f, -1.0f,
+                    +1.0f, -1.0f
+                };
+
+                GLuint buffID;
+                glGenBuffers(1, &buffID);
+                glBindBuffer(GL_ARRAY_BUFFER, buffID);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+
                 SwapBuffers(WindowContext);
             };
 

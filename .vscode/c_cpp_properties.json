@@ -54,7 +54,7 @@
                 "${workspaceRoot}",
                 "${workspaceRoot}/third_party/glfw3.2.1/include",
                 "${workspaceRoot}/third_party/imgui/include",
-                "${workspaceRoot}/third_party/glew/include"
+                "${workspaceRoot}/third_party/glew-2.1.0/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -72,7 +72,7 @@
                     "${workspaceRoot}",
                     "${workspaceRoot}/third_party/glfw3.2.1/include",
                     "${workspaceRoot}/third_party/imgui/include",
-                    "${workspaceRoot}/third_party/glew/include"
+                    "${workspaceRoot}/third_party/glew-2.1.0/include"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -81,5 +81,5 @@
             "cppStandard": "c++17"
         }
     ],
-    "version": 3
+    "version": 4
 }

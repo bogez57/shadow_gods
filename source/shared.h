@@ -78,7 +78,7 @@ struct Game_Sound_Output_Buffer
 
 struct Game_Render_Cmd_Buffer
 {
-
+    
 };
 
 struct Read_File_Result {void* FileContents{nullptr}; uint32 FileSize{};};
