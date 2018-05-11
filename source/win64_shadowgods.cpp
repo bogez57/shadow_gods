@@ -569,7 +569,7 @@ namespace Win32
 namespace GL
 {
     local_func auto
-    DrawQuad(vec2 BottomLeft, vec2 BottomRight, vec2 TopRight, vec2 TopLeft) -> void
+    DrawQuad(vec2 BottomLeft, vec2 BottomRight, vec2 TopRight, vec2 TopLeft, vec3 Color) -> void
     {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
@@ -577,7 +577,7 @@ namespace GL
         glLoadIdentity();
         glOrtho(0.0, (float32)WindowWidth, 0.0, (float32)WindowHeight, -1.0, 1.0);
 
-        glColor3f(1.0f, 0.0f, 0.0f);
+        glColor3f(Color.R, Color.G, Color.B);
         glBegin(GL_QUADS);
         glVertex2f(BottomLeft.X, BottomLeft.Y);
         glVertex2f(BottomRight.X, BottomRight.Y);

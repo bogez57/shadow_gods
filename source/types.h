@@ -93,7 +93,7 @@ operator+(vec2 A, vec2 B)
     return(Result);
 }
 
-inline  vec2&
+inline vec2&
 operator+=(vec2& A, vec2 B)
 {
     A = A + B;
@@ -111,3 +111,29 @@ operator-(vec2 A, vec2 B)
 
     return(Result);
 }
+
+struct vec3
+{
+    vec3() = default;
+    vec3(float32 X, float32 Y, float32 Z);
+
+    union
+    {
+        float32 Elem[3];
+        struct
+        {
+            float32 X, Y, Z;
+        };
+
+        struct
+        {
+            float32 R, G, B;
+        };
+    };
+};
+
+vec3::vec3(float32 X, float32 Y, float32 Z) :
+    X(X),
+    Y(Y),
+    Z(Z)
+{}

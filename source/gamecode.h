@@ -8,4 +8,5 @@ struct Game_State
     vec2 BR;
     vec2 TR;
     vec2 TL;
+    vec3 Color;
 };

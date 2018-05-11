@@ -30,6 +30,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->BR = {500.0f, 100.0f};
         GameState->TR = {500.0f, 500.0f};
         GameState->TL = {100.0f, 200.0f};
+        GameState->Color = {0.4f, 0.1f, 0.3f};
     }
 
     RenderCmds.ClearScreen();
@@ -39,5 +40,5 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->TR.X += 1;
     }
 
-    RenderCmds.DrawQuad(GameState->BL, GameState->BR, GameState->TR, GameState->TL);
+    RenderCmds.DrawQuad(GameState->BL, GameState->BR, GameState->TR, GameState->TL, GameState->Color);
 }
