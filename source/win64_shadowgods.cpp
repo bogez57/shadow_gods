@@ -26,6 +26,9 @@
 #include "win64_shadowgods.h"
 #include "shared.h"
 
+global_variable uint32 WindowWidth{1280};
+global_variable uint32 WindowHeight{720};
+
 global_variable bool GlobalGameRunning{};
 
 namespace Win32::Dbg
@@ -470,6 +473,8 @@ namespace Win32
                             {
                                 if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
                                 {
+                                    glViewport(0, 0, WindowWidth, WindowHeight);
+
                                     //Success! We have a current openGL context. Now setup glew
                                     if(glewInit() != GLEW_OK)
                                     {
@@ -561,6 +566,33 @@ namespace Win32
     }
 }
 
+namespace GL
+{
+    local_func auto
+    DrawQuad(vec2 BottomLeft, vec2 BottomRight, vec2 TopRight, vec2 TopLeft) -> void
+    {
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0.0, (float32)WindowWidth, 0.0, (float32)WindowHeight, -1.0, 1.0);
+
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glBegin(GL_QUADS);
+        glVertex2f(BottomLeft.X, BottomLeft.Y);
+        glVertex2f(BottomRight.X, BottomRight.Y);
+        glVertex2f(TopRight.X, TopRight.Y);
+        glVertex2f(TopLeft.X, TopLeft.Y);
+        glEnd();
+    }
+
+    local_func auto
+    ClearScreen()
+    {
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+}
+
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
     Win32::Dbg::UseConsole();
@@ -575,9 +607,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
     if(RegisterClass(&WindowProperties))
     {
-        int WindowWidth{CW_USEDEFAULT};
-        int WindowHeight{CW_USEDEFAULT};
-
         HWND Window = CreateWindowEx(0, WindowProperties.lpszClassName, "Memo", WS_OVERLAPPEDWINDOW|WS_VISIBLE, 
                                      CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth, WindowHeight, 0, 0, CurrentProgramInstance, 0);
 
@@ -616,13 +645,16 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
 
             Game_Sound_Output_Buffer SoundBuffer{};
-            Game_Render_Cmd_Buffer RenderCmdBuffer{};
+            Game_Render_Cmds RenderCmds{};
             Platform_Services PlatformServices{};
 
             {//Init game services
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
                 PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
+
+                RenderCmds.DrawQuad = &GL::DrawQuad;
+                RenderCmds.ClearScreen = &GL::ClearScreen;
             }
 
             GlobalGameRunning = true;
@@ -705,29 +737,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput(&Input, &UpdatedGameReplayState);
                 }
 
-                GameCode.UpdateFunc(&GameMemory, PlatformServices, &RenderCmdBuffer, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedGameReplayState;
-
-                glViewport(0, 0, WindowWidth, WindowHeight);
-                glClear(GL_COLOR_BUFFER_BIT);
-
-                GLfloat verts[] = 
-                {
-                    +0.0f, +1.0f,
-                    -1.0f, -1.0f,
-                    +1.0f, -1.0f
-                };
-
-                GLuint buffID;
-                glGenBuffers(1, &buffID);
-                glBindBuffer(GL_ARRAY_BUFFER, buffID);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-                glEnableVertexAttribArray(0);
-                glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-                glDrawArrays(GL_TRIANGLES, 0, 3);
 
                 SwapBuffers(WindowContext);
             };
