@@ -15,12 +15,12 @@
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
-                    Game_Sound_Output_Buffer* SoundOutput, Game_Input* GameInput)
+                    Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)
 {
     Game_State* GameState = (Game_State*)GameMemory->PermanentStorage;
 
-    Game_Controller* Keyboard = &GameInput->Controllers[0];
-    Game_Controller* GamePad = &GameInput->Controllers[1];
+    const Game_Controller* Keyboard = &GameInput->Controllers[0];
+    const Game_Controller* GamePad = &GameInput->Controllers[1];
 
     if(!GameMemory->IsInitialized)
     {

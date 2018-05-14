@@ -235,88 +235,31 @@ namespace Win32::Dbg
     local_func auto
     InitInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState)
     {
-        GameReplayState->InputRecording = true;
-        GameReplayState->InputFile = CreateFileA("InputData.sgi", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
-
-        CopyMemory(GameReplayState->GameStateDataForReplay, GameReplayState->GameMemoryBlock, GameReplayState->TotalGameMemorySize);
     };
 
     local_func auto
     EndInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState)
     {
-        if (GameReplayState->InputRecording)
-        {
-            GameReplayState->InputRecording = false;
-            CloseHandle(GameReplayState->InputFile);
-        }
     };
 
     local_func auto
     RecordInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState) -> void
     {
-        DWORD BytesWritten;
-        if (WriteFile(GameReplayState->InputFile, Input, sizeof(*Input), &BytesWritten, 0))
-        {
-            if ((sizeof(*Input)) == BytesWritten)
-            {
-                //Success
-            }
-            else
-            {
-                Win32::Dbg::LogErr("Not all inputs were successfully recorded!");
-            }
-        }
-        else
-        {
-            Win32::Dbg::LogErr("Unable to write input to file!");
-        }
     };
 
     local_func auto
     InitInputPlayBack(Win32::Dbg::Game_Replay_State *GameReplayState)
     {
-        GameReplayState->InputPlayBack = true;
-        GameReplayState->InputPlayBackFile = CreateFile("InputData.sgi", GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-
-        //Since Windows Read/Write functions only take DWORD(32 bit) sizes need to make sure we don't try and read/write anything larger than 4 GB
-        BGZ_ASSERT(GameReplayState->TotalGameMemorySize <= Gigabytes(4));
-
-        CopyMemory(GameReplayState->GameMemoryBlock, GameReplayState->GameStateDataForReplay, GameReplayState->TotalGameMemorySize);
     }
 
     local_func auto
     EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
     {
-        if (GameReplayState->InputPlayBack)
-        {
-            GameReplayState->InputPlayBack = false;
-            CloseHandle(GameReplayState->InputPlayBackFile);
-
-            for (int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
-            {
-                for (int ButtonIndex = 0; ButtonIndex < ArrayCount(Input->Controllers[0].Buttons); ++ButtonIndex)
-                {
-                    Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
-                }
-            }
-        }
     };
 
     local_func auto
     PlayBackInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState)
     {
-        DWORD BytesRead{};
-        //We're only reading sizeof(Input) every frame. So we're only storing one Input struct worth of inforamtion each frame
-        if (ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0))
-        {
-            //There are no more new inputs that need reading so loop back to beginning and read inputs again
-            if (BytesRead == 0)
-            {
-                Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
-                Win32::Dbg::InitInputPlayBack(GameReplayState);
-                ReadFile(GameReplayState->InputPlayBackFile, Input, sizeof(*Input), &BytesRead, 0);
-            }
-        }
     };
 }   
 
@@ -333,7 +276,7 @@ namespace Win32
     }
 
     local_func auto 
-    ProcessPendingMessages(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
+    ProcessPendingMessages(Game_Input* Input) -> void
     {
         MSG Message;
         while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -386,23 +329,9 @@ namespace Win32
                         }
                         else if(VKCode == 'L')
                         {
-                            if(!GameReplayState->InputRecording)
-                            {
-                                if(GameReplayState->InputPlayBack)
-                                {
-                                    Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
-                                }
-                                Win32::Dbg::InitInputRecording(GameReplayState);
-                            }
-                            else
-                            {
-                                Win32::Dbg::EndInputRecording(GameReplayState);
-                                Win32::Dbg::InitInputPlayBack(GameReplayState);
-                            }
                         }
                         else if(VKCode == 'M')
                         {
-                            Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
                         }
                         else if (VKCode == VK_UP)
                         {
@@ -632,16 +561,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, TotalStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.TemporaryStorageSize);
 
-            GameReplayState.GameMemoryBlock = GameMemory.PermanentStorage;
-            GameReplayState.TotalGameMemorySize = TotalStorageSize;
-
-            GameReplayState.GameStateFile = CreateFile("GameStateReplayData.sgi", GENERIC_READ|GENERIC_WRITE, 0, 0, 
-                                                        CREATE_ALWAYS, 0, 0);
-            GameReplayState.GameStateFile = CreateFileMapping(GameReplayState.GameStateFile, 0, PAGE_READWRITE, 0, 
-                                                              GameReplayState.TotalGameMemorySize & 0xFFFFFFFF, 0);
-            GameReplayState.GameStateDataForReplay = MapViewOfFile(GameReplayState.GameStateFile, FILE_MAP_ALL_ACCESS, 0, 0,
-                                                                   GameReplayState.TotalGameMemorySize);
-
             Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
 
             Game_Sound_Output_Buffer SoundBuffer{};
@@ -668,9 +587,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
                 }
 
-                auto [UpdatedInput, UpdatedGameReplayState] = [](Game_Input Input, Win32::Dbg::Game_Replay_State GameReplayState) -> auto
+                auto [UpdatedInput] = [](Game_Input Input) -> auto
                 {
-                    struct Input_Result { Game_Input NewInput; Win32::Dbg::Game_Replay_State NewReplayState; };
+                    struct Input_Result { Game_Input NewInput; };
                     Input_Result Result{};
 
                     for (uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
@@ -678,7 +597,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                         ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                     }
 
-                    Win32::ProcessPendingMessages(&Input, &GameReplayState);
+                    Win32::ProcessPendingMessages(&Input);
 
                     //TODO: Should we poll this more frequently?
                     for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
@@ -722,25 +641,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     }
 
                     Result.NewInput = Input;
-                    Result.NewReplayState = GameReplayState;
-
                     return Result;
-                }(Input, GameReplayState);
-
-                if(UpdatedGameReplayState.InputRecording)
-                {
-                    Win32::Dbg::RecordInput(&UpdatedInput, &UpdatedGameReplayState);
-                }
-
-                if(UpdatedGameReplayState.InputPlayBack)
-                {
-                    Win32::Dbg::PlayBackInput(&Input, &UpdatedGameReplayState);
-                }
+                }(Input);
 
                 GameCode.UpdateFunc(&GameMemory, PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
-                GameReplayState = UpdatedGameReplayState;
 
                 SwapBuffers(WindowContext);
             };
