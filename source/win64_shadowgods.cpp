@@ -351,6 +351,7 @@ namespace Win32
                                 if (!GameReplayState->InputPlayBack)
                                 {
                                     GameReplayState->InputPlayBack = true;
+                                    GameReplayState->InputCount = 0;
                                 }
                                 else
                                 {
@@ -624,7 +625,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     struct Input_Result { Game_Input NewInput; Win32::Dbg::Game_Replay_State NewGameReplayState;};
                     Input_Result Result{};
 
-                    for (uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
+                    for (uint ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     {
                         ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                     }
@@ -632,14 +633,14 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::ProcessPendingMessages(&Input, &GameReplayState);
 
                     //TODO: Should we poll this more frequently?
-                    for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
+                    for (DWORD ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     {
                         Game_Controller *MyGamePad = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
 
                         XINPUT_STATE ControllerState;
                         if (XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
                         {
-                            if (ControllerIndex == Input.MaxControllerCount) //Since index 0 is reserved for keyboard
+                            if (ControllerIndex == ArrayCount(Input.Controllers)) //Since index 0 is reserved for keyboard
                                 break;
 
                             //This controller is plugged in
@@ -683,17 +684,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     UpdatedReplayState.RecordedInput[UpdatedReplayState.InputCount] = UpdatedInput;
                     ++UpdatedReplayState.InputCount;
                     ++UpdatedReplayState.MaxInputStructsRecorded;
-                    BGZ_CONSOLE("%i\n", UpdatedReplayState.MaxInputStructsRecorded);
                 }
 
                 if(UpdatedReplayState.InputPlayBack)
                 {
-                    if (!UpdatedReplayState.InitPlayBack)
-                    {
-                        UpdatedReplayState.InputCount = 0;
-                        UpdatedReplayState.InitPlayBack = true;
-                    }
-
                     if (UpdatedReplayState.InputCount < UpdatedReplayState.MaxInputStructsRecorded)
                     {
                         UpdatedInput = UpdatedReplayState.RecordedInput[UpdatedReplayState.InputCount];

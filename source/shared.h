@@ -67,7 +67,6 @@ auto ClearTransitionCounts(Game_Controller* Controller) -> void
 
 struct Game_Input
 {
-    uint MaxControllerCount{5};
     Game_Controller Controllers[5];
 };
 

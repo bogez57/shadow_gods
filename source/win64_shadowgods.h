@@ -22,7 +22,6 @@ namespace Win32::Dbg
         Game_Input* RecordedInput{nullptr};
         uint32 InputCount{};
         uint32 MaxInputStructsRecorded{};
-        bool InitPlayBack{false};
 
         bool InputRecording{false};
         bool InputPlayBack{false};
