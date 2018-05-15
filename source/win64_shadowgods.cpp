@@ -583,22 +583,22 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             void *BaseAddress{(void *)0};
 #endif
             Game_Memory GameMemory{};
-            GameMemory.PermanentStorageSize = Megabytes(64);
-            GameMemory.TemporaryStorageSize = Gigabytes(1);
-            uint64 TotalStorageSize = GameMemory.PermanentStorageSize + GameMemory.TemporaryStorageSize;
-
-            GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, TotalStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-            GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.TemporaryStorageSize);
-
-            Win32::Dbg::Game_Replay_State GameReplayState{};
-            GameReplayState.RecordedInput = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input)*Win32::Dbg::MaxInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             Game_Input Input{};
-
-            Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
-
             Game_Sound_Output_Buffer SoundBuffer{};
             Game_Render_Cmds RenderCmds{};
             Platform_Services PlatformServices{};
+            Win32::Dbg::Game_Replay_State GameReplayState{};
+            Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
+
+            GameReplayState.RecordedInput = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input)*Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+            {//Init Game Memory
+                GameMemory.SizeOfTemporaryStorage = Gigabytes(1);
+                GameMemory.SizeOfPermanentStorage = Megabytes(64);
+                GameMemory.TotalSize = GameMemory.SizeOfPermanentStorage + GameMemory.SizeOfTemporaryStorage;
+                GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+                GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.SizeOfTemporaryStorage);
+            }
 
             {//Init game services
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;

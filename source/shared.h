@@ -7,10 +7,11 @@ struct Game_Memory
 {
     bool IsInitialized{false};
 
-    uint32 PermanentStorageSize{};
+    uint32 SizeOfPermanentStorage{};
     void* PermanentStorage{nullptr};
-    uint64 TemporaryStorageSize{};
+    uint64 SizeOfTemporaryStorage{};
     void* TemporaryStorage{nullptr};
+    uint64 TotalSize{};
 };
 
 struct Button_State
