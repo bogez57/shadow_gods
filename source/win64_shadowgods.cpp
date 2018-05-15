@@ -16,6 +16,7 @@
 #include <xinput.h>
 #include <io.h> 
 #include <fcntl.h> 
+#include <stdio.h>
 #include <GL/glew.h>
 #include <gl/gl.h>
 #include <boagz/error_handling.h>
@@ -276,7 +277,7 @@ namespace Win32
     }
 
     local_func auto 
-    ProcessPendingMessages(Game_Input* Input) -> void
+    ProcessPendingMessages(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
     {
         MSG Message;
         while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -327,11 +328,42 @@ namespace Win32
                         else if (VKCode == 'E')
                         {
                         }
+                        else if (VKCode == 'R')
+                        {
+                            if (IsDown)
+                            {
+                                if (!GameReplayState->InputRecording)
+                                {
+                                    GameReplayState->InputRecording = true;
+                                    GameReplayState->MaxInputStructsRecorded = 0;
+                                    GameReplayState->InputCount = 0;
+                                }
+                                else
+                                {
+                                    GameReplayState->InputRecording = false;
+                                }
+                            }
+                        }
                         else if(VKCode == 'L')
                         {
-                        }
-                        else if(VKCode == 'M')
-                        {
+                            if (IsDown)
+                            {
+                                if (!GameReplayState->InputPlayBack)
+                                {
+                                    GameReplayState->InputPlayBack = true;
+                                }
+                                else
+                                {
+                                    GameReplayState->InputPlayBack = false;
+                                    for (uint32 ControllerIndex{0}; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
+                                    {
+                                        for (uint32 ButtonIndex{0}; ButtonIndex < ArrayCount(Input->Controllers[ControllerIndex].Buttons); ++ButtonIndex)
+                                        {
+                                            Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else if (VKCode == VK_UP)
                         {
@@ -549,10 +581,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 #else
             void *BaseAddress{(void *)0};
 #endif
-
-            Win32::Dbg::Game_Replay_State GameReplayState{};
-            Game_Input Input{};
-
             Game_Memory GameMemory{};
             GameMemory.PermanentStorageSize = Megabytes(64);
             GameMemory.TemporaryStorageSize = Gigabytes(1);
@@ -560,6 +588,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, TotalStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.TemporaryStorageSize);
+
+            Win32::Dbg::Game_Replay_State GameReplayState{};
+            GameReplayState.RecordedInput = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input)*Win32::Dbg::MaxInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            Game_Input Input{};
 
             Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
 
@@ -587,9 +619,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
                 }
 
-                auto [UpdatedInput] = [](Game_Input Input) -> auto
+                auto [UpdatedInput, UpdatedReplayState] = [](Game_Input Input, Win32::Dbg::Game_Replay_State GameReplayState) -> auto
                 {
-                    struct Input_Result { Game_Input NewInput; };
+                    struct Input_Result { Game_Input NewInput; Win32::Dbg::Game_Replay_State NewGameReplayState;};
                     Input_Result Result{};
 
                     for (uint ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
@@ -597,7 +629,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                         ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                     }
 
-                    Win32::ProcessPendingMessages(&Input);
+                    Win32::ProcessPendingMessages(&Input, &GameReplayState);
 
                     //TODO: Should we poll this more frequently?
                     for (DWORD ControllerIndex = 0; ControllerIndex < Input.MaxControllerCount; ++ControllerIndex)
@@ -641,12 +673,42 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     }
 
                     Result.NewInput = Input;
+                    Result.NewGameReplayState = GameReplayState;
+
                     return Result;
-                }(Input);
+                }(Input, GameReplayState);
+
+                if(UpdatedReplayState.InputRecording)
+                {
+                    UpdatedReplayState.RecordedInput[UpdatedReplayState.InputCount] = UpdatedInput;
+                    ++UpdatedReplayState.InputCount;
+                    ++UpdatedReplayState.MaxInputStructsRecorded;
+                    BGZ_CONSOLE("%i\n", UpdatedReplayState.MaxInputStructsRecorded);
+                }
+
+                if(UpdatedReplayState.InputPlayBack)
+                {
+                    if (!UpdatedReplayState.InitPlayBack)
+                    {
+                        UpdatedReplayState.InputCount = 0;
+                        UpdatedReplayState.InitPlayBack = true;
+                    }
+
+                    if (UpdatedReplayState.InputCount < UpdatedReplayState.MaxInputStructsRecorded)
+                    {
+                        UpdatedInput = UpdatedReplayState.RecordedInput[UpdatedReplayState.InputCount];
+                        ++UpdatedReplayState.InputCount;
+                    }
+                    else
+                    {
+                        UpdatedReplayState.InputCount = 0;
+                    }
+                }
 
                 GameCode.UpdateFunc(&GameMemory, PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
+                GameReplayState = UpdatedReplayState; 
 
                 SwapBuffers(WindowContext);
             };
