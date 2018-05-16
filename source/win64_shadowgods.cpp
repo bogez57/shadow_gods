@@ -236,32 +236,59 @@ namespace Win32::Dbg
     local_func auto
     InitInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState)
     {
+        GameReplayState->InputRecording = true;
+        GameReplayState->MaxInputStructsRecorded = 0;
+        GameReplayState->InputCount = 0;
+        memcpy(GameReplayState->OriginalRecordedGameState, GameMemory.PermanentStorage, GameMemory.TotalSize);
     };
 
     local_func auto
-    EndInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState)
-    {
-    };
+    EndInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState){};
 
     local_func auto
-    RecordInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState) -> void
+    RecordInput(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
     {
+        GameReplayState->RecordedInputs[GameReplayState->InputCount] = *Input;
+        ++GameReplayState->InputCount;
+        ++GameReplayState->MaxInputStructsRecorded;
     };
 
     local_func auto
     InitInputPlayBack(Win32::Dbg::Game_Replay_State *GameReplayState)
     {
+        GameReplayState->InputPlayBack = true;
+        GameReplayState->InputCount = 0;
+        //Set game state back to when it was first recorded for proper looping playback
+        memcpy(GameMemory.PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory.TotalSize);
     }
 
     local_func auto
     EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
     {
+        GameReplayState->InputPlayBack = false;
+        for (uint32 ControllerIndex{0}; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
+        {
+            for (uint32 ButtonIndex{0}; ButtonIndex < ArrayCount(Input->Controllers[ControllerIndex].Buttons); ++ButtonIndex)
+            {
+                Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
+            }
+        }
     };
 
     local_func auto
     PlayBackInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState)
     {
-    };
+        if (GameReplayState->InputCount < GameReplayState->MaxInputStructsRecorded)
+        {
+            *Input = GameReplayState->RecordedInputs[GameReplayState->InputCount];
+            ++GameReplayState->InputCount;
+        }
+        else
+        {
+            GameReplayState->InputCount = 0;
+            memcpy(GameMemory.PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory.TotalSize);
+        }
+    }
 }   
 
 namespace Win32
@@ -334,10 +361,7 @@ namespace Win32
                             {
                                 if (!GameReplayState->InputRecording)
                                 {
-                                    GameReplayState->InputRecording = true;
-                                    GameReplayState->MaxInputStructsRecorded = 0;
-                                    GameReplayState->InputCount = 0;
-                                    memcpy(GameReplayState->GameState, GameMemory.PermanentStorage, GameMemory.TotalSize);
+                                    InitInputRecording(GameReplayState);
                                 }
                                 else
                                 {
@@ -351,22 +375,11 @@ namespace Win32
                             {
                                 if (!GameReplayState->InputPlayBack)
                                 {
-                                    GameReplayState->InputPlayBack = true;
-                                    GameReplayState->InputCount = 0;
-
-                                    //Set game state back to when it was first recorded for proper looping playback
-                                    memcpy(GameMemory.PermanentStorage, GameReplayState->GameState, GameMemory.TotalSize);
+                                    Win32::Dbg::InitInputPlayBack(GameReplayState);
                                 }
                                 else
                                 {
-                                    GameReplayState->InputPlayBack = false;
-                                    for (uint32 ControllerIndex{0}; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
-                                    {
-                                        for (uint32 ButtonIndex{0}; ButtonIndex < ArrayCount(Input->Controllers[ControllerIndex].Buttons); ++ButtonIndex)
-                                        {
-                                            Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
-                                        }
-                                    }
+                                    Win32::Dbg::EndInputPlayBack(Input, GameReplayState);
                                 }
                             }
                         }
@@ -602,7 +615,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             {//Init input recording and replay services
                 GameReplayState.RecordedInputs = (Game_Input *)VirtualAlloc(0, (sizeof(Game_Input) * Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-                GameReplayState.GameState = VirtualAlloc(0, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+                GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             }
 
             { //Init game services
@@ -686,23 +699,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 if(UpdatedReplayState.InputRecording)
                 {
-                    UpdatedReplayState.RecordedInputs[UpdatedReplayState.InputCount] = UpdatedInput;
-                    ++UpdatedReplayState.InputCount;
-                    ++UpdatedReplayState.MaxInputStructsRecorded;
+                    Win32::Dbg::RecordInput(&UpdatedInput, &UpdatedReplayState);
                 }
 
                 if(UpdatedReplayState.InputPlayBack)
                 {
-                    if (UpdatedReplayState.InputCount < UpdatedReplayState.MaxInputStructsRecorded)
-                    {
-                        UpdatedInput = UpdatedReplayState.RecordedInputs[UpdatedReplayState.InputCount];
-                        ++UpdatedReplayState.InputCount;
-                    }
-                    else
-                    {
-                        UpdatedReplayState.InputCount = 0;
-                        memcpy(GameMemory.PermanentStorage, UpdatedReplayState.GameState, GameMemory.TotalSize);
-                    }
+                    Win32::Dbg::PlayBackInput(&UpdatedInput, &UpdatedReplayState);
                 }
 
                 GameCode.UpdateFunc(&GameMemory, PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
