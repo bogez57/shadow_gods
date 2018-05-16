@@ -29,7 +29,7 @@
 
 global_variable uint32 WindowWidth{1280};
 global_variable uint32 WindowHeight{720};
-
+global_variable Game_Memory GameMemory{};
 global_variable bool GlobalGameRunning{};
 
 namespace Win32::Dbg
@@ -337,6 +337,7 @@ namespace Win32
                                     GameReplayState->InputRecording = true;
                                     GameReplayState->MaxInputStructsRecorded = 0;
                                     GameReplayState->InputCount = 0;
+                                    memcpy(GameReplayState->GameState, GameMemory.PermanentStorage, GameMemory.TotalSize);
                                 }
                                 else
                                 {
@@ -352,6 +353,9 @@ namespace Win32
                                 {
                                     GameReplayState->InputPlayBack = true;
                                     GameReplayState->InputCount = 0;
+
+                                    //Set game state back to when it was first recorded for proper looping playback
+                                    memcpy(GameMemory.PermanentStorage, GameReplayState->GameState, GameMemory.TotalSize);
                                 }
                                 else
                                 {
@@ -488,7 +492,6 @@ namespace Win32
 
             case WM_ACTIVATEAPP:
             {
-                OutputDebugStringA("WM_ACTIVATEAPP\n");
             }break;
 
             default:
@@ -531,7 +534,7 @@ namespace Win32
 namespace GL
 {
     local_func auto
-    DrawQuad(vec2 BottomLeft, vec2 BottomRight, vec2 TopRight, vec2 TopLeft, vec3 Color) -> void
+    DrawRect(vec2 BottomLeft, vec2 BottomRight, vec2 TopRight, vec2 TopLeft, vec3 Color) -> void
     {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
@@ -582,15 +585,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 #else
             void *BaseAddress{(void *)0};
 #endif
-            Game_Memory GameMemory{};
             Game_Input Input{};
             Game_Sound_Output_Buffer SoundBuffer{};
             Game_Render_Cmds RenderCmds{};
             Platform_Services PlatformServices{};
             Win32::Dbg::Game_Replay_State GameReplayState{};
             Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
-
-            GameReplayState.RecordedInput = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input)*Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
             {//Init Game Memory
                 GameMemory.SizeOfTemporaryStorage = Gigabytes(1);
@@ -600,12 +600,17 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.SizeOfTemporaryStorage);
             }
 
-            {//Init game services
+            {//Init input recording and replay services
+                GameReplayState.RecordedInputs = (Game_Input *)VirtualAlloc(0, (sizeof(Game_Input) * Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+                GameReplayState.GameState = VirtualAlloc(0, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            }
+
+            { //Init game services
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
                 PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
 
-                RenderCmds.DrawQuad = &GL::DrawQuad;
+                RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
             }
 
@@ -681,7 +686,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 if(UpdatedReplayState.InputRecording)
                 {
-                    UpdatedReplayState.RecordedInput[UpdatedReplayState.InputCount] = UpdatedInput;
+                    UpdatedReplayState.RecordedInputs[UpdatedReplayState.InputCount] = UpdatedInput;
                     ++UpdatedReplayState.InputCount;
                     ++UpdatedReplayState.MaxInputStructsRecorded;
                 }
@@ -690,12 +695,13 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 {
                     if (UpdatedReplayState.InputCount < UpdatedReplayState.MaxInputStructsRecorded)
                     {
-                        UpdatedInput = UpdatedReplayState.RecordedInput[UpdatedReplayState.InputCount];
+                        UpdatedInput = UpdatedReplayState.RecordedInputs[UpdatedReplayState.InputCount];
                         ++UpdatedReplayState.InputCount;
                     }
                     else
                     {
                         UpdatedReplayState.InputCount = 0;
+                        memcpy(GameMemory.PermanentStorage, UpdatedReplayState.GameState, GameMemory.TotalSize);
                     }
                 }
 

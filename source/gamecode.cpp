@@ -13,6 +13,9 @@
 #include "shared.h"
 #include "math.h"
 
+global_variable float32 WindowWidth = 1280.0f;
+global_variable float32 WindowHeight = 720.0f;
+
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)
@@ -26,19 +29,36 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     {
         GameMemory->IsInitialized = true;
 
-        GameState->BL = {100.0f, 100.0f};
-        GameState->BR = {500.0f, 100.0f};
-        GameState->TR = {500.0f, 500.0f};
-        GameState->TL = {100.0f, 200.0f};
-        GameState->Color = {0.4f, 0.1f, 0.3f};
+        GameState->Floor.Y = 500.0f;
+    }
+
+    vec2 BRBottomLeft{0.0f, 0.0f};
+    vec2 BRBottomRight{WindowWidth, 0.0f};
+    vec2 BRTopRight{WindowWidth, WindowHeight};
+    vec2 BRTopLeft{0.0f, WindowHeight};
+    vec3 BRColor{0.4f, 0.4f, 0.4f};
+
+    if(Keyboard->MoveUp.Pressed)
+    {
+        GameState->Floor.Y += 4.0f;
+    }
+
+    if(Keyboard->MoveDown.Pressed)
+    {
+        GameState->Floor.Y -= 4.0f;
     }
 
     RenderCmds.ClearScreen();
 
-    if (Keyboard->MoveUp.Pressed)
-    {
-        GameState->TR.X += 1;
-    }
+    {//Draw Background
+        RenderCmds.DrawRect(BRBottomLeft, BRBottomRight, BRTopRight, BRTopLeft, BRColor);
 
-    RenderCmds.DrawQuad(GameState->BL, GameState->BR, GameState->TR, GameState->TL, GameState->Color);
+        BRTopRight.Y = GameState->Floor.Y;
+        BRTopLeft.Y = GameState->Floor.Y;
+        BRColor.R = 0.1f;
+        BRColor.G = 0.0f;
+        BRColor.B = 0.8f;
+
+        RenderCmds.DrawRect(BRBottomLeft, BRBottomRight, BRTopRight, BRTopLeft, BRColor);
+    }
 }

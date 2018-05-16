@@ -78,7 +78,7 @@ struct Game_Sound_Output_Buffer
 
 struct Game_Render_Cmds
 {
-    void (*DrawQuad)(vec2, vec2, vec2, vec2, vec3);
+    void (*DrawRect)(vec2, vec2, vec2, vec2, vec3);
     void (*ClearScreen)();
 };
 
