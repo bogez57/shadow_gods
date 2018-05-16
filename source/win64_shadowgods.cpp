@@ -1,4 +1,5 @@
 /*
+
     ToDo List:
 
     - Load XInput through LoadLibrary() (To help avoid likely "Xinput.dll not found on certain windows platforms")
@@ -6,8 +7,10 @@
 */
 
 #if (DEVELOPMENT_BUILD)
+
     #define BGZ_LOGGING_ON true
 #else
+
     #define BGZ_LOGGING_ON false
 #endif
 
@@ -30,7 +33,7 @@
 global_variable uint32 WindowWidth{1280};
 global_variable uint32 WindowHeight{720};
 global_variable Game_Memory GameMemory{};
-global_variable bool GlobalGameRunning{};
+global_variable bool GameRunning{};
 
 namespace Win32::Dbg
 {
@@ -234,16 +237,13 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    InitInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState)
+    InitInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState) -> void
     {
         GameReplayState->InputRecording = true;
         GameReplayState->MaxInputStructsRecorded = 0;
         GameReplayState->InputCount = 0;
         memcpy(GameReplayState->OriginalRecordedGameState, GameMemory.PermanentStorage, GameMemory.TotalSize);
     };
-
-    local_func auto
-    EndInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState){};
 
     local_func auto
     RecordInput(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
@@ -254,7 +254,7 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    InitInputPlayBack(Win32::Dbg::Game_Replay_State *GameReplayState)
+    InitInputPlayBack(Win32::Dbg::Game_Replay_State *GameReplayState) -> void
     {
         GameReplayState->InputPlayBack = true;
         GameReplayState->InputCount = 0;
@@ -263,7 +263,7 @@ namespace Win32::Dbg
     }
 
     local_func auto
-    EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState)
+    EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
     {
         GameReplayState->InputPlayBack = false;
         for (uint32 ControllerIndex{0}; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
@@ -276,7 +276,7 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    PlayBackInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState)
+    PlayBackInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState) -> void
     {
         if (GameReplayState->InputCount < GameReplayState->MaxInputStructsRecorded)
         {
@@ -293,6 +293,7 @@ namespace Win32::Dbg
 
 namespace Win32
 {
+
     local_func auto
     ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
     {
@@ -313,7 +314,7 @@ namespace Win32
             {
                 case WM_QUIT:
                 {
-                    GlobalGameRunning = false;
+                    GameRunning = false;
                 } break;
             
                 case WM_SYSKEYDOWN:
@@ -495,12 +496,12 @@ namespace Win32
 
             case WM_DESTROY:
             {
-                GlobalGameRunning = false;
+                GameRunning = false;
             }break;
 
             case WM_CLOSE:
             {
-                GlobalGameRunning = false;
+                GameRunning = false;
             }break;
 
             case WM_ACTIVATEAPP:
@@ -598,6 +599,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 #else
             void *BaseAddress{(void *)0};
 #endif
+
             Game_Input Input{};
             Game_Sound_Output_Buffer SoundBuffer{};
             Game_Render_Cmds RenderCmds{};
@@ -627,8 +629,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.ClearScreen = &GL::ClearScreen;
             }
 
-            GlobalGameRunning = true;
-            while (GlobalGameRunning)
+            GameRunning = true;
+            while (GameRunning)
             {
                 //Hot reloading
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
@@ -640,7 +642,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 auto [UpdatedInput, UpdatedReplayState] = [](Game_Input Input, Win32::Dbg::Game_Replay_State GameReplayState) -> auto
                 {
-                    struct Input_Result { Game_Input NewInput; Win32::Dbg::Game_Replay_State NewGameReplayState;};
+                    struct Input_Result {Game_Input NewInput; Win32::Dbg::Game_Replay_State NewGameReplayState;};
                     Input_Result Result{};
 
                     for (uint ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
