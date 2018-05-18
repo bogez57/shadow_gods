@@ -21,7 +21,9 @@
 #include <fcntl.h> 
 #include <stdio.h>
 #include <GL/glew.h>
+#include <GL/wglew.h>
 #include <gl/gl.h>
+#include <boagz/timing.h>
 #include <boagz/error_handling.h>
 
 #include "types.h"
@@ -297,6 +299,7 @@ namespace Win32
     local_func auto
     ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
     {
+
         if (NewState->Pressed != IsDown)
         {
             NewState->Pressed = IsDown;
@@ -456,7 +459,19 @@ namespace Win32
                                     glViewport(0, 0, WindowWidth, WindowHeight);
 
                                     //Success! We have a current openGL context. Now setup glew
-                                    if(glewInit() != GLEW_OK)
+                                    if(glewInit() == GLEW_OK)
+                                    {
+                                        if(WGLEW_EXT_swap_control)
+                                        {
+                                            //Turn Vsync on/off
+                                            wglSwapIntervalEXT(0);
+                                        }
+                                        else
+                                        {
+                                            Win32::Dbg::LogErr("Failed to find opengl swap interval extention on computer!");
+                                        }
+                                    }
+                                    else
                                     {
                                         ReleaseDC(WindowHandle, WindowContext);
                                         InvalidCodePath;
@@ -630,6 +645,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             }
 
             GameRunning = true;
+            bgz::Timer FramePerformanceTimer{};
+            FramePerformanceTimer.StartClockTimer();
+            FramePerformanceTimer.StartCPUCycleTimer();
+
             while (GameRunning)
             {
                 //Hot reloading
@@ -714,7 +733,18 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState; 
 
+                for(int i = 0; i < 10; i++)
+                {
+                    BGZ_CONSOLE("/");
+                }
+
                 SwapBuffers(WindowContext);
+
+                FramePerformanceTimer.UpdateClockTimer();
+                uint64 FrameTimeInCPUCycles = FramePerformanceTimer.UpdateCPUCycleTimer();
+
+                float32 FrameTimeInMS = FramePerformanceTimer.ElapsedTimeInMS();
+                BGZ_CONSOLE("ms per frame: %f, cpu cycles per frame %llu\n", FrameTimeInMS, FrameTimeInCPUCycles);
             };
 
             wglMakeCurrent(NULL, NULL);
