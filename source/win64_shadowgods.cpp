@@ -294,7 +294,6 @@ namespace Win32::Dbg
 
 namespace Win32
 {
-
     local_func auto
     ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
     {
@@ -590,11 +589,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 {
     Win32::Dbg::UseConsole();
 
+    //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;
-    if(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOCANDO)
-    {
-        Assert("Was unable to set windows scheduler granularity!!");
-    }
+    BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR)
     
     WNDCLASS WindowProperties{};
     WindowProperties.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW; //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
@@ -671,18 +668,13 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     TargetSecsToElapsPerFrame = 1.0f/(float32)GameRefreshRate;
                 }break;
                 default:
-                Assert("Unkown monitor refresh rate!");
+                InvalidCodePath //Unkown monitor refresh rate
             };
 
             GameRunning = true;
 
-            LARGE_INTEGER Win64CurrentTickCount;
-            LARGE_INTEGER PerformanceFreq;
-            QueryPerformanceCounter(&Win64CurrentTickCount);
-            QueryPerformanceFrequency(&PerformanceFreq);
-
-            uint64 LastClockTickCount = (uint64)Win64CurrentTickCount.QuadPart;
-            uint64 ClockTicksPerSecond = (uint64)PerformanceFreq.QuadPart;
+            Timer FramePerformanceTimer{};
+            FramePerformanceTimer.Init();
 
             while (GameRunning)
             {
@@ -768,9 +760,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState; 
 
-                QueryPerformanceCounter(&Win64CurrentTickCount);
-                uint64 CurrentClockTicksElapsed = (uint64)Win64CurrentTickCount.QuadPart - LastClockTickCount;
-                float32 SecsElapsedForWork = ((float32)CurrentClockTicksElapsed / (float32)ClockTicksPerSecond);
+                float32 SecsElapsedForWork = FramePerformanceTimer.SecondsElapsed();
 
                 if(SecsElapsedForWork < TargetSecsToElapsPerFrame)
                 {
@@ -779,16 +769,13 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 }
                 else
                 {
-                    //BGZ_CONSOLE("Missed our frame rate!!!\n");
+                    BGZ_CONSOLE("Missed our frame rate!!!\n");
                 }
 
                 SwapBuffers(WindowContext);
 
-                QueryPerformanceCounter(&Win64CurrentTickCount);
-                CurrentClockTicksElapsed = (uint64)Win64CurrentTickCount.QuadPart - LastClockTickCount;
-                LastClockTickCount = (uint64)Win64CurrentTickCount.QuadPart;
-
-                float32 FrameTimeInMS = 1000.0f * ((float32)CurrentClockTicksElapsed / (float32)ClockTicksPerSecond);
+                float32 FrameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
+                FramePerformanceTimer.UpdateTimeCount();
 
                 BGZ_CONSOLE("ms per frame: %f\n", FrameTimeInMS);
             };

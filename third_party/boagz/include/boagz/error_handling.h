@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include "boagz\error_context.h"
 
-#define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
-
 #if BGZ_LOGGING_ON
+	#define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
+
 	#define BGZ_ASSERT(expression) \
 		Assert(expression) 
 

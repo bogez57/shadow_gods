@@ -1,88 +1,92 @@
 #pragma once
+
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
+#include <stdint.h>
 
 #define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
 
-namespace bgz
+class Timer
 {
-    class Timer
-    {
-    public:
-        Timer() = default;
+public:
+    Timer() = default;
 
-        auto StartClockTimer() -> unsigned long long;
-        auto UpdateClock() -> void;
-        auto StartCPUCycleTimer() -> unsigned long long;
-        auto UpdateCPUCycleCount() -> unsigned long long;
+    auto Init() -> void;
+    auto SecondsElapsed() -> float;
+    auto MilliSecondsElapsed() -> float;
+    auto UpdateTimeCount() -> void;
 
-        auto ElapsedTimeInMS() -> float;
-        auto ElapsedTimeInSecs() -> float;
+private:
+    bool IsInitialized;
+    uint64_t ClockTicksPerSecond;
+    uint64_t LastClockTickCount;
+};
 
-    private:
-        unsigned long long ClockTicksPerSecond;
-        unsigned long long StartingClockTickCount;
-        unsigned long long LastClockTickCount;
-        unsigned long long EndingClockTickCount;
+inline auto Timer::Init() -> void
+{
+    this->IsInitialized = true;
 
-        unsigned long long LastCPUCycleCount;
-        unsigned long long EndingCPUCycleCount;
+    LARGE_INTEGER CPUPerformancefFreq;
+    QueryPerformanceFrequency(&CPUPerformancefFreq);
+    this->ClockTicksPerSecond = (uint64_t)CPUPerformancefFreq.QuadPart;
 
-        float MilliSecsElapsed;
-        float SecondsElapsed;
-    };
+    LARGE_INTEGER Win64CurrentTickCount;
+    QueryPerformanceCounter(&Win64CurrentTickCount);
+    this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
+}
 
-    auto Timer::StartClockTimer() -> unsigned long long
-    {
-        LARGE_INTEGER Win64CurrentTickCount;
-        QueryPerformanceCounter(&Win64CurrentTickCount);
+inline auto Timer::SecondsElapsed() -> float
+{
+    Assert(this->IsInitialized);
 
-        LARGE_INTEGER PerformanceFreq;
-        QueryPerformanceFrequency(&PerformanceFreq);
+    LARGE_INTEGER Win64CurrentTickCount;
+    QueryPerformanceCounter(&Win64CurrentTickCount);
+    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - this->LastClockTickCount};
 
-        ClockTicksPerSecond = (unsigned long long)PerformanceFreq.QuadPart;
-        LastClockTickCount = StartingClockTickCount;
+    float SecondsElapsed{((float)TimeElapsedInClockTicks / (float)this->ClockTicksPerSecond)};
 
-        return StartingClockTickCount;
-    }
+    return SecondsElapsed;
+}
 
-    auto Timer::UpdateClock() -> void
-    {
-        LARGE_INTEGER Win64CurrentTickCount;
-        QueryPerformanceCounter(&Win64CurrentTickCount);
-        EndingClockTickCount = (unsigned long long)Win64CurrentTickCount.QuadPart;
+inline auto Timer::MilliSecondsElapsed() -> float
+{
+    Assert(this->IsInitialized);
 
-        MilliSecsElapsed = ((float)(EndingClockTickCount - LastClockTickCount) / (float)ClockTicksPerSecond) * 1000;
-        SecondsElapsed = ((float)(EndingClockTickCount - LastClockTickCount) / (float)ClockTicksPerSecond);
+    LARGE_INTEGER Win64CurrentTickCount;
+    QueryPerformanceCounter(&Win64CurrentTickCount);
+    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - this->LastClockTickCount};
 
-        LastClockTickCount = EndingClockTickCount;
-    }
+    float MilliSecondsElapsed = (1000.0f * ((float)TimeElapsedInClockTicks / (float)ClockTicksPerSecond));
 
-    auto Timer::StartCPUCycleTimer() -> unsigned long long
-    {
-        LastCPUCycleCount = __rdtsc();
+    return MilliSecondsElapsed;
+}
 
-        return LastCPUCycleCount;
-    }
+inline auto Timer::UpdateTimeCount() -> void
+{
+    LARGE_INTEGER Win64CurrentTickCount;
+    QueryPerformanceCounter(&Win64CurrentTickCount);
 
-    auto Timer::UpdateCPUCycleCount() -> unsigned long long
-    {
-        EndingCPUCycleCount = __rdtsc();
+    this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
+}
 
-        unsigned long long CyclesElapsed = EndingCPUCycleCount - LastCPUCycleCount;
+inline auto SecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
+{
+    LARGE_INTEGER Win64CurrentTickCount;
+    QueryPerformanceCounter(&Win64CurrentTickCount);
+    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - StartingClockTickCount};
 
-        LastCPUCycleCount = EndingCPUCycleCount;
+    float SecondsElapsed{((float)TimeElapsedInClockTicks / ClockTicksPerSecond)};
 
-        return CyclesElapsed;
-    }
+    return SecondsElapsed;
+}
 
-    auto Timer::ElapsedTimeInMS() -> float
-    {
-        return MilliSecsElapsed;
-    } 
-    
-    auto Timer::ElapsedTimeInSecs() -> float 
-    {
-        return SecondsElapsed;
-    } 
-} // namespace bgz
+inline auto MilliSecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
+{
+    LARGE_INTEGER Win64CurrentTickCount;
+    QueryPerformanceCounter(&Win64CurrentTickCount);
+    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - StartingClockTickCount};
+
+    float MilliSecondsElapsed = (1000.0f * ((float)TimeElapsedInClockTicks / ClockTicksPerSecond));
+
+    return MilliSecondsElapsed;
+}
