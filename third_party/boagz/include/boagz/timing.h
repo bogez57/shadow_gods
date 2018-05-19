@@ -6,6 +6,16 @@
 
 #define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
 
+inline auto 
+MonitorRefreshHz() -> unsigned int
+{
+    DEVMODE DeviceMode{};
+    EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &DeviceMode);
+    unsigned int MonitorRefreshRate = (unsigned int)DeviceMode.dmDisplayFrequency;
+
+    return MonitorRefreshRate;
+}
+
 class Timer
 {
 public:
@@ -22,7 +32,8 @@ private:
     uint64_t LastClockTickCount;
 };
 
-inline auto Timer::Init() -> void
+inline auto 
+Timer::Init() -> void
 {
     this->IsInitialized = true;
 
@@ -35,7 +46,8 @@ inline auto Timer::Init() -> void
     this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
 }
 
-inline auto Timer::SecondsElapsed() -> float
+inline auto 
+Timer::SecondsElapsed() -> float
 {
     Assert(this->IsInitialized);
 
@@ -47,8 +59,8 @@ inline auto Timer::SecondsElapsed() -> float
 
     return SecondsElapsed;
 }
-
-inline auto Timer::MilliSecondsElapsed() -> float
+inline auto 
+Timer::MilliSecondsElapsed() -> float
 {
     Assert(this->IsInitialized);
 
@@ -61,7 +73,8 @@ inline auto Timer::MilliSecondsElapsed() -> float
     return MilliSecondsElapsed;
 }
 
-inline auto Timer::UpdateTimeCount() -> void
+inline auto 
+Timer::UpdateTimeCount() -> void
 {
     LARGE_INTEGER Win64CurrentTickCount;
     QueryPerformanceCounter(&Win64CurrentTickCount);
@@ -69,7 +82,8 @@ inline auto Timer::UpdateTimeCount() -> void
     this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
 }
 
-inline auto SecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
+inline auto 
+SecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
 {
     LARGE_INTEGER Win64CurrentTickCount;
     QueryPerformanceCounter(&Win64CurrentTickCount);
@@ -80,7 +94,8 @@ inline auto SecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTick
     return SecondsElapsed;
 }
 
-inline auto MilliSecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
+inline auto 
+MilliSecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
 {
     LARGE_INTEGER Win64CurrentTickCount;
     QueryPerformanceCounter(&Win64CurrentTickCount);

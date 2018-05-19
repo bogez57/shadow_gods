@@ -4,6 +4,7 @@
 
     - Load XInput through LoadLibrary() (To help avoid likely "Xinput.dll not found on certain windows platforms")
     - Have it so I handle a game controller being disconnected at any point while the game is running
+    - Make current frame timing more accurate/in-sync with monitor refresh rate
 */
 
 #if (DEVELOPMENT_BUILD)
@@ -644,28 +645,26 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.ClearScreen = &GL::ClearScreen;
             }
 
-            DEVMODE DeviceMode{};
-            EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &DeviceMode);
-            int MonitorRefreshRate = (int)DeviceMode.dmDisplayFrequency;
+            uint MonitorRefreshRate = MonitorRefreshHz();
             int GameRefreshRate{};
-            float32 TargetSecsToElapsPerFrame{};
+            float32 TargetSecondsPerFrame{};
 
             switch(MonitorRefreshRate)
             {
                 case 30: 
                 {
                     GameRefreshRate = MonitorRefreshRate;
-                    TargetSecsToElapsPerFrame = 1.0f/(float32)GameRefreshRate;
+                    TargetSecondsPerFrame = 1.0f/(float32)GameRefreshRate;
                 }break;
                 case 60: 
                 {
                     GameRefreshRate = MonitorRefreshRate;
-                    TargetSecsToElapsPerFrame = 1.0f/(float32)GameRefreshRate;
+                    TargetSecondsPerFrame = 1.0f/(float32)GameRefreshRate;
                 }break;
                 case 120: 
                 {
                     GameRefreshRate = MonitorRefreshRate/2;
-                    TargetSecsToElapsPerFrame = 1.0f/(float32)GameRefreshRate;
+                    TargetSecondsPerFrame = 1.0f/(float32)GameRefreshRate;
                 }break;
                 default:
                 InvalidCodePath //Unkown monitor refresh rate
@@ -760,11 +759,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState; 
 
-                float32 SecsElapsedForWork = FramePerformanceTimer.SecondsElapsed();
+                float32 SecondsElapsedForWork = FramePerformanceTimer.SecondsElapsed();
 
-                if(SecsElapsedForWork < TargetSecsToElapsPerFrame)
+                if(SecondsElapsedForWork < TargetSecondsPerFrame)
                 {
-                    DWORD MSToSleep = (DWORD)(1000.0f * (TargetSecsToElapsPerFrame - SecsElapsedForWork));
+                    DWORD MSToSleep = (DWORD)(1000.0f * (TargetSecondsPerFrame - SecondsElapsedForWork));
                     Sleep(MSToSleep);
                 }
                 else
