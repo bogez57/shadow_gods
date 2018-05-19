@@ -12,15 +12,16 @@ namespace bgz
         Timer() = default;
 
         auto StartClockTimer() -> unsigned long long;
-        auto UpdateClockTimer() -> void;
+        auto UpdateClock() -> void;
         auto StartCPUCycleTimer() -> unsigned long long;
-        auto UpdateCPUCycleTimer() -> unsigned long long;
+        auto UpdateCPUCycleCount() -> unsigned long long;
 
         auto ElapsedTimeInMS() -> float;
         auto ElapsedTimeInSecs() -> float;
 
     private:
         unsigned long long ClockTicksPerSecond;
+        unsigned long long StartingClockTickCount;
         unsigned long long LastClockTickCount;
         unsigned long long EndingClockTickCount;
 
@@ -39,13 +40,13 @@ namespace bgz
         LARGE_INTEGER PerformanceFreq;
         QueryPerformanceFrequency(&PerformanceFreq);
 
-        LastClockTickCount= (unsigned long long)Win64CurrentTickCount.QuadPart;
         ClockTicksPerSecond = (unsigned long long)PerformanceFreq.QuadPart;
+        LastClockTickCount = StartingClockTickCount;
 
-        return LastClockTickCount;
+        return StartingClockTickCount;
     }
 
-    auto Timer::UpdateClockTimer() -> void
+    auto Timer::UpdateClock() -> void
     {
         LARGE_INTEGER Win64CurrentTickCount;
         QueryPerformanceCounter(&Win64CurrentTickCount);
@@ -64,7 +65,7 @@ namespace bgz
         return LastCPUCycleCount;
     }
 
-    auto Timer::UpdateCPUCycleTimer() -> unsigned long long
+    auto Timer::UpdateCPUCycleCount() -> unsigned long long
     {
         EndingCPUCycleCount = __rdtsc();
 
