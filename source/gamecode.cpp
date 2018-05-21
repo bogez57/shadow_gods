@@ -29,36 +29,50 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     {
         GameMemory->IsInitialized = true;
 
-        GameState->Floor.Y = 500.0f;
+        GameState->Fighter.Origin = {100.0f, 100.0f};
     }
 
-    vec2 BRBottomLeft{0.0f, 0.0f};
-    vec2 BRBottomRight{WindowWidth, 0.0f};
-    vec2 BRTopRight{WindowWidth, WindowHeight};
-    vec2 BRTopLeft{0.0f, WindowHeight};
-    vec3 BRColor{0.4f, 0.4f, 0.4f};
-
-    if(GamePad->MoveUp.Pressed)
-    {
-        GameState->Floor.Y += 4.0f;
-    }
-
-    if(GamePad->MoveDown.Pressed)
-    {
-        GameState->Floor.Y -= 4.0f;
-    }
+    Player* Fighter = &GameState->Fighter;
 
     RenderCmds.ClearScreen();
 
+    if(Keyboard->MoveUp.Pressed)
+    {
+        Fighter->Origin.Y += 3.0f;
+    }
+
+    if(Keyboard->MoveDown.Pressed)
+    {
+        Fighter->Origin.Y -= 3.0f;
+    }
+
+    if(Keyboard->MoveRight.Pressed)
+    {
+        Fighter->Origin.X += 3.0f;
+    }
+
+    if(Keyboard->MoveLeft.Pressed)
+    {
+        Fighter->Origin.X -= 3.0f;
+    }
+
     {//Draw Background
+        vec2 BRBottomLeft{0.0f, 0.0f};
+        vec2 BRBottomRight{WindowWidth, 0.0f};
+        vec2 BRTopRight{WindowWidth, WindowHeight};
+        vec2 BRTopLeft{0.0f, WindowHeight};
+        vec3 BRColor{0.4f, 0.4f, 0.4f};
+        
         RenderCmds.DrawRect(BRBottomLeft, BRBottomRight, BRTopRight, BRTopLeft, BRColor);
+    }
 
-        BRTopRight.Y = GameState->Floor.Y;
-        BRTopLeft.Y = GameState->Floor.Y;
-        BRColor.R = 0.1f;
-        BRColor.G = 0.0f;
-        BRColor.B = 0.8f;
+    {//Draw Player
+        vec2 PlayerBL{Fighter->Origin.X + 100.0f, Fighter->Origin.Y + 0.0f};
+        vec2 PlayerBR{Fighter->Origin.X + 200.0f, Fighter->Origin.Y + 0.0f};
+        vec2 PlayerTR{Fighter->Origin.X + 200.0f, Fighter->Origin.Y + 100.0f};
+        vec2 PlayerTL{Fighter->Origin.X + 100.0f, Fighter->Origin.Y + 100.0f};
+        vec3 PlayerColor{1.0f, 1.0f, 1.0f};
 
-        RenderCmds.DrawRect(BRBottomLeft, BRBottomRight, BRTopRight, BRTopLeft, BRColor);
+        RenderCmds.DrawRect(PlayerBL, PlayerBR, PlayerTR, PlayerTL, PlayerColor);
     }
 }

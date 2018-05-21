@@ -2,7 +2,12 @@
 
 #include "types.h"
 
+struct Player
+{
+    vec2 Origin;
+};
+
 struct Game_State
 {
-    vec2 Floor{};
+    Player Fighter;
 };
