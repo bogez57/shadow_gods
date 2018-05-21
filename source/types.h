@@ -101,6 +101,24 @@ operator+=(vec2& A, vec2 B)
     return(A);
 }
 
+inline vec2&
+operator+=(vec2& A, float32 B)
+{
+    A.X = A.X + B;
+    A.Y = A.Y + B;
+
+    return(A);
+}
+
+inline vec2&
+operator-=(vec2& A, float32 B)
+{
+    A.X = A.X - B;
+    A.Y = A.Y - B;
+
+    return(A);
+}
+
 inline vec2
 operator-(vec2 A, vec2 B)
 {

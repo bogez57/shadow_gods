@@ -353,6 +353,11 @@ namespace Win32
                         }
                         else if (VKCode == 'Q')
                         {
+                            Win32::ProcessKeyboardMessage(&Keyboard->ActionUp, IsDown);
+                        }
+                        else if (VKCode == 'Z')
+                        {
+                            Win32::ProcessKeyboardMessage(&Keyboard->ActionDown, IsDown);
                         }
                         else if (VKCode == 'E')
                         {

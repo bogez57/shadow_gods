@@ -30,9 +30,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameMemory->IsInitialized = true;
 
         GameState->Fighter.Origin = {100.0f, 100.0f};
+        GameState->GameCamera.Position = {WindowWidth/2, WindowHeight/2};
+        GameState->GameCamera.ZoomFactor = {0.0f};
     }
 
     Player* Fighter = &GameState->Fighter;
+    Camera* GameCamera = &GameState->GameCamera;
 
     RenderCmds.ClearScreen();
 
@@ -56,13 +59,23 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         Fighter->Origin.X -= 3.0f;
     }
 
+    if(Keyboard->ActionUp.Pressed)
+    {
+        GameCamera->ZoomFactor -= .4f;
+    }
+
+    if(Keyboard->ActionDown.Pressed)
+    {
+        GameCamera->ZoomFactor += .4f;
+    }
+
     {//Draw Background
         vec2 BRBottomLeft{0.0f, 0.0f};
         vec2 BRBottomRight{WindowWidth, 0.0f};
         vec2 BRTopRight{WindowWidth, WindowHeight};
         vec2 BRTopLeft{0.0f, WindowHeight};
         vec3 BRColor{0.4f, 0.4f, 0.4f};
-        
+
         RenderCmds.DrawRect(BRBottomLeft, BRBottomRight, BRTopRight, BRTopLeft, BRColor);
     }
 
@@ -72,6 +85,14 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         vec2 PlayerTR{Fighter->Origin.X + 200.0f, Fighter->Origin.Y + 100.0f};
         vec2 PlayerTL{Fighter->Origin.X + 100.0f, Fighter->Origin.Y + 100.0f};
         vec3 PlayerColor{1.0f, 1.0f, 1.0f};
+
+        PlayerBL.X -= GameCamera->ZoomFactor;
+        PlayerBR.X += GameCamera->ZoomFactor;
+        PlayerTR.X += GameCamera->ZoomFactor;
+        PlayerTL.X -= GameCamera->ZoomFactor;
+
+        PlayerTR.Y += (GameCamera->ZoomFactor * 2); 
+        PlayerTL.Y += (GameCamera->ZoomFactor * 2); 
 
         RenderCmds.DrawRect(PlayerBL, PlayerBR, PlayerTR, PlayerTL, PlayerColor);
     }
