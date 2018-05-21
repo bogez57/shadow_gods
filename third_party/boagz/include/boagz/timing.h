@@ -6,102 +6,106 @@
 
 #define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
 
-inline auto 
-MonitorRefreshHz() -> unsigned int
+namespace bgz
 {
-    DEVMODE DeviceMode{};
-    EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &DeviceMode);
-    unsigned int MonitorRefreshRate = (unsigned int)DeviceMode.dmDisplayFrequency;
+    inline auto 
+    MonitorRefreshHz() -> unsigned int
+    {
+        DEVMODE DeviceMode{};
+        EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &DeviceMode);
+        unsigned int MonitorRefreshRate = (unsigned int)DeviceMode.dmDisplayFrequency;
 
-    return MonitorRefreshRate;
-}
+        return MonitorRefreshRate;
+    }
 
-class Timer
-{
-public:
-    Timer() = default;
+    class Timer
+    {
+    public:
+        Timer() = default;
 
-    auto Init() -> void;
-    auto SecondsElapsed() -> float;
-    auto MilliSecondsElapsed() -> float;
-    auto UpdateTimeCount() -> void;
+        auto Init() -> void;
+        auto SecondsElapsed() -> float;
+        auto MilliSecondsElapsed() -> float;
+        auto UpdateTimeCount() -> void;
 
-private:
-    bool IsInitialized;
-    uint64_t ClockTicksPerSecond;
-    uint64_t LastClockTickCount;
-};
+    private:
+        bool IsInitialized;
+        uint64_t ClockTicksPerSecond;
+        uint64_t LastClockTickCount;
+    };
 
-inline auto 
-Timer::Init() -> void
-{
-    this->IsInitialized = true;
+    inline auto 
+    Timer::Init() -> void
+    {
+        this->IsInitialized = true;
 
-    LARGE_INTEGER CPUPerformancefFreq;
-    QueryPerformanceFrequency(&CPUPerformancefFreq);
-    this->ClockTicksPerSecond = (uint64_t)CPUPerformancefFreq.QuadPart;
+        LARGE_INTEGER CPUPerformancefFreq;
+        QueryPerformanceFrequency(&CPUPerformancefFreq);
+        this->ClockTicksPerSecond = (uint64_t)CPUPerformancefFreq.QuadPart;
 
-    LARGE_INTEGER Win64CurrentTickCount;
-    QueryPerformanceCounter(&Win64CurrentTickCount);
-    this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
-}
+        LARGE_INTEGER Win64CurrentTickCount;
+        QueryPerformanceCounter(&Win64CurrentTickCount);
+        this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
+    }
 
-inline auto 
-Timer::SecondsElapsed() -> float
-{
-    Assert(this->IsInitialized);
+    inline auto 
+    Timer::SecondsElapsed() -> float
+    {
+        Assert(this->IsInitialized);
 
-    LARGE_INTEGER Win64CurrentTickCount;
-    QueryPerformanceCounter(&Win64CurrentTickCount);
-    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - this->LastClockTickCount};
+        LARGE_INTEGER Win64CurrentTickCount;
+        QueryPerformanceCounter(&Win64CurrentTickCount);
+        uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - this->LastClockTickCount};
 
-    float SecondsElapsed{((float)TimeElapsedInClockTicks / (float)this->ClockTicksPerSecond)};
+        float SecondsElapsed{((float)TimeElapsedInClockTicks / (float)this->ClockTicksPerSecond)};
 
-    return SecondsElapsed;
-}
-inline auto 
-Timer::MilliSecondsElapsed() -> float
-{
-    Assert(this->IsInitialized);
+        return SecondsElapsed;
+    }
 
-    LARGE_INTEGER Win64CurrentTickCount;
-    QueryPerformanceCounter(&Win64CurrentTickCount);
-    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - this->LastClockTickCount};
+    inline auto 
+    Timer::MilliSecondsElapsed() -> float
+    {
+        Assert(this->IsInitialized);
 
-    float MilliSecondsElapsed = (1000.0f * ((float)TimeElapsedInClockTicks / (float)ClockTicksPerSecond));
+        LARGE_INTEGER Win64CurrentTickCount;
+        QueryPerformanceCounter(&Win64CurrentTickCount);
+        uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - this->LastClockTickCount};
 
-    return MilliSecondsElapsed;
-}
+        float MilliSecondsElapsed = (1000.0f * ((float)TimeElapsedInClockTicks / (float)ClockTicksPerSecond));
 
-inline auto 
-Timer::UpdateTimeCount() -> void
-{
-    LARGE_INTEGER Win64CurrentTickCount;
-    QueryPerformanceCounter(&Win64CurrentTickCount);
+        return MilliSecondsElapsed;
+    }
 
-    this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
-}
+    inline auto 
+    Timer::UpdateTimeCount() -> void
+    {
+        LARGE_INTEGER Win64CurrentTickCount;
+        QueryPerformanceCounter(&Win64CurrentTickCount);
 
-inline auto 
-SecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
-{
-    LARGE_INTEGER Win64CurrentTickCount;
-    QueryPerformanceCounter(&Win64CurrentTickCount);
-    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - StartingClockTickCount};
+        this->LastClockTickCount = (uint64_t)Win64CurrentTickCount.QuadPart;
+    }
 
-    float SecondsElapsed{((float)TimeElapsedInClockTicks / ClockTicksPerSecond)};
+    inline auto 
+    SecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
+    {
+        LARGE_INTEGER Win64CurrentTickCount;
+        QueryPerformanceCounter(&Win64CurrentTickCount);
+        uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - StartingClockTickCount};
 
-    return SecondsElapsed;
-}
+        float SecondsElapsed{((float)TimeElapsedInClockTicks / ClockTicksPerSecond)};
 
-inline auto 
-MilliSecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
-{
-    LARGE_INTEGER Win64CurrentTickCount;
-    QueryPerformanceCounter(&Win64CurrentTickCount);
-    uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - StartingClockTickCount};
+        return SecondsElapsed;
+    }
 
-    float MilliSecondsElapsed = (1000.0f * ((float)TimeElapsedInClockTicks / ClockTicksPerSecond));
+    inline auto 
+    MilliSecondsElapsedSince(uint64_t StartingClockTickCount, float ClockTicksPerSecond) -> float
+    {
+        LARGE_INTEGER Win64CurrentTickCount;
+        QueryPerformanceCounter(&Win64CurrentTickCount);
+        uint64_t TimeElapsedInClockTicks{(uint64_t)Win64CurrentTickCount.QuadPart - StartingClockTickCount};
 
-    return MilliSecondsElapsed;
+        float MilliSecondsElapsed = (1000.0f * ((float)TimeElapsedInClockTicks / ClockTicksPerSecond));
+
+        return MilliSecondsElapsed;
+    }
 }

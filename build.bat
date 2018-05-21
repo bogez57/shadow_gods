@@ -16,7 +16,7 @@ set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -o
 set GameIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" 
 set GameLibraryPaths=
 
-set PlatformIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" -I %cwd%"third_party/glew-2.1.0/include"
+set PlatformIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" -I %cwd%"third_party/glew-2.1.0/include" -I %cwd%"third_party/stb/include"
 set PlatformLibraryPaths=-LIBPATH:%cwd%"third_party/glew-2.1.0/lib/win64-release"
 set PlatformImportLibraries="user32.lib" "OpenGL32.lib" "gdi32.lib" "xinput.lib" "Winmm.lib"
 set PlatformStaticLibraries="glew32s.lib"

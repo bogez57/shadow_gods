@@ -25,6 +25,8 @@
 #include <gl/gl.h>
 #include <boagz/timing.h>
 #include <boagz/error_handling.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 
 #include "types.h"
 #include "math.h"
@@ -649,7 +651,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.ClearScreen = &GL::ClearScreen;
             }
 
-            uint MonitorRefreshRate = MonitorRefreshHz();
+            uint MonitorRefreshRate = bgz::MonitorRefreshHz();
             int GameRefreshRate{};
             float32 TargetSecondsPerFrame{};
 
@@ -676,7 +678,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             GameRunning = true;
 
-            Timer FramePerformanceTimer{};
+            bgz::Timer FramePerformanceTimer{};
             FramePerformanceTimer.Init();
 
             while (GameRunning)
