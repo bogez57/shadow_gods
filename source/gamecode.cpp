@@ -38,12 +38,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     vec2 BRTopLeft{0.0f, WindowHeight};
     vec3 BRColor{0.4f, 0.4f, 0.4f};
 
-    if(Keyboard->MoveUp.Pressed)
+    if(GamePad->MoveUp.Pressed)
     {
         GameState->Floor.Y += 4.0f;
     }
 
-    if(Keyboard->MoveDown.Pressed)
+    if(GamePad->MoveDown.Pressed)
     {
         GameState->Floor.Y -= 4.0f;
     }
