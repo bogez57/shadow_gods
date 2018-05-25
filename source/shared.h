@@ -76,10 +76,19 @@ struct Game_Sound_Output_Buffer
 
 };
 
+struct Texture
+{
+    unsigned char* ImageData;
+    int Width;
+    int Height;
+    uint ID;
+};
+
 struct Game_Render_Cmds
 {
     void (*DrawRect)(vec2, vec2, vec2, vec2, vec3);
     void (*ClearScreen)();
+    void (*DrawTexture)(Texture);
 };
 
 struct Read_File_Result {void* FileContents{nullptr}; uint32 FileSize{};};

@@ -69,6 +69,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameCamera->ZoomFactor += .4f;
     }
 
+    /*
     {//Draw Background
         vec2 BRBottomLeft{0.0f, 0.0f};
         vec2 BRBottomRight{WindowWidth, 0.0f};
@@ -96,4 +97,5 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
         RenderCmds.DrawRect(PlayerBL, PlayerBR, PlayerTR, PlayerTL, PlayerColor);
     }
+   */ 
 }
