@@ -89,6 +89,8 @@ struct Game_Render_Cmds
     void (*DrawRect)(vec2, vec2, vec2, vec2, vec3);
     void (*ClearScreen)();
     void (*DrawTexture)(Texture);
+    uint (*LoadTexture)(Texture);
+    void (*Init)();
 };
 
 struct Read_File_Result {void* FileContents{nullptr}; uint32 FileSize{};};
@@ -97,4 +99,5 @@ struct Platform_Services
     Read_File_Result (*ReadEntireFile)(const char*);
     bool (*WriteEntireFile)(const char*, void*, uint32);
     void (*FreeFileMemory)(void*);
+    unsigned char* (*LoadRGBAImage)(const char*, int*, int*);
 };

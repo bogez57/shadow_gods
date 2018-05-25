@@ -140,6 +140,17 @@ namespace Win32::Dbg
     };
 
     local_func auto
+    LoadRGBAImage(const char* ImagePath, int* Width, int* Height) -> unsigned char*
+    {
+        int DesiredChannels = 4;
+        int NumOfLoadedChannels{};
+        unsigned char* ImageData = stbi_load(ImagePath, Width, Height, &NumOfLoadedChannels, DesiredChannels);
+        BGZ_ASSERT(ImageData);
+
+        return ImageData;
+    }
+
+    local_func auto
     UseConsole() -> void
     {
         //Create a console for this application
@@ -590,25 +601,25 @@ namespace GL
     }
 
     local_func auto
-    LoadTexture(Texture* GLTexture) -> void
+    LoadTexture(Texture GLTexture) -> uint
     {
-        uint8* ImageData = (uint8*)GLTexture->ImageData;
+        uint8* ImageData = (uint8*)GLTexture.ImageData;
 
         glEnable(GL_TEXTURE_2D);
-        glGenTextures(1, &GLTexture->ID);
-        glBindTexture(GL_TEXTURE_2D, GLTexture->ID);
+        glGenTextures(1, &GLTexture.ID);
+        glBindTexture(GL_TEXTURE_2D, GLTexture.ID);
 
         {//Flip image right side up since OpenGL reads it upside down.
-            int32 widthInBytes = GLTexture->Width * 4;
+            int32 widthInBytes = GLTexture.Width * 4;
             unsigned char *p_topRowOfTexels = nullptr;
             unsigned char *p_bottomRowOfTexels = nullptr;
             unsigned char temp = 0;
-            int32 halfHeight = GLTexture->Height / 2;
+            int32 halfHeight = GLTexture.Height / 2;
 
             for (int32 row = 0; row < halfHeight; ++row)
             {
                 p_topRowOfTexels = ImageData + row * widthInBytes;
-                p_bottomRowOfTexels = ImageData + (GLTexture->Height - row - 1) * widthInBytes;
+                p_bottomRowOfTexels = ImageData + (GLTexture.Height - row - 1) * widthInBytes;
 
                 for (int col = 0; col < widthInBytes; ++col)
                 {
@@ -621,7 +632,7 @@ namespace GL
             }
         };
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GLTexture->Width, GLTexture->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GLTexture.Width, GLTexture.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -630,14 +641,15 @@ namespace GL
         //Enable alpha channel for transparency
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
+        return GLTexture.ID; 
     }
 
     local_func auto
     DrawTexture(Texture GLTexture) -> void
     {
         glEnable(GL_TEXTURE_2D);
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
         glBindTexture(GL_TEXTURE_2D, GLTexture.ID);
 
         glBegin(GL_QUADS);
@@ -657,6 +669,7 @@ namespace GL
         glFlush();
 
         glDisable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     local_func auto
@@ -721,9 +734,13 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
                 PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
+                PlatformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
 
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
+                RenderCmds.DrawTexture = &GL::DrawTexture;
+                RenderCmds.LoadTexture = &GL::LoadTexture;
+                RenderCmds.Init = &GL::Init;
             }
 
             uint MonitorRefreshRate = bgz::MonitorRefreshHz();
@@ -755,15 +772,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             bgz::Timer FramePerformanceTimer{};
             FramePerformanceTimer.Init();
-
-            Texture BackgroundTexture{};
-            int channels{};
-            int ForceChannels{4};
-            BackgroundTexture.ImageData = stbi_load("Halloween.jpg", &BackgroundTexture.Width, &BackgroundTexture.Height, &channels, ForceChannels);
-            BGZ_ASSERT(BackgroundTexture.ImageData);
-
-            GL::Init();
-            GL::LoadTexture(&BackgroundTexture);
 
             while (GameRunning)
             {
@@ -874,7 +882,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 }
 
                 GameCode.UpdateFunc(&GameMemory, PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
-                GL::DrawTexture(BackgroundTexture);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState; 

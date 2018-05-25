@@ -15,6 +15,7 @@
 
 global_variable float32 WindowWidth = 1280.0f;
 global_variable float32 WindowHeight = 720.0f;
+global_variable Texture BackGroundTexture;
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
@@ -32,6 +33,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->Fighter.Origin = {100.0f, 100.0f};
         GameState->GameCamera.Position = {WindowWidth/2, WindowHeight/2};
         GameState->GameCamera.ZoomFactor = {0.0f};
+
+        RenderCmds.Init();
+
+        int ImageWidth{};
+        int ImageHeight{};
+        BackGroundTexture.ImageData = PlatformServices.LoadRGBAImage("Halloween.jpg", &ImageWidth, &ImageHeight);
+        BackGroundTexture.Width = ImageWidth;
+        BackGroundTexture.Height = ImageHeight;
+
+        BackGroundTexture.ID = RenderCmds.LoadTexture(BackGroundTexture);
     }
 
     Player* Fighter = &GameState->Fighter;
@@ -69,16 +80,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameCamera->ZoomFactor += .4f;
     }
 
-    /*
-    {//Draw Background
-        vec2 BRBottomLeft{0.0f, 0.0f};
-        vec2 BRBottomRight{WindowWidth, 0.0f};
-        vec2 BRTopRight{WindowWidth, WindowHeight};
-        vec2 BRTopLeft{0.0f, WindowHeight};
-        vec3 BRColor{0.4f, 0.4f, 0.4f};
-
-        RenderCmds.DrawRect(BRBottomLeft, BRBottomRight, BRTopRight, BRTopLeft, BRColor);
-    }
+    RenderCmds.DrawTexture(BackGroundTexture);
 
     {//Draw Player
         vec2 PlayerBL{Fighter->Origin.X + 100.0f, Fighter->Origin.Y + 0.0f};
@@ -97,5 +99,4 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
         RenderCmds.DrawRect(PlayerBL, PlayerBR, PlayerTR, PlayerTL, PlayerColor);
     }
-   */ 
 }
