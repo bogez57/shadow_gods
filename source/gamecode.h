@@ -5,7 +5,7 @@
 
 struct Player
 {
-    vec2 Origin;
+    vec2 Position;
 };
 
 struct Camera
@@ -16,9 +16,8 @@ struct Camera
 
 struct Game_State
 {
-    Player Fighter;
     Camera GameCamera;
-    float32 MoveWidth;
-    float32 MoveHeight;
+    Player Fighter;
     Texture BackgroundTexture;
+    Texture FighterTexture;
 };

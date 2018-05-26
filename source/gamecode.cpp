@@ -29,24 +29,24 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     {
         GameMemory->IsInitialized = true;
 
-        GameState->Fighter.Origin = {100.0f, 100.0f};
-        GameState->GameCamera.Position = {WindowWidth/2, WindowHeight/2};
-        GameState->MoveWidth = WindowWidth;
-        GameState->MoveHeight = WindowHeight;
-
         RenderCmds.Init();
 
-        int ImageWidth{};
-        int ImageHeight{};
-        GameState->BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage("Halloween.jpg", &ImageWidth, &ImageHeight);
-        GameState->BackgroundTexture.Width = ImageWidth;
-        GameState->BackgroundTexture.Height = ImageHeight;
+        {//Init Game State
+            GameState->GameCamera.Position = {WindowWidth / 2, WindowHeight / 2};
+            GameState->Fighter.Position = {100.0f, 100.0f};
 
-        GameState->BackgroundTexture.ID = RenderCmds.LoadTexture(GameState->BackgroundTexture);
+            GameState->BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage("Halloween.jpg", &GameState->BackgroundTexture.Width,
+                                                                                    &GameState->BackgroundTexture.Height);
+            GameState->BackgroundTexture.ID = RenderCmds.LoadTexture(GameState->BackgroundTexture);
+
+            GameState->FighterTexture.ImageData = PlatformServices.LoadRGBAImage("Fighter.jpg", &GameState->FighterTexture.Width,
+                                                                                 &GameState->FighterTexture.Height);
+            GameState->FighterTexture.ID = RenderCmds.LoadTexture(GameState->FighterTexture);
+        };
     }
-    
-    Player* Fighter = &GameState->Fighter;
+
     Camera* GameCamera = &GameState->GameCamera;
+    Player* Fighter = &GameState->Fighter;
     Texture* BackgroundTexture = &GameState->BackgroundTexture;
     GameCamera->ZoomFactor = {0.0f};
 
@@ -54,51 +54,44 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveUp.Pressed)
     {
-        Fighter->Origin.Y += 3.0f;
+        Fighter->Position.Y += 5.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
-        Fighter->Origin.Y -= 3.0f;
+        Fighter->Position.Y -= 5.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
     {
-        Fighter->Origin.X += 3.0f;
+        Fighter->Position.X += 5.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)
     {
-        Fighter->Origin.X -= 3.0f;
+        Fighter->Position.X -= 5.0f;
     }
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->ZoomFactor -= 1.4f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->ZoomFactor += 1.4f;
     }
 
-    RenderCmds.DrawTexture(*BackgroundTexture, (GameState->MoveWidth += GameCamera->ZoomFactor * 2), (GameState->MoveHeight += GameCamera->ZoomFactor));
+    RenderCmds.DrawTexture(*BackgroundTexture, vec2{0.0f, 0.0f}, WindowWidth, WindowHeight);
 
     {//Draw Player
-        vec2 PlayerBL{Fighter->Origin.X + 100.0f, Fighter->Origin.Y + 0.0f};
-        vec2 PlayerBR{Fighter->Origin.X + 200.0f, Fighter->Origin.Y + 0.0f};
-        vec2 PlayerTR{Fighter->Origin.X + 200.0f, Fighter->Origin.Y + 100.0f};
-        vec2 PlayerTL{Fighter->Origin.X + 100.0f, Fighter->Origin.Y + 100.0f};
-        vec3 PlayerColor{1.0f, 1.0f, 1.0f};
+        vec2 FighterPos = Fighter->Position;
+        vec3 FighterColor{1.0f, 1.0f, 1.0f};
 
-        PlayerBL.X -= GameCamera->ZoomFactor;
-        PlayerBR.X += GameCamera->ZoomFactor;
-        PlayerTR.X += GameCamera->ZoomFactor;
-        PlayerTL.X -= GameCamera->ZoomFactor;
+        float32 FighterWidth{100.0f};
+        float32 FighterHeight{200.0f};
 
-        PlayerTR.Y += (GameCamera->ZoomFactor * 2); 
-        PlayerTL.Y += (GameCamera->ZoomFactor * 2); 
-
-        RenderCmds.DrawRect(PlayerBL, PlayerBR, PlayerTR, PlayerTL, PlayerColor);
+        RenderCmds.DrawRect(vec2{FighterPos.X, FighterPos.Y}, vec2{FighterPos.X + FighterWidth, FighterPos.Y},
+                            vec2{FighterPos.X + FighterWidth, FighterPos.Y + FighterHeight},
+                            vec2{FighterPos.X, FighterPos.Y + FighterHeight}, FighterColor);
+        RenderCmds.DrawTexture(GameState->FighterTexture, FighterPos, FighterWidth, FighterHeight);
     }
 }
