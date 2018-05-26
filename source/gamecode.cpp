@@ -13,9 +13,6 @@
 #include "shared.h"
 #include "math.h"
 
-global_variable float32 WindowWidth = 1280.0f;
-global_variable float32 WindowHeight = 720.0f;
-
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)
@@ -32,22 +29,27 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         RenderCmds.Init();
 
         {//Init Game State
-            GameState->GameCamera.Position = {WindowWidth / 2, WindowHeight / 2};
+            GameState->GameCamera.Position = {GameState->GameLevel.Width/ 2, GameState->GameLevel.Height/ 2};
             GameState->Fighter.Position = {100.0f, 100.0f};
 
-            GameState->BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage("Halloween.jpg", &GameState->BackgroundTexture.Width,
-                                                                                    &GameState->BackgroundTexture.Height);
-            GameState->BackgroundTexture.ID = RenderCmds.LoadTexture(GameState->BackgroundTexture);
+            GameState->GameLevel.BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage(
+                                                                                    "Halloween.jpg", 
+                                                                                    &GameState->GameLevel.BackgroundTexture.Width,
+                                                                                    &GameState->GameLevel.BackgroundTexture.Height);
+            GameState->Fighter.CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
+                                                                                "Fighter.jpg", 
+                                                                                &GameState->Fighter.CurrentTexture.Width,
+                                                                                &GameState->Fighter.CurrentTexture.Height);
 
-            GameState->FighterTexture.ImageData = PlatformServices.LoadRGBAImage("Fighter.jpg", &GameState->FighterTexture.Width,
-                                                                                 &GameState->FighterTexture.Height);
-            GameState->FighterTexture.ID = RenderCmds.LoadTexture(GameState->FighterTexture);
+            GameState->GameLevel.BackgroundTexture.ID = RenderCmds.LoadTexture(GameState->GameLevel.BackgroundTexture);
+            GameState->Fighter.CurrentTexture.ID = RenderCmds.LoadTexture(GameState->Fighter.CurrentTexture);
         };
     }
 
     Camera* GameCamera = &GameState->GameCamera;
     Player* Fighter = &GameState->Fighter;
-    Texture* BackgroundTexture = &GameState->BackgroundTexture;
+    Texture* BackgroundTexture = &GameState->GameLevel.BackgroundTexture;
+
     GameCamera->ZoomFactor = {0.0f};
 
     RenderCmds.ClearScreen();
@@ -80,7 +82,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     {
     }
 
-    RenderCmds.DrawTexture(*BackgroundTexture, vec2{0.0f, 0.0f}, WindowWidth, WindowHeight);
+    RenderCmds.DrawTexture(*BackgroundTexture, vec2{0.0f, 0.0f}, (float32)BackgroundTexture->Width, (float32)BackgroundTexture->Height);
 
     {//Draw Player
         vec2 FighterPos = Fighter->Position;
@@ -92,6 +94,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         RenderCmds.DrawRect(vec2{FighterPos.X, FighterPos.Y}, vec2{FighterPos.X + FighterWidth, FighterPos.Y},
                             vec2{FighterPos.X + FighterWidth, FighterPos.Y + FighterHeight},
                             vec2{FighterPos.X, FighterPos.Y + FighterHeight}, FighterColor);
-        RenderCmds.DrawTexture(GameState->FighterTexture, FighterPos, FighterWidth, FighterHeight);
+        RenderCmds.DrawTexture(Fighter->CurrentTexture, FighterPos, FighterWidth, FighterHeight);
     }
 }

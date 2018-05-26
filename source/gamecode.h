@@ -6,6 +6,14 @@
 struct Player
 {
     vec2 Position;
+    Texture CurrentTexture;
+};
+
+struct Level
+{
+    float32 Width{2048.0f};
+    float32 Height{1152.0f};
+    Texture BackgroundTexture;
 };
 
 struct Camera
@@ -17,7 +25,6 @@ struct Camera
 struct Game_State
 {
     Camera GameCamera;
+    Level GameLevel;
     Player Fighter;
-    Texture BackgroundTexture;
-    Texture FighterTexture;
 };
