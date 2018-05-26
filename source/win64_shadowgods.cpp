@@ -647,7 +647,7 @@ namespace GL
     }
 
     local_func auto
-    DrawTexture(Texture GLTexture) -> void
+    DrawTexture(Texture GLTexture, float32 Width, float32 Height) -> void
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, GLTexture.ID);
@@ -657,13 +657,13 @@ namespace GL
         glVertex2f(0.0f, 0.0f);
 
         glTexCoord2f(1.0f, 0.0f);
-        glVertex2f((float32)GLTexture.Width, 0.0f);
+        glVertex2f(Width, 0.0f);
 
         glTexCoord2f(1.0f, 1.0f);
-        glVertex2f((float32)GLTexture.Width, (float32)GLTexture.Height);
+        glVertex2f(Width, Height);
 
         glTexCoord2f(0.0f, 1.0f);
-        glVertex2f(0.0f, (float32)GLTexture.Height);
+        glVertex2f(0.0f, Height);
 
         glEnd();
         glFlush();

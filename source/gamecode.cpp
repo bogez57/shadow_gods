@@ -15,7 +15,6 @@
 
 global_variable float32 WindowWidth = 1280.0f;
 global_variable float32 WindowHeight = 720.0f;
-global_variable Texture BackGroundTexture;
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
@@ -32,21 +31,24 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
         GameState->Fighter.Origin = {100.0f, 100.0f};
         GameState->GameCamera.Position = {WindowWidth/2, WindowHeight/2};
-        GameState->GameCamera.ZoomFactor = {0.0f};
+        GameState->MoveWidth = WindowWidth;
+        GameState->MoveHeight = WindowHeight;
 
         RenderCmds.Init();
 
         int ImageWidth{};
         int ImageHeight{};
-        BackGroundTexture.ImageData = PlatformServices.LoadRGBAImage("Halloween.jpg", &ImageWidth, &ImageHeight);
-        BackGroundTexture.Width = ImageWidth;
-        BackGroundTexture.Height = ImageHeight;
+        GameState->BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage("Halloween.jpg", &ImageWidth, &ImageHeight);
+        GameState->BackgroundTexture.Width = ImageWidth;
+        GameState->BackgroundTexture.Height = ImageHeight;
 
-        BackGroundTexture.ID = RenderCmds.LoadTexture(BackGroundTexture);
+        GameState->BackgroundTexture.ID = RenderCmds.LoadTexture(GameState->BackgroundTexture);
     }
-
+    
     Player* Fighter = &GameState->Fighter;
     Camera* GameCamera = &GameState->GameCamera;
+    Texture* BackgroundTexture = &GameState->BackgroundTexture;
+    GameCamera->ZoomFactor = {0.0f};
 
     RenderCmds.ClearScreen();
 
@@ -72,15 +74,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->ZoomFactor -= .4f;
+        GameCamera->ZoomFactor -= 1.4f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->ZoomFactor += .4f;
+        GameCamera->ZoomFactor += 1.4f;
     }
 
-    RenderCmds.DrawTexture(BackGroundTexture);
+    RenderCmds.DrawTexture(*BackgroundTexture, (GameState->MoveWidth += GameCamera->ZoomFactor * 2), (GameState->MoveHeight += GameCamera->ZoomFactor));
 
     {//Draw Player
         vec2 PlayerBL{Fighter->Origin.X + 100.0f, Fighter->Origin.Y + 0.0f};
