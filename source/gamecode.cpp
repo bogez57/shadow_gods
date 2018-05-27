@@ -13,6 +13,9 @@
 #include "shared.h"
 #include "math.h"
 
+global_variable float32 ViewportWidth;
+global_variable float32 ViewportHeight;
+
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)
@@ -25,17 +28,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(!GameMemory->IsInitialized)
     {
         GameMemory->IsInitialized = true;
+        ViewportWidth = 1280.0f;
+        ViewportHeight = 720.0f;
 
         RenderCmds.Init();
 
         {//Init Game State
-            GameState->GameCamera.Position = {GameState->GameLevel.Width/ 2, GameState->GameLevel.Height/ 2};
-            GameState->Fighter.Position = {100.0f, 100.0f};
-
             GameState->GameLevel.BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage(
-                                                                                    "Halloween.jpg", 
-                                                                                    &GameState->GameLevel.BackgroundTexture.Width,
-                                                                                    &GameState->GameLevel.BackgroundTexture.Height);
+                                                                                "Halloween.jpg", 
+                                                                                &GameState->GameLevel.BackgroundTexture.Width,
+                                                                                &GameState->GameLevel.BackgroundTexture.Height);
             GameState->Fighter.CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
                                                                                 "Fighter.jpg", 
                                                                                 &GameState->Fighter.CurrentTexture.Width,
@@ -43,6 +45,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             GameState->GameLevel.BackgroundTexture.ID = RenderCmds.LoadTexture(GameState->GameLevel.BackgroundTexture);
             GameState->Fighter.CurrentTexture.ID = RenderCmds.LoadTexture(GameState->Fighter.CurrentTexture);
+
+            GameState->GameLevel.Width = (float32)GameState->GameLevel.BackgroundTexture.Width;
+            GameState->GameLevel.Height = (float32)GameState->GameLevel.BackgroundTexture.Height;
+
+            GameState->GameCamera.ViewWidth = ViewportWidth;
+            GameState->GameCamera.ViewHeight = ViewportHeight;
+            GameState->GameCamera.Position = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
+
+            GameState->Fighter.Position = {200.0f, 200.0f};
         };
     }
 
@@ -76,13 +87,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->ActionUp.Pressed)
     {
+        GameCamera->Position.X += 3.0f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
+        GameCamera->Position.Y += 3.0f;
     }
 
-    RenderCmds.DrawTexture(*BackgroundTexture, vec2{0.0f, 0.0f}, (float32)BackgroundTexture->Width, (float32)BackgroundTexture->Height);
+    RenderCmds.DrawBackground(*BackgroundTexture, GameCamera->Position, vec2{GameCamera->ViewWidth, GameCamera->ViewHeight});
 
     {//Draw Player
         vec2 FighterPos = Fighter->Position;

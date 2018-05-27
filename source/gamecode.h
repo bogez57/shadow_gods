@@ -11,14 +11,16 @@ struct Player
 
 struct Level
 {
-    float32 Width{2048.0f};
-    float32 Height{1152.0f};
+    float32 Width;
+    float32 Height;
     Texture BackgroundTexture;
 };
 
 struct Camera
 {
     vec2 Position;
+    float32 ViewWidth;
+    float32 ViewHeight;
     float32 ZoomFactor;
 };
 

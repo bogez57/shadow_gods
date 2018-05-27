@@ -647,6 +647,40 @@ namespace GL
     }
 
     local_func auto
+    DrawBackground(Texture BackgroundTexture, vec2 StartingPoint, vec2 NumPixelsToDraw) -> void
+    {
+        vec2 PositionOnTexture{BackgroundTexture.Width - StartingPoint.X, BackgroundTexture.Height - StartingPoint.Y};
+
+        vec2 MinTexturePosition{PositionOnTexture.X - (NumPixelsToDraw.X / 2), PositionOnTexture.Y - (NumPixelsToDraw.Y / 2)};
+        vec2 MaxTexturePosition{MinTexturePosition.X + NumPixelsToDraw.X, MinTexturePosition.Y + NumPixelsToDraw.Y};
+
+        vec2 MinUV{MinTexturePosition.X / BackgroundTexture.Width, MinTexturePosition.Y / BackgroundTexture.Height};
+        vec2 MaxUV{MaxTexturePosition.X / BackgroundTexture.Width, MaxTexturePosition.Y / BackgroundTexture.Height};
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, BackgroundTexture.ID);
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(MinUV.X, MinUV.Y);
+        glVertex2f(0.0f, 0.0f);
+
+        glTexCoord2f(MaxUV.X, MinUV.Y);
+        glVertex2f(NumPixelsToDraw.X, 0.0f);
+
+        glTexCoord2f(MaxUV.X, MaxUV.Y);
+        glVertex2f(NumPixelsToDraw.X, NumPixelsToDraw.Y);
+
+        glTexCoord2f(MinUV.X, MaxUV.Y);
+        glVertex2f(0.0f, NumPixelsToDraw.Y);
+
+        glEnd();
+        glFlush();
+
+        glDisable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    local_func auto
     DrawTexture(Texture GLTexture, vec2 TexturePos, float32 Width, float32 Height) -> void
     {
         glEnable(GL_TEXTURE_2D);
@@ -739,6 +773,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
                 RenderCmds.DrawTexture = &GL::DrawTexture;
+                RenderCmds.DrawBackground = &GL::DrawBackground;
                 RenderCmds.LoadTexture = &GL::LoadTexture;
                 RenderCmds.Init = &GL::Init;
             }
