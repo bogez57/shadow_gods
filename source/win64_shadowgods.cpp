@@ -647,11 +647,12 @@ namespace GL
     }
 
     local_func auto
-    DrawBackground(Texture BackgroundTexture, vec2 StartingPoint, vec2 NumPixelsToDraw) -> void
+    DrawBackground(Texture BackgroundTexture, vec2 FocusPoint, vec2 NumPixelsToDraw, float32 ZoomFactor) -> void
     {
-        vec2 PositionOnTexture{BackgroundTexture.Width - StartingPoint.X, BackgroundTexture.Height - StartingPoint.Y};
+        vec2 StartingTexturePosition{BackgroundTexture.Width - (BackgroundTexture.Width - FocusPoint.X), 
+                                     BackgroundTexture.Height - (BackgroundTexture.Height - FocusPoint.Y)};
 
-        vec2 MinTexturePosition{PositionOnTexture.X - (NumPixelsToDraw.X / 2), PositionOnTexture.Y - (NumPixelsToDraw.Y / 2)};
+        vec2 MinTexturePosition{StartingTexturePosition.X - (NumPixelsToDraw.X / 2), StartingTexturePosition.Y - (NumPixelsToDraw.Y / 2)};
         vec2 MaxTexturePosition{MinTexturePosition.X + NumPixelsToDraw.X, MinTexturePosition.Y + NumPixelsToDraw.Y};
 
         vec2 MinUV{MinTexturePosition.X / BackgroundTexture.Width, MinTexturePosition.Y / BackgroundTexture.Height};

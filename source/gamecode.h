@@ -18,7 +18,7 @@ struct Level
 
 struct Camera
 {
-    vec2 Position;
+    vec2 FocusPoint;
     float32 ViewWidth;
     float32 ViewHeight;
     float32 ZoomFactor;

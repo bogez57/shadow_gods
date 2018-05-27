@@ -49,9 +49,9 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameState->GameLevel.Width = (float32)GameState->GameLevel.BackgroundTexture.Width;
             GameState->GameLevel.Height = (float32)GameState->GameLevel.BackgroundTexture.Height;
 
+            GameState->GameCamera.FocusPoint = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
             GameState->GameCamera.ViewWidth = ViewportWidth;
             GameState->GameCamera.ViewHeight = ViewportHeight;
-            GameState->GameCamera.Position = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
 
             GameState->Fighter.Position = {200.0f, 200.0f};
         };
@@ -87,15 +87,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->Position.X += 3.0f;
+        GameCamera->FocusPoint.X += 3.0f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->Position.Y += 3.0f;
+        GameCamera->FocusPoint.Y += 3.0f;
     }
 
-    RenderCmds.DrawBackground(*BackgroundTexture, GameCamera->Position, vec2{GameCamera->ViewWidth, GameCamera->ViewHeight});
+    RenderCmds.DrawBackground(*BackgroundTexture, GameCamera->FocusPoint, vec2{GameCamera->ViewWidth, GameCamera->ViewHeight});
 
     {//Draw Player
         vec2 FighterPos = Fighter->Position;
@@ -104,9 +104,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         float32 FighterWidth{100.0f};
         float32 FighterHeight{200.0f};
 
-        RenderCmds.DrawRect(vec2{FighterPos.X, FighterPos.Y}, vec2{FighterPos.X + FighterWidth, FighterPos.Y},
-                            vec2{FighterPos.X + FighterWidth, FighterPos.Y + FighterHeight},
-                            vec2{FighterPos.X, FighterPos.Y + FighterHeight}, FighterColor);
         RenderCmds.DrawTexture(Fighter->CurrentTexture, FighterPos, FighterWidth, FighterHeight);
     }
 }
