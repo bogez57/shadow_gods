@@ -67,35 +67,38 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveUp.Pressed)
     {
-        Fighter->Position.Y += 5.0f;
+        Fighter->Position.y += 5.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
-        Fighter->Position.Y -= 5.0f;
+        Fighter->Position.y -= 5.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
     {
-        Fighter->Position.X += 5.0f;
+        Fighter->Position.y += 5.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)
     {
-        Fighter->Position.X -= 5.0f;
+        Fighter->Position.x -= 5.0f;
     }
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->FocusPoint.X += 3.0f;
+        GameCamera->ZoomFactor += 3.0f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->FocusPoint.Y += 3.0f;
+        GameCamera->ZoomFactor -= 3.0f;
     }
 
-    RenderCmds.DrawBackground(*BackgroundTexture, GameCamera->FocusPoint, vec2{GameCamera->ViewWidth, GameCamera->ViewHeight});
+    BackgroundTexture->Width += (int)GameCamera->ZoomFactor * 2;
+    BackgroundTexture->Height += (int)GameCamera->ZoomFactor;
+
+    RenderCmds.DrawBackground(*BackgroundTexture, GameCamera->FocusPoint, vec2{GameCamera->ViewWidth, GameCamera->ViewHeight}, GameCamera->ZoomFactor);
 
     {//Draw Player
         vec2 FighterPos = Fighter->Position;

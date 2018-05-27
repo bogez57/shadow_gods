@@ -591,12 +591,12 @@ namespace GL
     local_func auto
     DrawRect(vec2 BottomLeft, vec2 BottomRight, vec2 TopRight, vec2 TopLeft, vec3 Color) -> void
     {
-        glColor3f(Color.R, Color.G, Color.B);
+        glColor3f(Color.r, Color.g, Color.b);
         glBegin(GL_QUADS);
-        glVertex2f(BottomLeft.X, BottomLeft.Y);
-        glVertex2f(BottomRight.X, BottomRight.Y);
-        glVertex2f(TopRight.X, TopRight.Y);
-        glVertex2f(TopLeft.X, TopLeft.Y);
+        glVertex2f(BottomLeft.x, BottomLeft.y);
+        glVertex2f(BottomRight.x, BottomRight.y);
+        glVertex2f(TopRight.x, TopRight.y);
+        glVertex2f(TopLeft.x, TopLeft.y);
         glEnd();
     }
 
@@ -649,30 +649,30 @@ namespace GL
     local_func auto
     DrawBackground(Texture BackgroundTexture, vec2 FocusPoint, vec2 NumPixelsToDraw, float32 ZoomFactor) -> void
     {
-        vec2 StartingTexturePosition{BackgroundTexture.Width - (BackgroundTexture.Width - FocusPoint.X), 
-                                     BackgroundTexture.Height - (BackgroundTexture.Height - FocusPoint.Y)};
+        vec2 StartingTexturePosition{BackgroundTexture.Width - (BackgroundTexture.Width - FocusPoint.x), 
+                                     BackgroundTexture.Height - (BackgroundTexture.Height - FocusPoint.y)};
 
-        vec2 MinTexturePosition{StartingTexturePosition.X - (NumPixelsToDraw.X / 2), StartingTexturePosition.Y - (NumPixelsToDraw.Y / 2)};
-        vec2 MaxTexturePosition{MinTexturePosition.X + NumPixelsToDraw.X, MinTexturePosition.Y + NumPixelsToDraw.Y};
+        vec2 MinTexturePosition{StartingTexturePosition.x - (NumPixelsToDraw.x / 2), StartingTexturePosition.y - (NumPixelsToDraw.y / 2)};
+        vec2 MaxTexturePosition{MinTexturePosition.x + NumPixelsToDraw.x, MinTexturePosition.y + NumPixelsToDraw.y};
 
-        vec2 MinUV{MinTexturePosition.X / BackgroundTexture.Width, MinTexturePosition.Y / BackgroundTexture.Height};
-        vec2 MaxUV{MaxTexturePosition.X / BackgroundTexture.Width, MaxTexturePosition.Y / BackgroundTexture.Height};
+        vec2 MinUV{MinTexturePosition.x / BackgroundTexture.Width, MinTexturePosition.y / BackgroundTexture.Height};
+        vec2 MaxUV{MaxTexturePosition.x / BackgroundTexture.Width, MaxTexturePosition.y / BackgroundTexture.Height};
 
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, BackgroundTexture.ID);
 
         glBegin(GL_QUADS);
-        glTexCoord2f(MinUV.X, MinUV.Y);
+        glTexCoord2f(MinUV.x, MinUV.y);
         glVertex2f(0.0f, 0.0f);
 
-        glTexCoord2f(MaxUV.X, MinUV.Y);
-        glVertex2f(NumPixelsToDraw.X, 0.0f);
+        glTexCoord2f(MaxUV.x, MinUV.y);
+        glVertex2f(NumPixelsToDraw.x, 0.0f);
 
-        glTexCoord2f(MaxUV.X, MaxUV.Y);
-        glVertex2f(NumPixelsToDraw.X, NumPixelsToDraw.Y);
+        glTexCoord2f(MaxUV.x, MaxUV.y);
+        glVertex2f(NumPixelsToDraw.x, NumPixelsToDraw.y);
 
-        glTexCoord2f(MinUV.X, MaxUV.Y);
-        glVertex2f(0.0f, NumPixelsToDraw.Y);
+        glTexCoord2f(MinUV.x, MaxUV.y);
+        glVertex2f(0.0f, NumPixelsToDraw.y);
 
         glEnd();
         glFlush();
@@ -689,16 +689,16 @@ namespace GL
 
         glBegin(GL_QUADS);
         glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(TexturePos.X, TexturePos.Y);
+        glVertex2f(TexturePos.x, TexturePos.y);
 
         glTexCoord2f(1.0f, 0.0f);
-        glVertex2f(TexturePos.X + Width, TexturePos.Y);
+        glVertex2f(TexturePos.x + Width, TexturePos.y);
 
         glTexCoord2f(1.0f, 1.0f);
-        glVertex2f(TexturePos.X + Width, TexturePos.Y + Height);
+        glVertex2f(TexturePos.x + Width, TexturePos.y + Height);
 
         glTexCoord2f(0.0f, 1.0f);
-        glVertex2f(TexturePos.X, TexturePos.Y + Height);
+        glVertex2f(TexturePos.x, TexturePos.y + Height);
 
         glEnd();
         glFlush();
@@ -848,35 +848,35 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                                 XINPUT_GAMEPAD *XGamePad = &ControllerState.Gamepad;
                                 MyGamePad->IsConnected = true;
 
-                                MyGamePad->LThumbStick.X = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-                                MyGamePad->LThumbStick.Y = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                                MyGamePad->LThumbStick.x = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                                MyGamePad->LThumbStick.y = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
 
-                                if((MyGamePad->LThumbStick.X != 0.0f) || (MyGamePad->LThumbStick.Y != 0.0f))
+                                if((MyGamePad->LThumbStick.x != 0.0f) || (MyGamePad->LThumbStick.y != 0.0f))
                                 {
                                     MyGamePad->IsAnalog = true;
                                 }
 
                                 if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_UP)
                                 {
-                                    MyGamePad->LThumbStick.Y = 1.0f;
+                                    MyGamePad->LThumbStick.y = 1.0f;
                                     MyGamePad->IsAnalog = false;
                                 }
 
                                 if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)
                                 {
-                                    MyGamePad->LThumbStick.Y = -1.0f;
+                                    MyGamePad->LThumbStick.y = -1.0f;
                                     MyGamePad->IsAnalog = false;
                                 }
 
                                 if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)
                                 {
-                                    MyGamePad->LThumbStick.X = -1.0f;
+                                    MyGamePad->LThumbStick.x = -1.0f;
                                     MyGamePad->IsAnalog = false;
                                 }
 
                                 if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)
                                 {
-                                    MyGamePad->LThumbStick.X = 1.0f;
+                                    MyGamePad->LThumbStick.x = 1.0f;
                                     MyGamePad->IsAnalog = false;
                                 }
      

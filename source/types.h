@@ -27,21 +27,21 @@ typedef double float64;
 struct vec2
 {
     vec2() = default;
-    vec2(float32 X, float32 Y);
+    vec2(float32 x, float32 y);
 
     union
     {
         float32 Elem[2];
         struct
         {
-            float32 X, Y;
+            float32 x, y;
         };
     };
 };
 
-vec2::vec2(float32 X, float32 Y) :
-    X(X),
-    Y(Y)
+vec2::vec2(float32 x, float32 y) :
+    x(x),
+    y(y)
 {}
 
 inline vec2
@@ -49,8 +49,8 @@ operator*(float32 A,  vec2 B)
 {
     vec2 Result;
 
-    Result.X = A*B.X;
-    Result.Y = A*B.Y;
+    Result.x = A*B.x;
+    Result.y = A*B.y;
 
     return(Result);
 }
@@ -76,8 +76,8 @@ operator-(vec2 A)
 {
     vec2 Result;
 
-    Result.X = -A.X;
-    Result.Y = -A.Y;
+    Result.x = -A.x;
+    Result.x = -A.y;
 
     return(Result);
 }
@@ -87,8 +87,8 @@ operator+(vec2 A, vec2 B)
 {
     vec2 Result;
 
-    Result.X = A.X + B.X;
-    Result.Y = A.Y + B.Y;
+    Result.x = A.x + B.x;
+    Result.y = A.y + B.y;
 
     return(Result);
 }
@@ -104,8 +104,8 @@ operator+=(vec2& A, vec2 B)
 inline vec2&
 operator+=(vec2& A, float32 B)
 {
-    A.X = A.X + B;
-    A.Y = A.Y + B;
+    A.x = A.x + B;
+    A.y = A.y + B;
 
     return(A);
 }
@@ -113,8 +113,8 @@ operator+=(vec2& A, float32 B)
 inline vec2&
 operator-=(vec2& A, float32 B)
 {
-    A.X = A.X - B;
-    A.Y = A.Y - B;
+    A.x = A.x - B;
+    A.y = A.y - B;
 
     return(A);
 }
@@ -124,8 +124,8 @@ operator-(vec2 A, vec2 B)
 {
     vec2 Result;
 
-    Result.X = A.X - B.X;
-    Result.Y = A.Y - B.Y;
+    Result.x = A.x - B.x;
+    Result.y = A.y - B.y;
 
     return(Result);
 }
@@ -133,25 +133,25 @@ operator-(vec2 A, vec2 B)
 struct vec3
 {
     vec3() = default;
-    vec3(float32 X, float32 Y, float32 Z);
+    vec3(float32 x, float32 y, float32 z);
 
     union
     {
         float32 Elem[3];
         struct
         {
-            float32 X, Y, Z;
+            float32 x, y, z;
         };
 
         struct
         {
-            float32 R, G, B;
+            float32 r, g, b;
         };
     };
 };
 
-vec3::vec3(float32 X, float32 Y, float32 Z) :
-    X(X),
-    Y(Y),
-    Z(Z)
+vec3::vec3(float32 x, float32 y, float32 z) :
+    x(x),
+    y(y),
+    z(z)
 {}
