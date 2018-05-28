@@ -112,6 +112,20 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     {//Render
 
         {//Draw Level Background
+            vec2 LevelRelativeDistanceFromCamera = {GameCamera->LevelPos - GameLevel->CenterPoint};
+
+            vec2 LevelViewSpacePosition = {AbsoluteVal(LevelRelativeDistanceFromCamera.x - (GameCamera->ViewWidth / 2)),
+                                           AbsoluteVal(LevelRelativeDistanceFromCamera.y - (GameCamera->ViewHeight / 2))};
+
+            Rect LevelViewSpacePos = ProduceRectFromCenterPoint(LevelViewSpacePosition, GameCamera->ViewWidth, GameCamera->ViewHeight);
+
+            RenderCmds.DrawRect(LevelViewSpacePos.MinPoint, LevelViewSpacePos.MaxPoint);
+
+            vec2 MinFighterTextureUV{0.3f, 0.3f};
+            vec2 MaxFighterTextureUV{0.6f, 0.6f};
+            RenderCmds.DrawTexture(GameLevel->BackgroundTexture.ID, LevelViewSpacePos, MinFighterTextureUV, MaxFighterTextureUV);
+
+            /*
             Rect LevelSpaceCoords = ProduceRectFromCenterPoint(GameLevel->CenterPoint, GameLevel->Width, GameLevel->Height);
             //Draw entire level. Even though points are being generated offscreen (as they are in level space and not 
             //converted to camera/view space), this might make later calculations eaiser to reason about without causing too 
@@ -128,7 +142,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             vec2 MaxUV{BackgroundPoritionToDisplay.MaxPoint.x / GameLevel->Width, 
                        BackgroundPoritionToDisplay.MaxPoint.y / GameLevel->Height};
 
-            RenderCmds.DrawTexture(BackgroundTexture->ID, LevelSpaceCoords, MinUV, MaxUV);
+            RenderCmds.DrawTexture(BackgroundTexture->ID, LevelSpaceCoords, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});*/
         };
 
         {//Draw Player
@@ -136,7 +150,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             vec2 FighterViewSpacePosition{};
 
             {//Convert Player world position to camera space position
-                FighterRelativeDistanceFromCamera = {GameCamera->LevelPos- Fighter->LevelPos};
+                FighterRelativeDistanceFromCamera = {GameCamera->LevelPos - Fighter->LevelPos};
 
                 FighterViewSpacePosition = {AbsoluteVal(FighterRelativeDistanceFromCamera.x - (GameCamera->ViewWidth / 2)),
                                             AbsoluteVal(FighterRelativeDistanceFromCamera.y - (GameCamera->ViewHeight / 2))};
