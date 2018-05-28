@@ -35,7 +35,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
         {//Init Game State
             GameState->GameLevel.BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage(
-                                                                                "Halloween.jpg", 
+                                                                                "4k.jpg", 
                                                                                 &GameState->GameLevel.BackgroundTexture.Width,
                                                                                 &GameState->GameLevel.BackgroundTexture.Height);
             GameState->Fighter.CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
@@ -53,12 +53,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameState->GameCamera.ViewWidth = ViewportWidth;
             GameState->GameCamera.ViewHeight = ViewportHeight;
 
-            GameState->Fighter.Position = {200.0f, 200.0f};
+            GameState->Fighter.WorldPos = {GameState->GameLevel.Width * .45f, GameState->GameLevel.Height * .45f};
+            GameState->Fighter.Width = 100.0f;
+            GameState->Fighter.Height = 200.0f;
         };
     }
 
     Camera* GameCamera = &GameState->GameCamera;
     Player* Fighter = &GameState->Fighter;
+    Level* GameLevel = &GameState->GameLevel;
     Texture* BackgroundTexture = &GameState->GameLevel.BackgroundTexture;
 
     GameCamera->ZoomFactor = {0.0f};
@@ -67,46 +70,54 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveUp.Pressed)
     {
-        Fighter->Position.y += 5.0f;
+        Fighter->WorldPos.y += 1.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
-        Fighter->Position.y -= 5.0f;
+        Fighter->WorldPos.y -= 1.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
     {
-        Fighter->Position.y += 5.0f;
+        Fighter->WorldPos.x += 5.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)
     {
-        Fighter->Position.x -= 5.0f;
+        Fighter->WorldPos.x -= 5.0f;
     }
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->ZoomFactor += 3.0f;
+        GameCamera->FocusPoint.y += 2.0f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->ZoomFactor -= 3.0f;
+        GameCamera->FocusPoint.y -= 2.0f;
     }
 
-    BackgroundTexture->Width += (int)GameCamera->ZoomFactor * 2;
-    BackgroundTexture->Height += (int)GameCamera->ZoomFactor;
+    {//Render
 
-    RenderCmds.DrawBackground(*BackgroundTexture, GameCamera->FocusPoint, vec2{GameCamera->ViewWidth, GameCamera->ViewHeight}, GameCamera->ZoomFactor);
+        {//Draw Player
 
-    {//Draw Player
-        vec2 FighterPos = Fighter->Position;
-        vec3 FighterColor{1.0f, 1.0f, 1.0f};
+            vec2 FighterRelativeDistanceFromCamera{};
+            vec2 FighterCameraSpacePosition{};
 
-        float32 FighterWidth{100.0f};
-        float32 FighterHeight{200.0f};
+            { //Convert Player world position to camera space position
+                FighterRelativeDistanceFromCamera = {GameCamera->FocusPoint - Fighter->WorldPos};
 
-        RenderCmds.DrawTexture(Fighter->CurrentTexture, FighterPos, FighterWidth, FighterHeight);
-    }
+                FighterCameraSpacePosition = {AbsoluteVal(FighterRelativeDistanceFromCamera.x - (GameCamera->ViewWidth / 2)),
+                                              AbsoluteVal(FighterRelativeDistanceFromCamera.y - (GameCamera->ViewHeight / 2))};
+            };
+
+            vec2 FighterMinPoint = {FighterCameraSpacePosition.x - (Fighter->Width / 2), 
+                                    FighterCameraSpacePosition.y - (Fighter->Height / 2)};
+            vec2 FighterMaxPoint = {FighterCameraSpacePosition.x + (Fighter->Width / 2), 
+                                    FighterCameraSpacePosition.y + (Fighter->Height / 2)};
+
+            RenderCmds.DrawRect(FighterMinPoint, FighterMaxPoint);
+        };
+    };
 }

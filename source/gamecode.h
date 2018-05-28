@@ -5,7 +5,9 @@
 
 struct Player
 {
-    vec2 Position;
+    vec2 WorldPos;
+    float32 Width;
+    float32 Height;
     Texture CurrentTexture;
 };
 

@@ -372,8 +372,13 @@ namespace Win32
                         {
                             Win32::ProcessKeyboardMessage(&Keyboard->ActionDown, IsDown);
                         }
-                        else if (VKCode == 'E')
+                        else if (VKCode == 'C')
                         {
+                            Win32::ProcessKeyboardMessage(&Keyboard->ActionRight, IsDown);
+                        }
+                        else if (VKCode == 'X')
+                        {
+                            Win32::ProcessKeyboardMessage(&Keyboard->ActionLeft, IsDown);
                         }
                         else if (VKCode == 'R')
                         {
@@ -589,18 +594,6 @@ namespace GL
     }
 
     local_func auto
-    DrawRect(vec2 BottomLeft, vec2 BottomRight, vec2 TopRight, vec2 TopLeft, vec3 Color) -> void
-    {
-        glColor3f(Color.r, Color.g, Color.b);
-        glBegin(GL_QUADS);
-        glVertex2f(BottomLeft.x, BottomLeft.y);
-        glVertex2f(BottomRight.x, BottomRight.y);
-        glVertex2f(TopRight.x, TopRight.y);
-        glVertex2f(TopLeft.x, TopLeft.y);
-        glEnd();
-    }
-
-    local_func auto
     LoadTexture(Texture GLTexture) -> uint
     {
         uint8* ImageData = (uint8*)GLTexture.ImageData;
@@ -682,29 +675,17 @@ namespace GL
     }
 
     local_func auto
-    DrawTexture(Texture GLTexture, vec2 TexturePos, float32 Width, float32 Height) -> void
+    DrawRect(vec2 MinPoint, vec2 MaxPoint) -> void
     {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, GLTexture.ID);
-
         glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(TexturePos.x, TexturePos.y);
 
-        glTexCoord2f(1.0f, 0.0f);
-        glVertex2f(TexturePos.x + Width, TexturePos.y);
-
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex2f(TexturePos.x + Width, TexturePos.y + Height);
-
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex2f(TexturePos.x, TexturePos.y + Height);
+        glVertex2f(MinPoint.x, MinPoint.y);
+        glVertex2f(MaxPoint.x, MinPoint.y);
+        glVertex2f(MaxPoint.x, MaxPoint.y);
+        glVertex2f(MinPoint.x, MaxPoint.y);
 
         glEnd();
         glFlush();
-
-        glDisable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     local_func auto
@@ -773,7 +754,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
-                RenderCmds.DrawTexture = &GL::DrawTexture;
                 RenderCmds.DrawBackground = &GL::DrawBackground;
                 RenderCmds.LoadTexture = &GL::LoadTexture;
                 RenderCmds.Init = &GL::Init;

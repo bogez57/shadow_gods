@@ -86,9 +86,8 @@ struct Texture
 
 struct Game_Render_Cmds
 {
-    void (*DrawRect)(vec2, vec2, vec2, vec2, vec3);
     void (*ClearScreen)();
-    void (*DrawTexture)(Texture, vec2, float32, float32);
+    void (*DrawRect)(vec2, vec2);
     void (*DrawBackground)(Texture, vec2, vec2, float32);
     uint (*LoadTexture)(Texture);
     void (*Init)();
@@ -102,3 +101,10 @@ struct Platform_Services
     void (*FreeFileMemory)(void*);
     unsigned char* (*LoadRGBAImage)(const char*, int*, int*);
 };
+
+////////////////////////////////////////////
+/*
+    Rendering related stuff follows below. Should be moved out into a separate file eventually once we move 
+    into more of a three tiered architecture
+*/
+////////////////////////////////////////////
