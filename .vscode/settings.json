@@ -6,7 +6,8 @@
     "editor.fontSize": 18,
     "files.associations": {
         "cstdio": "cpp",
-        "*.rh": "cpp"
+        "*.rh": "cpp",
+        "xiosbase": "cpp"
     },
 
     /********************

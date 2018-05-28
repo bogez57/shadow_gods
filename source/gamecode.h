@@ -5,7 +5,7 @@
 
 struct Player
 {
-    vec2 LevelPos;
+    vec2 WorldPos;
     float32 Width;
     float32 Height;
     Texture CurrentTexture;
@@ -21,7 +21,8 @@ struct Level
 
 struct Camera
 {
-    vec2 LevelPos;
+    vec2 WorldPos;
+    vec2 ViewCenter;
     float32 ViewWidth;
     float32 ViewHeight;
     float32 ZoomFactor;
