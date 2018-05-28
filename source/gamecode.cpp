@@ -65,8 +65,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     Player* Fighter = &GameState->Fighter;
     Level* GameLevel = &GameState->GameLevel;
 
-    GameCamera->ZoomFactor = {0.0f};
-
     RenderCmds.ClearScreen();
 
     if(Keyboard->MoveUp.Pressed)
@@ -91,12 +89,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->WorldPos.y += 2.0f;
+        GameCamera->ZoomFactor += 0.001f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->WorldPos.y -= 2.0f;
+        GameCamera->ZoomFactor -= 0.001f;
     }
 
     if(Keyboard->ActionRight.Pressed)
@@ -118,6 +116,11 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             Rect CameraViewCoords = ProduceRectFromCenterPoint(GameCamera->ViewCenter, GameCamera->ViewWidth, GameCamera->ViewHeight);
 
+            MinDisplayUV.x += GameCamera->ZoomFactor;
+            MaxDisplayUV.x -= GameCamera->ZoomFactor;
+            MinDisplayUV.y += GameCamera->ZoomFactor;
+            MaxDisplayUV.y -= GameCamera->ZoomFactor;
+
             RenderCmds.DrawTexture(GameLevel->BackgroundTexture.ID, CameraViewCoords, MinDisplayUV, MaxDisplayUV);
         };
 
@@ -134,11 +137,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             Rect FighterViewSpacePos = ProduceRectFromCenterPoint(FighterViewSpacePosition, Fighter->Width, Fighter->Height);
 
-            RenderCmds.DrawRect(FighterViewSpacePos.MinPoint, FighterViewSpacePos.MaxPoint);
+            /*FighterViewSpacePos.MinPoint.x -= GameCamera->ZoomFactor * 100.0f;
+            FighterViewSpacePos.MaxPoint.x += GameCamera->ZoomFactor * 100.0f;
+            FighterViewSpacePos.MinPoint.y -= GameCamera->ZoomFactor * 190.0f;
+            FighterViewSpacePos.MaxPoint.y += GameCamera->ZoomFactor * 190.0f;*/
 
-            vec2 MinFighterTextureUV{0.0f, 0.0f};
-            vec2 MaxFighterTextureUV{1.0f, 1.0f};
-            RenderCmds.DrawTexture(Fighter->CurrentTexture.ID, FighterViewSpacePos, MinFighterTextureUV, MaxFighterTextureUV);
+            RenderCmds.DrawTexture(Fighter->CurrentTexture.ID, FighterViewSpacePos, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
         };
     };
 }
