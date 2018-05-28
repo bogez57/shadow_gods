@@ -689,6 +689,32 @@ namespace GL
     }
 
     local_func auto
+    DrawTexture(uint TextureID, Rect Destination)
+    {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, TextureID);
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(Destination.MinPoint.x, Destination.MinPoint.y);
+
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex2f(Destination.MaxPoint.x, Destination.MinPoint.y);
+
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex2f(Destination.MaxPoint.x, Destination.MaxPoint.y);
+
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex2f(Destination.MinPoint.x, Destination.MaxPoint.y);
+
+        glEnd();
+        glFlush();
+
+        glDisable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    local_func auto
     ClearScreen() -> void
     {
         glClear(GL_COLOR_BUFFER_BIT);
@@ -756,6 +782,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.ClearScreen = &GL::ClearScreen;
                 RenderCmds.DrawBackground = &GL::DrawBackground;
                 RenderCmds.LoadTexture = &GL::LoadTexture;
+                RenderCmds.DrawTexture = &GL::DrawTexture;
                 RenderCmds.Init = &GL::Init;
             }
 

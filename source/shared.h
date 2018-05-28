@@ -76,23 +76,6 @@ struct Game_Sound_Output_Buffer
 
 };
 
-struct Texture
-{
-    unsigned char* ImageData;
-    int Width;
-    int Height;
-    uint ID;
-};
-
-struct Game_Render_Cmds
-{
-    void (*ClearScreen)();
-    void (*DrawRect)(vec2, vec2);
-    void (*DrawBackground)(Texture, vec2, vec2, float32);
-    uint (*LoadTexture)(Texture);
-    void (*Init)();
-};
-
 struct Read_File_Result {void* FileContents{nullptr}; uint32 FileSize{};};
 struct Platform_Services
 {
@@ -104,7 +87,42 @@ struct Platform_Services
 
 ////////////////////////////////////////////
 /*
-    Rendering related stuff follows below. Should be moved out into a separate file eventually once we move 
+    Rendering related stuff follows below. Should probably be moved out into a separate file eventually once we move 
     into more of a three tiered architecture
 */
 ////////////////////////////////////////////
+
+struct Texture
+{
+    unsigned char* ImageData;
+    int Width;
+    int Height;
+    uint ID;
+};
+
+struct Rect
+{
+    vec2 MinPoint;
+    vec2 MaxPoint;
+};
+
+inline auto
+ProduceRectFromCenterPoint(vec2 Position, float32 Width, float32 Height) -> Rect
+{
+    Rect RectCenterOrigin{};
+
+    RectCenterOrigin.MinPoint = {Position.x - (Width / 2), Position.y - (Height / 2)};
+    RectCenterOrigin.MaxPoint = {Position.x + (Width / 2), Position.y + (Height / 2)};
+
+    return RectCenterOrigin;
+}
+
+struct Game_Render_Cmds
+{
+    void (*ClearScreen)();
+    void (*DrawRect)(vec2, vec2);
+    void (*DrawBackground)(Texture, vec2, vec2, float32);
+    void (*DrawTexture)(uint, Rect);
+    uint (*LoadTexture)(Texture);
+    void (*Init)();
+};
