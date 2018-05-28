@@ -121,8 +121,8 @@ struct Game_Render_Cmds
 {
     void (*ClearScreen)();
     void (*DrawRect)(vec2, vec2);
-    void (*DrawBackground)(Texture, vec2, vec2, float32);
-    void (*DrawTexture)(uint, Rect);
+    void (*DrawBackground)(uint, vec2, vec2, vec2);
+    void (*DrawTexture)(uint, Rect, vec2, vec2);
     uint (*LoadTexture)(Texture);
     void (*Init)();
 };

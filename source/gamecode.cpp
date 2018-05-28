@@ -48,12 +48,13 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             GameState->GameLevel.Width = (float32)GameState->GameLevel.BackgroundTexture.Width;
             GameState->GameLevel.Height = (float32)GameState->GameLevel.BackgroundTexture.Height;
+            GameState->GameLevel.CenterPoint = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
 
-            GameState->GameCamera.WorldPos = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
+            GameState->GameCamera.LevelPos = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
             GameState->GameCamera.ViewWidth = ViewportWidth;
             GameState->GameCamera.ViewHeight = ViewportHeight;
 
-            GameState->Fighter.WorldPos = {GameState->GameLevel.Width * .45f, GameState->GameLevel.Height * .45f};
+            GameState->Fighter.LevelPos = {GameState->GameLevel.Width * .45f, GameState->GameLevel.Height * .45f};
             GameState->Fighter.Width = 100.0f;
             GameState->Fighter.Height = 200.0f;
         };
@@ -70,52 +71,72 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveUp.Pressed)
     {
-        Fighter->WorldPos.y += 1.0f;
+        Fighter->LevelPos.y += 1.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
-        Fighter->WorldPos.y -= 1.0f;
+        Fighter->LevelPos.y -= 1.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
     {
-        Fighter->WorldPos.x += 5.0f;
+        Fighter->LevelPos.x += 5.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)
     {
-        Fighter->WorldPos.x -= 5.0f;
+        Fighter->LevelPos.x -= 5.0f;
     }
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->WorldPos .y += 2.0f;
+        GameCamera->LevelPos.y += 2.0f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->WorldPos .y -= 2.0f;
+        GameCamera->LevelPos.y -= 2.0f;
     }
 
     if(Keyboard->ActionRight.Pressed)
     {
-        GameCamera->WorldPos.x += 2.0f;
+        GameCamera->LevelPos.x += 2.0f;
     }
 
     if(Keyboard->ActionLeft.Pressed)
     {
-        GameCamera->WorldPos.x -= 2.0f;
+        GameCamera->LevelPos.x -= 2.0f;
     }
 
     {//Render
+
+        {//Draw Level Background
+            Rect LevelSpaceCoords = ProduceRectFromCenterPoint(GameLevel->CenterPoint, GameLevel->Width, GameLevel->Height);
+            //Draw entire level. Even though points are being generated offscreen (as they are in level space and not 
+            //converted to camera/view space), this might make later calculations eaiser to reason about without causing too 
+            //much of a performance hit since I'm only drawing 4 points off screen.
+            RenderCmds.DrawRect(LevelSpaceCoords.MinPoint, LevelSpaceCoords.MaxPoint);
+
+
+            Rect BackgroundPoritionToDisplay = ProduceRectFromCenterPoint(GameCamera->LevelPos, 
+                                                                          GameCamera->ViewWidth, 
+                                                                          GameCamera->ViewHeight);
+
+            vec2 MinUV{BackgroundPoritionToDisplay.MinPoint.x / GameLevel->Width, 
+                       BackgroundPoritionToDisplay.MinPoint.y / GameLevel->Height};
+            vec2 MaxUV{BackgroundPoritionToDisplay.MaxPoint.x / GameLevel->Width, 
+                       BackgroundPoritionToDisplay.MaxPoint.y / GameLevel->Height};
+
+            RenderCmds.DrawTexture(BackgroundTexture->ID, LevelSpaceCoords, MinUV, MaxUV);
+        };
 
         {//Draw Player
             vec2 FighterRelativeDistanceFromCamera{};
             vec2 FighterViewSpacePosition{};
 
-            { //Convert Player world position to camera space position
-                FighterRelativeDistanceFromCamera = {GameCamera->WorldPos - Fighter->WorldPos};
+            {//Convert Player world position to camera space position
+                FighterRelativeDistanceFromCamera = {GameCamera->LevelPos- Fighter->LevelPos};
 
                 FighterViewSpacePosition = {AbsoluteVal(FighterRelativeDistanceFromCamera.x - (GameCamera->ViewWidth / 2)),
                                             AbsoluteVal(FighterRelativeDistanceFromCamera.y - (GameCamera->ViewHeight / 2))};
@@ -124,7 +145,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             Rect FighterViewSpacePos = ProduceRectFromCenterPoint(FighterViewSpacePosition, Fighter->Width, Fighter->Height);
 
             RenderCmds.DrawRect(FighterViewSpacePos.MinPoint, FighterViewSpacePos.MaxPoint);
-            RenderCmds.DrawTexture(Fighter->CurrentTexture.ID, FighterViewSpacePos);
+
+            vec2 MinFighterTextureUV{0.0f, 0.0f};
+            vec2 MaxFighterTextureUV{1.0f, 1.0f};
+            RenderCmds.DrawTexture(Fighter->CurrentTexture.ID, FighterViewSpacePos, MinFighterTextureUV, MaxFighterTextureUV);
         };
     };
 }

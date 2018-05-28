@@ -640,32 +640,23 @@ namespace GL
     }
 
     local_func auto
-    DrawBackground(Texture BackgroundTexture, vec2 FocusPoint, vec2 NumPixelsToDraw, float32 ZoomFactor) -> void
+    DrawBackground(uint TextureID, vec2 CameraViewDimensions, vec2 MinUV, vec2 MaxUV) -> void
     {
-        vec2 StartingTexturePosition{BackgroundTexture.Width - (BackgroundTexture.Width - FocusPoint.x), 
-                                     BackgroundTexture.Height - (BackgroundTexture.Height - FocusPoint.y)};
-
-        vec2 MinTexturePosition{StartingTexturePosition.x - (NumPixelsToDraw.x / 2), StartingTexturePosition.y - (NumPixelsToDraw.y / 2)};
-        vec2 MaxTexturePosition{MinTexturePosition.x + NumPixelsToDraw.x, MinTexturePosition.y + NumPixelsToDraw.y};
-
-        vec2 MinUV{MinTexturePosition.x / BackgroundTexture.Width, MinTexturePosition.y / BackgroundTexture.Height};
-        vec2 MaxUV{MaxTexturePosition.x / BackgroundTexture.Width, MaxTexturePosition.y / BackgroundTexture.Height};
-
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, BackgroundTexture.ID);
+        glBindTexture(GL_TEXTURE_2D, TextureID);
 
         glBegin(GL_QUADS);
         glTexCoord2f(MinUV.x, MinUV.y);
         glVertex2f(0.0f, 0.0f);
 
         glTexCoord2f(MaxUV.x, MinUV.y);
-        glVertex2f(NumPixelsToDraw.x, 0.0f);
+        glVertex2f(CameraViewDimensions.x, 0.0f);
 
         glTexCoord2f(MaxUV.x, MaxUV.y);
-        glVertex2f(NumPixelsToDraw.x, NumPixelsToDraw.y);
+        glVertex2f(CameraViewDimensions.x, CameraViewDimensions.y);
 
         glTexCoord2f(MinUV.x, MaxUV.y);
-        glVertex2f(0.0f, NumPixelsToDraw.y);
+        glVertex2f(0.0f, CameraViewDimensions.y);
 
         glEnd();
         glFlush();
@@ -689,22 +680,22 @@ namespace GL
     }
 
     local_func auto
-    DrawTexture(uint TextureID, Rect Destination)
+    DrawTexture(uint TextureID, Rect Destination, vec2 UVMin, vec2 UVMax)
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
 
         glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 0.0f);
+        glTexCoord2f(UVMin.x, UVMin.y);
         glVertex2f(Destination.MinPoint.x, Destination.MinPoint.y);
 
-        glTexCoord2f(1.0f, 0.0f);
+        glTexCoord2f(UVMax.x, UVMin.y);
         glVertex2f(Destination.MaxPoint.x, Destination.MinPoint.y);
 
-        glTexCoord2f(1.0f, 1.0f);
+        glTexCoord2f(UVMax.x, UVMax.y);
         glVertex2f(Destination.MaxPoint.x, Destination.MaxPoint.y);
 
-        glTexCoord2f(0.0f, 1.0f);
+        glTexCoord2f(UVMin.x, UVMax.y);
         glVertex2f(Destination.MinPoint.x, Destination.MaxPoint.y);
 
         glEnd();
