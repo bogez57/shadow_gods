@@ -107,42 +107,5 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameCamera->WorldPos.x -= 2.0f;
     }
 
-    {//Render
-
-        {//Draw Level Background
-            Rect CameraWorldCoords = ProduceRectFromCenterPoint(GameCamera->WorldPos, GameCamera->ViewWidth, GameCamera->ViewHeight);
-            vec2 MinDisplayUV{CameraWorldCoords.MinPoint.x / GameLevel->Width, CameraWorldCoords.MinPoint.y / GameLevel->Height};
-            vec2 MaxDisplayUV{CameraWorldCoords.MaxPoint.x / GameLevel->Width, CameraWorldCoords.MaxPoint.y / GameLevel->Height};
-
-            Rect CameraViewCoords = ProduceRectFromCenterPoint(GameCamera->ViewCenter, GameCamera->ViewWidth, GameCamera->ViewHeight);
-
-            MinDisplayUV.x += GameCamera->ZoomFactor;
-            MaxDisplayUV.x -= GameCamera->ZoomFactor;
-            MinDisplayUV.y += GameCamera->ZoomFactor;
-            MaxDisplayUV.y -= GameCamera->ZoomFactor;
-
-            RenderCmds.DrawTexture(GameLevel->BackgroundTexture.ID, CameraViewCoords, MinDisplayUV, MaxDisplayUV);
-        };
-
-        {//Draw Player
-            vec2 FighterRelativeDistanceFromCamera{};
-            vec2 FighterViewSpacePosition{};
-
-            {//Convert Player world position to camera space position
-                FighterRelativeDistanceFromCamera = {GameCamera->WorldPos - Fighter->WorldPos};
-
-                FighterViewSpacePosition = {AbsoluteVal(FighterRelativeDistanceFromCamera.x - (GameCamera->ViewWidth / 2)),
-                                            AbsoluteVal(FighterRelativeDistanceFromCamera.y - (GameCamera->ViewHeight / 2))};
-            };
-
-            Rect FighterViewSpacePos = ProduceRectFromCenterPoint(FighterViewSpacePosition, Fighter->Width, Fighter->Height);
-
-            /*FighterViewSpacePos.MinPoint.x -= GameCamera->ZoomFactor * 100.0f;
-            FighterViewSpacePos.MaxPoint.x += GameCamera->ZoomFactor * 100.0f;
-            FighterViewSpacePos.MinPoint.y -= GameCamera->ZoomFactor * 190.0f;
-            FighterViewSpacePos.MaxPoint.y += GameCamera->ZoomFactor * 190.0f;*/
-
-            RenderCmds.DrawTexture(Fighter->CurrentTexture.ID, FighterViewSpacePos, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
-        };
-    };
+    RenderCmds.TestArena(GameState);
 }

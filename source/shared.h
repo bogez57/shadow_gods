@@ -87,8 +87,8 @@ struct Platform_Services
 
 ////////////////////////////////////////////
 /*
-    Rendering related stuff follows below. Should probably be moved out into a separate file eventually once we move 
-    into more of a three tiered architecture
+    All Game/Render related things below. Will move out eventually since platform layer does not need to know about anything
+    here. Only here in the meantime for easier experimenting with render through TestArena Render_Cmd 
 */
 ////////////////////////////////////////////
 
@@ -102,24 +102,81 @@ struct Texture
 
 struct Rect
 {
+    Rect(vec2 Min, vec2 Max) :
+        MinPoint(Min),
+        MaxPoint(Max)
+    {
+        this->BottomLeft = Min;
+        this->BottomRight.x = Min.x + Max.x;
+        this->BottomRight.y = Min.y;
+        this->TopRight = Max;
+        this->TopLeft.x = Min.x;
+        this->TopLeft.y = Max.y;
+    };
+
     vec2 MinPoint;
     vec2 MaxPoint;
+
+    union 
+    {
+        vec2 Corner[4];
+        struct
+        {
+            vec2 BottomLeft;
+            vec2 BottomRight;
+            vec2 TopRight;
+            vec2 TopLeft;
+        };
+    };
+};
+
+struct Player
+{
+    vec2 WorldPos;
+    float32 Width;
+    float32 Height;
+    Texture CurrentTexture;
+};
+
+struct Level
+{
+    float32 Width;
+    float32 Height;
+    vec2 CenterPoint;
+    Texture BackgroundTexture;
+};
+
+struct Camera
+{
+    vec2 WorldPos;
+    vec2 ViewCenter;
+    float32 ViewWidth;
+    float32 ViewHeight;
+    float32 ZoomFactor;
+};
+
+struct Game_State
+{
+    Camera GameCamera;
+    Level GameLevel;
+    Player Fighter;
 };
 
 inline auto
 ProduceRectFromCenterPoint(vec2 Position, float32 Width, float32 Height) -> Rect
 {
-    Rect RectCenterOrigin{};
+    vec2 MinPoint{Position.x - (Width / 2), Position.y - (Height / 2)};
+    vec2 MaxPoint{Position.x + (Width / 2), Position.y + (Height / 2)};
 
-    RectCenterOrigin.MinPoint = {Position.x - (Width / 2), Position.y - (Height / 2)};
-    RectCenterOrigin.MaxPoint = {Position.x + (Width / 2), Position.y + (Height / 2)};
+    Rect RectFromCenterOrigin{MinPoint, MaxPoint};
 
-    return RectCenterOrigin;
+    return RectFromCenterOrigin;
 }
 
 struct Game_Render_Cmds
 {
     void (*ClearScreen)();
+    void (*TestArena)(Game_State*);
     void (*DrawRect)(vec2, vec2);
     void (*DrawBackground)(uint, vec2, vec2, vec2);
     void (*DrawTexture)(uint, Rect, vec2, vec2);
