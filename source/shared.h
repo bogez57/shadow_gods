@@ -102,24 +102,9 @@ struct Texture
 
 struct Rect
 {
-    Rect(vec2 Min, vec2 Max) :
-        MinPoint(Min),
-        MaxPoint(Max)
-    {
-        this->BottomLeft = Min;
-        this->BottomRight.x = Min.x + Max.x;
-        this->BottomRight.y = Min.y;
-        this->TopRight = Max;
-        this->TopLeft.x = Min.x;
-        this->TopLeft.y = Max.y;
-    };
-
-    vec2 MinPoint;
-    vec2 MaxPoint;
-
     union 
     {
-        vec2 Corner[4];
+        vec2 Corners[4];
         struct
         {
             vec2 BottomLeft;
@@ -165,10 +150,17 @@ struct Game_State
 inline auto
 ProduceRectFromCenterPoint(vec2 Position, float32 Width, float32 Height) -> Rect
 {
+    Rect RectFromCenterOrigin{};
+
     vec2 MinPoint{Position.x - (Width / 2), Position.y - (Height / 2)};
     vec2 MaxPoint{Position.x + (Width / 2), Position.y + (Height / 2)};
 
-    Rect RectFromCenterOrigin{MinPoint, MaxPoint};
+    RectFromCenterOrigin.BottomLeft = MinPoint;
+    RectFromCenterOrigin.BottomRight.x = MinPoint.x + Width;
+    RectFromCenterOrigin.BottomRight.y = MinPoint.y;
+    RectFromCenterOrigin.TopRight = MaxPoint;
+    RectFromCenterOrigin.TopLeft.x = MinPoint.x;
+    RectFromCenterOrigin.TopLeft.y = MaxPoint.y;
 
     return RectFromCenterOrigin;
 }

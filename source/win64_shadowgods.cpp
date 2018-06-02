@@ -687,16 +687,16 @@ namespace GL
 
         glBegin(GL_QUADS);
         glTexCoord2f(UVMin.x, UVMin.y);
-        glVertex2f(Destination.MinPoint.x, Destination.MinPoint.y);
+        glVertex2f(Destination.BottomLeft.x, Destination.BottomLeft.y);
 
         glTexCoord2f(UVMax.x, UVMin.y);
-        glVertex2f(Destination.MaxPoint.x, Destination.MinPoint.y);
+        glVertex2f(Destination.BottomRight.x, Destination.BottomRight.y);
 
         glTexCoord2f(UVMax.x, UVMax.y);
-        glVertex2f(Destination.MaxPoint.x, Destination.MaxPoint.y);
+        glVertex2f(Destination.TopRight.x, Destination.TopRight.y);
 
         glTexCoord2f(UVMin.x, UVMax.y);
-        glVertex2f(Destination.MinPoint.x, Destination.MaxPoint.y);
+        glVertex2f(Destination.TopLeft.x, Destination.TopLeft.y);
 
         glEnd();
         glFlush();
@@ -720,8 +720,8 @@ namespace GL
 
         { //Draw Level Background
             Rect CameraWorldCoords = ProduceRectFromCenterPoint(GameCamera->WorldPos, GameCamera->ViewWidth, GameCamera->ViewHeight);
-            vec2 MinDisplayUV{CameraWorldCoords.MinPoint.x / GameLevel->Width, CameraWorldCoords.MinPoint.y / GameLevel->Height};
-            vec2 MaxDisplayUV{CameraWorldCoords.MaxPoint.x / GameLevel->Width, CameraWorldCoords.MaxPoint.y / GameLevel->Height};
+            vec2 MinDisplayUV{CameraWorldCoords.BottomLeft.x / GameLevel->Width, CameraWorldCoords.BottomLeft.y / GameLevel->Height};
+            vec2 MaxDisplayUV{CameraWorldCoords.TopRight.x / GameLevel->Width, CameraWorldCoords.TopRight.y / GameLevel->Height};
 
             Rect CameraViewCoords = ProduceRectFromCenterPoint(GameCamera->ViewCenter, GameCamera->ViewWidth, GameCamera->ViewHeight);
 
@@ -745,6 +745,11 @@ namespace GL
             };
 
             Rect FighterViewSpacePos = ProduceRectFromCenterPoint(FighterViewSpacePosition, Fighter->Width, Fighter->Height);
+
+            FighterViewSpacePos.BottomRight.x += GameCamera->ZoomFactor * 1000.0f;
+            FighterViewSpacePos.TopRight.x += GameCamera->ZoomFactor * 1000.0f;
+            FighterViewSpacePos.TopRight.y += GameCamera->ZoomFactor * 2000.0f;
+            FighterViewSpacePos.TopLeft.y += GameCamera->ZoomFactor * 2000.0f;
 
             DrawTexture(Fighter->CurrentTexture.ID, FighterViewSpacePos, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
         };
