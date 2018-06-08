@@ -718,12 +718,13 @@ namespace GL
         Player *Fighter = &GameState->Fighter;
         Level *GameLevel = &GameState->GameLevel;
 
+#if 0
         { //Draw Level Background
-            Rect CameraWorldCoords = ProduceRectFromCenterPoint(GameCamera->WorldPos, GameCamera->ViewWidth, GameCamera->ViewHeight);
+            Rect CameraWorldCoords = ProduceRectFromOrigin(GameCamera->WorldPos, GameCamera->ViewWidth, GameCamera->ViewHeight);
             vec2 MinDisplayUV{CameraWorldCoords.BottomLeft.x / GameLevel->Width, CameraWorldCoords.BottomLeft.y / GameLevel->Height};
             vec2 MaxDisplayUV{CameraWorldCoords.TopRight.x / GameLevel->Width, CameraWorldCoords.TopRight.y / GameLevel->Height};
 
-            Rect CameraViewCoords = ProduceRectFromCenterPoint(GameCamera->ViewCenter, GameCamera->ViewWidth, GameCamera->ViewHeight);
+            Rect CameraViewCoords = ProduceRectFromOrigin(GameCamera->ViewCenter, GameCamera->ViewWidth, GameCamera->ViewHeight);
 
             MinDisplayUV.x += GameCamera->ZoomFactor;
             MaxDisplayUV.x -= GameCamera->ZoomFactor;
@@ -732,26 +733,72 @@ namespace GL
 
             DrawTexture(GameLevel->BackgroundTexture.ID, CameraViewCoords, MinDisplayUV, MaxDisplayUV);
         };
+#endif
 
         { //Draw Player
             vec2 FighterRelativeDistanceFromCamera{};
-            vec2 FighterViewSpacePosition{};
+            vec2 FighterViewSpacePos{};
+            Rect FighterRect{};
+            Coordinate_Space FighterLocalSpace{};
 
-            { //Convert Player world position to camera space position
+            { //Convert Player world position to camera/view space position
                 FighterRelativeDistanceFromCamera = {GameCamera->WorldPos - Fighter->WorldPos};
 
-                FighterViewSpacePosition = {AbsoluteVal(FighterRelativeDistanceFromCamera.x - (GameCamera->ViewWidth / 2)),
-                                            AbsoluteVal(FighterRelativeDistanceFromCamera.y - (GameCamera->ViewHeight / 2))};
+                FighterLocalSpace.Origin = {
+                            AbsoluteVal(FighterRelativeDistanceFromCamera.x - (GameCamera->ViewWidth / 2)),
+                            AbsoluteVal(FighterRelativeDistanceFromCamera.y - (GameCamera->ViewHeight / 2))};
+
+                FighterLocalSpace.XBasis = {1.0f, 0.0f};
+                FighterLocalSpace.YBasis = {0.0f, 1.0f};
+
+                FighterLocalSpace.XBasis *= GameCamera->ZoomFactor;
+                FighterLocalSpace.YBasis *= GameCamera->ZoomFactor;
+
+                { //Rect based off view space position
+                    vec2 MinPoint;
+                    vec2 MaxPoint;
+
+                    MinPoint = {
+                        FighterLocalSpace.Origin.x - (Fighter->Width / 2),
+                        FighterLocalSpace.Origin.y - (Fighter->Height / 2)};
+                    MaxPoint = {
+                        FighterLocalSpace.Origin.x + (Fighter->Width / 2),
+                        FighterLocalSpace.Origin.y + (Fighter->Height / 2)};
+
+                    FighterRect.BottomLeft = MinPoint;
+                    FighterRect.BottomRight.x = MinPoint.x + Fighter->Width;
+                    FighterRect.BottomRight.y = MinPoint.y;
+                    FighterRect.TopRight = MaxPoint;
+                    FighterRect.TopLeft.x = MinPoint.x;
+                    FighterRect.TopLeft.y = MaxPoint.y;
+
+                    FighterRect.BottomLeft.x = (FighterRect.BottomLeft.x * FighterLocalSpace.XBasis.x) +
+                                               (FighterRect.BottomLeft.y * FighterLocalSpace.YBasis.x);
+
+                    FighterRect.BottomLeft.y = (FighterRect.BottomLeft.x * FighterLocalSpace.XBasis.y) +
+                                               (FighterRect.BottomLeft.y * FighterLocalSpace.YBasis.y);
+
+                    FighterRect.BottomRight.x = (FighterRect.BottomRight.x * FighterLocalSpace.XBasis.x) +
+                                               (FighterRect.BottomRight.y * FighterLocalSpace.YBasis.x);
+
+                    FighterRect.BottomRight.y = (FighterRect.BottomRight.x * FighterLocalSpace.XBasis.y) +
+                                               (FighterRect.BottomRight.y * FighterLocalSpace.YBasis.y);
+
+                    FighterRect.TopRight.x = (FighterRect.TopRight.x * FighterLocalSpace.XBasis.x) +
+                                               (FighterRect.TopRight.y * FighterLocalSpace.YBasis.x);
+
+                    FighterRect.TopRight.y = (FighterRect.TopRight.x * FighterLocalSpace.XBasis.y) +
+                                               (FighterRect.TopRight.y * FighterLocalSpace.YBasis.y);
+
+                    FighterRect.TopLeft.x = (FighterRect.TopLeft.x * FighterLocalSpace.XBasis.x) +
+                                               (FighterRect.TopLeft.y * FighterLocalSpace.YBasis.x);
+
+                    FighterRect.TopLeft.y = (FighterRect.TopLeft.x * FighterLocalSpace.XBasis.y) +
+                                               (FighterRect.TopLeft.y * FighterLocalSpace.YBasis.y);
+                };
             };
 
-            Rect FighterViewSpacePos = ProduceRectFromCenterPoint(FighterViewSpacePosition, Fighter->Width, Fighter->Height);
-
-            FighterViewSpacePos.BottomRight.x += GameCamera->ZoomFactor * 1000.0f;
-            FighterViewSpacePos.TopRight.x += GameCamera->ZoomFactor * 1000.0f;
-            FighterViewSpacePos.TopRight.y += GameCamera->ZoomFactor * 2000.0f;
-            FighterViewSpacePos.TopLeft.y += GameCamera->ZoomFactor * 2000.0f;
-
-            DrawTexture(Fighter->CurrentTexture.ID, FighterViewSpacePos, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
+            DrawTexture(Fighter->CurrentTexture.ID, FighterRect, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
         };
     }
 }

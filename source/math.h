@@ -10,3 +10,16 @@ AbsoluteVal(float32 Value)
     return Result;
 }
 
+inline float32
+Sin(float Angle)
+{
+    float32 RealNumber = sinf(Angle);
+    return RealNumber;
+};
+
+inline float32
+Cos(float Angle)
+{
+    float32 RealNumber = cosf(Angle);
+    return RealNumber;
+};

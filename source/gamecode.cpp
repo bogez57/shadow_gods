@@ -22,6 +22,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 {
     Game_State* GameState = (Game_State*)GameMemory->PermanentStorage;
 
+    Camera* GameCamera = &GameState->GameCamera;
+    Player* Fighter = &GameState->Fighter;
+    Level* GameLevel = &GameState->GameLevel;
+
     const Game_Controller* Keyboard = &GameInput->Controllers[0];
     const Game_Controller* GamePad = &GameInput->Controllers[1];
 
@@ -34,47 +38,42 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         RenderCmds.Init();
 
         {//Init Game State
-            GameState->GameLevel.BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage(
-                                                                                "1440p.jpg", 
-                                                                                &GameState->GameLevel.BackgroundTexture.Width,
-                                                                                &GameState->GameLevel.BackgroundTexture.Height);
-            GameState->Fighter.CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
-                                                                                "Fighter.jpg", 
-                                                                                &GameState->Fighter.CurrentTexture.Width,
-                                                                                &GameState->Fighter.CurrentTexture.Height);
+            GameLevel->BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage(
+                                                                            "1440p.jpg", 
+                                                                            &GameLevel->BackgroundTexture.Width,
+                                                                            &GameLevel->BackgroundTexture.Height);
+            GameLevel->BackgroundTexture.ID = RenderCmds.LoadTexture(GameLevel->BackgroundTexture);
+            GameLevel->Width = (float32)GameLevel->BackgroundTexture.Width;
+            GameLevel->Height = (float32)GameLevel->BackgroundTexture.Height;
+            GameLevel->CenterPoint = {GameLevel->Width / 2, GameLevel->Height / 2};
 
-            GameState->GameLevel.BackgroundTexture.ID = RenderCmds.LoadTexture(GameState->GameLevel.BackgroundTexture);
-            GameState->Fighter.CurrentTexture.ID = RenderCmds.LoadTexture(GameState->Fighter.CurrentTexture);
+            Fighter->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
+                                                                        "Fighter.jpg", 
+                                                                        &Fighter->CurrentTexture.Width,
+                                                                        &Fighter->CurrentTexture.Height);
+            Fighter->CurrentTexture.ID = RenderCmds.LoadTexture(Fighter->CurrentTexture);
+            Fighter->WorldPos = {GameLevel->Width * .45f, GameLevel->Height * .45f};
+            Fighter->Width = 100.0f;
+            Fighter->Height = 200.0f;
 
-            GameState->GameLevel.Width = (float32)GameState->GameLevel.BackgroundTexture.Width;
-            GameState->GameLevel.Height = (float32)GameState->GameLevel.BackgroundTexture.Height;
-            GameState->GameLevel.CenterPoint = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
-
-            GameState->GameCamera.WorldPos = {GameState->GameLevel.Width / 2, GameState->GameLevel.Height / 2};
-            GameState->GameCamera.ViewWidth = ViewportWidth;
-            GameState->GameCamera.ViewHeight = ViewportHeight;
-            GameState->GameCamera.ViewCenter = {GameState->GameCamera.ViewWidth / 2, GameState->GameCamera.ViewHeight / 2,};
-
-            GameState->Fighter.WorldPos = {GameState->GameLevel.Width * .45f, GameState->GameLevel.Height * .45f};
-            GameState->Fighter.Width = 100.0f;
-            GameState->Fighter.Height = 200.0f;
+            GameCamera->WorldPos = {GameLevel->Width / 2, GameLevel->Height / 2};
+            GameCamera->ViewWidth = ViewportWidth;
+            GameCamera->ViewHeight = ViewportHeight;
+            GameCamera->ViewCenter = {GameCamera->ViewWidth / 2, GameCamera->ViewHeight / 2,};
+            GameCamera->ZoomFactor = 1.0f;
         };
     }
-
-    Camera* GameCamera = &GameState->GameCamera;
-    Player* Fighter = &GameState->Fighter;
-    Level* GameLevel = &GameState->GameLevel;
 
     RenderCmds.ClearScreen();
 
     if(Keyboard->MoveUp.Pressed)
     {
-        Fighter->WorldPos.y += 1.0f;
+        Fighter->WorldPos.y += 5.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
-        Fighter->WorldPos.y -= 1.0f;
+        Fighter->WorldPos.y -= 5.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
@@ -89,12 +88,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->ZoomFactor += 0.001f;
+        GameCamera->ZoomFactor += .002f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->ZoomFactor -= 0.001f;
+        GameCamera->ZoomFactor -= .002f;
     }
 
     if(Keyboard->ActionRight.Pressed)

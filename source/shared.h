@@ -115,11 +115,18 @@ struct Rect
     };
 };
 
+struct Coordinate_Space
+{
+    vec2 Origin;
+    vec2 XBasis;
+    vec2 YBasis;
+};
+
 struct Player
 {
-    vec2 WorldPos;
     float32 Width;
     float32 Height;
+    vec2 WorldPos;
     Texture CurrentTexture;
 };
 
@@ -146,24 +153,6 @@ struct Game_State
     Level GameLevel;
     Player Fighter;
 };
-
-inline auto
-ProduceRectFromCenterPoint(vec2 Position, float32 Width, float32 Height) -> Rect
-{
-    Rect RectFromCenterOrigin{};
-
-    vec2 MinPoint{Position.x - (Width / 2), Position.y - (Height / 2)};
-    vec2 MaxPoint{Position.x + (Width / 2), Position.y + (Height / 2)};
-
-    RectFromCenterOrigin.BottomLeft = MinPoint;
-    RectFromCenterOrigin.BottomRight.x = MinPoint.x + Width;
-    RectFromCenterOrigin.BottomRight.y = MinPoint.y;
-    RectFromCenterOrigin.TopRight = MaxPoint;
-    RectFromCenterOrigin.TopLeft.x = MinPoint.x;
-    RectFromCenterOrigin.TopLeft.y = MaxPoint.y;
-
-    return RectFromCenterOrigin;
-}
 
 struct Game_Render_Cmds
 {
