@@ -10,7 +10,7 @@ set cwd=%~dp0\
 set PreProcessorSwitches=-DDEVELOPMENT_BUILD=1 -DGLEW_STATIC=1
 
 REM Debug/Development build 
-set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505
+set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505 -wd4101
 set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -opt:ref -debug:fastlink -ignore:4099
 
 set GameIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" 

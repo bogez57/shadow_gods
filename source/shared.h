@@ -140,7 +140,7 @@ struct Level
 
 struct Camera
 {
-    vec2 WorldPos;
+    vec2 LookAt;
     vec2 ViewCenter;
     float32 ViewWidth;
     float32 ViewHeight;
@@ -163,4 +163,44 @@ struct Game_Render_Cmds
     void (*DrawTexture)(uint, Rect, vec2, vec2);
     uint (*LoadTexture)(Texture);
     void (*Init)();
+};
+
+auto
+ProduceRectFromCenter(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
+{
+    Rect Result;
+    vec2 MinPoint;
+    vec2 MaxPoint;
+
+    MinPoint = {
+        OriginPoint.x - (Width / 2),
+        OriginPoint.y - (Height / 2)};
+    MaxPoint = {
+        OriginPoint.x + (Width / 2),
+        OriginPoint.y + (Height / 2)};
+
+    Result.BottomLeft = MinPoint;
+    Result.BottomRight.x = MinPoint.x + Width;
+    Result.BottomRight.y = MinPoint.y;
+    Result.TopRight = MaxPoint;
+    Result.TopLeft.x = MinPoint.x;
+    Result.TopLeft.y = MaxPoint.y;
+
+    return Result;
+};
+
+auto 
+ProduceRectFromBottomLeft(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
+{
+    Rect Result;
+
+    Result.BottomLeft = OriginPoint;
+    Result.BottomRight.x = OriginPoint.x + Width;
+    Result.BottomRight.y = OriginPoint.y;
+    Result.TopRight.x = OriginPoint.x + Width;
+    Result.TopRight.y = OriginPoint.y + Height;
+    Result.TopLeft.x = OriginPoint.x;
+    Result.TopLeft.y = OriginPoint.y + Height;
+
+    return Result;
 };

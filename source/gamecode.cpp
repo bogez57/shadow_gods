@@ -52,14 +52,14 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                                                                         &Fighter->CurrentTexture.Width,
                                                                         &Fighter->CurrentTexture.Height);
             Fighter->CurrentTexture.ID = RenderCmds.LoadTexture(Fighter->CurrentTexture);
-            Fighter->WorldPos = {GameLevel->Width * .45f, GameLevel->Height * .45f};
+            Fighter->WorldPos = {200.0f, 300.0f};
             Fighter->Width = 100.0f;
             Fighter->Height = 200.0f;
 
-            GameCamera->WorldPos = {GameLevel->Width / 2, GameLevel->Height / 2};
             GameCamera->ViewWidth = ViewportWidth;
             GameCamera->ViewHeight = ViewportHeight;
-            GameCamera->ViewCenter = {GameCamera->ViewWidth / 2, GameCamera->ViewHeight / 2,};
+            GameCamera->LookAt = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
+            GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->ZoomFactor = 1.0f;
         };
     }
@@ -88,22 +88,22 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->ActionUp.Pressed)
     {
-        GameCamera->ZoomFactor += .002f;
+        GameCamera->ZoomFactor += .01f;
     }
 
     if(Keyboard->ActionDown.Pressed)
     {
-        GameCamera->ZoomFactor -= .002f;
+        GameCamera->ZoomFactor -= .01f;
     }
 
     if(Keyboard->ActionRight.Pressed)
     {
-        GameCamera->WorldPos.x += 2.0f;
+        GameCamera->LookAt.x += 2.0f;
     }
 
     if(Keyboard->ActionLeft.Pressed)
     {
-        GameCamera->WorldPos.x -= 2.0f;
+        GameCamera->LookAt.x -= 2.0f;
     }
 
     RenderCmds.TestArena(GameState);

@@ -72,17 +72,6 @@ operator*=(vec2& B, float32 A)
 }
 
 inline vec2
-operator-(vec2 A)
-{
-    vec2 Result;
-
-    Result.x = -A.x;
-    Result.x = -A.y;
-
-    return(Result);
-}
-
-inline vec2
 operator+(vec2 A, vec2 B)
 {
     vec2 Result;
@@ -115,6 +104,15 @@ operator-=(vec2& A, float32 B)
 {
     A.x = A.x - B;
     A.y = A.y - B;
+
+    return(A);
+}
+
+inline vec2&
+operator-=(vec2& A, vec2 B)
+{
+    A.x = A.x - B.x;
+    A.y = A.y - B.y;
 
     return(A);
 }
