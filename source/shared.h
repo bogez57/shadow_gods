@@ -204,3 +204,39 @@ ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) 
 
     return Result;
 };
+
+auto 
+Scale(Coordinate_Space SpaceToScale, float32 ScaleFactor, float32 Width, float32 Height) -> Rect
+{
+    //Translate to origin
+    vec2 SpaceTempOrigin = SpaceToScale.Origin - SpaceToScale.Origin;
+
+    Rect RectCoords = ProduceRectFromBottomLeftPoint(SpaceTempOrigin, Width, Height);
+
+    SpaceToScale.XBasis = {ScaleFactor, 0.0f};
+    SpaceToScale.YBasis = {0.0f, ScaleFactor};
+
+    vec2 NewCoordX = RectCoords.BottomLeft.x * SpaceToScale.XBasis;
+    vec2 NewCoordY = RectCoords.BottomLeft.y * SpaceToScale.YBasis;
+    RectCoords.BottomLeft = NewCoordX + NewCoordY;
+
+    NewCoordX = RectCoords.BottomRight.x * SpaceToScale.XBasis;
+    NewCoordY = RectCoords.BottomRight.y * SpaceToScale.YBasis;
+    RectCoords.BottomRight = NewCoordX + NewCoordY;
+
+    NewCoordX = RectCoords.TopRight.x * SpaceToScale.XBasis;
+    NewCoordY = RectCoords.TopRight.y * SpaceToScale.YBasis;
+    RectCoords.TopRight = NewCoordX + NewCoordY;
+
+    NewCoordX = RectCoords.TopLeft.x * SpaceToScale.XBasis;
+    NewCoordY = RectCoords.TopLeft.y * SpaceToScale.YBasis;
+    RectCoords.TopLeft = NewCoordX + NewCoordY;
+
+    //Translate back to original position
+    RectCoords.BottomLeft +=SpaceToScale.Origin;
+    RectCoords.BottomRight +=SpaceToScale.Origin;
+    RectCoords.TopRight +=SpaceToScale.Origin;
+    RectCoords.TopLeft +=SpaceToScale.Origin;
+
+    return RectCoords;
+}
