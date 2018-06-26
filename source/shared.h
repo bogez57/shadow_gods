@@ -166,7 +166,7 @@ struct Game_Render_Cmds
 };
 
 auto
-ProduceRectFromCenter(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
+ProduceRectFromCenterPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
 {
     Rect Result;
     vec2 MinPoint;
@@ -190,7 +190,7 @@ ProduceRectFromCenter(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
 };
 
 auto 
-ProduceRectFromBottomLeft(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
+ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
 {
     Rect Result;
 

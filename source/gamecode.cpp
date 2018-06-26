@@ -58,7 +58,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             GameCamera->ViewWidth = ViewportWidth;
             GameCamera->ViewHeight = ViewportHeight;
-            GameCamera->LookAt = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
+            GameCamera->LookAt = {GameLevel->Width/2.0f, GameLevel->Height/2.0f};
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->ZoomFactor = 1.0f;
         };

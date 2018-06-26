@@ -718,22 +718,45 @@ namespace GL
         Player *Fighter = &GameState->Fighter;
         Level *GameLevel = &GameState->GameLevel;
 
-#if 0
-        { //Draw Level Background
-            Rect CameraWorldCoords = ProduceRectFromOrigin(GameCamera->WorldPos, GameCamera->ViewWidth, GameCamera->ViewHeight);
-            vec2 MinDisplayUV{CameraWorldCoords.BottomLeft.x / GameLevel->Width, CameraWorldCoords.BottomLeft.y / GameLevel->Height};
-            vec2 MaxDisplayUV{CameraWorldCoords.TopRight.x / GameLevel->Width, CameraWorldCoords.TopRight.y / GameLevel->Height};
+        {//Draw Level Background
+            Coordinate_Space BackgroundWorldSpace{};
+            Coordinate_Space BackgroundCameraSpace{};
 
-            Rect CameraViewCoords = ProduceRectFromOrigin(GameCamera->ViewCenter, GameCamera->ViewWidth, GameCamera->ViewHeight);
+            BackgroundWorldSpace.Origin = {0.0f, 0.0f};
 
-            MinDisplayUV.x += GameCamera->ZoomFactor;
-            MaxDisplayUV.x -= GameCamera->ZoomFactor;
-            MinDisplayUV.y += GameCamera->ZoomFactor;
-            MaxDisplayUV.y -= GameCamera->ZoomFactor;
+            vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+            BackgroundCameraSpace.Origin = BackgroundWorldSpace.Origin + TranslationToCameraSpace;
 
-            DrawTexture(GameLevel->BackgroundTexture.ID, CameraViewCoords, MinDisplayUV, MaxDisplayUV);
+            vec2 BackgroundTempOrigin = BackgroundCameraSpace.Origin - BackgroundCameraSpace.Origin;
+
+            Rect BackgroundCanvas = ProduceRectFromBottomLeftPoint(BackgroundTempOrigin, GameLevel->Width, GameLevel->Height);
+
+            BackgroundCameraSpace.XBasis = {GameCamera->ZoomFactor, 0.0f};
+            BackgroundCameraSpace.YBasis = {0.0f, GameCamera->ZoomFactor};
+
+            vec2 NewCoordX = BackgroundCanvas.BottomLeft.x * BackgroundCameraSpace.XBasis;
+            vec2 NewCoordY = BackgroundCanvas.BottomLeft.y * BackgroundCameraSpace.YBasis;
+            BackgroundCanvas.BottomLeft = NewCoordX + NewCoordY;
+
+            NewCoordX = BackgroundCanvas.BottomRight.x * BackgroundCameraSpace.XBasis;
+            NewCoordY = BackgroundCanvas.BottomRight.y * BackgroundCameraSpace.YBasis;
+            BackgroundCanvas.BottomRight = NewCoordX + NewCoordY;
+
+            NewCoordX = BackgroundCanvas.TopRight.x * BackgroundCameraSpace.XBasis;
+            NewCoordY = BackgroundCanvas.TopRight.y * BackgroundCameraSpace.YBasis;
+            BackgroundCanvas.TopRight= NewCoordX + NewCoordY;
+
+            NewCoordX = BackgroundCanvas.TopLeft.x * BackgroundCameraSpace.XBasis;
+            NewCoordY = BackgroundCanvas.TopLeft.y * BackgroundCameraSpace.YBasis;
+            BackgroundCanvas.TopLeft = NewCoordX + NewCoordY;
+
+            BackgroundCanvas.BottomLeft += BackgroundCameraSpace.Origin;
+            BackgroundCanvas.BottomRight += BackgroundCameraSpace.Origin;
+            BackgroundCanvas.TopRight += BackgroundCameraSpace.Origin;
+            BackgroundCanvas.TopLeft += BackgroundCameraSpace.Origin;
+
+            DrawTexture(GameLevel->BackgroundTexture.ID, BackgroundCanvas, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
         };
-#endif
 
         {//Draw Player
             Coordinate_Space FighterWorldSpace{};
@@ -750,7 +773,7 @@ namespace GL
                     //Translate to camera space origin before scaling
                     vec2 FighterTempOrigin = FighterCameraSpace.Origin - FighterCameraSpace.Origin;
 
-                    FighterRect = ProduceRectFromBottomLeft(FighterTempOrigin, Fighter->Width, Fighter->Height);
+                    FighterRect = ProduceRectFromBottomLeftPoint(FighterTempOrigin, Fighter->Width, Fighter->Height);
 
                     FighterCameraSpace.XBasis = {GameCamera->ZoomFactor, 0.0f};
                     FighterCameraSpace.YBasis = {0.0f, GameCamera->ZoomFactor};
