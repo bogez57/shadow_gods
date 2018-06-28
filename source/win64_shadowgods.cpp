@@ -680,7 +680,7 @@ namespace GL
     }
 
     local_func auto
-    DrawTexture(uint TextureID, Rect Destination, vec2 UVMin, vec2 UVMax)
+    DrawTexture(uint TextureID, Drawable_Rect Destination, vec2 UVMin, vec2 UVMax)
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -721,17 +721,17 @@ namespace GL
         {//Draw Level Background
             Coordinate_Space BackgroundWorldSpace{};
             Coordinate_Space BackgroundCameraSpace{};
-            Rect BackgroundCanvas{};
+            Drawable_Rect BackgroundCanvas{};
 
             BackgroundWorldSpace.Origin = {0.0f, 0.0f};
 
             {//Transform to Camera Space
                 vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
                 BackgroundCameraSpace.Origin = BackgroundWorldSpace.Origin + TranslationToCameraSpace;
-
-                BackgroundCanvas = Scale(BackgroundCameraSpace, GameCamera->ZoomFactor, GameLevel->Width, GameLevel->Height);
             };
 
+            BackgroundCanvas = ProduceRectFromBottomLeftPoint(BackgroundCameraSpace.Origin, GameLevel->Width, GameLevel->Height);
+            BackgroundCanvas = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
 
             DrawTexture(GameLevel->BackgroundTexture.ID, BackgroundCanvas, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
         };
@@ -739,17 +739,17 @@ namespace GL
         {//Draw Player
             Coordinate_Space FighterWorldSpace{};
             Coordinate_Space FighterCameraSpace{};
-            Rect FighterRect{};
+            Drawable_Rect FighterRect{};
 
             FighterWorldSpace.Origin = Fighter->WorldPos;
 
             {//Transform to Camera Space
                 vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
                 FighterCameraSpace.Origin = FighterWorldSpace.Origin + TranslationToCameraSpace;
-
-                FighterRect = Scale(FighterCameraSpace, GameCamera->ZoomFactor, Fighter->Width, Fighter->Height);
             };
 
+            FighterRect = ProduceRectFromBottomLeftPoint(FighterCameraSpace.Origin, Fighter->Size.Width, Fighter->Size.Height);
+            FighterRect = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, FighterRect);
 
             DrawTexture(Fighter->CurrentTexture.ID, FighterRect, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
         };

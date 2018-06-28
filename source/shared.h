@@ -100,7 +100,7 @@ struct Texture
     uint ID;
 };
 
-struct Rect
+struct Drawable_Rect
 {
     union 
     {
@@ -115,6 +115,12 @@ struct Rect
     };
 };
 
+struct Rect
+{
+    float32 Width;
+    float32 Height;
+};
+
 struct Coordinate_Space
 {
     vec2 Origin;
@@ -124,8 +130,7 @@ struct Coordinate_Space
 
 struct Player
 {
-    float32 Width;
-    float32 Height;
+    Rect Size;
     vec2 WorldPos;
     Texture CurrentTexture;
 };
@@ -145,6 +150,7 @@ struct Camera
     float32 ViewWidth;
     float32 ViewHeight;
     float32 ZoomFactor;
+    vec2 DilatePoint;
 };
 
 struct Game_State
@@ -160,15 +166,15 @@ struct Game_Render_Cmds
     void (*TestArena)(Game_State*);
     void (*DrawRect)(vec2, vec2);
     void (*DrawBackground)(uint, vec2, vec2, vec2);
-    void (*DrawTexture)(uint, Rect, vec2, vec2);
+    void (*DrawTexture)(uint, Drawable_Rect, vec2, vec2);
     uint (*LoadTexture)(Texture);
     void (*Init)();
 };
 
 auto
-ProduceRectFromCenterPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
+ProduceRectFromCenterPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Drawable_Rect
 {
-    Rect Result;
+    Drawable_Rect Result;
     vec2 MinPoint;
     vec2 MaxPoint;
 
@@ -190,9 +196,9 @@ ProduceRectFromCenterPoint(vec2 OriginPoint, float32 Width, float32 Height) -> R
 };
 
 auto 
-ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Rect
+ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Drawable_Rect
 {
-    Rect Result;
+    Drawable_Rect Result;
 
     Result.BottomLeft = OriginPoint;
     Result.BottomRight.x = OriginPoint.x + Width;
@@ -206,12 +212,12 @@ ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) 
 };
 
 auto 
-Scale(Coordinate_Space SpaceToScale, float32 ScaleFactor, float32 Width, float32 Height) -> Rect
+Scale(Coordinate_Space SpaceToScale, float32 ScaleFactor, float32 Width, float32 Height) -> Drawable_Rect
 {
     //Translate to origin
     vec2 SpaceTempOrigin = SpaceToScale.Origin - SpaceToScale.Origin;
 
-    Rect RectCoords = ProduceRectFromBottomLeftPoint(SpaceTempOrigin, Width, Height);
+    Drawable_Rect RectCoords = ProduceRectFromBottomLeftPoint(SpaceTempOrigin, Width, Height);
 
     SpaceToScale.XBasis = {ScaleFactor, 0.0f};
     SpaceToScale.YBasis = {0.0f, ScaleFactor};
@@ -232,7 +238,6 @@ Scale(Coordinate_Space SpaceToScale, float32 ScaleFactor, float32 Width, float32
     NewCoordY = RectCoords.TopLeft.y * SpaceToScale.YBasis;
     RectCoords.TopLeft = NewCoordX + NewCoordY;
 
-    //Translate back to original position
     RectCoords.BottomLeft +=SpaceToScale.Origin;
     RectCoords.BottomRight +=SpaceToScale.Origin;
     RectCoords.TopRight +=SpaceToScale.Origin;
@@ -240,3 +245,18 @@ Scale(Coordinate_Space SpaceToScale, float32 ScaleFactor, float32 Width, float32
 
     return RectCoords;
 }
+
+auto
+DilateAboutPoint(vec2 PointOfDilation, float32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
+{
+    Drawable_Rect DilatedRect;
+
+    for (int32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
+    {
+        vec2 Distance = PointOfDilation - RectToDilate.Corners[CornerIndex];
+        Distance *= ScaleFactor;
+        DilatedRect.Corners[CornerIndex] = PointOfDilation - Distance;
+    };
+
+    return DilatedRect;
+};

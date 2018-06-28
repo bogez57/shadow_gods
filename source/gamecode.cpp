@@ -53,13 +53,14 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                                                                         &Fighter->CurrentTexture.Height);
             Fighter->CurrentTexture.ID = RenderCmds.LoadTexture(Fighter->CurrentTexture);
             Fighter->WorldPos = {200.0f, 300.0f};
-            Fighter->Width = 100.0f;
-            Fighter->Height = 200.0f;
+            Fighter->Size.Width = 100.0f;
+            Fighter->Size.Height = 200.0f;
 
             GameCamera->ViewWidth = ViewportWidth;
             GameCamera->ViewHeight = ViewportHeight;
             GameCamera->LookAt = {GameLevel->Width/2.0f, GameLevel->Height/2.0f};
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
+            GameCamera->DilatePoint = GameCamera->ViewCenter;
             GameCamera->ZoomFactor = 1.0f;
         };
     }
