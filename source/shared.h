@@ -157,7 +157,8 @@ struct Game_State
 {
     Camera GameCamera;
     Level GameLevel;
-    Player Fighter;
+    Player Fighter1;
+    Player Fighter2;
 };
 
 struct Game_Render_Cmds
