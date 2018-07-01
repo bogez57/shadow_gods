@@ -58,6 +58,7 @@ struct Game_Controller
         };
     }; 
 };
+
 auto ClearTransitionCounts(Game_Controller* Controller) -> void
 {
     for (int ButtonIndex = 0; ButtonIndex < ArrayCount(Controller->Buttons); ++ButtonIndex)
@@ -85,12 +86,7 @@ struct Platform_Services
     unsigned char* (*LoadRGBAImage)(const char*, int*, int*);
 };
 
-////////////////////////////////////////////
-/*
-    All Game/Render related things below. Will move out eventually since platform layer does not need to know about anything
-    here. Only here in the meantime for easier experimenting with render through TestArena Render_Cmd 
-*/
-////////////////////////////////////////////
+////////RENDER STUFF - NEED TO MOVE OUT////////////////////////////////////////////
 
 struct Texture
 {
@@ -115,61 +111,11 @@ struct Drawable_Rect
     };
 };
 
-struct Rect
-{
-    float32 Width;
-    float32 Height;
-};
-
 struct Coordinate_Space
 {
     vec2 Origin;
     vec2 XBasis;
     vec2 YBasis;
-};
-
-struct Player
-{
-    Rect Size;
-    vec2 WorldPos;
-    Texture CurrentTexture;
-};
-
-struct Level
-{
-    float32 Width;
-    float32 Height;
-    vec2 CenterPoint;
-    Texture BackgroundTexture;
-};
-
-struct Camera
-{
-    vec2 LookAt;
-    vec2 ViewCenter;
-    float32 ViewWidth;
-    float32 ViewHeight;
-    float32 ZoomFactor;
-    vec2 DilatePoint;
-};
-
-struct Game_State
-{
-    Camera GameCamera;
-    Level GameLevel;
-    Player Fighter1;
-    Player Fighter2;
-};
-
-struct Game_Render_Cmds
-{
-    void (*ClearScreen)();
-    void (*TestArena)(Game_State*);
-    void (*DrawRect)(vec2, vec2);
-    void (*DrawBackground)(uint, vec2, vec2, vec2);
-    void (*DrawTexture)(uint, Drawable_Rect, vec2, vec2);
-    uint (*LoadTexture)(Texture);
-    void (*Init)();
 };
 
 auto
@@ -260,4 +206,14 @@ DilateAboutPoint(vec2 PointOfDilation, float32 ScaleFactor, Drawable_Rect RectTo
     };
 
     return DilatedRect;
+};
+
+struct Game_Render_Cmds
+{
+    void (*ClearScreen)();
+    void (*DrawRect)(vec2, vec2);
+    void (*DrawBackground)(uint, vec2, vec2, vec2);
+    void (*DrawTexture)(uint, Drawable_Rect, vec2, vec2);
+    uint (*LoadTexture)(Texture);
+    void (*Init)();
 };

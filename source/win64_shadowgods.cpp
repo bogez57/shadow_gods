@@ -710,57 +710,6 @@ namespace GL
     {
         glClear(GL_COLOR_BUFFER_BIT);
     }
-
-    local_func auto
-    TestArena(Game_State* GameState) -> void
-    {
-        Camera *GameCamera = &GameState->GameCamera;
-        Level *GameLevel = &GameState->GameLevel;
-        Player* Fighters[2] = {&GameState->Fighter1, &GameState->Fighter2};
-
-        {//Draw Level Background
-            Coordinate_Space BackgroundWorldSpace{};
-            Coordinate_Space BackgroundCameraSpace{};
-            Drawable_Rect BackgroundCanvas{};
-
-            BackgroundWorldSpace.Origin = {0.0f, 0.0f};
-
-            {//Transform to Camera Space
-                vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
-                BackgroundCameraSpace.Origin = BackgroundWorldSpace.Origin + TranslationToCameraSpace;
-            };
-
-            BackgroundCanvas = ProduceRectFromBottomLeftPoint(BackgroundCameraSpace.Origin, GameLevel->Width, GameLevel->Height);
-            BackgroundCanvas = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
-
-            DrawTexture(GameLevel->BackgroundTexture.ID, BackgroundCanvas, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
-        };
-
-        {//Draw Players
-            for(int32 FighterIndex = 0; FighterIndex < ArrayCount(Fighters); ++FighterIndex)
-            {
-                Coordinate_Space FighterWorldSpace{};
-                Coordinate_Space FighterCameraSpace{};
-                Drawable_Rect FighterRect{};
-
-                FighterWorldSpace.Origin = Fighters[FighterIndex]->WorldPos;
-
-                { //Transform to Camera Space
-                    vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
-                    FighterCameraSpace.Origin = FighterWorldSpace.Origin + TranslationToCameraSpace;
-                };
-
-                FighterRect = ProduceRectFromBottomLeftPoint(
-                                            FighterCameraSpace.Origin, 
-                                            Fighters[FighterIndex]->Size.Width, 
-                                            Fighters[FighterIndex]->Size.Height);
-
-                FighterRect = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, FighterRect);
-
-                DrawTexture(Fighters[FighterIndex]->CurrentTexture.ID, FighterRect, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
-            };
-        };
-    }
 }
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
@@ -826,7 +775,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.LoadTexture = &GL::LoadTexture;
                 RenderCmds.DrawTexture = &GL::DrawTexture;
                 RenderCmds.Init = &GL::Init;
-                RenderCmds.TestArena = &GL::TestArena;
             }
 
             uint MonitorRefreshRate = bgz::MonitorRefreshHz();

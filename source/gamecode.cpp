@@ -75,8 +75,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         };
     }
 
-    RenderCmds.ClearScreen();
-
     if(Keyboard->MoveUp.Pressed)
     {
         Fighter1->WorldPos.y += 5.0f;
@@ -117,5 +115,53 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameCamera->LookAt.x -= 2.0f;
     }
 
-    RenderCmds.TestArena(GameState);
+    {//Render
+        RenderCmds.ClearScreen();
+
+        Player* Fighters[2] = {&GameState->Fighter1, &GameState->Fighter2};
+
+        {//Draw Level Background
+            Coordinate_Space BackgroundWorldSpace{};
+            Coordinate_Space BackgroundCameraSpace{};
+            Drawable_Rect BackgroundCanvas{};
+
+            BackgroundWorldSpace.Origin = {0.0f, 0.0f};
+
+            {//Transform to Camera Space
+                vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+                BackgroundCameraSpace.Origin = BackgroundWorldSpace.Origin + TranslationToCameraSpace;
+            };
+
+            BackgroundCanvas = ProduceRectFromBottomLeftPoint(BackgroundCameraSpace.Origin, GameLevel->Width, GameLevel->Height);
+            BackgroundCanvas = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
+
+            RenderCmds.DrawTexture(GameLevel->BackgroundTexture.ID, BackgroundCanvas, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
+        };
+
+        {//Draw Players
+            for(int32 FighterIndex = 0; FighterIndex < ArrayCount(Fighters); ++FighterIndex)
+            {
+                Coordinate_Space FighterWorldSpace{};
+                Coordinate_Space FighterCameraSpace{};
+                Drawable_Rect FighterRect{};
+
+                FighterWorldSpace.Origin = Fighters[FighterIndex]->WorldPos;
+
+                { //Transform to Camera Space
+                    vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+                    FighterCameraSpace.Origin = FighterWorldSpace.Origin + TranslationToCameraSpace;
+                };
+
+                FighterRect = ProduceRectFromBottomLeftPoint(
+                                            FighterCameraSpace.Origin, 
+                                            Fighters[FighterIndex]->Size.Width, 
+                                            Fighters[FighterIndex]->Size.Height);
+
+                FighterRect = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, FighterRect);
+
+                RenderCmds.DrawTexture(Fighters[FighterIndex]->CurrentTexture.ID, FighterRect, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
+            };
+        };
+
+    }
 }
