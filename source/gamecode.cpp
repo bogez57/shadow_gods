@@ -16,6 +16,25 @@
 global_variable float32 ViewportWidth;
 global_variable float32 ViewportHeight;
 
+local_func auto 
+InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, uint64 SizeToReserve, uint64* StartingAddress) -> void
+{
+    MemoryChunkToInit->BaseAddress = StartingAddress;
+    MemoryChunkToInit->Size = SizeToReserve;
+    MemoryChunkToInit->UsedMemory = 0;
+};
+
+#define PushStruct(MemoryChunk, Type) (Type*)PushStruct_(MemoryChunk, sizeof(Type));
+auto
+PushStruct_(Memory_Chunk* MemoryChunk, uint64 Size) -> void*
+{
+    BGZ_ASSERT((MemoryChunk->UsedMemory + Size) <= MemoryChunk->Size);
+    void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedMemory;
+    MemoryChunk->UsedMemory += Size;
+
+    return Result;
+}
+
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)

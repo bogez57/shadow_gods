@@ -3,6 +3,13 @@
 #include "shared.h"
 #include "types.h"
 
+struct Memory_Chunk
+{
+    uint64* BaseAddress;
+    uint64 Size;
+    uint64 UsedMemory;
+};
+
 struct Rect
 {
     float32 Width;
@@ -36,6 +43,7 @@ struct Camera
 
 struct Game_State
 {
+    Memory_Chunk TestChunk;
     Camera GameCamera;
     Level GameLevel;
     Player Fighter1;
