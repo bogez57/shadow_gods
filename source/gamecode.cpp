@@ -175,10 +175,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                     FighterCameraSpace.Origin = FighterWorldSpace.Origin + TranslationToCameraSpace;
                 };
 
-                FighterRect = ProduceRectFromBottomLeftPoint(
-                                            FighterCameraSpace.Origin, 
-                                            Fighters[FighterIndex]->Size.Width, 
-                                            Fighters[FighterIndex]->Size.Height);
+                FighterRect = Rotate(FighterCameraSpace, Fighters[FighterIndex]->Size.Width, Fighters[FighterIndex]->Size.Height);
 
                 FighterRect = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, FighterRect);
 

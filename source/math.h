@@ -3,6 +3,8 @@
 #include "types.h"
 #include <math.h>//TODO: Remove and replace with own, faster platform specific implementations
 
+#define PI 3.141592f
+
 inline float32
 AbsoluteVal(float32 Value)
 {
@@ -11,15 +13,15 @@ AbsoluteVal(float32 Value)
 }
 
 inline float32
-Sin(float Angle)
+Sin(float AngleInRadians)
 {
-    float32 RealNumber = sinf(Angle);
+    float32 RealNumber = sinf(AngleInRadians);
     return RealNumber;
 };
 
 inline float32
-Cos(float Angle)
+Cos(float AngleInRadians)
 {
-    float32 RealNumber = cosf(Angle);
+    float32 RealNumber = cosf(AngleInRadians);
     return RealNumber;
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "math.h"
 #include "utilities.h"
 
 struct Game_Memory
@@ -159,36 +160,37 @@ ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) 
 };
 
 auto 
-Scale(Coordinate_Space SpaceToScale, float32 ScaleFactor, float32 Width, float32 Height) -> Drawable_Rect
+Rotate(Coordinate_Space SpaceToRotate, float32 Width, float32 Height) -> Drawable_Rect
 {
     //Translate to origin
-    vec2 SpaceTempOrigin = SpaceToScale.Origin - SpaceToScale.Origin;
+    vec2 SpaceTempOrigin = SpaceToRotate.Origin - SpaceToRotate.Origin;
+
+    float32 RotatedAngle = 30.0f * (PI / 180.0f);
+    SpaceToRotate.XBasis = {Cos(RotatedAngle), Sin(RotatedAngle)};
+    SpaceToRotate.YBasis = {-Sin(RotatedAngle), Cos(RotatedAngle)};
 
     Drawable_Rect RectCoords = ProduceRectFromBottomLeftPoint(SpaceTempOrigin, Width, Height);
 
-    SpaceToScale.XBasis = {ScaleFactor, 0.0f};
-    SpaceToScale.YBasis = {0.0f, ScaleFactor};
-
-    vec2 NewCoordX = RectCoords.BottomLeft.x * SpaceToScale.XBasis;
-    vec2 NewCoordY = RectCoords.BottomLeft.y * SpaceToScale.YBasis;
+    vec2 NewCoordX = RectCoords.BottomLeft.x * SpaceToRotate.XBasis;
+    vec2 NewCoordY = RectCoords.BottomLeft.y * SpaceToRotate.YBasis;
     RectCoords.BottomLeft = NewCoordX + NewCoordY;
 
-    NewCoordX = RectCoords.BottomRight.x * SpaceToScale.XBasis;
-    NewCoordY = RectCoords.BottomRight.y * SpaceToScale.YBasis;
+    NewCoordX = RectCoords.BottomRight.x * SpaceToRotate.XBasis;
+    NewCoordY = RectCoords.BottomRight.y * SpaceToRotate.YBasis;
     RectCoords.BottomRight = NewCoordX + NewCoordY;
 
-    NewCoordX = RectCoords.TopRight.x * SpaceToScale.XBasis;
-    NewCoordY = RectCoords.TopRight.y * SpaceToScale.YBasis;
+    NewCoordX = RectCoords.TopRight.x * SpaceToRotate.XBasis;
+    NewCoordY = RectCoords.TopRight.y * SpaceToRotate.YBasis;
     RectCoords.TopRight = NewCoordX + NewCoordY;
 
-    NewCoordX = RectCoords.TopLeft.x * SpaceToScale.XBasis;
-    NewCoordY = RectCoords.TopLeft.y * SpaceToScale.YBasis;
+    NewCoordX = RectCoords.TopLeft.x * SpaceToRotate.XBasis;
+    NewCoordY = RectCoords.TopLeft.y * SpaceToRotate.YBasis;
     RectCoords.TopLeft = NewCoordX + NewCoordY;
 
-    RectCoords.BottomLeft +=SpaceToScale.Origin;
-    RectCoords.BottomRight +=SpaceToScale.Origin;
-    RectCoords.TopRight +=SpaceToScale.Origin;
-    RectCoords.TopLeft +=SpaceToScale.Origin;
+    RectCoords.BottomLeft +=SpaceToRotate.Origin;
+    RectCoords.BottomRight +=SpaceToRotate.Origin;
+    RectCoords.TopRight +=SpaceToRotate.Origin;
+    RectCoords.TopLeft +=SpaceToRotate.Origin;
 
     return RectCoords;
 }
