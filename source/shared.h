@@ -112,7 +112,7 @@ struct Drawable_Rect
     };
 };
 
-struct Coordinate_Space
+struct Coordinate_System
 {
     vec2 Origin;
     vec2 XBasis;
@@ -158,42 +158,6 @@ ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) 
 
     return Result;
 };
-
-auto 
-Rotate(Coordinate_Space SpaceToRotate, float32 Width, float32 Height) -> Drawable_Rect
-{
-    //Translate to origin
-    vec2 SpaceTempOrigin = SpaceToRotate.Origin - SpaceToRotate.Origin;
-
-    float32 RotatedAngle = 30.0f * (PI / 180.0f);
-    SpaceToRotate.XBasis = {Cos(RotatedAngle), Sin(RotatedAngle)};
-    SpaceToRotate.YBasis = {-Sin(RotatedAngle), Cos(RotatedAngle)};
-
-    Drawable_Rect RectCoords = ProduceRectFromBottomLeftPoint(SpaceTempOrigin, Width, Height);
-
-    vec2 NewCoordX = RectCoords.BottomLeft.x * SpaceToRotate.XBasis;
-    vec2 NewCoordY = RectCoords.BottomLeft.y * SpaceToRotate.YBasis;
-    RectCoords.BottomLeft = NewCoordX + NewCoordY;
-
-    NewCoordX = RectCoords.BottomRight.x * SpaceToRotate.XBasis;
-    NewCoordY = RectCoords.BottomRight.y * SpaceToRotate.YBasis;
-    RectCoords.BottomRight = NewCoordX + NewCoordY;
-
-    NewCoordX = RectCoords.TopRight.x * SpaceToRotate.XBasis;
-    NewCoordY = RectCoords.TopRight.y * SpaceToRotate.YBasis;
-    RectCoords.TopRight = NewCoordX + NewCoordY;
-
-    NewCoordX = RectCoords.TopLeft.x * SpaceToRotate.XBasis;
-    NewCoordY = RectCoords.TopLeft.y * SpaceToRotate.YBasis;
-    RectCoords.TopLeft = NewCoordX + NewCoordY;
-
-    RectCoords.BottomLeft +=SpaceToRotate.Origin;
-    RectCoords.BottomRight +=SpaceToRotate.Origin;
-    RectCoords.TopRight +=SpaceToRotate.Origin;
-    RectCoords.TopLeft +=SpaceToRotate.Origin;
-
-    return RectCoords;
-}
 
 auto
 DilateAboutPoint(vec2 PointOfDilation, float32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect

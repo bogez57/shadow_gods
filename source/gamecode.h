@@ -21,6 +21,8 @@ struct Player
     Rect Size;
     vec2 WorldPos;
     Texture CurrentTexture;
+    float32 Scale;
+    float32 DegreeOfRotation;
 };
 
 struct Level
@@ -37,8 +39,8 @@ struct Camera
     vec2 ViewCenter;
     float32 ViewWidth;
     float32 ViewHeight;
-    float32 ZoomFactor;
     vec2 DilatePoint;
+    float32 ZoomFactor;
 };
 
 struct Game_State
