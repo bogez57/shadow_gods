@@ -55,8 +55,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         ViewportWidth = 1280.0f;
         ViewportHeight = 720.0f;
 
-        RenderCmds.Init();
-
         {//Init Game State
             GameLevel->BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage(
                                                                             "4k.jpg", 
@@ -135,6 +133,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     }
 
     {//Render
+        RenderCmds.Init();
+
         RenderCmds.ClearScreen();
 
         Player* Fighters[2] = {&GameState->Fighter1, &GameState->Fighter2};
@@ -151,7 +151,11 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                 BackgroundCameraSpace.Origin = BackgroundWorldSpace.Origin + TranslationToCameraSpace;
             };
 
-            BackgroundCanvas = ProduceRectFromBottomLeftPoint(BackgroundCameraSpace.Origin, GameLevel->Width, GameLevel->Height);
+            BackgroundCanvas = ProduceRectFromBottomLeftPoint(
+                                        BackgroundCameraSpace.Origin, 
+                                        GameLevel->Width, 
+                                        GameLevel->Height);
+
             BackgroundCanvas = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
 
             RenderCmds.DrawTexture(GameLevel->BackgroundTexture.ID, BackgroundCanvas, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
