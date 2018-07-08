@@ -16,13 +16,21 @@ struct Rect
     float32 Height;
 };
 
+struct Limb
+{
+    Texture CurrentTexture;
+    int Width;
+    int Height;
+    vec2 WorldPos;
+};
+
 struct Player
 {
     Rect Size;
     vec2 WorldPos;
-    Texture CurrentTexture;
     float32 Scale;
     float32 DegreeOfRotation;
+    Limb* Limbs[1];
 };
 
 struct Level
@@ -48,7 +56,10 @@ struct Game_State
     Memory_Chunk TestChunk;
     Camera GameCamera;
     Level GameLevel;
+    Limb Head;
+    Limb Torso;
+    Limb LeftThigh;
+    Limb RightThigh;
     Player Fighter1;
-    Player Fighter2;
 };
 
