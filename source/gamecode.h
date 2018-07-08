@@ -10,23 +10,17 @@ struct Memory_Chunk
     uint64 UsedMemory;
 };
 
-struct Rect
-{
-    float32 Width;
-    float32 Height;
-};
-
 struct Limb
 {
+    Image DisplayImage;
     Texture CurrentTexture;
-    int Width;
-    int Height;
+    Dimensions Size;
     vec2 WorldPos;
 };
 
 struct Player
 {
-    Rect Size;
+    Dimensions Size;
     vec2 WorldPos;
     float32 Scale;
     float32 DegreeOfRotation;
@@ -35,10 +29,10 @@ struct Player
 
 struct Level
 {
-    float32 Width;
-    float32 Height;
+    Dimensions Size;
     vec2 CenterPoint;
-    Texture BackgroundTexture;
+    Image DisplayImage;
+    Texture CurrentTexture;
 };
 
 struct Camera

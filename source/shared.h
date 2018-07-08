@@ -87,14 +87,24 @@ struct Platform_Services
     unsigned char* (*LoadRGBAImage)(const char*, int*, int*);
 };
 
-////////RENDER STUFF - NEED TO MOVE OUT////////////////////////////////////////////
+////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
+
+struct Dimensions
+{
+    int Width;
+    int Height;
+};
+
+struct Image
+{
+    unsigned char* Data;
+    Dimensions Size;
+};
 
 struct Texture
 {
-    unsigned char* ImageData;
-    int Width;
-    int Height;
     uint ID;
+    Dimensions Size;
 };
 
 struct Drawable_Rect
@@ -180,6 +190,6 @@ struct Game_Render_Cmds
     void (*DrawRect)(vec2, vec2);
     void (*DrawBackground)(uint, vec2, vec2, vec2);
     void (*DrawTexture)(uint, Drawable_Rect, vec2, vec2);
-    uint (*LoadTexture)(Texture);
+    Texture (*LoadTexture)(Image);
     void (*Init)();
 };

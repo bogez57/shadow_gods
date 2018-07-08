@@ -594,25 +594,26 @@ namespace GL
     }
 
     local_func auto
-    LoadTexture(Texture GLTexture) -> uint
+    LoadTexture(Image ImageToSendToGPU) -> Texture
     {
-        uint8* ImageData = (uint8*)GLTexture.ImageData;
+        Texture ResultingTexture{};
+        ResultingTexture.Size.Width = ImageToSendToGPU.Size.Width;
+        ResultingTexture.Size.Height = ImageToSendToGPU.Size.Height;
 
-        glEnable(GL_TEXTURE_2D);
-        glGenTextures(1, &GLTexture.ID);
-        glBindTexture(GL_TEXTURE_2D, GLTexture.ID);
+        uint8* ImageData = ImageToSendToGPU.Data;
 
-        {//Flip image right side up since OpenGL reads it upside down.
-            int32 widthInBytes = GLTexture.Width * 4;
+        {//Flip image since OpenGL reads it upside down.
+            int32 widthInBytes = ResultingTexture.Size.Width * 4;
+            int32 halfHeight = ResultingTexture.Size.Height / 2;
+
             unsigned char *p_topRowOfTexels = nullptr;
             unsigned char *p_bottomRowOfTexels = nullptr;
             unsigned char temp = 0;
-            int32 halfHeight = GLTexture.Height / 2;
 
             for (int32 row = 0; row < halfHeight; ++row)
             {
                 p_topRowOfTexels = ImageData + row * widthInBytes;
-                p_bottomRowOfTexels = ImageData + (GLTexture.Height - row - 1) * widthInBytes;
+                p_bottomRowOfTexels = ImageData + (ResultingTexture.Size.Height - row - 1) * widthInBytes;
 
                 for (int col = 0; col < widthInBytes; ++col)
                 {
@@ -625,7 +626,11 @@ namespace GL
             }
         };
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GLTexture.Width, GLTexture.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
+        glEnable(GL_TEXTURE_2D);
+        glGenTextures(1, &ResultingTexture.ID);
+        glBindTexture(GL_TEXTURE_2D, ResultingTexture.ID);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ResultingTexture.Size.Width, ResultingTexture.Size.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -636,7 +641,7 @@ namespace GL
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        return GLTexture.ID; 
+        return ResultingTexture; 
     }
 
     local_func auto

@@ -59,46 +59,50 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         ViewportHeight = 720.0f;
 
         {//Init Game State
-            GameLevel->BackgroundTexture.ImageData = PlatformServices.LoadRGBAImage(
-                                                                            "4k.jpg", 
-                                                                            &GameLevel->BackgroundTexture.Width,
-                                                                            &GameLevel->BackgroundTexture.Height);
-            GameLevel->BackgroundTexture.ID = RenderCmds.LoadTexture(GameLevel->BackgroundTexture);
-            GameLevel->Width = (float32)GameLevel->BackgroundTexture.Width;
-            GameLevel->Height = (float32)GameLevel->BackgroundTexture.Height;
-            GameLevel->CenterPoint = {GameLevel->Width / 2, GameLevel->Height / 2};
+            GameLevel->DisplayImage.Data = PlatformServices.LoadRGBAImage(
+                                                            "4k.jpg", 
+                                                            &GameLevel->DisplayImage.Size.Width,
+                                                            &GameLevel->DisplayImage.Size.Height);
 
-            F1Head->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
+            F1Head->DisplayImage.Data = PlatformServices.LoadRGBAImage(
                                                      "test/Head.JPEG", 
-                                                     &F1Head->CurrentTexture.Width,
-                                                     &F1Head->CurrentTexture.Height);
-            F1Head->CurrentTexture.ID = RenderCmds.LoadTexture(F1Head->CurrentTexture);
-            F1Head->Width = F1Head->CurrentTexture.Width;
-            F1Head->Height = F1Head->CurrentTexture.Height;
+                                                     &F1Head->DisplayImage.Size.Width,
+                                                     &F1Head->DisplayImage.Size.Height);
 
-            F1Torso->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
+            F1Torso->DisplayImage.Data = PlatformServices.LoadRGBAImage(
                                                      "test/Torso.JPEG", 
-                                                     &F1Torso->CurrentTexture.Width,
-                                                     &F1Torso->CurrentTexture.Height);
-            F1Torso->CurrentTexture.ID = RenderCmds.LoadTexture(F1Torso->CurrentTexture);
-            F1Torso->Width = F1Torso->CurrentTexture.Width;
-            F1Torso->Height = F1Torso->CurrentTexture.Height;
+                                                     &F1Torso->DisplayImage.Size.Width,
+                                                     &F1Torso->DisplayImage.Size.Height);
 
-            F1LeftThigh->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
-                                                     "test/Left Thigh.JPEG", 
-                                                     &F1LeftThigh->CurrentTexture.Width,
-                                                     &F1LeftThigh->CurrentTexture.Height);
-            F1LeftThigh->CurrentTexture.ID = RenderCmds.LoadTexture(F1LeftThigh->CurrentTexture);
-            F1LeftThigh->Width = F1LeftThigh->CurrentTexture.Width;
-            F1LeftThigh->Height = F1LeftThigh->CurrentTexture.Height;
+            F1LeftThigh->DisplayImage.Data = PlatformServices.LoadRGBAImage(
+                                                     "test/Left Thigh.JPEG",
+                                                     &F1LeftThigh->DisplayImage.Size.Width,
+                                                     &F1LeftThigh->DisplayImage.Size.Height);
 
-            F1RightThigh->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
+            F1RightThigh->DisplayImage.Data = PlatformServices.LoadRGBAImage(
                                                      "test/Right Thigh.JPEG", 
-                                                     &F1RightThigh->CurrentTexture.Width,
-                                                     &F1RightThigh->CurrentTexture.Height);
-            F1RightThigh->CurrentTexture.ID = RenderCmds.LoadTexture(F1RightThigh->CurrentTexture);
-            F1RightThigh->Width = F1RightThigh->CurrentTexture.Width;
-            F1RightThigh->Height = F1RightThigh->CurrentTexture.Height;
+                                                     &F1RightThigh->DisplayImage.Size.Width,
+                                                     &F1RightThigh->DisplayImage.Size.Height);
+
+            //TODO: Move out to renderer
+            GameLevel->CurrentTexture = RenderCmds.LoadTexture(GameLevel->DisplayImage);
+            F1Head->CurrentTexture = RenderCmds.LoadTexture(F1Head->DisplayImage);
+            F1Torso->CurrentTexture = RenderCmds.LoadTexture(F1Torso->DisplayImage);
+            F1LeftThigh->CurrentTexture = RenderCmds.LoadTexture(F1LeftThigh->DisplayImage);
+            F1RightThigh->CurrentTexture = RenderCmds.LoadTexture(F1RightThigh->DisplayImage);
+
+            GameLevel->Size.Width = GameLevel->DisplayImage.Size.Width;
+            GameLevel->Size.Height = GameLevel->DisplayImage.Size.Height;
+            GameLevel->CenterPoint = {(float32)GameLevel->Size.Width / 2, (float32)GameLevel->Size.Height / 2};
+
+            F1Head->Size.Width = F1Head->DisplayImage.Size.Width;
+            F1Head->Size.Height = F1Head->DisplayImage.Size.Height;
+            F1Torso->Size.Width = F1Torso->DisplayImage.Size.Width;
+            F1Torso->Size.Height = F1Torso->DisplayImage.Size.Height;
+            F1LeftThigh->Size.Width = F1LeftThigh->DisplayImage.Size.Width;
+            F1LeftThigh->Size.Height = F1LeftThigh->DisplayImage.Size.Height;
+            F1RightThigh->Size.Width = F1RightThigh->DisplayImage.Size.Width;
+            F1RightThigh->Size.Height = F1RightThigh->DisplayImage.Size.Height;
 
             Fighter1->Limbs[0] = F1Head;
             Fighter1->Limbs[1] = F1Torso;
@@ -171,12 +175,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             BackgroundCanvas = ProduceRectFromBottomLeftPoint(
                                         BackgroundCameraSpace.Origin, 
-                                        GameLevel->Width, 
-                                        GameLevel->Height);
+                                        (float32)GameLevel->Size.Width, 
+                                        (float32)GameLevel->Size.Height);
 
             BackgroundCanvas = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
 
-            RenderCmds.DrawTexture(GameLevel->BackgroundTexture.ID, BackgroundCanvas, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
+            RenderCmds.DrawTexture(GameLevel->CurrentTexture.ID, BackgroundCanvas, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
         };
 
         {//Draw Players
@@ -197,14 +201,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
                 Drawable_Rect Limb = ProduceRectFromBottomLeftPoint(
                                         Fighter1->Limbs[LimbIndex]->WorldPos, 
-                                        (float32)Fighter1->Limbs[LimbIndex]->Width,
-                                        (float32)Fighter1->Limbs[LimbIndex]->Height);
+                                        (float32)Fighter1->Limbs[LimbIndex]->Size.Width,
+                                        (float32)Fighter1->Limbs[LimbIndex]->Size.Height);
 
-                RenderCmds.DrawTexture(
-                                Fighter1->Limbs[LimbIndex]->CurrentTexture.ID, 
-                                Limb, 
-                                vec2{0.0f, 0.0f}, 
-                                vec2{1.0f, 1.0f});
+                RenderCmds.DrawTexture(Fighter1->Limbs[LimbIndex]->CurrentTexture.ID, Limb, vec2{0.0f, 0.0f}, vec2{1.0f, 1.0f});
             };
         };
     };
