@@ -18,13 +18,28 @@ struct Limb
     vec2 WorldPos;
 };
 
+struct Physique 
+{
+    union
+    {
+        Limb Limbs[4];
+        struct
+        {
+            Limb Head;
+            Limb Torso;
+            Limb LeftThigh;
+            Limb RightThigh;
+        };
+    };
+};
+
 struct Player
 {
     Dimensions Size;
     vec2 WorldPos;
     float32 Scale;
     float32 DegreeOfRotation;
-    Limb* Limbs[4];
+    Physique Body;
 };
 
 struct Level
@@ -50,10 +65,6 @@ struct Game_State
     Memory_Chunk TestChunk;
     Camera GameCamera;
     Level GameLevel;
-    Limb Head;
-    Limb Torso;
-    Limb LeftThigh;
-    Limb RightThigh;
     Player Fighter1;
 };
 
