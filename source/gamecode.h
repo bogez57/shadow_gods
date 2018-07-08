@@ -30,7 +30,7 @@ struct Player
     vec2 WorldPos;
     float32 Scale;
     float32 DegreeOfRotation;
-    Limb* Limbs[1];
+    Limb* Limbs[4];
 };
 
 struct Level

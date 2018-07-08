@@ -70,29 +70,40 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             F1Head->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
                                                      "test/Head.JPEG", 
-                                                     &F1Head->Width,
-                                                     &F1Head->Height);
+                                                     &F1Head->CurrentTexture.Width,
+                                                     &F1Head->CurrentTexture.Height);
             F1Head->CurrentTexture.ID = RenderCmds.LoadTexture(F1Head->CurrentTexture);
+            F1Head->Width = F1Head->CurrentTexture.Width;
+            F1Head->Height = F1Head->CurrentTexture.Height;
 
             F1Torso->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
                                                      "test/Torso.JPEG", 
-                                                     &F1Torso->Width,
-                                                     &F1Torso->Height);
+                                                     &F1Torso->CurrentTexture.Width,
+                                                     &F1Torso->CurrentTexture.Height);
             F1Torso->CurrentTexture.ID = RenderCmds.LoadTexture(F1Torso->CurrentTexture);
+            F1Torso->Width = F1Torso->CurrentTexture.Width;
+            F1Torso->Height = F1Torso->CurrentTexture.Height;
 
             F1LeftThigh->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
                                                      "test/Left Thigh.JPEG", 
-                                                     &F1LeftThigh->Width,
-                                                     &F1LeftThigh->Height);
+                                                     &F1LeftThigh->CurrentTexture.Width,
+                                                     &F1LeftThigh->CurrentTexture.Height);
             F1LeftThigh->CurrentTexture.ID = RenderCmds.LoadTexture(F1LeftThigh->CurrentTexture);
+            F1LeftThigh->Width = F1LeftThigh->CurrentTexture.Width;
+            F1LeftThigh->Height = F1LeftThigh->CurrentTexture.Height;
 
             F1RightThigh->CurrentTexture.ImageData = PlatformServices.LoadRGBAImage(
                                                      "test/Right Thigh.JPEG", 
-                                                     &F1RightThigh->Width,
-                                                     &F1RightThigh->Height);
+                                                     &F1RightThigh->CurrentTexture.Width,
+                                                     &F1RightThigh->CurrentTexture.Height);
             F1RightThigh->CurrentTexture.ID = RenderCmds.LoadTexture(F1RightThigh->CurrentTexture);
+            F1RightThigh->Width = F1RightThigh->CurrentTexture.Width;
+            F1RightThigh->Height = F1RightThigh->CurrentTexture.Height;
 
             Fighter1->Limbs[0] = F1Head;
+            Fighter1->Limbs[1] = F1Torso;
+            Fighter1->Limbs[2] = F1LeftThigh;
+            Fighter1->Limbs[3] = F1RightThigh;
             Fighter1->WorldPos = GameLevel->CenterPoint;
             Fighter1->Scale = 1.0f;
             Fighter1->DegreeOfRotation = 0.0f;
@@ -112,6 +123,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveDown.Pressed)
     {
+        Fighter1->WorldPos.y -= 2.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
@@ -170,7 +182,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         {//Draw Players
             Coordinate_System FighterWorldSpace{};
             Coordinate_System FighterCameraSpace{};
-            Drawable_Rect Limb{};
+            Drawable_Rect FighterRect{};
 
             FighterWorldSpace.Origin = Fighter1->WorldPos;
 
@@ -181,9 +193,9 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             for(int32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Limbs); ++LimbIndex)
             {
-                Fighter1->Limbs[LimbIndex]->WorldPos = {FighterCameraSpace.Origin.x + 20.0f, FighterCameraSpace.Origin.y + 0.0f};
+                Fighter1->Limbs[LimbIndex]->WorldPos = {FighterCameraSpace.Origin.x, FighterCameraSpace.Origin.y};
 
-                Limb = ProduceRectFromBottomLeftPoint(
+                Drawable_Rect Limb = ProduceRectFromBottomLeftPoint(
                                         Fighter1->Limbs[LimbIndex]->WorldPos, 
                                         (float32)Fighter1->Limbs[LimbIndex]->Width,
                                         (float32)Fighter1->Limbs[LimbIndex]->Height);
