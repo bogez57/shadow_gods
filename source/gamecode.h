@@ -15,7 +15,7 @@ struct Limb
     Image DisplayImage;
     Texture CurrentTexture;
     Dimensions Size;
-    vec2 WorldPos;
+    vec2 Offset;
 };
 
 struct Physique 
@@ -36,10 +36,10 @@ struct Physique
 struct Player
 {
     Dimensions Size;
-    vec2 WorldPos;
     float32 Scale;
     float32 DegreeOfRotation;
     Physique Body;
+    vec2 WorldPos;
 };
 
 struct Level

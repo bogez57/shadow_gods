@@ -88,15 +88,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameLevel->Size.Height = GameLevel->DisplayImage.Size.Height;
             GameLevel->CenterPoint = {(float32)GameLevel->Size.Width / 2, (float32)GameLevel->Size.Height / 2};
 
+            Fighter1->WorldPos.x = GameLevel->CenterPoint.x - 100.0f;
+            Fighter1->WorldPos.y = GameLevel->CenterPoint.y - 300.0f;
+            Fighter1->Scale = 1.0f;
+            Fighter1->DegreeOfRotation = 0.0f;
+
             for(int32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex) 
             {
                 Fighter1->Body.Limbs[LimbIndex].Size.Width = Fighter1->Body.Limbs[LimbIndex].DisplayImage.Size.Width;
                 Fighter1->Body.Limbs[LimbIndex].Size.Height = Fighter1->Body.Limbs[LimbIndex].DisplayImage.Size.Height;
             };
-
-            Fighter1->WorldPos = GameLevel->CenterPoint;
-            Fighter1->Scale = 1.0f;
-            Fighter1->DegreeOfRotation = 0.0f;
 
             GameCamera->ViewWidth = ViewportWidth;
             GameCamera->ViewHeight = ViewportHeight;
@@ -106,6 +107,11 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->ZoomFactor = 1.0f;
         };
     }
+
+    Fighter1->Body.Head.Offset = {10.0f, 300.0f};
+    Fighter1->Body.Torso.Offset = {0.0f, 0.0f};
+    Fighter1->Body.LeftThigh.Offset = {0.0f, -100.0f};
+    Fighter1->Body.RightThigh.Offset = {60.0f, -100.0f};
 
     if(Keyboard->MoveUp.Pressed)
     {
@@ -174,20 +180,21 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             Coordinate_System FighterWorldSpace{};
             Coordinate_System FighterCameraSpace{};
             Drawable_Rect FighterRect{};
+            vec2 TranslationToCameraSpace{};
 
             FighterWorldSpace.Origin = Fighter1->WorldPos;
 
             { //Transform to Camera Space
-                vec2 TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+                TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
                 FighterCameraSpace.Origin = FighterWorldSpace.Origin + TranslationToCameraSpace;
             };
 
             for(int32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex)
             {
-                Fighter1->Body.Limbs[LimbIndex].WorldPos = {FighterCameraSpace.Origin.x, FighterCameraSpace.Origin.y};
+                vec2 LimbWorldPos = Fighter1->Body.Limbs[LimbIndex].Offset + FighterCameraSpace.Origin;
 
                 Drawable_Rect Limb = ProduceRectFromBottomLeftPoint(
-                                        Fighter1->Body.Limbs[LimbIndex].WorldPos, 
+                                        LimbWorldPos, 
                                         (float32)Fighter1->Body.Limbs[LimbIndex].Size.Width,
                                         (float32)Fighter1->Body.Limbs[LimbIndex].Size.Height);
 
