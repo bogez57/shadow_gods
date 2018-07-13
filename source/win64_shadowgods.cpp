@@ -564,17 +564,17 @@ namespace Win32
     }
 
     local_func auto
-    NormalizeAnalogStickValue(SHORT Value, SHORT DeadZoneThreshold) -> float32
+    NormalizeAnalogStickValue(SHORT Value, SHORT DeadZoneThreshold) -> f32
     {
-        float32 Result = 0;
+        f32 Result = 0;
 
         if (Value < -DeadZoneThreshold)
         {
-            Result = (float32)((Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold));
+            Result = (f32)((Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold));
         }
         else if (Value > DeadZoneThreshold)
         {
-            Result = (float32)((Value - DeadZoneThreshold) / (32767.0f - DeadZoneThreshold));
+            Result = (f32)((Value - DeadZoneThreshold) / (32767.0f - DeadZoneThreshold));
         }
 
         return (Result);
@@ -590,21 +590,21 @@ namespace GL
         glLoadIdentity();
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(0.0, (float32)WindowWidth, 0.0, (float32)WindowHeight, -1.0, 1.0);
+        glOrtho(0.0, (f32)WindowWidth, 0.0, (f32)WindowHeight, -1.0, 1.0);
     }
 
     local_func auto
     LoadTexture(Image ImageToSendToGPU) -> Texture
     {
         Texture ResultingTexture{};
-        ResultingTexture.Size.Width = ImageToSendToGPU.Size.Width;
-        ResultingTexture.Size.Height = ImageToSendToGPU.Size.Height;
+        ResultingTexture.Dimensions.Width = ImageToSendToGPU.Dimensions.Width;
+        ResultingTexture.Dimensions.Height = ImageToSendToGPU.Dimensions.Height;
 
         uint8* ImageData = ImageToSendToGPU.Data;
 
         {//Flip image since OpenGL reads it upside down.
-            int32 widthInBytes = ResultingTexture.Size.Width * 4;
-            int32 halfHeight = ResultingTexture.Size.Height / 2;
+            int32 widthInBytes = ResultingTexture.Dimensions.Width * 4;
+            int32 halfHeight = ResultingTexture.Dimensions.Height / 2;
 
             unsigned char *p_topRowOfTexels = nullptr;
             unsigned char *p_bottomRowOfTexels = nullptr;
@@ -613,7 +613,7 @@ namespace GL
             for (int32 row = 0; row < halfHeight; ++row)
             {
                 p_topRowOfTexels = ImageData + row * widthInBytes;
-                p_bottomRowOfTexels = ImageData + (ResultingTexture.Size.Height - row - 1) * widthInBytes;
+                p_bottomRowOfTexels = ImageData + (ResultingTexture.Dimensions.Height - row - 1) * widthInBytes;
 
                 for (int col = 0; col < widthInBytes; ++col)
                 {
@@ -630,7 +630,9 @@ namespace GL
         glGenTextures(1, &ResultingTexture.ID);
         glBindTexture(GL_TEXTURE_2D, ResultingTexture.ID);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ResultingTexture.Size.Width, ResultingTexture.Size.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA, ResultingTexture.Dimensions.Width, ResultingTexture.Dimensions.Height, 
+            0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -645,7 +647,7 @@ namespace GL
     }
 
     local_func auto
-    DrawBackground(uint TextureID, vec2 CameraViewDimensions, vec2 MinUV, vec2 MaxUV) -> void
+    DrawBackground(uint TextureID, v2f CameraViewDimensions, v2f MinUV, v2f MaxUV) -> void
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -671,7 +673,7 @@ namespace GL
     }
 
     local_func auto
-    DrawRect(vec2 MinPoint, vec2 MaxPoint) -> void
+    DrawRect(v2f MinPoint, v2f MaxPoint) -> void
     {
         glBegin(GL_QUADS);
 
@@ -685,7 +687,7 @@ namespace GL
     }
 
     local_func auto
-    DrawTexture(uint TextureID, Drawable_Rect Destination, vec2 UVMin, vec2 UVMax)
+    DrawTexture(uint TextureID, Drawable_Rect Destination, v2f UVMin, v2f UVMax)
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -784,24 +786,24 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             uint MonitorRefreshRate = bgz::MonitorRefreshHz();
             int GameRefreshRate{};
-            float32 TargetSecondsPerFrame{};
+            f32 TargetSecondsPerFrame{};
 
             switch(MonitorRefreshRate)
             {
                 case 30: 
                 {
                     GameRefreshRate = MonitorRefreshRate;
-                    TargetSecondsPerFrame = 1.0f/(float32)GameRefreshRate;
+                    TargetSecondsPerFrame = 1.0f/(f32)GameRefreshRate;
                 }break;
                 case 60: 
                 {
                     GameRefreshRate = MonitorRefreshRate;
-                    TargetSecondsPerFrame = 1.0f/(float32)GameRefreshRate;
+                    TargetSecondsPerFrame = 1.0f/(f32)GameRefreshRate;
                 }break;
                 case 120: 
                 {
                     GameRefreshRate = MonitorRefreshRate/2;
-                    TargetSecondsPerFrame = 1.0f/(float32)GameRefreshRate;
+                    TargetSecondsPerFrame = 1.0f/(f32)GameRefreshRate;
                 }break;
                 default:
                 InvalidCodePath //Unkown monitor refresh rate
@@ -925,7 +927,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState; 
 
-                float32 SecondsElapsedForWork = FramePerformanceTimer.SecondsElapsed();
+                f32 SecondsElapsedForWork = FramePerformanceTimer.SecondsElapsed();
 
                 if(SecondsElapsedForWork < TargetSecondsPerFrame)
                 {
@@ -939,7 +941,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 SwapBuffers(WindowContext);
 
-                float32 FrameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
+                f32 FrameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
                 FramePerformanceTimer.UpdateTimeCount();
 
                 BGZ_CONSOLE("ms per frame: %f\n", FrameTimeInMS);

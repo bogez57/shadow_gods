@@ -30,8 +30,8 @@ struct Game_Controller
     bool32 IsConnected;
     bool32 IsAnalog;    
 
-    vec2 LThumbStick;
-    vec2 RThumbStick;
+    v2f LThumbStick;
+    v2f RThumbStick;
 
     union
     {
@@ -89,52 +89,46 @@ struct Platform_Services
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
 
-struct Dimensions
-{
-    int Width;
-    int Height;
-};
-
 struct Image
 {
     unsigned char* Data;
-    Dimensions Size;
+    v2i Dimensions;
 };
 
 struct Texture
 {
     uint ID;
-    Dimensions Size;
+    v2i Dimensions;
 };
 
 struct Drawable_Rect
 {
     union 
     {
-        vec2 Corners[4];
+        v2f Corners[4];
         struct
         {
-            vec2 BottomLeft;
-            vec2 BottomRight;
-            vec2 TopRight;
-            vec2 TopLeft;
+            v2f BottomLeft;
+            v2f BottomRight;
+            v2f TopRight;
+            v2f TopLeft;
         };
     };
 };
 
 struct Coordinate_System
 {
-    vec2 Origin;
-    vec2 XBasis;
-    vec2 YBasis;
+    v2f Origin;
+    v2f XBasis;
+    v2f YBasis;
 };
 
 auto
-ProduceRectFromCenterPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Drawable_Rect
+ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
 {
     Drawable_Rect Result;
-    vec2 MinPoint;
-    vec2 MaxPoint;
+    v2f MinPoint;
+    v2f MaxPoint;
 
     MinPoint = {
         OriginPoint.x - (Width / 2),
@@ -154,7 +148,7 @@ ProduceRectFromCenterPoint(vec2 OriginPoint, float32 Width, float32 Height) -> D
 };
 
 auto 
-ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) -> Drawable_Rect
+ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
 {
     Drawable_Rect Result;
 
@@ -170,13 +164,13 @@ ProduceRectFromBottomLeftPoint(vec2 OriginPoint, float32 Width, float32 Height) 
 };
 
 auto
-DilateAboutPoint(vec2 PointOfDilation, float32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
+DilateAboutPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
 {
     Drawable_Rect DilatedRect;
 
     for (int32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
     {
-        vec2 Distance = PointOfDilation - RectToDilate.Corners[CornerIndex];
+        v2f Distance = PointOfDilation - RectToDilate.Corners[CornerIndex];
         Distance *= ScaleFactor;
         DilatedRect.Corners[CornerIndex] = PointOfDilation - Distance;
     };
@@ -187,9 +181,9 @@ DilateAboutPoint(vec2 PointOfDilation, float32 ScaleFactor, Drawable_Rect RectTo
 struct Game_Render_Cmds
 {
     void (*ClearScreen)();
-    void (*DrawRect)(vec2, vec2);
-    void (*DrawBackground)(uint, vec2, vec2, vec2);
-    void (*DrawTexture)(uint, Drawable_Rect, vec2, vec2);
+    void (*DrawRect)(v2f, v2f);
+    void (*DrawBackground)(uint, v2f, v2f, v2f);
+    void (*DrawTexture)(uint, Drawable_Rect, v2f, v2f);
     Texture (*LoadTexture)(Image);
     void (*Init)();
 };

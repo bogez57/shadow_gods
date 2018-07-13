@@ -16,38 +16,42 @@ typedef uint64_t uint64;
 
 typedef size_t sizet;
 
-typedef float float32;
-typedef double float64;
+typedef float f32;
+typedef double f64;
 
 #define local_persist static
 #define local_func static
 #define global_variable static
 #define global_func
 
-struct vec2
+struct v2f
 {
-    vec2() = default;
-    vec2(float32 x, float32 y);
+    v2f() = default;
+    v2f(f32 x, f32 y);
 
     union
     {
-        float32 Elem[2];
+        f32 Elem[2];
         struct
         {
-            float32 x, y;
+            f32 x, y;
+        };
+        struct
+        {
+            f32 Width, Height;
         };
     };
 };
 
-vec2::vec2(float32 x, float32 y) :
+v2f::v2f(f32 x, f32 y) :
     x(x),
     y(y)
 {}
 
-inline vec2
-operator*(float32 A,  vec2 B)
+inline v2f
+operator*(f32 A,  v2f B)
 {
-    vec2 Result;
+    v2f Result;
 
     Result.x = A*B.x;
     Result.y = A*B.y;
@@ -55,26 +59,26 @@ operator*(float32 A,  vec2 B)
     return(Result);
 }
 
-inline vec2
-operator*(vec2 B, float32 A)
+inline v2f
+operator*(v2f B, f32 A)
 {
-    vec2 Result = A*B;
+    v2f Result = A*B;
 
     return(Result);
 }
 
-inline  vec2&
-operator*=(vec2& B, float32 A)
+inline  v2f&
+operator*=(v2f& B, f32 A)
 {
     B = A * B;
 
     return(B);
 }
 
-inline vec2
-operator+(vec2 A, vec2 B)
+inline v2f
+operator+(v2f A, v2f B)
 {
-    vec2 Result;
+    v2f Result;
 
     Result.x = A.x + B.x;
     Result.y = A.y + B.y;
@@ -82,16 +86,16 @@ operator+(vec2 A, vec2 B)
     return(Result);
 }
 
-inline vec2&
-operator+=(vec2& A, vec2 B)
+inline v2f&
+operator+=(v2f& A, v2f B)
 {
     A = A + B;
 
     return(A);
 }
 
-inline vec2&
-operator+=(vec2& A, float32 B)
+inline v2f&
+operator+=(v2f& A, f32 B)
 {
     A.x = A.x + B;
     A.y = A.y + B;
@@ -99,8 +103,8 @@ operator+=(vec2& A, float32 B)
     return(A);
 }
 
-inline vec2&
-operator-=(vec2& A, float32 B)
+inline v2f&
+operator-=(v2f& A, f32 B)
 {
     A.x = A.x - B;
     A.y = A.y - B;
@@ -108,8 +112,8 @@ operator-=(vec2& A, float32 B)
     return(A);
 }
 
-inline vec2&
-operator-=(vec2& A, vec2 B)
+inline v2f&
+operator-=(v2f& A, v2f B)
 {
     A.x = A.x - B.x;
     A.y = A.y - B.y;
@@ -117,10 +121,10 @@ operator-=(vec2& A, vec2 B)
     return(A);
 }
 
-inline vec2
-operator-(vec2 A, vec2 B)
+inline v2f
+operator-(v2f A, v2f B)
 {
-    vec2 Result;
+    v2f Result;
 
     Result.x = A.x - B.x;
     Result.y = A.y - B.y;
@@ -128,27 +132,161 @@ operator-(vec2 A, vec2 B)
     return(Result);
 }
 
-struct vec3
+struct v3f
 {
-    vec3() = default;
-    vec3(float32 x, float32 y, float32 z);
+    v3f() = default;
+    v3f(f32 x, f32 y, f32 z);
 
     union
     {
-        float32 Elem[3];
+        f32 Elem[3];
         struct
         {
-            float32 x, y, z;
+            f32 x, y, z;
         };
 
         struct
         {
-            float32 r, g, b;
+            f32 r, g, b;
         };
     };
 };
 
-vec3::vec3(float32 x, float32 y, float32 z) :
+v3f::v3f(f32 x, f32 y, f32 z) :
+    x(x),
+    y(y),
+    z(z)
+{}
+
+struct v2i
+{
+    v2i() = default;
+    v2i(int x, int y);
+
+    union
+    {
+        int Elem[2];
+        struct
+        {
+            int x, y;
+        };
+        struct
+        {
+            int Width, Height;
+        };
+    };
+};
+
+v2i::v2i(int x, int y) :
+    x(x),
+    y(y)
+{}
+
+inline v2i
+operator*(int A,  v2i B)
+{
+    v2i Result;
+
+    Result.x = A*B.x;
+    Result.y = A*B.y;
+
+    return(Result);
+}
+
+inline v2i
+operator*(v2i B, int A)
+{
+    v2i Result = A*B;
+
+    return(Result);
+}
+
+inline  v2i&
+operator*=(v2i& B, int A)
+{
+    B = A * B;
+
+    return(B);
+}
+
+inline v2i
+operator+(v2i A, v2i B)
+{
+    v2i Result;
+
+    Result.x = A.x + B.x;
+    Result.y = A.y + B.y;
+
+    return(Result);
+}
+
+inline v2i&
+operator+=(v2i& A, v2i B)
+{
+    A = A + B;
+
+    return(A);
+}
+
+inline v2i&
+operator+=(v2i& A, int B)
+{
+    A.x = A.x + B;
+    A.y = A.y + B;
+
+    return(A);
+}
+
+inline v2i&
+operator-=(v2i& A, int B)
+{
+    A.x = A.x - B;
+    A.y = A.y - B;
+
+    return(A);
+}
+
+inline v2i&
+operator-=(v2i& A, v2i B)
+{
+    A.x = A.x - B.x;
+    A.y = A.y - B.y;
+
+    return(A);
+}
+
+inline v2i
+operator-(v2i A, v2i B)
+{
+    v2i Result;
+
+    Result.x = A.x - B.x;
+    Result.y = A.y - B.y;
+
+    return(Result);
+}
+
+struct v3i
+{
+    v3i() = default;
+    v3i(int x, int y, int z);
+
+    union
+    {
+        int Elem[3];
+        struct
+        {
+            int x, y, z;
+        };
+
+        struct
+        {
+            int r, g, b;
+        };
+    };
+};
+
+v3i::v3i(int x, int y, int z) :
     x(x),
     y(y),
     z(z)

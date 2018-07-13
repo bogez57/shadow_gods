@@ -14,12 +14,14 @@ struct Limb
 {
     Image DisplayImage;
     Texture CurrentTexture;
-    Dimensions Size;
-    vec2 Offset;
+    v2f Dimensions;
+    v2f Offset;
 };
 
 struct Physique 
 {
+    v2f Dimensions;
+
     union
     {
         Limb Limbs[4];
@@ -35,29 +37,28 @@ struct Physique
 
 struct Player
 {
-    Dimensions Size;
-    float32 Scale;
-    float32 DegreeOfRotation;
+    f32 Scale;
+    f32 DegreeOfRotation;
     Physique Body;
-    vec2 WorldPos;
+    v2f WorldPos;
 };
 
 struct Level
 {
-    Dimensions Size;
-    vec2 CenterPoint;
+    v2f Dimensions;
+    v2f CenterPoint;
     Image DisplayImage;
     Texture CurrentTexture;
 };
 
 struct Camera
 {
-    vec2 LookAt;
-    vec2 ViewCenter;
-    float32 ViewWidth;
-    float32 ViewHeight;
-    vec2 DilatePoint;
-    float32 ZoomFactor;
+    v2f LookAt;
+    v2f ViewCenter;
+    f32 ViewWidth;
+    f32 ViewHeight;
+    v2f DilatePoint;
+    f32 ZoomFactor;
 };
 
 struct Game_State

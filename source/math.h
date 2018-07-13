@@ -5,23 +5,23 @@
 
 #define PI 3.141592f
 
-inline float32
-AbsoluteVal(float32 Value)
+inline f32
+AbsoluteVal(f32 Value)
 {
-    float32 Result = (float32)fabs(Value);
+    f32 Result = (f32)fabs(Value);
     return Result;
 }
 
-inline float32
+inline f32
 Sin(float AngleInRadians)
 {
-    float32 RealNumber = sinf(AngleInRadians);
+    f32 RealNumber = sinf(AngleInRadians);
     return RealNumber;
 };
 
-inline float32
+inline f32
 Cos(float AngleInRadians)
 {
-    float32 RealNumber = cosf(AngleInRadians);
+    f32 RealNumber = cosf(AngleInRadians);
     return RealNumber;
 };
