@@ -1,13 +1,13 @@
 #pragma once
 
 #include "shared.h"
-#include "types.h"
+#include "atomic_types.h"
 
 struct Memory_Chunk
 {
-    uint64* BaseAddress;
-    uint64 Size;
-    uint64 UsedMemory;
+    ui64* BaseAddress;
+    ui64 Size;
+    ui64 UsedMemory;
 };
 
 struct Limb

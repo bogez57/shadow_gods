@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include "atomic_types.h"
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
@@ -9,11 +9,11 @@
 #define Gigabytes(Value) (Megabytes(Value)*1024LL)
 #define Terabytes(Value) (Gigabytes(Value)*1024LL)
 
-inline uint32
-SafeTruncateUInt64(uint64 Value)
+inline ui32
+SafeTruncateUInt64(ui64 Value)
 {
     // TODO(casey): Defines for maximum values
     Assert(Value <= 0xFFFFFFFF);
-    uint32 Result = (uint32)Value;
+    ui32 Result = (ui32)Value;
     return(Result);
 }

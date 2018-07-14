@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include "atomic_types.h"
 #include "math.h"
 #include "utilities.h"
 
@@ -8,11 +8,11 @@ struct Game_Memory
 {
     bool IsInitialized{false};
 
-    uint32 SizeOfPermanentStorage{};
+    ui32 SizeOfPermanentStorage{};
     void* PermanentStorage{nullptr};
-    uint64 SizeOfTemporaryStorage{};
+    ui64 SizeOfTemporaryStorage{};
     void* TemporaryStorage{nullptr};
-    uint64 TotalSize{};
+    ui64 TotalSize{};
 };
 
 struct Button_State
@@ -22,13 +22,13 @@ struct Button_State
     //beginning of the frame, and then again at the end assuming multiple polling, with this scheme we would be able to capture 
     //both presses instead of just the one at the beginning).
     int NumTransitionsPerFrame; 
-    bool32 Pressed;
+    b32 Pressed;
 };
 
 struct Game_Controller
 {
-    bool32 IsConnected;
-    bool32 IsAnalog;    
+    b32 IsConnected;
+    b32 IsAnalog;    
 
     v2f LThumbStick;
     v2f RThumbStick;
@@ -78,11 +78,11 @@ struct Game_Sound_Output_Buffer
 
 };
 
-struct Read_File_Result {void* FileContents{nullptr}; uint32 FileSize{};};
+struct Read_File_Result {void* FileContents{nullptr}; ui32 FileSize{};};
 struct Platform_Services
 {
     Read_File_Result (*ReadEntireFile)(const char*);
-    bool (*WriteEntireFile)(const char*, void*, uint32);
+    bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
     unsigned char* (*LoadRGBAImage)(const char*, int*, int*);
 };
@@ -97,7 +97,7 @@ struct Image
 
 struct Texture
 {
-    uint ID;
+    ui32 ID;
     v2i Dimensions;
 };
 
@@ -168,7 +168,7 @@ DilateAboutPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilat
 {
     Drawable_Rect DilatedRect;
 
-    for (int32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
+    for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
     {
         v2f Distance = PointOfDilation - RectToDilate.Corners[CornerIndex];
         Distance *= ScaleFactor;
@@ -182,8 +182,8 @@ struct Game_Render_Cmds
 {
     void (*ClearScreen)();
     void (*DrawRect)(v2f, v2f);
-    void (*DrawBackground)(uint, v2f, v2f, v2f);
-    void (*DrawTexture)(uint, Drawable_Rect, v2f, v2f);
+    void (*DrawBackground)(ui32, v2f, v2f, v2f);
+    void (*DrawTexture)(ui32, Drawable_Rect, v2f, v2f);
     Texture (*LoadTexture)(Image);
     void (*Init)();
 };

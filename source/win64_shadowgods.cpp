@@ -28,14 +28,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-#include "types.h"
+#include "atomic_types.h"
 #include "math.h"
 #include "utilities.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
 
-global_variable uint32 WindowWidth{1280};
-global_variable uint32 WindowHeight{720};
+global_variable ui32 WindowWidth{1280};
+global_variable ui32 WindowHeight{720};
 global_variable Game_Memory GameMemory{};
 global_variable bool GameRunning{};
 
@@ -58,9 +58,9 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    WriteEntireFile(const char *FileName, void *Memory, uint32 MemorySize) -> bool
+    WriteEntireFile(const char *FileName, void *Memory, ui32 MemorySize) -> bool
     {
-        bool32 Result = false;
+        b32 Result = false;
 
         HANDLE FileHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
         if (FileHandle != INVALID_HANDLE_VALUE)
@@ -100,7 +100,7 @@ namespace Win32::Dbg
             LARGE_INTEGER FileSize{};
             if (GetFileSizeEx(FileHandle, &FileSize))
             {
-                uint32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
+                ui32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
                 Result.FileContents = VirtualAlloc(0, FileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
                 if (Result.FileContents)
@@ -203,8 +203,8 @@ namespace Win32::Dbg
         //is running. This is For live editing purposes. Code is currently being looped because the modified source dll that gets compiled
         //apparently isn't unlocked by Windows in time for it to be copied upon the first few CopyFile() function calls.
         bool CopyFileFuncNotWorking{true};
-        uint32 Counter{};
-        uint32 MaxAllowedLoops{5000};
+        ui32 Counter{};
+        ui32 MaxAllowedLoops{5000};
 
         while (CopyFileFuncNotWorking)
         {
@@ -281,9 +281,9 @@ namespace Win32::Dbg
     EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
     {
         GameReplayState->InputPlayBack = false;
-        for (uint32 ControllerIndex{0}; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
+        for (ui32 ControllerIndex{0}; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
         {
-            for (uint32 ButtonIndex{0}; ButtonIndex < ArrayCount(Input->Controllers[ControllerIndex].Buttons); ++ButtonIndex)
+            for (ui32 ButtonIndex{0}; ButtonIndex < ArrayCount(Input->Controllers[ControllerIndex].Buttons); ++ButtonIndex)
             {
                 Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
             }
@@ -309,7 +309,7 @@ namespace Win32::Dbg
 namespace Win32
 {
     local_func auto
-    ProcessKeyboardMessage(Button_State* NewState, bool32 IsDown) -> void
+    ProcessKeyboardMessage(Button_State* NewState, b32 IsDown) -> void
     {
 
         if (NewState->Pressed != IsDown)
@@ -337,14 +337,14 @@ namespace Win32
                 case WM_KEYDOWN:
                 case WM_KEYUP:
                 {
-                    uint32 VKCode = (uint32)Message.wParam;
+                    ui32 VKCode = (ui32)Message.wParam;
 
                     Game_Controller* Keyboard = &Input->Controllers[0];
 
                     //Since we are comparing IsDown and WasDown below, we need to use == and != to convert these bit tests to 
                     //actual 0 or 1 values.
-                    bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
-                    bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
+                    b32 WasDown = ((Message.lParam & (1 << 30)) != 0);
+                    b32 IsDown = ((Message.lParam & (1 << 31)) == 0);
 
                     if (WasDown != IsDown) //Filter out key repeats as my current input scheme is already able to react to held down inputs properly
                     {
@@ -600,17 +600,17 @@ namespace GL
         ResultingTexture.Dimensions.Width = ImageToSendToGPU.Dimensions.Width;
         ResultingTexture.Dimensions.Height = ImageToSendToGPU.Dimensions.Height;
 
-        uint8* ImageData = ImageToSendToGPU.Data;
+        ui8* ImageData = ImageToSendToGPU.Data;
 
         {//Flip image since OpenGL reads it upside down.
-            int32 widthInBytes = ResultingTexture.Dimensions.Width * 4;
-            int32 halfHeight = ResultingTexture.Dimensions.Height / 2;
+            i32 widthInBytes = ResultingTexture.Dimensions.Width * 4;
+            i32 halfHeight = ResultingTexture.Dimensions.Height / 2;
 
-            unsigned char *p_topRowOfTexels = nullptr;
-            unsigned char *p_bottomRowOfTexels = nullptr;
-            unsigned char temp = 0;
+            ui8 *p_topRowOfTexels = nullptr;
+            ui8 *p_bottomRowOfTexels = nullptr;
+            ui8 temp = 0;
 
-            for (int32 row = 0; row < halfHeight; ++row)
+            for (i32 row = 0; row < halfHeight; ++row)
             {
                 p_topRowOfTexels = ImageData + row * widthInBytes;
                 p_bottomRowOfTexels = ImageData + (ResultingTexture.Dimensions.Height - row - 1) * widthInBytes;
@@ -647,7 +647,7 @@ namespace GL
     }
 
     local_func auto
-    DrawBackground(uint TextureID, v2f CameraViewDimensions, v2f MinUV, v2f MaxUV) -> void
+    DrawBackground(ui32 TextureID, v2f CameraViewDimensions, v2f MinUV, v2f MaxUV) -> void
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -687,7 +687,7 @@ namespace GL
     }
 
     local_func auto
-    DrawTexture(uint TextureID, Drawable_Rect Destination, v2f UVMin, v2f UVMax)
+    DrawTexture(ui32 TextureID, Drawable_Rect Destination, v2f UVMin, v2f UVMax)
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -762,7 +762,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 GameMemory.SizeOfPermanentStorage = Megabytes(64);
                 GameMemory.TotalSize = GameMemory.SizeOfPermanentStorage + GameMemory.SizeOfTemporaryStorage;
                 GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);//TODO: Add large page support?
-                GameMemory.TemporaryStorage = ((uint8 *)GameMemory.PermanentStorage + GameMemory.SizeOfTemporaryStorage);
+                GameMemory.TemporaryStorage = ((ui8 *)GameMemory.PermanentStorage + GameMemory.SizeOfTemporaryStorage);
             }
 
             {//Init input recording and replay services
@@ -784,7 +784,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.Init = &GL::Init;
             }
 
-            uint MonitorRefreshRate = bgz::MonitorRefreshHz();
+            ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();
             int GameRefreshRate{};
             f32 TargetSecondsPerFrame{};
 
@@ -830,7 +830,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     struct Input_Result {Game_Input NewInput; Win32::Dbg::Game_Replay_State NewGameReplayState;};
                     Input_Result Result{};
 
-                    for (uint ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
+                    for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     {
                         ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                     }

@@ -16,12 +16,12 @@ using GameUpdateFuncPtr = void(*)(Game_Memory*, Platform_Services, Game_Render_C
 
 namespace Win32::Dbg
 {
-    const uint32 MaxAllowableRecordedInputs{4000};
+    const ui32 MaxAllowableRecordedInputs{4000};
     struct Game_Replay_State
     {
         Game_Input* RecordedInputs{nullptr};
-        uint32 InputCount{};
-        uint32 MaxInputStructsRecorded{};
+        ui32 InputCount{};
+        ui32 MaxInputStructsRecorded{};
         void* OriginalRecordedGameState{nullptr};
 
         bool InputRecording{false};

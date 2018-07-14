@@ -17,7 +17,7 @@ global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
 
 local_func auto 
-InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, uint64 SizeToReserve, uint64* StartingAddress) -> void
+InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, ui64 SizeToReserve, ui64* StartingAddress) -> void
 {
     MemoryChunkToInit->BaseAddress = StartingAddress;
     MemoryChunkToInit->Size = SizeToReserve;
@@ -26,7 +26,7 @@ InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, uint64 SizeToReserve, uint64* S
 
 #define PushStruct(MemoryChunk, Type) (Type*)PushStruct_(MemoryChunk, sizeof(Type));
 auto
-PushStruct_(Memory_Chunk* MemoryChunk, uint64 Size) -> void*
+PushStruct_(Memory_Chunk* MemoryChunk, ui64 Size) -> void*
 {
     BGZ_ASSERT((MemoryChunk->UsedMemory + Size) <= MemoryChunk->Size);
     void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedMemory;
@@ -93,7 +93,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             Fighter1->Scale = 1.0f;
             Fighter1->DegreeOfRotation = 0.0f;
 
-            for(int32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex) 
+            for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex) 
             {
                 Fighter1->Body.Limbs[LimbIndex].Dimensions.Width = (f32)Fighter1->Body.Limbs[LimbIndex].DisplayImage.Dimensions.Width;
                 Fighter1->Body.Limbs[LimbIndex].Dimensions.Height = (f32)Fighter1->Body.Limbs[LimbIndex].DisplayImage.Dimensions.Height;
@@ -191,7 +191,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                 FighterCameraSpace.Origin = FighterWorldSpace.Origin + TranslationToCameraSpace;
             };
 
-            for(int32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex)
+            for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex)
             {
                 v2f LimbCameraPos = Fighter1->Body.Limbs[LimbIndex].Offset + FighterCameraSpace.Origin;
 
