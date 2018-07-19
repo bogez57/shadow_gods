@@ -90,7 +90,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             Fighter1->WorldPos.x = GameLevel->CenterPoint.x - 100.0f;
             Fighter1->WorldPos.y = GameLevel->CenterPoint.y - 300.0f;
-            Fighter1->Scale = 1.0f;
+            Fighter1->Scale = .5f;
             Fighter1->DegreeOfRotation = 0.0f;
 
             for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex) 
@@ -112,6 +112,9 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     Fighter1->Body.Torso.Offset = {0.0f, 0.0f};
     Fighter1->Body.LeftThigh.Offset = {0.0f, -100.0f};
     Fighter1->Body.RightThigh.Offset = {60.0f, -100.0f};
+
+    Fighter1->Body.Dimensions.Width = 100.0f;
+    Fighter1->Body.Dimensions.Height = 100.0f;
 
     if(Keyboard->MoveUp.Pressed)
     {
@@ -173,7 +176,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                                         (f32)GameLevel->Dimensions.Width, 
                                         (f32)GameLevel->Dimensions.Height);
 
-            BackgroundCanvas = DilateAboutPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
+            BackgroundCanvas = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
 
             RenderCmds.DrawTexture(GameLevel->CurrentTexture.ID, BackgroundCanvas, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
         };
@@ -197,8 +200,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
                 Drawable_Rect Limb = ProduceRectFromBottomLeftPoint(
                                         LimbCameraPos, 
-                                        (f32)Fighter1->Body.Limbs[LimbIndex].Dimensions.Width,
+                                        (f32)Fighter1->Body.Limbs[LimbIndex].Dimensions.Width,  
                                         (f32)Fighter1->Body.Limbs[LimbIndex].Dimensions.Height);
+
+                Limb = DilateAboutArbitraryPoint(FighterCameraSpace.Origin, Fighter1->Scale, Limb);
 
                 RenderCmds.DrawTexture(Fighter1->Body.Limbs[LimbIndex].CurrentTexture.ID, Limb, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
             };

@@ -164,9 +164,9 @@ ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawab
 };
 
 auto
-DilateAboutPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
+DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
 {
-    Drawable_Rect DilatedRect;
+    Drawable_Rect DilatedRect{};
 
     for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
     {
@@ -176,6 +176,18 @@ DilateAboutPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilat
     };
 
     return DilatedRect;
+};
+
+auto
+RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Drawable_Rect RectToRotate) -> Drawable_Rect
+{
+    Drawable_Rect RotatedRect{};
+
+    for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToRotate.Corners); ++CornerIndex)
+    {
+    };
+
+    return RotatedRect;
 };
 
 struct Game_Render_Cmds

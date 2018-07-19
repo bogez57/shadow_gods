@@ -13,15 +13,22 @@ AbsoluteVal(f32 Value)
 }
 
 inline f32
-Sin(float AngleInRadians)
+Sin(f32 AngleInRadians)
 {
     f32 RealNumber = sinf(AngleInRadians);
     return RealNumber;
 };
 
 inline f32
-Cos(float AngleInRadians)
+Cos(f32 AngleInRadians)
 {
     f32 RealNumber = cosf(AngleInRadians);
     return RealNumber;
+};
+
+inline f64
+Sqrt(f64 Number)
+{
+    Number = sqrt(Number);
+    return Number;
 };
