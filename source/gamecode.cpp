@@ -108,13 +108,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         };
     }
 
-    Fighter1->Body.Head.Offset = {10.0f, 300.0f};
+    Fighter1->Body.Head.Offset = {10.0f, 330.0f};
     Fighter1->Body.Torso.Offset = {0.0f, 0.0f};
-    Fighter1->Body.LeftThigh.Offset = {0.0f, -100.0f};
-    Fighter1->Body.RightThigh.Offset = {60.0f, -100.0f};
+    Fighter1->Body.LeftThigh.Offset = {-90.0f, -130.0f};
+    Fighter1->Body.RightThigh.Offset = {100.0f, -150.0f};
 
-    Fighter1->Body.Dimensions.Width = 100.0f;
-    Fighter1->Body.Dimensions.Height = 100.0f;
+    Fighter1->Body.Head.Transform.Rotation = -10.0f;
+    Fighter1->Body.Torso.Transform.Rotation = 0.0f;
+    Fighter1->Body.LeftThigh.Transform.Rotation = -20.0f;
+    Fighter1->Body.RightThigh.Transform.Rotation = 10.0f;
 
     if(Keyboard->MoveUp.Pressed)
     {
@@ -184,7 +186,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         {//Draw Players
             Coordinate_System FighterWorldSpace{};
             Coordinate_System FighterCameraSpace{};
-            Drawable_Rect FighterRect{};
+            Drawable_Rect FighterSpacePositions{};
             v2f TranslationToCameraSpace{};
 
             FighterWorldSpace.Origin = Fighter1->WorldPos;
@@ -196,16 +198,36 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex)
             {
-                v2f LimbCameraPos = Fighter1->Body.Limbs[LimbIndex].Offset + FighterCameraSpace.Origin;
+                v2f LimbSpaceOrigin{0.0f, 0.0f};
+                v2f FighterSpaceOrigin{0.0f, 0.0f};
 
-                Drawable_Rect Limb = ProduceRectFromBottomLeftPoint(
-                                        LimbCameraPos, 
-                                        (f32)Fighter1->Body.Limbs[LimbIndex].Dimensions.Width,  
-                                        (f32)Fighter1->Body.Limbs[LimbIndex].Dimensions.Height);
+                Drawable_Rect LimbSpacePositions = ProduceRectFromBottomLeftPoint(
+                                                        LimbSpaceOrigin,
+                                                        (f32)Fighter1->Body.Limbs[LimbIndex].Dimensions.Width,
+                                                        (f32)Fighter1->Body.Limbs[LimbIndex].Dimensions.Height);
 
-                Limb = DilateAboutArbitraryPoint(FighterCameraSpace.Origin, Fighter1->Scale, Limb);
+                //Transform to Fighter space
+                for(ui32 CornerIndex{0}; CornerIndex < ArrayCount(LimbSpacePositions.Corners); ++CornerIndex)
+                {
+                    {//Rotate and translate into correct Fighter space positions
+                        {//Rotate
+                            f32 RotatedAngle = Fighter1->Body.Limbs[LimbIndex].Transform.Rotation * (PI / 180.0f);
+                            v2f TempFighterCornerPos1 = LimbSpacePositions.Corners[CornerIndex].x * v2f{Cos(RotatedAngle), Sin(RotatedAngle)};
+                            v2f TempFighterCornerPos2 = LimbSpacePositions.Corners[CornerIndex].y * v2f{-Sin(RotatedAngle), Cos(RotatedAngle)};
+                            FighterSpacePositions.Corners[CornerIndex] = TempFighterCornerPos1 + TempFighterCornerPos2;
+                        };
 
-                RenderCmds.DrawTexture(Fighter1->Body.Limbs[LimbIndex].CurrentTexture.ID, Limb, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+                        {//Translate
+                            FighterSpacePositions.Corners[CornerIndex] += Fighter1->Body.Limbs[LimbIndex].Offset + FighterSpaceOrigin;
+                        };
+                    };
+
+                    //TODO: Now make it so you can control the rotation of the fighter as well (instead of just the limbs which we have now)
+                    //Transform to Fighter Camera space for all corners (vectors)
+                    FighterSpacePositions.Corners[CornerIndex] = FighterCameraSpace.Origin + FighterSpacePositions.Corners[CornerIndex];
+                };
+
+                RenderCmds.DrawTexture(Fighter1->Body.Limbs[LimbIndex].CurrentTexture.ID, FighterSpacePositions, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
             };
         };
     };

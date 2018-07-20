@@ -10,8 +10,14 @@ struct Memory_Chunk
     ui64 UsedMemory;
 };
 
+struct Local_Transform
+{
+    f32 Rotation;
+};
+
 struct Limb
 {
+    Local_Transform Transform;
     Image DisplayImage;
     Texture CurrentTexture;
     v2f Dimensions;
@@ -20,6 +26,7 @@ struct Limb
 
 struct Physique 
 {
+    Local_Transform Transform;
     v2f Dimensions;
 
     union
