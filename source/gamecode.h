@@ -13,6 +13,7 @@ struct Memory_Chunk
 struct Local_Transform
 {
     f32 Rotation;
+    f32 Scale;
 };
 
 struct Limb
@@ -44,7 +45,6 @@ struct Physique
 
 struct Player
 {
-    f32 Scale;
     f32 DegreeOfRotation;
     Physique Body;
     v2f WorldPos;

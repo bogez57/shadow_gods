@@ -90,13 +90,17 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             Fighter1->WorldPos.x = GameLevel->CenterPoint.x - 100.0f;
             Fighter1->WorldPos.y = GameLevel->CenterPoint.y - 300.0f;
-            Fighter1->Scale = .5f;
 
             for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex) 
             {
                 Fighter1->Body.Limbs[LimbIndex].Dimensions.Width = (f32)Fighter1->Body.Limbs[LimbIndex].DisplayImage.Dimensions.Width;
                 Fighter1->Body.Limbs[LimbIndex].Dimensions.Height = (f32)Fighter1->Body.Limbs[LimbIndex].DisplayImage.Dimensions.Height;
+                Fighter1->Body.Limbs[LimbIndex].Transform.Scale = 1.0f;
+                Fighter1->Body.Limbs[LimbIndex].Transform.Rotation = 0.0f;
             };
+
+            Fighter1->Body.Transform.Rotation = 0.0f;
+            Fighter1->Body.Transform.Scale = 1.0f;
 
             GameCamera->ViewWidth = ViewportWidth;
             GameCamera->ViewHeight = ViewportHeight;
@@ -112,13 +116,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     Fighter1->Body.LeftThigh.Offset = {-90.0f, -130.0f};
     Fighter1->Body.RightThigh.Offset = {100.0f, -150.0f};
 
-    Fighter1->Body.Head.Transform.Rotation = -10.0f;
-    Fighter1->Body.Torso.Transform.Rotation = 0.0f;
-    Fighter1->Body.LeftThigh.Transform.Rotation = -20.0f;
-    Fighter1->Body.RightThigh.Transform.Rotation = 10.0f;
-
-    Fighter1->Body.Transform.Rotation = 10.0f;
-
     if (Keyboard->MoveUp.Pressed)
     {
         Fighter1->WorldPos.y += 2.0f;
@@ -131,12 +128,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveRight.Pressed)
     {
-        Fighter1->WorldPos.x += 2.0f;
+        Fighter1->Body.Head.Transform.Scale += .02f;
     }
 
     if(Keyboard->MoveLeft.Pressed)
     {
-        Fighter1->WorldPos.x -= 2.0f;
+        Fighter1->Body.Torso.Transform.Scale -= .02f;
     }
 
     if(Keyboard->ActionUp.Pressed)
@@ -211,6 +208,11 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                             FighterSpacePositions.Corners[CornerIndex] = TempFighterCornerPos1 + TempFighterCornerPos2;
                         };
 
+                        {//Scale
+                            f32 LimbScaleFactor = Fighter1->Body.Limbs[LimbIndex].Transform.Scale;
+                            FighterSpacePositions.Corners[CornerIndex] *= LimbScaleFactor;
+                        };
+
                         {//Translate
                             FighterSpacePositions.Corners[CornerIndex] += Fighter1->Body.Limbs[LimbIndex].Offset + FighterSpaceOrigin;
                         };
@@ -230,6 +232,11 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                             v2f TempFighterCornerPos1 = FighterSpacePositions.Corners[CornerIndex].x * v2f{Cos(RotatedAngleInRadians), Sin(RotatedAngleInRadians)};
                             v2f TempFighterCornerPos2 = FighterSpacePositions.Corners[CornerIndex].y * v2f{-Sin(RotatedAngleInRadians), Cos(RotatedAngleInRadians)};
                             WorldSpacePositions.Corners[CornerIndex] = TempFighterCornerPos1 + TempFighterCornerPos2;
+                        };
+
+                        {//Scale
+                            f32 FighterScaleFactor = Fighter1->Body.Transform.Scale;
+                            WorldSpacePositions.Corners[CornerIndex] *= FighterScaleFactor;
                         };
 
                         { //Translate

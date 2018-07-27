@@ -3,8 +3,9 @@
     ToDo List:
 
     - Load XInput through LoadLibrary() (To help avoid likely "Xinput.dll not found on certain windows platforms")
-    - Have it so I handle a game controller being disconnected at any point while the game is running
     - Make current frame timing more accurate/in-sync with monitor refresh rate
+    - Pass deltatime to game
+    - convert game units from pixels to meters
 */
 
 #if (DEVELOPMENT_BUILD)
