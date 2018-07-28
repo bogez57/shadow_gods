@@ -148,6 +148,19 @@ ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_R
 };
 
 auto 
+ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
+{
+    Drawable_Rect Result;
+
+    Result.BottomLeft = {OriginPoint.x - (Width/2.0f), OriginPoint.y};
+    Result.BottomRight = {OriginPoint.x + (Width/2.0f), OriginPoint.y};
+    Result.TopRight = {Result.BottomRight.x, OriginPoint.y + Height};
+    Result.TopLeft = {Result.BottomLeft.x, OriginPoint.y + Height};
+
+    return Result;
+};
+
+auto 
 ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
 {
     Drawable_Rect Result;

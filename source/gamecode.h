@@ -23,6 +23,9 @@ struct Limb
     Texture CurrentTexture;
     v2f Dimensions;
     v2f Offset;
+    Limb* Parent;
+    Limb* Child;
+    v2f Position;
 };
 
 struct Physique 
@@ -35,8 +38,8 @@ struct Physique
         Limb Limbs[4];
         struct
         {
-            Limb Head;
             Limb Torso;
+            Limb Head;
             Limb LeftThigh;
             Limb RightThigh;
         };
