@@ -70,7 +70,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                                                      &Fighter1->Body.Head.DisplayImage.Dimensions.Width,
                                                      &Fighter1->Body.Head.DisplayImage.Dimensions.Height);
 
-           /*Fighter1->Body.LeftThigh.DisplayImage.Data = PlatformServices.LoadRGBAImage(
+            Fighter1->Body.LeftThigh.DisplayImage.Data = PlatformServices.LoadRGBAImage(
                                                      "test/Left Thigh.JPEG", 
                                                      &Fighter1->Body.LeftThigh.DisplayImage.Dimensions.Width,
                                                      &Fighter1->Body.LeftThigh.DisplayImage.Dimensions.Height);
@@ -78,12 +78,13 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                                                      "test/Right Thigh.JPEG", 
                                                      &Fighter1->Body.RightThigh.DisplayImage.Dimensions.Width,
                                                      &Fighter1->Body.RightThigh.DisplayImage.Dimensions.Height);
-                                                     */
-
+                                                     
             //TODO: Move out to renderer
             GameLevel->CurrentTexture = RenderCmds.LoadTexture(GameLevel->DisplayImage);
             Fighter1->Body.Head.CurrentTexture = RenderCmds.LoadTexture(Fighter1->Body.Head.DisplayImage);
             Fighter1->Body.Torso.CurrentTexture = RenderCmds.LoadTexture(Fighter1->Body.Torso.DisplayImage);
+            Fighter1->Body.LeftThigh.CurrentTexture = RenderCmds.LoadTexture(Fighter1->Body.LeftThigh.DisplayImage);
+            Fighter1->Body.RightThigh.CurrentTexture = RenderCmds.LoadTexture(Fighter1->Body.LeftThigh.DisplayImage);
 
             GameLevel->Dimensions.Width = (f32)GameLevel->DisplayImage.Dimensions.Width;
             GameLevel->Dimensions.Height = (f32)GameLevel->DisplayImage.Dimensions.Height;
@@ -118,13 +119,19 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     Fighter1->Body.Torso.Offset = {0.0f, 0.0f};
     Fighter1->Body.Head.Offset = {0.0f, Fighter1->Body.Torso.Dimensions.Height};
+    Fighter1->Body.LeftThigh.Offset = {-50.0f, 0.0f};
+    Fighter1->Body.RightThigh.Offset = {50.0f, 0.0f};
 
     {//Set limb relationships
         Fighter1->Body.Root.Parent = nullptr;
         Fighter1->Body.Torso.Parent = &Fighter1->Body.Root;
-        Fighter1->Body.Torso.Child = &Fighter1->Body.Head;
         Fighter1->Body.Head.Parent = &Fighter1->Body.Torso;
+        Fighter1->Body.LeftThigh.Parent = &Fighter1->Body.Torso;
+        Fighter1->Body.RightThigh.Parent = &Fighter1->Body.Torso;
     };
+
+    Fighter1->Body.RightThigh.Transform.Rotation = -180.0f;
+    Fighter1->Body.LeftThigh.Transform.Rotation = 180.0f;
 
     if (Keyboard->MoveUp.Pressed)
     {
