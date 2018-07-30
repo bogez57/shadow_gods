@@ -35,13 +35,12 @@ struct Physique
 
     union
     {
-        Limb Limbs[4];
+        Limb Limbs[3];
         struct
         {
+            Limb Root;
             Limb Torso;
             Limb Head;
-            Limb LeftThigh;
-            Limb RightThigh;
         };
     };
 };

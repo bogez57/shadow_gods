@@ -33,7 +33,7 @@ PushStruct_(Memory_Chunk* MemoryChunk, ui64 Size) -> void*
     MemoryChunk->UsedMemory += Size;
 
     return Result;
-}
+};
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
@@ -103,6 +103,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             Fighter1->Body.Transform.Rotation = 0.0f;
             Fighter1->Body.Transform.Scale = 1.0f;
 
+            Fighter1->Body.Root.Offset = {0.0f, 0.0f};
+            Fighter1->Body.Root.Transform.Rotation = 0.0f;
+            Fighter1->Body.Root.Transform.Scale = 1.0f;
+
             GameCamera->ViewWidth = ViewportWidth;
             GameCamera->ViewHeight = ViewportHeight;
             GameCamera->LookAt = GameLevel->CenterPoint;
@@ -116,14 +120,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     Fighter1->Body.Head.Offset = {0.0f, Fighter1->Body.Torso.Dimensions.Height};
 
     {//Set limb relationships
-        Fighter1->Body.Torso.Parent = nullptr;
+        Fighter1->Body.Root.Parent = nullptr;
+        Fighter1->Body.Torso.Parent = &Fighter1->Body.Root;
         Fighter1->Body.Torso.Child = &Fighter1->Body.Head;
         Fighter1->Body.Head.Parent = &Fighter1->Body.Torso;
     };
 
     if (Keyboard->MoveUp.Pressed)
     {
-        Fighter1->Body.Head.Transform.Rotation += .2f;
+        Fighter1->Body.Transform.Rotation += .2f;
     }
 
     if(Keyboard->MoveDown.Pressed)
@@ -193,89 +198,53 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
             FighterWorldSpace.Origin = Fighter1->WorldPos;
 
-            //Transform to Fighter space
+            //Update limb position vectors to local fighter space
             for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex)
             {
-                v2f LimbSpaceOrigin{0.0f, 0.0f};
-                v2f FighterSpaceOrigin{0.0f, 0.0f};
                 Limb* FighterLimb = &Fighter1->Body.Limbs[LimbIndex];
 
+                //Limb isn't root as root has no parent
+                if(FighterLimb->Parent)
+                {
+                    FighterLimb->Offset = LinearRotation(FighterLimb->Parent->Transform.Rotation, FighterLimb->Offset);
+
+                    //Translate Limb Origin Point based off parent position
+                    FighterLimb->Position = FighterLimb->Parent->Position + FighterLimb->Offset;
+                };
+            };
+
+            //Draw Images to limbs
+            for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex)
+            {
+                Limb* FighterLimb = &Fighter1->Body.Limbs[LimbIndex];
+
+                v2f LimbSpaceOrigin{0.0f, 0.0f};
                 Drawable_Rect LimbSpacePositions = ProduceRectFromBottomMidPoint(
                                                         LimbSpaceOrigin,
                                                         (f32)FighterLimb->Dimensions.Width,
                                                         (f32)FighterLimb->Dimensions.Height);
 
-                if(!FighterLimb->Parent)
+                //Transform image position vectors to fighter space
+                for (ui32 CornerIndex{0}; CornerIndex < ArrayCount(LimbSpacePositions.Corners); ++CornerIndex)
                 {
-                    for (ui32 CornerIndex{0}; CornerIndex < ArrayCount(LimbSpacePositions.Corners); ++CornerIndex)
-                    {
-                        {//Rotate and translate into correct Fighter space positions
-                            { //Rotate
-                                f32 RotatedAngleInRadians = FighterLimb->Transform.Rotation * (PI / 180.0f);
-                                v2f TempFighterCornerPos1 = LimbSpacePositions.Corners[CornerIndex].x * v2f{Cos(RotatedAngleInRadians), Sin(RotatedAngleInRadians)};
-                                v2f TempFighterCornerPos2 = LimbSpacePositions.Corners[CornerIndex].y * v2f{-Sin(RotatedAngleInRadians), Cos(RotatedAngleInRadians)};
-                                FighterSpacePositions.Corners[CornerIndex] = TempFighterCornerPos1 + TempFighterCornerPos2;
-                            };
+                    FighterSpacePositions.Corners[CornerIndex] = LinearRotation(FighterLimb->Transform.Rotation, LimbSpacePositions.Corners[CornerIndex]);
 
-                            { //Translate
-                                FighterSpacePositions.Corners[CornerIndex] += FighterSpaceOrigin;
-                                FighterLimb->Position = FighterSpaceOrigin;
-                            };
-                        };
-                    };
-                }
-                else
-                {
-                    //Rotate Limb origin point based off parent
-                    f32 RotatedAngleInRadians = FighterLimb->Parent->Transform.Rotation * (PI / 180.0f);
-                    v2f TempFighterCornerPos1 = FighterLimb->Offset.x * v2f{Cos(RotatedAngleInRadians), Sin(RotatedAngleInRadians)};
-                    v2f TempFighterCornerPos2 = FighterLimb->Offset.y * v2f{-Sin(RotatedAngleInRadians), Cos(RotatedAngleInRadians)};
-                    FighterLimb->Offset = TempFighterCornerPos1 + TempFighterCornerPos2;
-
-                    //Translate Limb Origin Point based off parent
-                    FighterLimb->Position = FighterLimb->Parent->Position + FighterLimb->Offset;
-
-                    for (ui32 CornerIndex{0}; CornerIndex < ArrayCount(LimbSpacePositions.Corners); ++CornerIndex)
-                    {
-                        {//Rotate and translate into correct Fighter space positions
-                            {//Rotate drawable positions
-                                RotatedAngleInRadians = FighterLimb->Transform.Rotation * (PI / 180.0f);
-                                TempFighterCornerPos1 = LimbSpacePositions.Corners[CornerIndex].x * v2f{Cos(RotatedAngleInRadians), Sin(RotatedAngleInRadians)};
-                                TempFighterCornerPos2 = LimbSpacePositions.Corners[CornerIndex].y * v2f{-Sin(RotatedAngleInRadians), Cos(RotatedAngleInRadians)};
-                                FighterSpacePositions.Corners[CornerIndex] = TempFighterCornerPos1 + TempFighterCornerPos2;
-                            };
-
-                            {//Translate translate drawable positions
-                                FighterSpacePositions.Corners[CornerIndex] += FighterLimb->Position;
-                            };
-                        };
-                    };                  
+                    //Translate drawable positions
+                    FighterSpacePositions.Corners[CornerIndex] += FighterLimb->Position;
                 };
 
-                Drawable_Rect WorldSpacePositions{};
-                Drawable_Rect CameraSpacePositions{};
-                v2f TranslationToCameraSpace{};
-
-                //Transform to world and then camera space
+                //Transform image position vectors to world and camera space
+                Drawable_Rect WorldSpacePositions{}; Drawable_Rect CameraSpacePositions{}; 
                 for(ui32 CornerIndex{0}; CornerIndex < ArrayCount(FighterSpacePositions.Corners); ++CornerIndex)
                 {
-                    { //Rotate and translate fighter vectors into World space
-                        {//Rotate
-                            f32 RotatedAngleInRadians = Fighter1->Body.Transform.Rotation * (PI / 180.0f);
-                            v2f TempFighterCornerPos1 = FighterSpacePositions.Corners[CornerIndex].x * v2f{Cos(RotatedAngleInRadians), Sin(RotatedAngleInRadians)};
-                            v2f TempFighterCornerPos2 = FighterSpacePositions.Corners[CornerIndex].y * v2f{-Sin(RotatedAngleInRadians), Cos(RotatedAngleInRadians)};
-                            WorldSpacePositions.Corners[CornerIndex] = TempFighterCornerPos1 + TempFighterCornerPos2;
-                        };
+                    WorldSpacePositions.Corners[CornerIndex] = LinearRotation(Fighter1->Body.Transform.Rotation, FighterSpacePositions.Corners[CornerIndex]);
 
-                        { //Translate
-                            WorldSpacePositions.Corners[CornerIndex] += FighterWorldSpace.Origin;
-                        };
-                    };
+                    //Translate
+                    WorldSpacePositions.Corners[CornerIndex] += FighterWorldSpace.Origin;
 
-                    { //Transform to Camera Space
-                        TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
-                        CameraSpacePositions.Corners[CornerIndex] = WorldSpacePositions.Corners[CornerIndex] + TranslationToCameraSpace;
-                    };
+                    //Transform to Camera Space
+                    v2f TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+                    CameraSpacePositions.Corners[CornerIndex] = WorldSpacePositions.Corners[CornerIndex] + TranslationToCameraSpace;
                 };
 
                 RenderCmds.DrawTexture(Fighter1->Body.Limbs[LimbIndex].CurrentTexture.ID, CameraSpacePositions, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});

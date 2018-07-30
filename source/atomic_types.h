@@ -7,6 +7,7 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 typedef i32 b32;
+typedef bool b;
 
 typedef uint8_t ui8;
 typedef uint16_t ui16;
@@ -290,3 +291,8 @@ v3i::v3i(int x, int y, int z) :
     y(y),
     z(z)
 {}
+
+struct m2x2
+{
+    f32 Elem[2][2];
+};

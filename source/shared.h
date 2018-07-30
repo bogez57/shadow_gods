@@ -176,6 +176,17 @@ ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawab
     return Result;
 };
 
+auto 
+LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
+{
+    f32 RotationInRadians = RotationInDegress * (PI / 180.0f);
+    v2f RotatedXBasis = VectorToRotate.x * v2f{Cos(RotationInRadians), Sin(RotationInRadians)};
+    v2f RotatedYBasis = VectorToRotate.y * v2f{-Sin(RotationInRadians), Cos(RotationInRadians)};
+    v2f NewRotatedVector = RotatedXBasis + RotatedYBasis;
+
+    return NewRotatedVector;
+};
+
 auto
 DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
 {
