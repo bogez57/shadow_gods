@@ -22,7 +22,7 @@ struct Limb
     Image DisplayImage;
     Texture CurrentTexture;
     v2f Dimensions;
-    v2f Offset;
+    v2f OffsetFromParent;
     Limb* Parent;
     Limb* Child;
     v2f Position;

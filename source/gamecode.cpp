@@ -126,17 +126,44 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                 Fighter1->Body.Limbs[LimbIndex].Transform.Rotation = 0.0f;
             };
 
-            Fighter1->Body.RightThigh.Transform.Rotation = -180.0f;
-            Fighter1->Body.LeftThigh.Transform.Rotation = 180.0f;
-            Fighter1->Body.RightShoulder.Transform.Rotation = -50.0f;
-            Fighter1->Body.LeftShoulder.Transform.Rotation = 50.0f;
-            Fighter1->Body.RightArm.Transform.Rotation = 180.0f;
-            Fighter1->Body.LeftArm.Transform.Rotation = 180.0f;
+            {//Set Starting Rotations
+                Fighter1->Body.RightThigh.Transform.Rotation = -180.0f;
+                Fighter1->Body.LeftThigh.Transform.Rotation = 180.0f;
+                Fighter1->Body.RightShoulder.Transform.Rotation = -50.0f;
+                Fighter1->Body.LeftShoulder.Transform.Rotation = 50.0f;
+                Fighter1->Body.RightArm.Transform.Rotation = 180.0f;
+                Fighter1->Body.LeftArm.Transform.Rotation = 180.0f;
+            };
+
+            {//Set Offset
+                Fighter1->Body.Torso.OffsetFromParent = {0.0f, 0.0f};
+                Fighter1->Body.Head.OffsetFromParent = {0.0f, Fighter1->Body.Neck.Dimensions.Height};
+                Fighter1->Body.LeftThigh.OffsetFromParent = {-50.0f, 0.0f};
+                Fighter1->Body.RightThigh.OffsetFromParent = {50.0f, 0.0f};
+                Fighter1->Body.RightShoulder.OffsetFromParent = {100.0f, 30.0f};
+                Fighter1->Body.LeftShoulder.OffsetFromParent = {-100.0f, 30.0f};
+                Fighter1->Body.RightArm.OffsetFromParent = {50.0f, 50.0f};
+                Fighter1->Body.LeftArm.OffsetFromParent = {-50.0f, 50.0f};
+                Fighter1->Body.Neck.OffsetFromParent = {0.0f, Fighter1->Body.Torso.Dimensions.Height};
+            };
+
+            {//Set limb relationships
+                Fighter1->Body.Root.Parent = nullptr;
+                Fighter1->Body.Torso.Parent = &Fighter1->Body.Root;
+                Fighter1->Body.Head.Parent = &Fighter1->Body.Neck;
+                Fighter1->Body.Neck.Parent = &Fighter1->Body.Torso;
+                Fighter1->Body.LeftThigh.Parent = &Fighter1->Body.Torso;
+                Fighter1->Body.RightThigh.Parent = &Fighter1->Body.Torso;
+                Fighter1->Body.RightShoulder.Parent = &Fighter1->Body.Neck;
+                Fighter1->Body.LeftShoulder.Parent = &Fighter1->Body.Neck;
+                Fighter1->Body.RightArm.Parent = &Fighter1->Body.RightShoulder;
+                Fighter1->Body.LeftArm.Parent = &Fighter1->Body.LeftShoulder;
+            };
 
             Fighter1->Body.Transform.Rotation = 0.0f;
             Fighter1->Body.Transform.Scale = 1.0f;
 
-            Fighter1->Body.Root.Offset = {0.0f, 0.0f};
+            Fighter1->Body.Root.OffsetFromParent = {0.0f, 0.0f};
             Fighter1->Body.Root.Transform.Rotation = 0.0f;
             Fighter1->Body.Root.Transform.Scale = 1.0f;
 
@@ -148,29 +175,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->ZoomFactor = 1.0f;
         };
     }
-
-    Fighter1->Body.Torso.Offset = {0.0f, 0.0f};
-    Fighter1->Body.Head.Offset = {0.0f, Fighter1->Body.Neck.Dimensions.Height};
-    Fighter1->Body.LeftThigh.Offset = {-50.0f, 0.0f};
-    Fighter1->Body.RightThigh.Offset = {50.0f, 0.0f};
-    Fighter1->Body.RightShoulder.Offset = {100.0f, 30.0f};
-    Fighter1->Body.LeftShoulder.Offset = {-100.0f, 30.0f};
-    Fighter1->Body.RightArm.Offset = {50.0f, 50.0f};
-    Fighter1->Body.LeftArm.Offset = {-50.0f, 50.0f};
-    Fighter1->Body.Neck.Offset = {0.0f, Fighter1->Body.Torso.Dimensions.Height};
-
-    {//Set limb relationships
-        Fighter1->Body.Root.Parent = nullptr;
-        Fighter1->Body.Torso.Parent = &Fighter1->Body.Root;
-        Fighter1->Body.Head.Parent = &Fighter1->Body.Neck;
-        Fighter1->Body.Neck.Parent = &Fighter1->Body.Torso;
-        Fighter1->Body.LeftThigh.Parent = &Fighter1->Body.Torso;
-        Fighter1->Body.RightThigh.Parent = &Fighter1->Body.Torso;
-        Fighter1->Body.RightShoulder.Parent = &Fighter1->Body.Neck;
-        Fighter1->Body.LeftShoulder.Parent = &Fighter1->Body.Neck;
-        Fighter1->Body.RightArm.Parent = &Fighter1->Body.RightShoulder;
-        Fighter1->Body.LeftArm.Parent = &Fighter1->Body.LeftShoulder;
-    };
 
     if (Keyboard->MoveUp.Pressed)
     {
@@ -252,10 +256,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                 //Limb isn't root as root has no parent
                 if(FighterLimb->Parent)
                 {
-                    FighterLimb->Offset = LinearRotation(FighterLimb->Parent->Transform.Rotation, FighterLimb->Offset);
+                    v2f OffsetFromParent = LinearRotation(FighterLimb->Parent->Transform.Rotation, FighterLimb->OffsetFromParent);
 
                     //Translate Limb Origin Point based off parent position
-                    FighterLimb->Position = FighterLimb->Parent->Position + FighterLimb->Offset;
+                    FighterLimb->Position = FighterLimb->Parent->Position + OffsetFromParent;
                 };
             };
 
