@@ -54,7 +54,8 @@
                 "${workspaceRoot}",
                 "${workspaceRoot}/third_party/glew-2.1.0/include",
                 "${workspaceRoot}/third_party/boagz/include",
-                "${workspaceRoot}/third_party/stb/include"
+                "${workspaceRoot}/third_party/stb/include",
+                "${workspaceRoot}/third_party/spine-3.7/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -72,7 +73,8 @@
                     "${workspaceRoot}",
                     "${workspaceRoot}/third_party/glew-2.1.0/include",
                     "${workspaceRoot}/third_party/boagz/include",
-                    "${workspaceRoot}/third_party/stb/include"
+                    "${workspaceRoot}/third_party/stb/include",
+                    "${workspaceRoot}/third_party/spine-3.7/include"
             ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""

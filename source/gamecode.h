@@ -2,6 +2,10 @@
 
 #include "shared.h"
 #include "atomic_types.h"
+#include <spine/Skeleton.h>
+#include <spine/Atlas.h>
+#include <spine/SkeletonData.h>
+#include <spine/SkeletonJson.h>
 
 struct Memory_Chunk
 {
@@ -79,9 +83,12 @@ struct Camera
 
 struct Game_State
 {
-    Memory_Chunk TestChunk;
+    Memory_Chunk Textures;
     Camera GameCamera;
     Level GameLevel;
     Player Fighter1;
+    spSkeletonJson* SkelBin{nullptr};
+    spSkeletonData* SkelData{nullptr};
+    spAtlas* Atlas{nullptr};
+    spSkeleton* Skeleton{nullptr};
 };
-
