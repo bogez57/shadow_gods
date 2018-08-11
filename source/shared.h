@@ -219,7 +219,7 @@ struct Game_Render_Cmds
     void (*ClearScreen)();
     void (*DrawRect)(v2f, v2f);
     void (*DrawBackground)(ui32, v2f, v2f, v2f);
-    void (*DrawTexture)(ui32, Drawable_Rect, v2f, v2f);
+    void (*DrawTexture)(ui32, Drawable_Rect, v2f*);
     Texture (*LoadTexture)(Image);
     void (*Init)();
 };

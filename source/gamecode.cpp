@@ -52,7 +52,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     Camera* GameCamera = &GameState->GameCamera;
     Player* Fighter1 = &GameState->Fighter1;
     Level* GameLevel = &GameState->GameLevel;
-    spSkeleton* MySkeleton = GameState->Skeleton;
+    spSkeleton* MySkeleton = &GameState->Skeleton;
 
     const Game_Controller* Keyboard = &GameInput->Controllers[0];
     const Game_Controller* GamePad = &GameInput->Controllers[1];
@@ -64,10 +64,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
         {
-            GameState->SkelBin = spSkeletonJson_create(GameState->Atlas);
-            if(GameState->SkelBin)
+            GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
+            if(GameState->SkelJson )
             {
-                GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelBin, "data/spineboy-ess.json");
+                GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
                 if (GameState->SkelData)
                 {
                     MySkeleton = spSkeleton_create(GameState->SkelData);
@@ -117,6 +117,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
+
+            spSkeleton_setBonesToSetupPose(MySkeleton);
         };
     }
 
@@ -124,6 +126,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if (Keyboard->MoveUp.Pressed)
     {
+        MySkeleton->y += 100.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
@@ -132,6 +135,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveRight.Pressed)
     {
+        MySkeleton->x += 100.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)
@@ -179,17 +183,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                                         (f32)GameLevel->Dimensions.Height);
 
             BackgroundCanvas = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
-
-            RenderCmds.DrawTexture(GameLevel->CurrentTexture.ID, BackgroundCanvas, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
         };
 
         float verts[8]= {0};
         Texture* texture;
-        if(MySkeleton->slots[0]->attachment->type == SP_ATTACHMENT_REGION)
+        spRegionAttachment* regionAttachment;
+        if(MySkeleton->slots[4]->attachment->type == SP_ATTACHMENT_REGION)
         {
-            spRegionAttachment* regionAttachment = (spRegionAttachment*)MySkeleton->slots[0]->attachment;
+            regionAttachment = (spRegionAttachment*)MySkeleton->slots[4]->attachment;
             texture = (Texture*)((spAtlasRegion*)regionAttachment->rendererObject)->page->rendererObject;
-            spRegionAttachment_computeWorldVertices(regionAttachment, MySkeleton->slots[0]->bone, verts, 0, 2);
+            spRegionAttachment_computeWorldVertices(regionAttachment, MySkeleton->slots[4]->bone, verts, 0, 2);
         };
 
         Drawable_Rect SpineImage{
@@ -198,7 +201,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                         v2f{verts[4], verts[5]}, 
                         v2f{verts[6], verts[7]}};
 
-        RenderCmds.DrawTexture(texture->ID, SpineImage, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+        v2f UVArray[4] = {
+            v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
+            v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
+            v2f{regionAttachment->uvs[4], regionAttachment->uvs[5]},
+            v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
+
+        //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
+        //current DrawTexture func first though to accept proper uvs
+        RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
 
         {//Draw Players
             Drawable_Rect CameraSpacePositions{};

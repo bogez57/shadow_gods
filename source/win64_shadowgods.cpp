@@ -603,30 +603,6 @@ namespace GL
 
         ui8* ImageData = ImageToSendToGPU.Data;
 
-        {//Flip image since OpenGL reads it upside down.
-            i32 widthInBytes = ResultingTexture.Dimensions.Width * 4;
-            i32 halfHeight = ResultingTexture.Dimensions.Height / 2;
-
-            ui8 *p_topRowOfTexels = nullptr;
-            ui8 *p_bottomRowOfTexels = nullptr;
-            ui8 temp = 0;
-
-            for (i32 row = 0; row < halfHeight; ++row)
-            {
-                p_topRowOfTexels = ImageData + row * widthInBytes;
-                p_bottomRowOfTexels = ImageData + (ResultingTexture.Dimensions.Height - row - 1) * widthInBytes;
-
-                for (int col = 0; col < widthInBytes; ++col)
-                {
-                    temp = *p_topRowOfTexels;
-                    *p_topRowOfTexels = *p_bottomRowOfTexels;
-                    *p_bottomRowOfTexels = temp;
-                    p_topRowOfTexels++;
-                    p_bottomRowOfTexels++;
-                }
-            }
-        };
-
         glEnable(GL_TEXTURE_2D);
         glGenTextures(1, &ResultingTexture.ID);
         glBindTexture(GL_TEXTURE_2D, ResultingTexture.ID);
@@ -688,22 +664,22 @@ namespace GL
     }
 
     local_func auto
-    DrawTexture(ui32 TextureID, Drawable_Rect Destination, v2f UVMin, v2f UVMax)
+    DrawTexture(ui32 TextureID, Drawable_Rect Destination, v2f* UVs)
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
 
         glBegin(GL_QUADS);
-        glTexCoord2f(UVMin.x, UVMin.y);
+        glTexCoord2f(UVs[0].x, UVs[0].y);
         glVertex2f(Destination.BottomLeft.x, Destination.BottomLeft.y);
 
-        glTexCoord2f(UVMax.x, UVMin.y);
+        glTexCoord2f(UVs[1].x, UVs[1].y);
         glVertex2f(Destination.BottomRight.x, Destination.BottomRight.y);
 
-        glTexCoord2f(UVMax.x, UVMax.y);
+        glTexCoord2f(UVs[2].x, UVs[2].y);
         glVertex2f(Destination.TopRight.x, Destination.TopRight.y);
 
-        glTexCoord2f(UVMin.x, UVMax.y);
+        glTexCoord2f(UVs[3].x, UVs[3].y);
         glVertex2f(Destination.TopLeft.x, Destination.TopLeft.y);
 
         glEnd();

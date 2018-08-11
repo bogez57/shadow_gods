@@ -87,8 +87,8 @@ struct Game_State
     Camera GameCamera;
     Level GameLevel;
     Player Fighter1;
-    spSkeletonJson* SkelBin{nullptr};
+    spSkeletonJson* SkelJson{nullptr};
     spSkeletonData* SkelData{nullptr};
     spAtlas* Atlas{nullptr};
-    spSkeleton* Skeleton{nullptr};
+    spSkeleton Skeleton{nullptr};
 };
