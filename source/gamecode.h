@@ -83,7 +83,7 @@ struct Camera
 
 struct Game_State
 {
-    Memory_Chunk Textures;
+    Memory_Chunk Spine;
     Camera GameCamera;
     Level GameLevel;
     Player Fighter1;

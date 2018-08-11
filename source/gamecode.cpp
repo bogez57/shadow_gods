@@ -27,15 +27,21 @@ InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, ui64 SizeToReserve, ui64* Start
     MemoryChunkToInit->UsedMemory = 0;
 };
 
-#define PushStruct(MemoryChunk, Type) (Type*)PushStruct_(MemoryChunk, sizeof(Type));
+#define PushStruct(MemoryChunk, Type, Count) (Type*)_PushStruct(MemoryChunk, sizeof(Type), Count);
 auto
-PushStruct_(Memory_Chunk* MemoryChunk, ui64 Size) -> void*
+_PushStruct(Memory_Chunk* MemoryChunk, ui64 Size, sizet Count) -> void*
 {
     BGZ_ASSERT((MemoryChunk->UsedMemory + Size) <= MemoryChunk->Size);
     void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedMemory;
-    MemoryChunk->UsedMemory += Size;
+    MemoryChunk->UsedMemory += (Size * Count);
 
     return Result;
+};
+
+auto
+MyFree() -> void
+{
+    //Implement for spine
 };
 
 #include "spine2d.h"
@@ -59,7 +65,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(!GameMemory->IsInitialized)
     {
-        InitMemoryChunk(&GameState->Textures, Kilobytes(1), (ui64*)GameMemory->TemporaryStorage);
+        InitMemoryChunk(&GameState->Spine, GameMemory->SizeOfTemporaryStorage, (ui64*)GameMemory->TemporaryStorage);
 
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
@@ -130,6 +136,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveDown.Pressed)
     {
+        spBone* upperArm = spSkeleton_findBone(MySkeleton, "front-upper-arm");
+        upperArm->rotation += 30.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
