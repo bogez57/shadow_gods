@@ -69,8 +69,8 @@
 #endif
 
 /* All allocation uses these. */
-#define MALLOC(TYPE,COUNT) ((TYPE*)_PushStruct(&GlobalGameState->Spine, sizeof(TYPE), COUNT))
-#define CALLOC(TYPE,COUNT) ((TYPE*)_PushStruct(&GlobalGameState->Spine, sizeof(TYPE), COUNT))
+#define MALLOC(TYPE,COUNT) (PushType(&GlobalGameState->Spine, TYPE, COUNT))
+#define CALLOC(TYPE,COUNT) (PushType(&GlobalGameState->Spine, TYPE, COUNT))
 #define REALLOC(PTR,TYPE,COUNT) ((TYPE*)_spRealloc(PTR, sizeof(TYPE) * (COUNT)))
 #define NEW(TYPE) CALLOC(TYPE,1)
 
@@ -90,7 +90,7 @@
 #define VTABLE(TYPE,VALUE) ((_##TYPE##Vtable*)((TYPE*)VALUE)->vtable)
 
 /* Frees memory. Can be used on const types. */
-#define FREE(VALUE) MyFree()
+#define FREE(VALUE) SpineFree()
 
 /* Allocates a new char[], assigns it to TO, and copies FROM to it. Can be used on const types. */
 #define MALLOC_STR(TO,FROM) strcpy(CONST_CAST(char*, TO) = (char*)MALLOC(char, strlen(FROM) + 1), FROM)

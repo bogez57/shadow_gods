@@ -83,7 +83,6 @@ struct Camera
 
 struct Game_State
 {
-    Memory_Chunk Spine;
     Camera GameCamera;
     Level GameLevel;
     Player Fighter1;
@@ -91,4 +90,5 @@ struct Game_State
     spSkeletonData* SkelData{nullptr};
     spAtlas* Atlas{nullptr};
     spSkeleton Skeleton{nullptr};
+    Memory_Chunk Spine;
 };

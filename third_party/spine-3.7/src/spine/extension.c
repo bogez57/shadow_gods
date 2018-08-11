@@ -134,7 +134,7 @@ void _spAtlasPage_createTexture (spAtlasPage* self, const char* path)
 	image.Data = GlobalPlatformServices.LoadRGBAImage(path, &image.Dimensions.Width, &image.Dimensions.Height);
 	//Need to create heap like memory
 	Texture texture = GlobalRenderCmds.LoadTexture(image);
-	Texture* textureptr = PushStruct(&GlobalGameState->Spine, Texture, 1);
+	Texture* textureptr = PushType(&GlobalGameState->Spine, Texture, 1);
 	*textureptr = texture;
 
 	self->rendererObject = textureptr;

@@ -27,9 +27,9 @@ InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, ui64 SizeToReserve, ui64* Start
     MemoryChunkToInit->UsedMemory = 0;
 };
 
-#define PushStruct(MemoryChunk, Type, Count) (Type*)_PushStruct(MemoryChunk, sizeof(Type), Count);
+#define PushType(MemoryChunk, Type, Count) (Type*)_PushType(MemoryChunk, sizeof(Type), Count)
 auto
-_PushStruct(Memory_Chunk* MemoryChunk, ui64 Size, sizet Count) -> void*
+_PushType(Memory_Chunk* MemoryChunk, ui64 Size, sizet Count) -> void*
 {
     BGZ_ASSERT((MemoryChunk->UsedMemory + Size) <= MemoryChunk->Size);
     void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedMemory;
@@ -38,10 +38,17 @@ _PushStruct(Memory_Chunk* MemoryChunk, ui64 Size, sizet Count) -> void*
     return Result;
 };
 
+#define Free(MemoryChunk, VALUE) _Free(MemoryChunk, (void*)VALUE)
 auto
-MyFree() -> void
+_Free(Memory_Chunk* MemoryChunk, void* ptrToValue) -> void
 {
-    //Implement for spine
+};
+
+auto
+SpineFree() -> void
+{
+    //This function is used in spine's extension.h file. Since I'm not quite sure yet how I want to deallocate things from a memory 
+    //chunk I'm just going to let spine allocate things and never free them for now. 
 };
 
 #include "spine2d.h"
