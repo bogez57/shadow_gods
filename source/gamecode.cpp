@@ -118,7 +118,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
 
-            spSkeleton_setBonesToSetupPose(MySkeleton);
         };
     }
 
@@ -185,31 +184,38 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             BackgroundCanvas = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
         };
 
-        float verts[8]= {0};
-        Texture* texture;
-        spRegionAttachment* regionAttachment;
-        if(MySkeleton->slots[4]->attachment->type == SP_ATTACHMENT_REGION)
+        for(int SlotIndex{0}; SlotIndex < MySkeleton->slotsCount; ++SlotIndex)
         {
-            regionAttachment = (spRegionAttachment*)MySkeleton->slots[4]->attachment;
-            texture = (Texture*)((spAtlasRegion*)regionAttachment->rendererObject)->page->rendererObject;
-            spRegionAttachment_computeWorldVertices(regionAttachment, MySkeleton->slots[4]->bone, verts, 0, 2);
+            float verts[8] = {0};
+            Texture *texture;
+            spRegionAttachment *regionAttachment;
+
+            //If no current active attachment for slot then continue to next slot
+            if(!MySkeleton->slots[SlotIndex]->attachment) continue;
+
+            if (MySkeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
+            {
+                regionAttachment = (spRegionAttachment *)MySkeleton->slots[SlotIndex]->attachment;
+                texture = (Texture *)((spAtlasRegion *)regionAttachment->rendererObject)->page->rendererObject;
+                spRegionAttachment_computeWorldVertices(regionAttachment, MySkeleton->slots[SlotIndex]->bone, verts, 0, 2);
+            };
+
+            Drawable_Rect SpineImage{
+                v2f{verts[0], verts[1]},
+                v2f{verts[2], verts[3]},
+                v2f{verts[4], verts[5]},
+                v2f{verts[6], verts[7]}};
+
+            v2f UVArray[4] = {
+                v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
+                v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
+                v2f{regionAttachment->uvs[4], regionAttachment->uvs[5]},
+                v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
+
+            //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
+            //current DrawTexture func first though to accept proper uvs
+            RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
         };
-
-        Drawable_Rect SpineImage{
-                        v2f{verts[0], verts[1]}, 
-                        v2f{verts[2], verts[3]}, 
-                        v2f{verts[4], verts[5]}, 
-                        v2f{verts[6], verts[7]}};
-
-        v2f UVArray[4] = {
-            v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
-            v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
-            v2f{regionAttachment->uvs[4], regionAttachment->uvs[5]},
-            v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
-
-        //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
-        //current DrawTexture func first though to accept proper uvs
-        RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
 
         {//Draw Players
             Drawable_Rect CameraSpacePositions{};
