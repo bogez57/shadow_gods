@@ -11,6 +11,7 @@ struct Memory_Chunk
 {
     ui64* BaseAddress;
     ui64* EndAddress;
+    ui64* UsedAddress;
     ui64 Size;
     ui64 UsedAmount;
     Memory_Chunk* PreviousChunkInMemory; 

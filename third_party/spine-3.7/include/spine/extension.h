@@ -71,7 +71,7 @@
 /* All allocation uses these. */
 #define MALLOC(TYPE,COUNT) (PushType(&GlobalGameState->Spine, TYPE, COUNT))
 #define CALLOC(TYPE,COUNT) (PushType(&GlobalGameState->Spine, TYPE, COUNT))
-#define REALLOC(PTR,TYPE,COUNT) ((TYPE*)_spRealloc(PTR, sizeof(TYPE) * (COUNT)))
+#define REALLOC(PTR,TYPE,COUNT) (RePushType(&GlobalGameState->Spine, PTR, TYPE, COUNT))
 #define NEW(TYPE) CALLOC(TYPE,1)
 
 /* Gets the direct super class. Type safe. */
