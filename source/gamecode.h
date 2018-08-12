@@ -10,8 +10,10 @@
 struct Memory_Chunk
 {
     ui64* BaseAddress;
+    ui64* EndAddress;
     ui64 Size;
-    ui64 UsedMemory;
+    ui64 UsedAmount;
+    Memory_Chunk* PreviousChunkInMemory; 
 };
 
 struct Local_Transform
@@ -89,6 +91,7 @@ struct Game_State
     spSkeletonJson* SkelJson{nullptr};
     spSkeletonData* SkelData{nullptr};
     spAtlas* Atlas{nullptr};
-    spSkeleton Skeleton{nullptr};
+    spSkeleton* MySkeleton;
     Memory_Chunk Spine;
+    Memory_Chunk Game;
 };

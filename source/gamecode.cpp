@@ -19,21 +19,40 @@ global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
 
-local_func auto 
-InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, ui64 SizeToReserve, ui64* StartingAddress) -> void
+local_func auto
+LinkMemoryChunks(Memory_Chunk* ParentChunk, Memory_Chunk* ChildChunk) -> void
 {
-    MemoryChunkToInit->BaseAddress = StartingAddress;
-    MemoryChunkToInit->Size = SizeToReserve;
-    MemoryChunkToInit->UsedMemory = 0;
+    ParentChunk->PreviousChunkInMemory = nullptr;
+    ChildChunk->PreviousChunkInMemory = ParentChunk;
+};
+
+local_func auto 
+InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, ui64 SizeToReserve, Game_Memory* GameMemory) -> void
+{
+    //If First memory chunk of game memory 
+    if(!MemoryChunkToInit->PreviousChunkInMemory)
+    {
+        MemoryChunkToInit->BaseAddress = (ui64*)GameMemory->TemporaryStorage;
+        MemoryChunkToInit->Size = SizeToReserve;
+        MemoryChunkToInit->EndAddress = MemoryChunkToInit->BaseAddress + SizeToReserve;
+        MemoryChunkToInit->UsedAmount = 0;
+    }
+    else
+    {
+        MemoryChunkToInit->BaseAddress = MemoryChunkToInit->PreviousChunkInMemory->EndAddress;
+        MemoryChunkToInit->Size = SizeToReserve;
+        MemoryChunkToInit->EndAddress = MemoryChunkToInit->BaseAddress + SizeToReserve;
+        MemoryChunkToInit->UsedAmount = 0;
+    };
 };
 
 #define PushType(MemoryChunk, Type, Count) (Type*)_PushType(MemoryChunk, sizeof(Type), Count)
 auto
 _PushType(Memory_Chunk* MemoryChunk, ui64 Size, sizet Count) -> void*
 {
-    BGZ_ASSERT((MemoryChunk->UsedMemory + Size) <= MemoryChunk->Size);
-    void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedMemory;
-    MemoryChunk->UsedMemory += (Size * Count);
+    BGZ_ASSERT((MemoryChunk->UsedAmount + Size) <= MemoryChunk->Size);
+    void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedAmount;
+    MemoryChunk->UsedAmount += (Size * Count);
 
     return Result;
 };
@@ -65,14 +84,21 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     Camera* GameCamera = &GameState->GameCamera;
     Player* Fighter1 = &GameState->Fighter1;
     Level* GameLevel = &GameState->GameLevel;
-    spSkeleton* MySkeleton = &GameState->Skeleton;
+    spSkeleton* MySkeleton = GameState->MySkeleton;
 
     const Game_Controller* Keyboard = &GameInput->Controllers[0];
     const Game_Controller* GamePad = &GameInput->Controllers[1];
 
     if(!GameMemory->IsInitialized)
     {
-        InitMemoryChunk(&GameState->Spine, GameMemory->SizeOfTemporaryStorage, (ui64*)GameMemory->TemporaryStorage);
+        //These functions current need to be called in this order
+        LinkMemoryChunks(&GameState->Spine, &GameState->Game);
+        InitMemoryChunk(&GameState->Spine, Megabytes(10), GameMemory);
+        InitMemoryChunk(&GameState->Game, Megabytes(10), GameMemory);
+
+        spSkeleton* temp{};
+        temp = PushType(&GameState->Game, spSkeleton, 1);
+        GameState->MySkeleton = PushType(&GameState->Game, spSkeleton, 1);
 
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
@@ -83,11 +109,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                 GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
                 if (GameState->SkelData)
                 {
-                    MySkeleton = spSkeleton_create(GameState->SkelData);
-                    if (!MySkeleton)
+                    temp = spSkeleton_create(GameState->SkelData);
+                    memcpy(GameState->MySkeleton, temp, sizeof(spSkeleton));
+                    if (GameState->MySkeleton)
+                    {
+                    }
+                    else
                     {
                         InvalidCodePath;
-                    };
+                    }
                 }
                 else
                 {
@@ -130,20 +160,19 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
-
         };
     }
 
-    MySkeleton = spSkeleton_create(GameState->SkelData);
+    GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
 
     if (Keyboard->MoveUp.Pressed)
     {
-        MySkeleton->y += 100.0f;
+        GameState->MySkeleton->y += 100.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
-        spBone* upperArm = spSkeleton_findBone(MySkeleton, "front-upper-arm");
+        spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
         upperArm->rotation += 30.0f;
     }
 
@@ -172,7 +201,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     {
     }
 
-    spSkeleton_updateWorldTransform(MySkeleton);
+    spSkeleton_updateWorldTransform(GameState->MySkeleton);
 
     {//Render
         RenderCmds.Init();
@@ -199,20 +228,20 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             BackgroundCanvas = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
         };
 
-        for(int SlotIndex{0}; SlotIndex < MySkeleton->slotsCount; ++SlotIndex)
+        for(int SlotIndex{0}; SlotIndex < GameState->MySkeleton->slotsCount; ++SlotIndex)
         {
             float verts[8] = {0};
             Texture *texture;
             spRegionAttachment *regionAttachment;
 
             //If no current active attachment for slot then continue to next slot
-            if(!MySkeleton->slots[SlotIndex]->attachment) continue;
+            if(!GameState->MySkeleton->slots[SlotIndex]->attachment) continue;
 
-            if (MySkeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
+            if (GameState->MySkeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
             {
-                regionAttachment = (spRegionAttachment *)MySkeleton->slots[SlotIndex]->attachment;
+                regionAttachment = (spRegionAttachment *)GameState->MySkeleton->slots[SlotIndex]->attachment;
                 texture = (Texture *)((spAtlasRegion *)regionAttachment->rendererObject)->page->rendererObject;
-                spRegionAttachment_computeWorldVertices(regionAttachment, MySkeleton->slots[SlotIndex]->bone, verts, 0, 2);
+                spRegionAttachment_computeWorldVertices(regionAttachment, GameState->MySkeleton->slots[SlotIndex]->bone, verts, 0, 2);
             };
 
             Drawable_Rect SpineImage{

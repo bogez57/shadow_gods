@@ -735,11 +735,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             BGZ_ASSERT(GameCode.DLLHandle);
 
             {//Init Game Memory
-                GameMemory.SizeOfTemporaryStorage = Gigabytes(1);
                 GameMemory.SizeOfPermanentStorage = Megabytes(64);
+                GameMemory.SizeOfTemporaryStorage = Gigabytes(1);
                 GameMemory.TotalSize = GameMemory.SizeOfPermanentStorage + GameMemory.SizeOfTemporaryStorage;
                 GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);//TODO: Add large page support?
-                GameMemory.TemporaryStorage = ((ui8 *)GameMemory.PermanentStorage + GameMemory.SizeOfTemporaryStorage);
+                GameMemory.TemporaryStorage = ((ui8 *)GameMemory.PermanentStorage + GameMemory.SizeOfPermanentStorage);
             }
 
             {//Init input recording and replay services
