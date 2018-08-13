@@ -40,7 +40,7 @@ void _spClippingAttachment_dispose (spAttachment* attachment) {
 }
 
 spClippingAttachment* spClippingAttachment_create (const char* name) {
-	spClippingAttachment* self = NEW(spClippingAttachment);
+	spClippingAttachment* self = NEW(&GlobalGameState->Spine, spClippingAttachment);
 	_spVertexAttachment_init(SUPER(self));
 	_spAttachment_init(SUPER(SUPER(self)), name, SP_ATTACHMENT_CLIPPING, _spClippingAttachment_dispose);
 	self->endSlot = 0;

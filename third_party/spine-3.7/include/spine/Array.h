@@ -54,10 +54,10 @@ extern "C" {
 
 #define _SP_ARRAY_IMPLEMENT_TYPE(name, itemType) \
 	name* name##_create(int initialCapacity) { \
-		name* array = CALLOC(name, 1); \
+		name* array = CALLOC(&GlobalGameState->Spine, name, 1); \
 		array->size = 0; \
 		array->capacity = initialCapacity; \
-		array->items = CALLOC(itemType, initialCapacity); \
+		array->items = CALLOC(&GlobalGameState->Spine, itemType, initialCapacity); \
 		return array; \
 	} \
 	void name##_dispose(name* self) { \

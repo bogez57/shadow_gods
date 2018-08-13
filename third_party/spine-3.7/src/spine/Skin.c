@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 _Entry* _Entry_create (int slotIndex, const char* name, spAttachment* attachment) {
-	_Entry* self = NEW(_Entry);
+	_Entry* self = NEW(&GlobalGameState->Spine, _Entry);
 	self->slotIndex = slotIndex;
 	MALLOC_STR(self->name, name);
 	self->attachment = attachment;
@@ -46,7 +46,7 @@ void _Entry_dispose (_Entry* self) {
 }
 
 static _SkinHashTableEntry* _SkinHashTableEntry_create (_Entry* entry) {
-	_SkinHashTableEntry* self = NEW(_SkinHashTableEntry);
+	_SkinHashTableEntry* self = NEW(&GlobalGameState->Spine, _SkinHashTableEntry);
 	self->entry = entry;
 	return self;
 }
@@ -58,7 +58,7 @@ static void _SkinHashTableEntry_dispose (_SkinHashTableEntry* self) {
 /**/
 
 spSkin* spSkin_create (const char* name) {
-	spSkin* self = SUPER(NEW(_spSkin));
+	spSkin* self = SUPER(NEW(&GlobalGameState->Spine, _spSkin));
 	MALLOC_STR(self->name, name);
 	return self;
 }

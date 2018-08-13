@@ -34,10 +34,10 @@
 #include <spine/extension.h>
 
 spAnimation* spAnimation_create (const char* name, int timelinesCount) {
-	spAnimation* self = NEW(spAnimation);
+	spAnimation* self = NEW(&GlobalGameState->Spine, spAnimation);
 	MALLOC_STR(self->name, name);
 	self->timelinesCount = timelinesCount;
-	self->timelines = MALLOC(spTimeline*, timelinesCount);
+	self->timelines = MALLOC(&GlobalGameState->Spine, spTimeline*, timelinesCount);
 	return self;
 }
 
@@ -77,7 +77,7 @@ void _spTimeline_init (spTimeline* self, spTimelineType type, /**/
 					   void (*apply) (const spTimeline* self, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction),
 					   int (*getPropertyId) (const spTimeline* self)) {
 	CONST_CAST(spTimelineType, self->type) = type;
-	CONST_CAST(_spTimelineVtable*, self->vtable) = NEW(_spTimelineVtable);
+	CONST_CAST(_spTimelineVtable*, self->vtable) = NEW(&GlobalGameState->Spine, _spTimelineVtable);
 	VTABLE(spTimeline, self)->dispose = dispose;
 	VTABLE(spTimeline, self)->apply = apply;
 	VTABLE(spTimeline, self)->getPropertyId = getPropertyId;
@@ -110,7 +110,7 @@ void _spCurveTimeline_init (spCurveTimeline* self, spTimelineType type, int fram
 		void (*apply) (const spTimeline* self, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction),
 		int (*getPropertyId)(const spTimeline* self)) {
 	_spTimeline_init(SUPER(self), type, dispose, apply, getPropertyId);
-	self->curves = CALLOC(float, (framesCount - 1) * BEZIER_SIZE);
+	self->curves = CALLOC(&GlobalGameState->Spine, float, (framesCount - 1) * BEZIER_SIZE);
 }
 
 void _spCurveTimeline_deinit (spCurveTimeline* self) {
@@ -227,11 +227,11 @@ struct spBaseTimeline* _spBaseTimeline_create (int framesCount, spTimelineType t
 		void (*apply) (const spTimeline* self, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents,
 				int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction),
 		int (*getPropertyId) (const spTimeline* self)) {
-	struct spBaseTimeline* self = NEW(struct spBaseTimeline);
+	struct spBaseTimeline* self = NEW(&GlobalGameState->Spine, struct spBaseTimeline);
 	_spCurveTimeline_init(SUPER(self), type, framesCount, _spBaseTimeline_dispose, apply, getPropertyId);
 
 	CONST_CAST(int, self->framesCount) = framesCount * frameSize;
-	CONST_CAST(float*, self->frames) = CALLOC(float, self->framesCount);
+	CONST_CAST(float*, self->frames) = CALLOC(&GlobalGameState->Spine, float, self->framesCount);
 
 	return self;
 }
@@ -855,12 +855,12 @@ void _spAttachmentTimeline_dispose (spTimeline* timeline) {
 }
 
 spAttachmentTimeline* spAttachmentTimeline_create (int framesCount) {
-	spAttachmentTimeline* self = NEW(spAttachmentTimeline);
+	spAttachmentTimeline* self = NEW(&GlobalGameState->Spine, spAttachmentTimeline);
 	_spTimeline_init(SUPER(self), SP_TIMELINE_ATTACHMENT, _spAttachmentTimeline_dispose, _spAttachmentTimeline_apply, _spAttachmentTimeline_getPropertyId);
 
 	CONST_CAST(int, self->framesCount) = framesCount;
-	CONST_CAST(float*, self->frames) = CALLOC(float, framesCount);
-	CONST_CAST(char**, self->attachmentNames) = CALLOC(char*, framesCount);
+	CONST_CAST(float*, self->frames) = CALLOC(&GlobalGameState->Spine, float, framesCount);
+	CONST_CAST(char**, self->attachmentNames) = CALLOC(&GlobalGameState->Spine, char*, framesCount);
 
 	return self;
 }
@@ -910,7 +910,7 @@ void _spDeformTimeline_apply (const spTimeline* timeline, spSkeleton* skeleton, 
 	if (slot->attachmentVerticesCount < vertexCount) {
 		if (slot->attachmentVerticesCapacity < vertexCount) {
 			FREE(slot->attachmentVertices);
-			slot->attachmentVertices = MALLOC(float, vertexCount);
+			slot->attachmentVertices = MALLOC(&GlobalGameState->Spine, float, vertexCount);
 			slot->attachmentVerticesCapacity = vertexCount;
 		}
 	}
@@ -1103,11 +1103,11 @@ void _spDeformTimeline_dispose (spTimeline* timeline) {
 }
 
 spDeformTimeline* spDeformTimeline_create (int framesCount, int frameVerticesCount) {
-	spDeformTimeline* self = NEW(spDeformTimeline);
+	spDeformTimeline* self = NEW(&GlobalGameState->Spine, spDeformTimeline);
 	_spCurveTimeline_init(SUPER(self), SP_TIMELINE_DEFORM, framesCount, _spDeformTimeline_dispose, _spDeformTimeline_apply, _spDeformTimeline_getPropertyId);
 	CONST_CAST(int, self->framesCount) = framesCount;
-	CONST_CAST(float*, self->frames) = CALLOC(float, self->framesCount);
-	CONST_CAST(float**, self->frameVertices) = CALLOC(float*, framesCount);
+	CONST_CAST(float*, self->frames) = CALLOC(&GlobalGameState->Spine, float, self->framesCount);
+	CONST_CAST(float**, self->frameVertices) = CALLOC(&GlobalGameState->Spine, float*, framesCount);
 	CONST_CAST(int, self->frameVerticesCount) = frameVerticesCount;
 	return self;
 }
@@ -1119,7 +1119,7 @@ void spDeformTimeline_setFrame (spDeformTimeline* self, int frameIndex, float ti
 	if (!vertices)
 		self->frameVertices[frameIndex] = 0;
 	else {
-		self->frameVertices[frameIndex] = MALLOC(float, self->frameVerticesCount);
+		self->frameVertices[frameIndex] = MALLOC(&GlobalGameState->Spine, float, self->frameVerticesCount);
 		memcpy(CONST_CAST(float*, self->frameVertices[frameIndex]), vertices, self->frameVerticesCount * sizeof(float));
 	}
 }
@@ -1176,12 +1176,12 @@ void _spEventTimeline_dispose (spTimeline* timeline) {
 }
 
 spEventTimeline* spEventTimeline_create (int framesCount) {
-	spEventTimeline* self = NEW(spEventTimeline);
+	spEventTimeline* self = NEW(&GlobalGameState->Spine, spEventTimeline);
 	_spTimeline_init(SUPER(self), SP_TIMELINE_EVENT, _spEventTimeline_dispose, _spEventTimeline_apply, _spEventTimeline_getPropertyId);
 
 	CONST_CAST(int, self->framesCount) = framesCount;
-	CONST_CAST(float*, self->frames) = CALLOC(float, framesCount);
-	CONST_CAST(spEvent**, self->events) = CALLOC(spEvent*, framesCount);
+	CONST_CAST(float*, self->frames) = CALLOC(&GlobalGameState->Spine, float, framesCount);
+	CONST_CAST(spEvent**, self->events) = CALLOC(&GlobalGameState->Spine, spEvent*, framesCount);
 
 	return self;
 }
@@ -1249,12 +1249,12 @@ void _spDrawOrderTimeline_dispose (spTimeline* timeline) {
 }
 
 spDrawOrderTimeline* spDrawOrderTimeline_create (int framesCount, int slotsCount) {
-	spDrawOrderTimeline* self = NEW(spDrawOrderTimeline);
+	spDrawOrderTimeline* self = NEW(&GlobalGameState->Spine, spDrawOrderTimeline);
 	_spTimeline_init(SUPER(self), SP_TIMELINE_DRAWORDER, _spDrawOrderTimeline_dispose, _spDrawOrderTimeline_apply, _spDrawOrderTimeline_getPropertyId);
 
 	CONST_CAST(int, self->framesCount) = framesCount;
-	CONST_CAST(float*, self->frames) = CALLOC(float, framesCount);
-	CONST_CAST(int**, self->drawOrders) = CALLOC(int*, framesCount);
+	CONST_CAST(float*, self->frames) = CALLOC(&GlobalGameState->Spine, float, framesCount);
+	CONST_CAST(int**, self->drawOrders) = CALLOC(&GlobalGameState->Spine, int*, framesCount);
 	CONST_CAST(int, self->slotsCount) = slotsCount;
 
 	return self;
@@ -1267,7 +1267,7 @@ void spDrawOrderTimeline_setFrame (spDrawOrderTimeline* self, int frameIndex, fl
 	if (!drawOrder)
 		self->drawOrders[frameIndex] = 0;
 	else {
-		self->drawOrders[frameIndex] = MALLOC(int, self->slotsCount);
+		self->drawOrders[frameIndex] = MALLOC(&GlobalGameState->Spine, int, self->slotsCount);
 		memcpy(CONST_CAST(int*, self->drawOrders[frameIndex]), drawOrder, self->slotsCount * sizeof(int));
 	}
 }

@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spBoneData* spBoneData_create (int index, const char* name, spBoneData* parent) {
-	spBoneData* self = NEW(spBoneData);
+	spBoneData* self = NEW(&GlobalGameState->Spine, spBoneData);
 	CONST_CAST(int, self->index) = index;
 	MALLOC_STR(self->name, name);
 	CONST_CAST(spBoneData*, self->parent) = parent;

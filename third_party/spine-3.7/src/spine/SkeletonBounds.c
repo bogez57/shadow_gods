@@ -33,9 +33,9 @@
 #include <spine/extension.h>
 
 spPolygon* spPolygon_create (int capacity) {
-	spPolygon* self = NEW(spPolygon);
+	spPolygon* self = NEW(&GlobalGameState->Spine, spPolygon);
 	self->capacity = capacity;
-	CONST_CAST(float*, self->vertices) = MALLOC(float, capacity);
+	CONST_CAST(float*, self->vertices) = MALLOC(&GlobalGameState->Spine, float, capacity);
 	return self;
 }
 
@@ -89,7 +89,7 @@ typedef struct {
 } _spSkeletonBounds;
 
 spSkeletonBounds* spSkeletonBounds_create () {
-	return SUPER(NEW(_spSkeletonBounds));
+	return SUPER(NEW(&GlobalGameState->Spine, _spSkeletonBounds));
 }
 
 void spSkeletonBounds_dispose (spSkeletonBounds* self) {
@@ -109,9 +109,9 @@ void spSkeletonBounds_update (spSkeletonBounds* self, spSkeleton* skeleton, int/
 		spPolygon** newPolygons;
 
 		FREE(self->boundingBoxes);
-		self->boundingBoxes = MALLOC(spBoundingBoxAttachment*, skeleton->slotsCount);
+		self->boundingBoxes = MALLOC(&GlobalGameState->Spine, spBoundingBoxAttachment*, skeleton->slotsCount);
 
-		newPolygons = CALLOC(spPolygon*, skeleton->slotsCount);
+		newPolygons = CALLOC(&GlobalGameState->Spine, spPolygon*, skeleton->slotsCount);
 		memcpy(newPolygons, self->polygons, sizeof(spPolygon*) * internal->capacity);
 		FREE(self->polygons);
 		self->polygons = newPolygons;

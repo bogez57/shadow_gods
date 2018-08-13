@@ -46,7 +46,7 @@ void _spMeshAttachment_dispose (spAttachment* attachment) {
 }
 
 spMeshAttachment* spMeshAttachment_create (const char* name) {
-	spMeshAttachment* self = NEW(spMeshAttachment);
+	spMeshAttachment* self = NEW(&GlobalGameState->Spine, spMeshAttachment);
 	_spVertexAttachment_init(SUPER(self));
 	spColor_setFromFloats(&self->color, 1, 1, 1, 1);
 	_spAttachment_init(SUPER(SUPER(self)), name, SP_ATTACHMENT_MESH, _spMeshAttachment_dispose);
@@ -58,7 +58,7 @@ void spMeshAttachment_updateUVs (spMeshAttachment* self) {
 	float width = self->regionU2 - self->regionU, height = self->regionV2 - self->regionV;
 	int verticesLength = SUPER(self)->worldVerticesLength;
 	FREE(self->uvs);
-	self->uvs = MALLOC(float, verticesLength);
+	self->uvs = MALLOC(&GlobalGameState->Spine, float, verticesLength);
 	if (self->regionRotate) {
 		for (i = 0; i < verticesLength; i += 2) {
 			self->uvs[i] = self->regionU + self->regionUVs[i + 1] * width;

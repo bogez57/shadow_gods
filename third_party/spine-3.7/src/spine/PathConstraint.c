@@ -39,10 +39,10 @@
 
 spPathConstraint* spPathConstraint_create (spPathConstraintData* data, const spSkeleton* skeleton) {
 	int i;
-	spPathConstraint *self = NEW(spPathConstraint);
+	spPathConstraint *self = NEW(&GlobalGameState->Spine, spPathConstraint);
 	CONST_CAST(spPathConstraintData*, self->data) = data;
 	self->bonesCount = data->bonesCount;
-	CONST_CAST(spBone**, self->bones) = MALLOC(spBone*, self->bonesCount);
+	CONST_CAST(spBone**, self->bones) = MALLOC(&GlobalGameState->Spine, spBone*, self->bonesCount);
 	for (i = 0; i < self->bonesCount; ++i)
 		self->bones[i] = spSkeleton_findBone(skeleton, self->data->bones[i]->name);
 	self->target = spSkeleton_findSlot(skeleton, self->data->target->name);
@@ -96,7 +96,7 @@ void spPathConstraint_apply (spPathConstraint* self) {
 
 	if (self->spacesCount != spacesCount) {
 		if (self->spaces) FREE(self->spaces);
-		self->spaces = MALLOC(float, spacesCount);
+		self->spaces = MALLOC(&GlobalGameState->Spine, float, spacesCount);
 		self->spacesCount = spacesCount;
 	}
 	spaces = self->spaces;
@@ -107,7 +107,7 @@ void spPathConstraint_apply (spPathConstraint* self) {
 		if (scale) {
 			if (self->lengthsCount != boneCount) {
 				if (self->lengths) FREE(self->lengths);
-				self->lengths = MALLOC(float, boneCount);
+				self->lengths = MALLOC(&GlobalGameState->Spine, float, boneCount);
 				self->lengthsCount = boneCount;
 			}
 			lengths = self->lengths;
@@ -242,7 +242,7 @@ float* spPathConstraint_computeWorldPositions(spPathConstraint* self, spPathAtta
 	float* spaces = self->spaces, *world = 0;
 	if (self->positionsCount != spacesCount * 3 + 2) {
 		if (self->positions) FREE(self->positions);
-		self->positions = MALLOC(float, spacesCount * 3 + 2);
+		self->positions = MALLOC(&GlobalGameState->Spine, float, spacesCount * 3 + 2);
 		self->positionsCount = spacesCount * 3 + 2;
 	}
 	out = self->positions;
@@ -260,7 +260,7 @@ float* spPathConstraint_computeWorldPositions(spPathConstraint* self, spPathAtta
 		}
 		if (self->worldCount != 8) {
 			if (self->world) FREE(self->world);
-			self->world = MALLOC(float, 8);
+			self->world = MALLOC(&GlobalGameState->Spine, float, 8);
 			self->worldCount = 8;
 		}
 		world = self->world;
@@ -320,7 +320,7 @@ float* spPathConstraint_computeWorldPositions(spPathConstraint* self, spPathAtta
 		verticesLength += 2;
 		if (self->worldCount != verticesLength) {
 			if (self->world) FREE(self->world);
-			self->world = MALLOC(float, verticesLength);
+			self->world = MALLOC(&GlobalGameState->Spine, float, verticesLength);
 			self->worldCount = verticesLength;
 		}
 		world = self->world;
@@ -333,7 +333,7 @@ float* spPathConstraint_computeWorldPositions(spPathConstraint* self, spPathAtta
 		verticesLength -= 4;
 		if (self->worldCount != verticesLength) {
 			if (self->world) FREE(self->world);
-			self->world = MALLOC(float, verticesLength);
+			self->world = MALLOC(&GlobalGameState->Spine, float, verticesLength);
 			self->worldCount = verticesLength;
 		}
 		world = self->world;
@@ -343,7 +343,7 @@ float* spPathConstraint_computeWorldPositions(spPathConstraint* self, spPathAtta
 	/* Curve lengths. */
 	if (self->curvesCount != curveCount) {
 		if (self->curves) FREE(self->curves);
-		self->curves = MALLOC(float, curveCount);
+		self->curves = MALLOC(&GlobalGameState->Spine, float, curveCount);
 		self->curvesCount = curveCount;
 	}
 	curves = self->curves;

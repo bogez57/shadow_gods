@@ -118,10 +118,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         InitMemoryChunk(&GameState->Spine, Megabytes(10), GameMemory);
         InitMemoryChunk(&GameState->Game, Megabytes(10), GameMemory);
 
-        spSkeleton* temp{};
-        temp = PushType(&GameState->Game, spSkeleton, 1);
-        GameState->MySkeleton = PushType(&GameState->Game, spSkeleton, 1);
-
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
         {
@@ -131,8 +127,9 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                 GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
                 if (GameState->SkelData)
                 {
-                    temp = spSkeleton_create(GameState->SkelData);
-                    memcpy(GameState->MySkeleton, temp, sizeof(spSkeleton));
+                    spSkeleton *temp{};
+
+                    GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
                     if (GameState->MySkeleton)
                     {
                     }
@@ -184,8 +181,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->ZoomFactor = 1.0f;
         };
     }
-
-    GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
 
     if (Keyboard->MoveUp.Pressed)
     {

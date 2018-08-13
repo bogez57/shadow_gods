@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spEvent* spEvent_create (float time, spEventData* data) {
-	spEvent* self = NEW(spEvent);
+	spEvent* self = NEW(&GlobalGameState->Spine, spEvent);
 	CONST_CAST(spEventData*, self->data) = data;
 	CONST_CAST(float, self->time) = time;
 	return self;

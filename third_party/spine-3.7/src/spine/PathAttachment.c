@@ -41,7 +41,7 @@ void _spPathAttachment_dispose (spAttachment* attachment) {
 }
 
 spPathAttachment* spPathAttachment_create (const char* name) {
-	spPathAttachment* self = NEW(spPathAttachment);
+	spPathAttachment* self = NEW(&GlobalGameState->Spine, spPathAttachment);
 	_spVertexAttachment_init(SUPER(self));
 	_spAttachment_init(SUPER(SUPER(self)), name, SP_ATTACHMENT_PATH, _spPathAttachment_dispose);
 	return self;

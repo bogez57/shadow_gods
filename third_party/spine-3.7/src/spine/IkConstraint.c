@@ -36,13 +36,13 @@
 spIkConstraint *spIkConstraint_create(spIkConstraintData *data, const spSkeleton *skeleton) {
 	int i;
 
-	spIkConstraint *self = NEW(spIkConstraint);
+	spIkConstraint *self = NEW(&GlobalGameState->Spine, spIkConstraint);
 	CONST_CAST(spIkConstraintData*, self->data) = data;
 	self->bendDirection = data->bendDirection;
 	self->mix = data->mix;
 
 	self->bonesCount = self->data->bonesCount;
-	self->bones = MALLOC(spBone*, self->bonesCount);
+	self->bones = MALLOC(&GlobalGameState->Spine, spBone*, self->bonesCount);
 	for (i = 0; i < self->bonesCount; ++i)
 		self->bones[i] = spSkeleton_findBone(skeleton, self->data->bones[i]->name);
 	self->target = spSkeleton_findBone(skeleton, self->data->target->name);

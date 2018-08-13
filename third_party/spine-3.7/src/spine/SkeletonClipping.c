@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spSkeletonClipping* spSkeletonClipping_create() {
-	spSkeletonClipping* clipping = CALLOC(spSkeletonClipping, 1);
+	spSkeletonClipping* clipping = CALLOC(&GlobalGameState->Spine, spSkeletonClipping, 1);
 
 	clipping->triangulator = spTriangulator_create();
 	clipping->clippingPolygon = spFloatArray_create(128);

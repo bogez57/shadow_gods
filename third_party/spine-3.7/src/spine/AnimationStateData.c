@@ -39,7 +39,7 @@ struct _ToEntry {
 };
 
 _ToEntry* _ToEntry_create (spAnimation* to, float duration) {
-	_ToEntry* self = NEW(_ToEntry);
+	_ToEntry* self = NEW(&GlobalGameState->Spine, _ToEntry);
 	self->animation = to;
 	self->duration = duration;
 	return self;
@@ -59,7 +59,7 @@ struct _FromEntry {
 };
 
 _FromEntry* _FromEntry_create (spAnimation* from) {
-	_FromEntry* self = NEW(_FromEntry);
+	_FromEntry* self = NEW(&GlobalGameState->Spine, _FromEntry);
 	self->animation = from;
 	return self;
 }
@@ -71,7 +71,7 @@ void _FromEntry_dispose (_FromEntry* self) {
 /**/
 
 spAnimationStateData* spAnimationStateData_create (spSkeletonData* skeletonData) {
-	spAnimationStateData* self = NEW(spAnimationStateData);
+	spAnimationStateData* self = NEW(&GlobalGameState->Spine, spAnimationStateData);
 	CONST_CAST(spSkeletonData*, self->skeletonData) = skeletonData;
 	return self;
 }
