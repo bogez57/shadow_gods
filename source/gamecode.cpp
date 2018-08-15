@@ -19,33 +19,14 @@ global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
 
-local_func auto
-LinkMemoryChunks(Memory_Chunk* ParentChunk, Memory_Chunk* ChildChunk) -> void
-{
-    ParentChunk->PreviousChunkInMemory = nullptr;
-    ChildChunk->PreviousChunkInMemory = ParentChunk;
-};
-
 local_func auto 
 InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, ui64 SizeToReserve, Game_Memory* GameMemory) -> void
 {
-    //If First memory chunk of game memory 
-    if(!MemoryChunkToInit->PreviousChunkInMemory)
-    {
-        MemoryChunkToInit->BaseAddress = (ui64*)GameMemory->TemporaryStorage;
-        MemoryChunkToInit->EndAddress = MemoryChunkToInit->BaseAddress + SizeToReserve;
-        MemoryChunkToInit->UsedAddress = MemoryChunkToInit->BaseAddress;
-        MemoryChunkToInit->Size = SizeToReserve;
-        MemoryChunkToInit->UsedAmount = 0;
-    }
-    else
-    {
-        MemoryChunkToInit->BaseAddress = MemoryChunkToInit->PreviousChunkInMemory->EndAddress;
-        MemoryChunkToInit->EndAddress = MemoryChunkToInit->BaseAddress + SizeToReserve;
-        MemoryChunkToInit->UsedAddress = MemoryChunkToInit->BaseAddress;
-        MemoryChunkToInit->Size = SizeToReserve;
-        MemoryChunkToInit->UsedAmount = 0;
-    };
+    MemoryChunkToInit->BaseAddress = (ui64 *)GameMemory->TemporaryStorage;
+    MemoryChunkToInit->EndAddress = MemoryChunkToInit->BaseAddress + SizeToReserve;
+    MemoryChunkToInit->UsedAddress = MemoryChunkToInit->BaseAddress;
+    MemoryChunkToInit->Size = SizeToReserve;
+    MemoryChunkToInit->UsedAmount = 0;
 };
 
 #define PushType(MemoryChunk, Type, Count) (Type*)_PushType(MemoryChunk, sizeof(Type), Count)
@@ -114,9 +95,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(!GameMemory->IsInitialized)
     {
         //These functions current need to be called in this order
-        LinkMemoryChunks(&GameState->Spine, &GameState->Game);
-        InitMemoryChunk(&GameState->Spine, Megabytes(10), GameMemory);
-        InitMemoryChunk(&GameState->Game, Megabytes(10), GameMemory);
+        InitMemoryChunk(&GameState->GameData, Megabytes(10), GameMemory);
 
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
@@ -127,8 +106,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                 GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
                 if (GameState->SkelData)
                 {
-                    spSkeleton *temp{};
-
                     GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
                     if (GameState->MySkeleton)
                     {

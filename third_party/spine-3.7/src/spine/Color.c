@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spColor* spColor_create() {
-	return MALLOC(&GlobalGameState->Spine, spColor, 1);
+	return MALLOC(&GlobalGameState->GameData, spColor, 1);
 }
 
 void spColor_dispose(spColor* self) {

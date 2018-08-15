@@ -33,7 +33,7 @@
 #include <stdio.h>
 
 spTriangulator* spTriangulator_create() {
-	spTriangulator* triangulator = CALLOC(&GlobalGameState->Spine, spTriangulator, 1);
+	spTriangulator* triangulator = CALLOC(&GlobalGameState->GameData, spTriangulator, 1);
 
 	triangulator->convexPolygons = spArrayFloatArray_create(16);
 	triangulator->convexPolygonsIndices = spArrayShortArray_create(16);

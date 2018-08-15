@@ -33,7 +33,7 @@
 #include <spine/extension.h>
 
 spSkeletonData* spSkeletonData_create () {
-	return NEW(&GlobalGameState->Spine, spSkeletonData);
+	return NEW(&GlobalGameState->GameData, spSkeletonData);
 }
 
 void spSkeletonData_dispose (spSkeletonData* self) {

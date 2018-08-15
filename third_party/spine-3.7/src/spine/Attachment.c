@@ -39,7 +39,7 @@ typedef struct _spAttachmentVtable {
 void _spAttachment_init (spAttachment* self, const char* name, spAttachmentType type, /**/
 		void (*dispose) (spAttachment* self)) {
 
-	CONST_CAST(_spAttachmentVtable*, self->vtable) = NEW(&GlobalGameState->Spine, _spAttachmentVtable);
+	CONST_CAST(_spAttachmentVtable*, self->vtable) = NEW(&GlobalGameState->GameData, _spAttachmentVtable);
 	VTABLE(spAttachment, self) ->dispose = dispose;
 
 	MALLOC_STR(self->name, name);

@@ -92,7 +92,7 @@ char* _spReadFile (const char* path, int* length) {
 	*length = (int)ftell(file);
 	fseek(file, 0, SEEK_SET);
 
-	data = MALLOC(&GlobalGameState->Spine, char, *length);
+	data = MALLOC(&GlobalGameState->GameData, char, *length);
 	fread(data, 1, *length, file);
 	fclose(file);
 
@@ -134,7 +134,7 @@ void _spAtlasPage_createTexture (spAtlasPage* self, const char* path)
 	image.Data = GlobalPlatformServices.LoadRGBAImage(path, &image.Dimensions.Width, &image.Dimensions.Height);
 	//Need to create heap like memory
 	Texture texture = GlobalRenderCmds.LoadTexture(image);
-	Texture* textureptr = PushType(&GlobalGameState->Spine, Texture, 1);
+	Texture* textureptr = PushType(&GlobalGameState->GameData, Texture, 1);
 	*textureptr = texture;
 
 	self->rendererObject = textureptr;

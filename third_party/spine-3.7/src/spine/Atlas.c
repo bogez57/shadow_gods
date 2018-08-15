@@ -33,7 +33,7 @@
 #include <spine/extension.h>
 
 spAtlasPage* spAtlasPage_create(spAtlas* atlas, const char* name) {
-	spAtlasPage* self = NEW(&GlobalGameState->Spine, spAtlasPage);
+	spAtlasPage* self = NEW(&GlobalGameState->GameData, spAtlasPage);
 	CONST_CAST(spAtlas*, self->atlas) = atlas;
 	MALLOC_STR(self->name, name);
 	return self;
@@ -48,7 +48,7 @@ void spAtlasPage_dispose(spAtlasPage* self) {
 /**/
 
 spAtlasRegion* spAtlasRegion_create() {
-	return NEW(&GlobalGameState->Spine, spAtlasRegion);
+	return NEW(&GlobalGameState->GameData, spAtlasRegion);
 }
 
 void spAtlasRegion_dispose(spAtlasRegion* self) {
@@ -133,7 +133,7 @@ static int readTuple(const char** begin, const char* end, Str tuple[]) {
 
 static char* mallocString(Str* str) {
 	int length = (int)(str->end - str->begin);
-	char* string = MALLOC(&GlobalGameState->Spine, char, length + 1);
+	char* string = MALLOC(&GlobalGameState->GameData, char, length + 1);
 	memcpy(string, str->begin, length);
 	string[length] = '\0';
 	return string;
@@ -178,7 +178,7 @@ spAtlas* spAtlas_create(const char* begin, int length, const char* dir, void* re
 	Str str;
 	Str tuple[4];
 
-	self = NEW(&GlobalGameState->Spine, spAtlas);
+	self = NEW(&GlobalGameState->GameData, spAtlas);
 	self->rendererObject = rendererObject;
 
 	while (readLine(&begin, end, &str)) {
@@ -187,7 +187,7 @@ spAtlas* spAtlas_create(const char* begin, int length, const char* dir, void* re
 		}
 		else if (!page) {
 			char* name = mallocString(&str);
-			char* path = MALLOC(&GlobalGameState->Spine, char, dirLength + needsSlash + strlen(name) + 1);
+			char* path = MALLOC(&GlobalGameState->GameData, char, dirLength + needsSlash + strlen(name) + 1);
 			memcpy(path, dir, dirLength);
 			if (needsSlash) path[dirLength] = '/';
 			strcpy(path + dirLength + needsSlash, name);
@@ -270,7 +270,7 @@ spAtlas* spAtlas_create(const char* begin, int length, const char* dir, void* re
 			count = readTuple(&begin, end, tuple);
 			if (!count) return abortAtlas(self);
 			if (count == 4) { /* split is optional */
-				region->splits = MALLOC(&GlobalGameState->Spine, int, 4);
+				region->splits = MALLOC(&GlobalGameState->GameData, int, 4);
 				region->splits[0] = toInt(tuple);
 				region->splits[1] = toInt(tuple + 1);
 				region->splits[2] = toInt(tuple + 2);
@@ -279,7 +279,7 @@ spAtlas* spAtlas_create(const char* begin, int length, const char* dir, void* re
 				count = readTuple(&begin, end, tuple);
 				if (!count) return abortAtlas(self);
 				if (count == 4) { /* pad is optional, but only present with splits */
-					region->pads = MALLOC(&GlobalGameState->Spine, int, 4);
+					region->pads = MALLOC(&GlobalGameState->GameData, int, 4);
 					region->pads[0] = toInt(tuple);
 					region->pads[1] = toInt(tuple + 1);
 					region->pads[2] = toInt(tuple + 2);
@@ -318,7 +318,7 @@ spAtlas* spAtlas_createFromFile(const char* path, void* rendererObject) {
 	const char* lastSlash = lastForwardSlash > lastBackwardSlash ? lastForwardSlash : lastBackwardSlash;
 	if (lastSlash == path) lastSlash++; /* Never drop starting slash. */
 	dirLength = (int)(lastSlash ? lastSlash - path : 0);
-	dir = MALLOC(&GlobalGameState->Spine, char, dirLength + 1);
+	dir = MALLOC(&GlobalGameState->GameData, char, dirLength + 1);
 	memcpy(dir, path, dirLength);
 	dir[dirLength] = '\0';
 

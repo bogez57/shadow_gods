@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spEventData* spEventData_create (const char* name) {
-	spEventData* self = NEW(&GlobalGameState->Spine, spEventData);
+	spEventData* self = NEW(&GlobalGameState->GameData, spEventData);
 	MALLOC_STR(self->name, name);
 	return self;
 }

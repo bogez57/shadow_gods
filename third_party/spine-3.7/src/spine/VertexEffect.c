@@ -46,7 +46,7 @@ void _spJitterVertexEffect_end(spVertexEffect* self) {
 }
 
 spJitterVertexEffect* spJitterVertexEffect_create(float jitterX, float jitterY) {
-	spJitterVertexEffect* effect = CALLOC(&GlobalGameState->Spine, spJitterVertexEffect, 1);
+	spJitterVertexEffect* effect = CALLOC(&GlobalGameState->GameData, spJitterVertexEffect, 1);
 	effect->super.begin = _spJitterVertexEffect_begin;
 	effect->super.transform = _spJitterVertexEffect_transform;
 	effect->super.end = _spJitterVertexEffect_end;
@@ -84,7 +84,7 @@ void _spSwirlVertexEffect_end(spVertexEffect* self) {
 }
 
 spSwirlVertexEffect* spSwirlVertexEffect_create(float radius) {
-	spSwirlVertexEffect* effect = CALLOC(&GlobalGameState->Spine, spSwirlVertexEffect, 1);
+	spSwirlVertexEffect* effect = CALLOC(&GlobalGameState->GameData, spSwirlVertexEffect, 1);
 	effect->super.begin = _spSwirlVertexEffect_begin;
 	effect->super.transform = _spSwirlVertexEffect_transform;
 	effect->super.end = _spSwirlVertexEffect_end;

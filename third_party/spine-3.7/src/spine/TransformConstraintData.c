@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spTransformConstraintData* spTransformConstraintData_create (const char* name) {
-	spTransformConstraintData* self = NEW(&GlobalGameState->Spine, spTransformConstraintData);
+	spTransformConstraintData* self = NEW(&GlobalGameState->GameData, spTransformConstraintData);
 	MALLOC_STR(self->name, name);
 	return self;
 }

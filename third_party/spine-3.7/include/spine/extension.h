@@ -69,9 +69,9 @@
 #endif
 
 /* All allocation uses these. */
-#define MALLOC(MEMORYCHUNK,TYPE,COUNT) (PushType(&GlobalGameState->Spine, TYPE, COUNT))
-#define CALLOC(MEMORYCHUNK,TYPE,COUNT) (PushType(&GlobalGameState->Spine, TYPE, COUNT))
-#define REALLOC(PTR,TYPE,COUNT) (RePushType(&GlobalGameState->Spine, PTR, TYPE, COUNT))
+#define MALLOC(MEMORYCHUNK,TYPE,COUNT) (PushType(&GlobalGameState->GameData, TYPE, COUNT))
+#define CALLOC(MEMORYCHUNK,TYPE,COUNT) (PushType(&GlobalGameState->GameData, TYPE, COUNT))
+#define REALLOC(PTR,TYPE,COUNT) (RePushType(&GlobalGameState->GameData, PTR, TYPE, COUNT))
 #define NEW(MEMORYCHUNK,TYPE) CALLOC(MEMORYCHUNK,TYPE,1)
 
 /* Gets the direct super class. Type safe. */
@@ -93,7 +93,7 @@
 #define FREE(VALUE) SpineFree()
 
 /* Allocates a new char[], assigns it to TO, and copies FROM to it. Can be used on const types. */
-#define MALLOC_STR(TO,FROM) strcpy(CONST_CAST(char*, TO) = (char*)MALLOC(&GlobalGameState->Spine, char, strlen(FROM) + 1), FROM)
+#define MALLOC_STR(TO,FROM) strcpy(CONST_CAST(char*, TO) = (char*)MALLOC(&GlobalGameState->GameData, char, strlen(FROM) + 1), FROM)
 
 #define PI2 (PI * 2)
 #define DEG_RAD (PI / 180)

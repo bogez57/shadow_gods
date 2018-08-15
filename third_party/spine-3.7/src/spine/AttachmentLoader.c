@@ -47,7 +47,7 @@ void _spAttachmentLoader_init (spAttachmentLoader* self,
 	void (*configureAttachment) (spAttachmentLoader* self, spAttachment*),
 	void (*disposeAttachment) (spAttachmentLoader* self, spAttachment*)
 ) {
-	CONST_CAST(_spAttachmentLoaderVtable*, self->vtable) = NEW(&GlobalGameState->Spine, _spAttachmentLoaderVtable);
+	CONST_CAST(_spAttachmentLoaderVtable*, self->vtable) = NEW(&GlobalGameState->GameData, _spAttachmentLoaderVtable);
 	VTABLE(spAttachmentLoader, self)->dispose = dispose;
 	VTABLE(spAttachmentLoader, self)->createAttachment = createAttachment;
 	VTABLE(spAttachmentLoader, self)->configureAttachment = configureAttachment;

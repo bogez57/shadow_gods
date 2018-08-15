@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spPathConstraintData* spPathConstraintData_create (const char* name) {
-	spPathConstraintData* self = NEW(&GlobalGameState->Spine, spPathConstraintData);
+	spPathConstraintData* self = NEW(&GlobalGameState->GameData, spPathConstraintData);
 	MALLOC_STR(self->name, name);
 	return self;
 }

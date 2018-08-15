@@ -66,11 +66,11 @@ spTrackEntry* _spTrackEntry_setTimelineData(spTrackEntry* self, spTrackEntry* to
 
 
 _spEventQueue* _spEventQueue_create (_spAnimationState* state) {
-	_spEventQueue *self = CALLOC(&GlobalGameState->Spine, _spEventQueue, 1);
+	_spEventQueue *self = CALLOC(&GlobalGameState->GameData, _spEventQueue, 1);
 	self->state = state;
 	self->objectsCount = 0;
 	self->objectsCapacity = 16;
-	self->objects = CALLOC(&GlobalGameState->Spine, _spEventQueueItem, self->objectsCapacity);
+	self->objects = CALLOC(&GlobalGameState->GameData, _spEventQueueItem, self->objectsCapacity);
 	self->drainDisabled = 0;
 	return self;
 }
@@ -84,7 +84,7 @@ void _spEventQueue_ensureCapacity (_spEventQueue* self, int newElements) {
 	if (self->objectsCount + newElements > self->objectsCapacity) {
 		_spEventQueueItem* newObjects;
 		self->objectsCapacity <<= 1;
-		newObjects = CALLOC(&GlobalGameState->Spine, _spEventQueueItem, self->objectsCapacity);
+		newObjects = CALLOC(&GlobalGameState->GameData, _spEventQueueItem, self->objectsCapacity);
 		memcpy(newObjects, self->objects, sizeof(_spEventQueueItem) * self->objectsCount);
 		FREE(self->objects);
 		self->objects = newObjects;
@@ -225,16 +225,16 @@ spAnimationState* spAnimationState_create (spAnimationStateData* data) {
 		SP_EMPTY_ANIMATION = spAnimation_create("<empty>", 0);
 	}
 
-	internal = NEW(&GlobalGameState->Spine, _spAnimationState);
+	internal = NEW(&GlobalGameState->GameData, _spAnimationState);
 	self = SUPER(internal);
 
 	CONST_CAST(spAnimationStateData*, self->data) = data;
 	self->timeScale = 1;
 
 	internal->queue = _spEventQueue_create(internal);
-	internal->events = CALLOC(&GlobalGameState->Spine, spEvent*, 128);
+	internal->events = CALLOC(&GlobalGameState->GameData, spEvent*, 128);
 
-	internal->propertyIDs = CALLOC(&GlobalGameState->Spine, int, 128);
+	internal->propertyIDs = CALLOC(&GlobalGameState->GameData, int, 128);
 	internal->propertyIDsCapacity = 128;
 
 	self->mixingTo = spTrackEntryArray_create(16);
@@ -780,7 +780,7 @@ void spAnimationState_setEmptyAnimations(spAnimationState* self, float mixDurati
 spTrackEntry* _spAnimationState_expandToIndex (spAnimationState* self, int index) {
 	spTrackEntry** newTracks;
 	if (index < self->tracksCount) return self->tracks[index];
-	newTracks = CALLOC(&GlobalGameState->Spine, spTrackEntry*, index + 1);
+	newTracks = CALLOC(&GlobalGameState->GameData, spTrackEntry*, index + 1);
 	memcpy(newTracks, self->tracks, self->tracksCount * sizeof(spTrackEntry*));
 	FREE(self->tracks);
 	self->tracks = newTracks;
@@ -789,7 +789,7 @@ spTrackEntry* _spAnimationState_expandToIndex (spAnimationState* self, int index
 }
 
 spTrackEntry* _spAnimationState_trackEntry (spAnimationState* self, int trackIndex, spAnimation* animation, int /*boolean*/ loop, spTrackEntry* last) {
-	spTrackEntry* entry = NEW(&GlobalGameState->Spine, spTrackEntry);
+	spTrackEntry* entry = NEW(&GlobalGameState->GameData, spTrackEntry);
 	entry->trackIndex = trackIndex;
 	entry->animation = animation;
 	entry->loop = loop;
@@ -851,7 +851,7 @@ void _spAnimationState_animationsChanged (spAnimationState* self) {
 
 float* _spAnimationState_resizeTimelinesRotation(spTrackEntry* entry, int newSize) {
 	if (entry->timelinesRotationCount != newSize) {
-		float* newTimelinesRotation = CALLOC(&GlobalGameState->Spine, float, newSize);
+		float* newTimelinesRotation = CALLOC(&GlobalGameState->GameData, float, newSize);
 		FREE(entry->timelinesRotation);
 		entry->timelinesRotation = newTimelinesRotation;
 		entry->timelinesRotationCount = newSize;
@@ -862,7 +862,7 @@ float* _spAnimationState_resizeTimelinesRotation(spTrackEntry* entry, int newSiz
 void _spAnimationState_ensureCapacityPropertyIDs(spAnimationState* self, int capacity) {
 	_spAnimationState* internal = SUB_CAST(_spAnimationState, self);
 	if (internal->propertyIDsCapacity < capacity) {
-		int *newPropertyIDs = CALLOC(&GlobalGameState->Spine, int, capacity << 1);
+		int *newPropertyIDs = CALLOC(&GlobalGameState->GameData, int, capacity << 1);
 		memcpy(newPropertyIDs, internal->propertyIDs, sizeof(int) * internal->propertyIDsCount);
 		FREE(internal->propertyIDs);
 		internal->propertyIDs = newPropertyIDs;

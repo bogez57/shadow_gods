@@ -56,7 +56,7 @@ typedef struct {
 } _spSkeletonJson;
 
 spSkeletonJson* spSkeletonJson_createWithLoader (spAttachmentLoader* attachmentLoader) {
-	spSkeletonJson* self = SUPER(NEW(&GlobalGameState->Spine, _spSkeletonJson));
+	spSkeletonJson* self = SUPER(NEW(&GlobalGameState->GameData, _spSkeletonJson));
 	self->scale = 1;
 	self->attachmentLoader = attachmentLoader;
 	return self;
@@ -129,7 +129,7 @@ static void _spSkeletonJson_addLinkedMesh (spSkeletonJson* self, spMeshAttachmen
 		_spLinkedMesh* linkedMeshes;
 		internal->linkedMeshCapacity *= 2;
 		if (internal->linkedMeshCapacity < 8) internal->linkedMeshCapacity = 8;
-		linkedMeshes = MALLOC(&GlobalGameState->Spine, _spLinkedMesh, internal->linkedMeshCapacity);
+		linkedMeshes = MALLOC(&GlobalGameState->GameData, _spLinkedMesh, internal->linkedMeshCapacity);
 		memcpy(linkedMeshes, internal->linkedMeshes, sizeof(_spLinkedMesh) * internal->linkedMeshCount);
 		FREE(internal->linkedMeshes);
 		internal->linkedMeshes = linkedMeshes;
@@ -395,7 +395,7 @@ static spAnimation* _spSkeletonJson_readAnimation (spSkeletonJson* self, Json* r
 				}
 				weighted = attachment->bones != 0;
 				deformLength = weighted ? attachment->verticesCount / 3 * 2 : attachment->verticesCount;
-				tempDeform = MALLOC(&GlobalGameState->Spine, float, deformLength);
+				tempDeform = MALLOC(&GlobalGameState->GameData, float, deformLength);
 
 				timeline = spDeformTimeline_create(timelineMap->size, deformLength);
 				timeline->slotIndex = slotIndex;
@@ -449,10 +449,10 @@ static spAnimation* _spSkeletonJson_readAnimation (spSkeletonJson* self, Json* r
 			Json* offsets = Json_getItem(valueMap, "offsets");
 			if (offsets) {
 				Json* offsetMap;
-				int* unchanged = MALLOC(&GlobalGameState->Spine, int, skeletonData->slotsCount - offsets->size);
+				int* unchanged = MALLOC(&GlobalGameState->GameData, int, skeletonData->slotsCount - offsets->size);
 				int originalIndex = 0, unchangedIndex = 0;
 
-				drawOrder = MALLOC(&GlobalGameState->Spine, int, skeletonData->slotsCount);
+				drawOrder = MALLOC(&GlobalGameState->GameData, int, skeletonData->slotsCount);
 				for (ii = skeletonData->slotsCount - 1; ii >= 0; --ii)
 					drawOrder[ii] = -1;
 
@@ -522,7 +522,7 @@ static void _readVertices (spSkeletonJson* self, Json* attachmentMap, spVertexAt
 
 	entry = Json_getItem(attachmentMap, "vertices");
 	entrySize = entry->size;
-	vertices = MALLOC(&GlobalGameState->Spine, float, entrySize);
+	vertices = MALLOC(&GlobalGameState->GameData, float, entrySize);
 	for (entry = entry->child, i = 0; entry; entry = entry->next, ++i)
 		vertices[i] = entry->valueFloat;
 
@@ -604,7 +604,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 
 	/* Bones. */
 	bones = Json_getItem(root, "bones");
-	skeletonData->bones = MALLOC(&GlobalGameState->Spine, spBoneData*, bones->size);
+	skeletonData->bones = MALLOC(&GlobalGameState->GameData, spBoneData*, bones->size);
 	for (boneMap = bones->child, i = 0; boneMap; boneMap = boneMap->next, ++i) {
 		spBoneData* data;
 		const char* transformMode;
@@ -651,7 +651,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 	if (slots) {
 		Json *slotMap;
 		skeletonData->slotsCount = slots->size;
-		skeletonData->slots = MALLOC(&GlobalGameState->Spine, spSlotData*, slots->size);
+		skeletonData->slots = MALLOC(&GlobalGameState->GameData, spSlotData*, slots->size);
 		for (slotMap = slots->child, i = 0; slotMap; slotMap = slotMap->next, ++i) {
 			spSlotData* data;
 			const char* color;
@@ -709,7 +709,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 	if (ik) {
 		Json *constraintMap;
 		skeletonData->ikConstraintsCount = ik->size;
-		skeletonData->ikConstraints = MALLOC(&GlobalGameState->Spine, spIkConstraintData*, ik->size);
+		skeletonData->ikConstraints = MALLOC(&GlobalGameState->GameData, spIkConstraintData*, ik->size);
 		for (constraintMap = ik->child, i = 0; constraintMap; constraintMap = constraintMap->next, ++i) {
 			const char* targetName;
 
@@ -718,7 +718,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 
 			boneMap = Json_getItem(constraintMap, "bones");
 			data->bonesCount = boneMap->size;
-			data->bones = MALLOC(&GlobalGameState->Spine, spBoneData*, boneMap->size);
+			data->bones = MALLOC(&GlobalGameState->GameData, spBoneData*, boneMap->size);
 			for (boneMap = boneMap->child, ii = 0; boneMap; boneMap = boneMap->next, ++ii) {
 				data->bones[ii] = spSkeletonData_findBone(skeletonData, boneMap->valueString);
 				if (!data->bones[ii]) {
@@ -748,7 +748,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 	if (transform) {
 		Json *constraintMap;
 		skeletonData->transformConstraintsCount = transform->size;
-		skeletonData->transformConstraints = MALLOC(&GlobalGameState->Spine, spTransformConstraintData*, transform->size);
+		skeletonData->transformConstraints = MALLOC(&GlobalGameState->GameData, spTransformConstraintData*, transform->size);
 		for (constraintMap = transform->child, i = 0; constraintMap; constraintMap = constraintMap->next, ++i) {
 			const char* name;
 
@@ -757,7 +757,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 
 			boneMap = Json_getItem(constraintMap, "bones");
 			data->bonesCount = boneMap->size;
-			CONST_CAST(spBoneData**, data->bones) = MALLOC(&GlobalGameState->Spine, spBoneData*, boneMap->size);
+			CONST_CAST(spBoneData**, data->bones) = MALLOC(&GlobalGameState->GameData, spBoneData*, boneMap->size);
 			for (boneMap = boneMap->child, ii = 0; boneMap; boneMap = boneMap->next, ++ii) {
 				data->bones[ii] = spSkeletonData_findBone(skeletonData, boneMap->valueString);
 				if (!data->bones[ii]) {
@@ -798,7 +798,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 	if (path) {
 		Json *constraintMap;
 		skeletonData->pathConstraintsCount = path->size;
-		skeletonData->pathConstraints = MALLOC(&GlobalGameState->Spine, spPathConstraintData*, path->size);
+		skeletonData->pathConstraints = MALLOC(&GlobalGameState->GameData, spPathConstraintData*, path->size);
 		for (constraintMap = path->child, i = 0; constraintMap; constraintMap = constraintMap->next, ++i) {
 			const char* name;
 			const char* item;
@@ -808,7 +808,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 
 			boneMap = Json_getItem(constraintMap, "bones");
 			data->bonesCount = boneMap->size;
-			CONST_CAST(spBoneData**, data->bones) = MALLOC(&GlobalGameState->Spine, spBoneData*, boneMap->size);
+			CONST_CAST(spBoneData**, data->bones) = MALLOC(&GlobalGameState->GameData, spBoneData*, boneMap->size);
 			for (boneMap = boneMap->child, ii = 0; boneMap; boneMap = boneMap->next, ++ii) {
 				data->bones[ii] = spSkeletonData_findBone(skeletonData, boneMap->valueString);
 				if (!data->bones[ii]) {
@@ -856,7 +856,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 	skins = Json_getItem(root, "skins");
 	if (skins) {
 		Json *skinMap;
-		skeletonData->skins = MALLOC(&GlobalGameState->Spine, spSkin*, skins->size);
+		skeletonData->skins = MALLOC(&GlobalGameState->GameData, spSkin*, skins->size);
 		for (skinMap = skins->child, i = 0; skinMap; skinMap = skinMap->next, ++i) {
 			Json *attachmentsMap;
 			Json *curves;
@@ -956,13 +956,13 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 							int verticesLength;
 							entry = Json_getItem(attachmentMap, "triangles");
 							mesh->trianglesCount = entry->size;
-							mesh->triangles = MALLOC(&GlobalGameState->Spine, unsigned short, entry->size);
+							mesh->triangles = MALLOC(&GlobalGameState->GameData, unsigned short, entry->size);
 							for (entry = entry->child, ii = 0; entry; entry = entry->next, ++ii)
 								mesh->triangles[ii] = (unsigned short)entry->valueInt;
 
 							entry = Json_getItem(attachmentMap, "uvs");
 							verticesLength = entry->size;
-							mesh->regionUVs = MALLOC(&GlobalGameState->Spine, float, verticesLength);
+							mesh->regionUVs = MALLOC(&GlobalGameState->GameData, float, verticesLength);
 							for (entry = entry->child, ii = 0; entry; entry = entry->next, ++ii)
 								mesh->regionUVs[ii] = entry->valueFloat;
 
@@ -975,7 +975,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 							entry = Json_getItem(attachmentMap, "edges");
 							if (entry) {
 								mesh->edgesCount = entry->size;
-								mesh->edges = MALLOC(&GlobalGameState->Spine, int, entry->size);
+								mesh->edges = MALLOC(&GlobalGameState->GameData, int, entry->size);
 								for (entry = entry->child, ii = 0; entry; entry = entry->next, ++ii)
 									mesh->edges[ii] = entry->valueInt;
 							}
@@ -1005,7 +1005,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 						_readVertices(self, attachmentMap, SUPER(path), vertexCount << 1);
 
 						path->lengthsLength = vertexCount / 3;
-						path->lengths = MALLOC(&GlobalGameState->Spine, float, path->lengthsLength);
+						path->lengths = MALLOC(&GlobalGameState->GameData, float, path->lengthsLength);
 
 						curves = Json_getItem(attachmentMap, "lengths");
 						for (curves = curves->child, ii = 0; curves; curves = curves->next, ++ii) {
@@ -1077,7 +1077,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 		Json *eventMap;
 		const char* stringValue;
 		skeletonData->eventsCount = events->size;
-		skeletonData->events = MALLOC(&GlobalGameState->Spine, spEventData*, events->size);
+		skeletonData->events = MALLOC(&GlobalGameState->GameData, spEventData*, events->size);
 		for (eventMap = events->child, i = 0; eventMap; eventMap = eventMap->next, ++i) {
 			spEventData* eventData = spEventData_create(eventMap->name);
 			eventData->intValue = Json_getInt(eventMap, "int", 0);
@@ -1092,7 +1092,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 	animations = Json_getItem(root, "animations");
 	if (animations) {
 		Json *animationMap;
-		skeletonData->animations = MALLOC(&GlobalGameState->Spine, spAnimation*, animations->size);
+		skeletonData->animations = MALLOC(&GlobalGameState->GameData, spAnimation*, animations->size);
 		for (animationMap = animations->child; animationMap; animationMap = animationMap->next) {
 			spAnimation* animation = _spSkeletonJson_readAnimation(self, animationMap, skeletonData);
 			if (!animation) {

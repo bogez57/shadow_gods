@@ -37,7 +37,7 @@ typedef struct {
 } _spSlot;
 
 spSlot* spSlot_create (spSlotData* data, spBone* bone) {
-	spSlot* self = SUPER(NEW(&GlobalGameState->Spine, _spSlot));
+	spSlot* self = SUPER(NEW(&GlobalGameState->GameData, _spSlot));
 	CONST_CAST(spSlotData*, self->data) = data;
 	CONST_CAST(spBone*, self->bone) = bone;
 	spColor_setFromFloats(&self->color, 1, 1, 1, 1);

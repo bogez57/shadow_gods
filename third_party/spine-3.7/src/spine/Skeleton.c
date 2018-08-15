@@ -63,8 +63,8 @@ spSkeleton* spSkeleton_create (spSkeletonData* data) {
 	CONST_CAST(spSkeletonData*, self->data) = data;
 
 	self->bonesCount = self->data->bonesCount;
-	self->bones = MALLOC(&GlobalGameState->Spine, spBone*, self->bonesCount);
-	childrenCounts = CALLOC(&GlobalGameState->Spine, int, self->bonesCount);
+	self->bones = MALLOC(&GlobalGameState->GameData, spBone*, self->bonesCount);
+	childrenCounts = CALLOC(&GlobalGameState->GameData, int, self->bonesCount);
 
 	for (i = 0; i < self->bonesCount; ++i) {
 		spBoneData* boneData = self->data->bones[i];
@@ -81,7 +81,7 @@ spSkeleton* spSkeleton_create (spSkeletonData* data) {
 	for (i = 0; i < self->bonesCount; ++i) {
 		spBoneData* boneData = self->data->bones[i];
 		spBone* bone = self->bones[i];
-		CONST_CAST(spBone**, bone->children) = MALLOC(&GlobalGameState->Spine, spBone*, childrenCounts[boneData->index]);
+		CONST_CAST(spBone**, bone->children) = MALLOC(&GlobalGameState->GameData, spBone*, childrenCounts[boneData->index]);
 	}
 	for (i = 0; i < self->bonesCount; ++i) {
 		spBone* bone = self->bones[i];
@@ -92,28 +92,28 @@ spSkeleton* spSkeleton_create (spSkeletonData* data) {
 	CONST_CAST(spBone*, self->root) = (self->bonesCount > 0 ? self->bones[0] : NULL);
 
 	self->slotsCount = data->slotsCount;
-	self->slots = MALLOC(&GlobalGameState->Spine, spSlot*, self->slotsCount);
+	self->slots = MALLOC(&GlobalGameState->GameData, spSlot*, self->slotsCount);
 	for (i = 0; i < self->slotsCount; ++i) {
 		spSlotData *slotData = data->slots[i];
 		spBone* bone = self->bones[slotData->boneData->index];
 		self->slots[i] = spSlot_create(slotData, bone);
 	}
 
-	self->drawOrder = MALLOC(&GlobalGameState->Spine, spSlot*, self->slotsCount);
+	self->drawOrder = MALLOC(&GlobalGameState->GameData, spSlot*, self->slotsCount);
 	memcpy(self->drawOrder, self->slots, sizeof(spSlot*) * self->slotsCount);
 
 	self->ikConstraintsCount = data->ikConstraintsCount;
-	self->ikConstraints = MALLOC(&GlobalGameState->Spine, spIkConstraint*, self->ikConstraintsCount);
+	self->ikConstraints = MALLOC(&GlobalGameState->GameData, spIkConstraint*, self->ikConstraintsCount);
 	for (i = 0; i < self->data->ikConstraintsCount; ++i)
 		self->ikConstraints[i] = spIkConstraint_create(self->data->ikConstraints[i], self);
 
 	self->transformConstraintsCount = data->transformConstraintsCount;
-	self->transformConstraints = MALLOC(&GlobalGameState->Spine, spTransformConstraint*, self->transformConstraintsCount);
+	self->transformConstraints = MALLOC(&GlobalGameState->GameData, spTransformConstraint*, self->transformConstraintsCount);
 	for (i = 0; i < self->data->transformConstraintsCount; ++i)
 		self->transformConstraints[i] = spTransformConstraint_create(self->data->transformConstraints[i], self);
 
 	self->pathConstraintsCount = data->pathConstraintsCount;
-	self->pathConstraints = MALLOC(&GlobalGameState->Spine, spPathConstraint*, self->pathConstraintsCount);
+	self->pathConstraints = MALLOC(&GlobalGameState->GameData, spPathConstraint*, self->pathConstraintsCount);
 	for (i = 0; i < self->data->pathConstraintsCount; i++)
 		self->pathConstraints[i] = spPathConstraint_create(self->data->pathConstraints[i], self);
 
@@ -334,12 +334,12 @@ void spSkeleton_updateCache (spSkeleton* self) {
 
 	internal->updateCacheCapacity = self->bonesCount + self->ikConstraintsCount + self->transformConstraintsCount + self->pathConstraintsCount;
 	FREE(internal->updateCache);
-	internal->updateCache = MALLOC(&GlobalGameState->Spine, _spUpdate, internal->updateCacheCapacity);
+	internal->updateCache = MALLOC(&GlobalGameState->GameData, _spUpdate, internal->updateCacheCapacity);
 	internal->updateCacheCount = 0;
 
 	internal->updateCacheResetCapacity = self->bonesCount;
 	FREE(internal->updateCacheReset);
-	internal->updateCacheReset = MALLOC(&GlobalGameState->Spine, spBone*, internal->updateCacheResetCapacity);
+	internal->updateCacheReset = MALLOC(&GlobalGameState->GameData, spBone*, internal->updateCacheResetCapacity);
 	internal->updateCacheResetCount = 0;
 
 	bones = self->bones;

@@ -32,7 +32,7 @@
 #include <spine/extension.h>
 
 spIkConstraintData* spIkConstraintData_create (const char* name) {
-	spIkConstraintData* self = NEW(&GlobalGameState->Spine, spIkConstraintData);
+	spIkConstraintData* self = NEW(&GlobalGameState->GameData, spIkConstraintData);
 	MALLOC_STR(self->name, name);
 	self->bendDirection = 1;
 	self->mix = 1;
