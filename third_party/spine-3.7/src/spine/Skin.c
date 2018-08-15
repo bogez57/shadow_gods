@@ -34,7 +34,7 @@
 _Entry* _Entry_create (int slotIndex, const char* name, spAttachment* attachment) {
 	_Entry* self = NEW(&GlobalGameState->GameData, _Entry);
 	self->slotIndex = slotIndex;
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	self->attachment = attachment;
 	return self;
 }
@@ -59,7 +59,7 @@ static void _SkinHashTableEntry_dispose (_SkinHashTableEntry* self) {
 
 spSkin* spSkin_create (const char* name) {
 	spSkin* self = SUPER(NEW(&GlobalGameState->GameData, _spSkin));
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	return self;
 }
 

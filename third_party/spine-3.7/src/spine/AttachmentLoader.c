@@ -87,8 +87,8 @@ void spAttachmentLoader_disposeAttachment (spAttachmentLoader* self, spAttachmen
 void _spAttachmentLoader_setError (spAttachmentLoader* self, const char* error1, const char* error2) {
 	FREE(self->error1);
 	FREE(self->error2);
-	MALLOC_STR(self->error1, error1);
-	MALLOC_STR(self->error2, error2);
+	MALLOC_STR(&GameState->GameData, self->error1, error1);
+	MALLOC_STR(&GameState->GameData, self->error2, error2);
 }
 
 void _spAttachmentLoader_setUnknownTypeError (spAttachmentLoader* self, spAttachmentType type) {

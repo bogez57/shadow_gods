@@ -35,7 +35,7 @@
 spAtlasPage* spAtlasPage_create(spAtlas* atlas, const char* name) {
 	spAtlasPage* self = NEW(&GlobalGameState->GameData, spAtlasPage);
 	CONST_CAST(spAtlas*, self->atlas) = atlas;
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	return self;
 }
 

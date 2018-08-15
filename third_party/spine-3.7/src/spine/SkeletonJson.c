@@ -84,7 +84,7 @@ void _spSkeletonJson_setError (spSkeletonJson* self, Json* root, const char* val
 	strcpy(message, value1);
 	length = (int)strlen(value1);
 	if (value2) strncat(message + length, value2, 255 - length);
-	MALLOC_STR(self->error, message);
+	MALLOC_STR(&GameState->GameData, self->error, message);
 	if (root) Json_dispose(root);
 }
 
@@ -501,7 +501,7 @@ static spAnimation* _spSkeletonJson_readAnimation (spSkeletonJson* self, Json* r
 			event->intValue = Json_getInt(valueMap, "int", eventData->intValue);
 			event->floatValue = Json_getFloat(valueMap, "float", eventData->floatValue);
 			stringValue = Json_getString(valueMap, "string", eventData->stringValue);
-			if (stringValue) MALLOC_STR(event->stringValue, stringValue);
+			if (stringValue) MALLOC_STR(&GameState->GameData, event->stringValue, stringValue);
 			spEventTimeline_setFrame(timeline, frameIndex, event);
 		}
 		animation->timelines[animation->timelinesCount++] = SUPER_CAST(spTimeline, timeline);
@@ -596,8 +596,8 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 
 	skeleton = Json_getItem(root, "skeleton");
 	if (skeleton) {
-		MALLOC_STR(skeletonData->hash, Json_getString(skeleton, "hash", 0));
-		MALLOC_STR(skeletonData->version, Json_getString(skeleton, "spine", 0));
+		MALLOC_STR(&GameState->GameData, skeletonData->hash, Json_getString(skeleton, "hash", 0));
+		MALLOC_STR(&GameState->GameData, skeletonData->version, Json_getString(skeleton, "spine", 0));
 		skeletonData->width = Json_getFloat(skeleton, "width", 0);
 		skeletonData->height = Json_getFloat(skeleton, "height", 0);
 	}
@@ -910,7 +910,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 					switch (attachment->type) {
 					case SP_ATTACHMENT_REGION: {
 						spRegionAttachment* region = SUB_CAST(spRegionAttachment, attachment);
-						if (path) MALLOC_STR(region->path, path);
+						if (path) MALLOC_STR(&GameState->GameData, region->path, path);
 						region->x = Json_getFloat(attachmentMap, "x", 0) * self->scale;
 						region->y = Json_getFloat(attachmentMap, "y", 0) * self->scale;
 						region->scaleX = Json_getFloat(attachmentMap, "scaleX", 1);
@@ -937,7 +937,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 					case SP_ATTACHMENT_LINKED_MESH: {
 						spMeshAttachment* mesh = SUB_CAST(spMeshAttachment, attachment);
 
-						MALLOC_STR(mesh->path, path);
+						MALLOC_STR(&GameState->GameData, mesh->path, path);
 
 						color = Json_getString(attachmentMap, "color", 0);
 						if (color) {
@@ -1083,7 +1083,7 @@ spSkeletonData* spSkeletonJson_readSkeletonData (spSkeletonJson* self, const cha
 			eventData->intValue = Json_getInt(eventMap, "int", 0);
 			eventData->floatValue = Json_getFloat(eventMap, "float", 0);
 			stringValue = Json_getString(eventMap, "string", 0);
-			if (stringValue) MALLOC_STR(eventData->stringValue, stringValue);
+			if (stringValue) MALLOC_STR(&GameState->GameData, eventData->stringValue, stringValue);
 			skeletonData->events[i] = eventData;
 		}
 	}

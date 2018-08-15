@@ -33,7 +33,7 @@
 
 spEventData* spEventData_create (const char* name) {
 	spEventData* self = NEW(&GlobalGameState->GameData, spEventData);
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	return self;
 }
 

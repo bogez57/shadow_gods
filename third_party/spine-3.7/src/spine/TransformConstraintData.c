@@ -33,7 +33,7 @@
 
 spTransformConstraintData* spTransformConstraintData_create (const char* name) {
 	spTransformConstraintData* self = NEW(&GlobalGameState->GameData, spTransformConstraintData);
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	return self;
 }
 

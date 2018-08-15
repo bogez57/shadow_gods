@@ -42,7 +42,7 @@ void _spAttachment_init (spAttachment* self, const char* name, spAttachmentType 
 	CONST_CAST(_spAttachmentVtable*, self->vtable) = NEW(&GlobalGameState->GameData, _spAttachmentVtable);
 	VTABLE(spAttachment, self) ->dispose = dispose;
 
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	CONST_CAST(spAttachmentType, self->type) = type;
 }
 

@@ -33,7 +33,7 @@
 
 spPathConstraintData* spPathConstraintData_create (const char* name) {
 	spPathConstraintData* self = NEW(&GlobalGameState->GameData, spPathConstraintData);
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	return self;
 }
 

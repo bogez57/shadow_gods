@@ -90,7 +90,7 @@ void _spSkeletonBinary_setError (spSkeletonBinary* self, const char* value1, con
 	strcpy(message, value1);
 	length = (int)strlen(value1);
 	if (value2) strncat(message + length, value2, 255 - length);
-	MALLOC_STR(self->error, message);
+	MALLOC_STR(&GameState->GameData, self->error, message);
 }
 
 static unsigned char readByte (_dataInput* input) {
@@ -589,7 +589,7 @@ static spAnimation* _spSkeletonBinary_readAnimation (spSkeletonBinary* self, con
 			if (readBoolean(input))
 				event->stringValue = readString(input);
 			else
-				MALLOC_STR(event->stringValue, eventData->stringValue);
+				MALLOC_STR(&GameState->GameData, event->stringValue, eventData->stringValue);
 			spEventTimeline_setFrame(timeline, i, event);
 		}
 		spTimelineArray_add(timelines, (spTimeline*)timeline);
@@ -687,7 +687,7 @@ spAttachment* spSkeletonBinary_readAttachment(spSkeletonBinary* self, _dataInput
 			const char* path = readString(input);
 			spAttachment* attachment;
 			spRegionAttachment* region;
-			if (!path) MALLOC_STR(path, name);
+			if (!path) MALLOC_STR(&GameState->GameData, path, name);
 			attachment = spAttachmentLoader_createAttachment(self->attachmentLoader, skin, type, name, path);
 			region = SUB_CAST(spRegionAttachment, attachment);
 			region->path = path;
@@ -718,7 +718,7 @@ spAttachment* spSkeletonBinary_readAttachment(spSkeletonBinary* self, _dataInput
 			spAttachment* attachment;
 			spMeshAttachment* mesh;
 			const char* path = readString(input);
-			if (!path) MALLOC_STR(path, name);
+			if (!path) MALLOC_STR(&GameState->GameData, path, name);
 			attachment = spAttachmentLoader_createAttachment(self->attachmentLoader, skin, type, name, path);
 			mesh = SUB_CAST(spMeshAttachment, attachment);
 			mesh->path = path;
@@ -748,7 +748,7 @@ spAttachment* spSkeletonBinary_readAttachment(spSkeletonBinary* self, _dataInput
 			spAttachment* attachment;
 			spMeshAttachment* mesh;
 			const char* path = readString(input);
-			if (!path) MALLOC_STR(path, name);
+			if (!path) MALLOC_STR(&GameState->GameData, path, name);
 			attachment = spAttachmentLoader_createAttachment(self->attachmentLoader, skin, type, name, path);
 			mesh = SUB_CAST(spMeshAttachment, attachment);
 			mesh->path = path;

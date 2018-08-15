@@ -35,7 +35,7 @@
 
 spAnimation* spAnimation_create (const char* name, int timelinesCount) {
 	spAnimation* self = NEW(&GlobalGameState->GameData, spAnimation);
-	MALLOC_STR(self->name, name);
+	MALLOC_STR(&GameState->GameData, self->name, name);
 	self->timelinesCount = timelinesCount;
 	self->timelines = MALLOC(&GlobalGameState->GameData, spTimeline*, timelinesCount);
 	return self;
@@ -870,7 +870,7 @@ void spAttachmentTimeline_setFrame (spAttachmentTimeline* self, int frameIndex, 
 
 	FREE(self->attachmentNames[frameIndex]);
 	if (attachmentName)
-		MALLOC_STR(self->attachmentNames[frameIndex], attachmentName);
+		MALLOC_STR(&GameState->GameData, self->attachmentNames[frameIndex], attachmentName);
 	else
 		self->attachmentNames[frameIndex] = 0;
 }
