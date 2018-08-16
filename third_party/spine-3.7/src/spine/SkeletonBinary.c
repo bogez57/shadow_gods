@@ -57,7 +57,7 @@ typedef struct {
 } _spSkeletonBinary;
 
 spSkeletonBinary* spSkeletonBinary_createWithLoader (spAttachmentLoader* attachmentLoader) {
-	spSkeletonBinary* self = SUPER(NEW(&GlobalGameState->GameData, _spSkeletonBinary));
+	spSkeletonBinary* self = SUPER(NEW(_spSkeletonBinary));
 	self->scale = 1;
 	self->attachmentLoader = attachmentLoader;
 	return self;
@@ -90,7 +90,7 @@ void _spSkeletonBinary_setError (spSkeletonBinary* self, const char* value1, con
 	strcpy(message, value1);
 	length = (int)strlen(value1);
 	if (value2) strncat(message + length, value2, 255 - length);
-	MALLOC_STR(&GameState->GameData, self->error, message);
+	MALLOC_STR(self->error, message);
 }
 
 static unsigned char readByte (_dataInput* input) {
@@ -151,7 +151,7 @@ char* readString (_dataInput* input) {
 	if (length == 0) {
 		return 0;
 	}
-	string = MALLOC(&GlobalGameState->GameData, char, length);
+	string = MALLOC(char, length);
 	memcpy(string, input->cursor, length - 1);
 	input->cursor += length - 1;
 	string[length - 1] = '\0';
@@ -231,7 +231,7 @@ static void _spSkeletonBinary_addLinkedMesh (spSkeletonBinary* self, spMeshAttac
 		internal->linkedMeshCapacity *= 2;
 		if (internal->linkedMeshCapacity < 8) internal->linkedMeshCapacity = 8;
 		/* TODO Why not realloc? */
-		linkedMeshes = MALLOC(&GlobalGameState->GameData, _spLinkedMesh, internal->linkedMeshCapacity);
+		linkedMeshes = MALLOC(_spLinkedMesh, internal->linkedMeshCapacity);
 		memcpy(linkedMeshes, internal->linkedMeshes, sizeof(_spLinkedMesh) * internal->linkedMeshCount);
 		FREE(internal->linkedMeshes);
 		internal->linkedMeshes = linkedMeshes;
@@ -494,7 +494,7 @@ static spAnimation* _spSkeletonBinary_readAnimation (spSkeletonBinary* self, con
 
 				weighted = attachment->bones != 0;
 				deformLength = weighted ? attachment->verticesCount / 3 * 2 : attachment->verticesCount;
-				tempDeform = MALLOC(&GlobalGameState->GameData, float, deformLength);
+				tempDeform = MALLOC(float, deformLength);
 
 				frameCount = readVarint(input, 1);
 				timeline = spDeformTimeline_create(frameCount, deformLength);
@@ -548,8 +548,8 @@ static spAnimation* _spSkeletonBinary_readAnimation (spSkeletonBinary* self, con
 		for (i = 0; i < drawOrderCount; ++i) {
 			float time = readFloat(input);
 			int offsetCount = readVarint(input, 1);
-			int* drawOrder = MALLOC(&GlobalGameState->GameData, int, skeletonData->slotsCount);
-			int* unchanged = MALLOC(&GlobalGameState->GameData, int, skeletonData->slotsCount - offsetCount);
+			int* drawOrder = MALLOC(int, skeletonData->slotsCount);
+			int* unchanged = MALLOC(int, skeletonData->slotsCount - offsetCount);
 			int originalIndex = 0, unchangedIndex = 0;
 			memset(drawOrder, -1, sizeof(int) * skeletonData->slotsCount);
 			for (ii = 0; ii < offsetCount; ++ii) {
@@ -589,7 +589,7 @@ static spAnimation* _spSkeletonBinary_readAnimation (spSkeletonBinary* self, con
 			if (readBoolean(input))
 				event->stringValue = readString(input);
 			else
-				MALLOC_STR(&GameState->GameData, event->stringValue, eventData->stringValue);
+				MALLOC_STR(event->stringValue, eventData->stringValue);
 			spEventTimeline_setFrame(timeline, i, event);
 		}
 		spTimelineArray_add(timelines, (spTimeline*)timeline);
@@ -606,7 +606,7 @@ static spAnimation* _spSkeletonBinary_readAnimation (spSkeletonBinary* self, con
 }
 
 static float* _readFloatArray(_dataInput *input, int n, float scale) {
-	float* array = MALLOC(&GlobalGameState->GameData, float, n);
+	float* array = MALLOC(float, n);
 	int i;
 	if (scale == 1)
 		for (i = 0; i < n; ++i)
@@ -619,7 +619,7 @@ static float* _readFloatArray(_dataInput *input, int n, float scale) {
 
 static short* _readShortArray(_dataInput *input, int *length) {
 	int n = readVarint(input, 1);
-	short* array = MALLOC(&GlobalGameState->GameData, short, n);
+	short* array = MALLOC(short, n);
 	int i;
 	*length = n;
 	for (i = 0; i < n; ++i) {
@@ -687,7 +687,7 @@ spAttachment* spSkeletonBinary_readAttachment(spSkeletonBinary* self, _dataInput
 			const char* path = readString(input);
 			spAttachment* attachment;
 			spRegionAttachment* region;
-			if (!path) MALLOC_STR(&GameState->GameData, path, name);
+			if (!path) MALLOC_STR(path, name);
 			attachment = spAttachmentLoader_createAttachment(self->attachmentLoader, skin, type, name, path);
 			region = SUB_CAST(spRegionAttachment, attachment);
 			region->path = path;
@@ -718,7 +718,7 @@ spAttachment* spSkeletonBinary_readAttachment(spSkeletonBinary* self, _dataInput
 			spAttachment* attachment;
 			spMeshAttachment* mesh;
 			const char* path = readString(input);
-			if (!path) MALLOC_STR(&GameState->GameData, path, name);
+			if (!path) MALLOC_STR(path, name);
 			attachment = spAttachmentLoader_createAttachment(self->attachmentLoader, skin, type, name, path);
 			mesh = SUB_CAST(spMeshAttachment, attachment);
 			mesh->path = path;
@@ -748,7 +748,7 @@ spAttachment* spSkeletonBinary_readAttachment(spSkeletonBinary* self, _dataInput
 			spAttachment* attachment;
 			spMeshAttachment* mesh;
 			const char* path = readString(input);
-			if (!path) MALLOC_STR(&GameState->GameData, path, name);
+			if (!path) MALLOC_STR(path, name);
 			attachment = spAttachmentLoader_createAttachment(self->attachmentLoader, skin, type, name, path);
 			mesh = SUB_CAST(spMeshAttachment, attachment);
 			mesh->path = path;
@@ -773,7 +773,7 @@ spAttachment* spSkeletonBinary_readAttachment(spSkeletonBinary* self, _dataInput
 			vertexCount = readVarint(input, 1);
 			_readVertices(self, input, SUPER(path), vertexCount);
 			path->lengthsLength = vertexCount / 3;
-			path->lengths = MALLOC(&GlobalGameState->GameData, float, path->lengthsLength);
+			path->lengths = MALLOC(float, path->lengthsLength);
 			for (i = 0; i < path->lengthsLength; ++i) {
 				path->lengths[i] = readFloat(input) * self->scale;
 			}
@@ -850,7 +850,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 	spSkeletonData* skeletonData;
 	_spSkeletonBinary* internal = SUB_CAST(_spSkeletonBinary, self);
 
-	_dataInput* input = NEW(&GlobalGameState->GameData, _dataInput);
+	_dataInput* input = NEW(_dataInput);
 	input->cursor = binary;
 	input->end = binary + length;
 
@@ -886,7 +886,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 
 	/* Bones. */
 	skeletonData->bonesCount = readVarint(input, 1);
-	skeletonData->bones = MALLOC(&GlobalGameState->GameData, spBoneData*, skeletonData->bonesCount);
+	skeletonData->bones = MALLOC(spBoneData*, skeletonData->bonesCount);
 	for (i = 0; i < skeletonData->bonesCount; ++i) {
 		spBoneData* data;
 		int mode;
@@ -917,7 +917,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 
 	/* Slots. */
 	skeletonData->slotsCount = readVarint(input, 1);
-	skeletonData->slots = MALLOC(&GlobalGameState->GameData, spSlotData*, skeletonData->slotsCount);
+	skeletonData->slots = MALLOC(spSlotData*, skeletonData->slotsCount);
 	for (i = 0; i < skeletonData->slotsCount; ++i) {
 		int r, g, b, a;
 		const char* slotName = readString(input);
@@ -941,7 +941,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 
 	/* IK constraints. */
 	skeletonData->ikConstraintsCount = readVarint(input, 1);
-	skeletonData->ikConstraints = MALLOC(&GlobalGameState->GameData, spIkConstraintData*, skeletonData->ikConstraintsCount);
+	skeletonData->ikConstraints = MALLOC(spIkConstraintData*, skeletonData->ikConstraintsCount);
 	for (i = 0; i < skeletonData->ikConstraintsCount; ++i) {
 		const char* name = readString(input);
 		/* TODO Avoid copying of name */
@@ -949,7 +949,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 		data->order = readVarint(input, 1);
 		FREE(name);
 		data->bonesCount = readVarint(input, 1);
-		data->bones = MALLOC(&GlobalGameState->GameData, spBoneData*, data->bonesCount);
+		data->bones = MALLOC(spBoneData*, data->bonesCount);
 		for (ii = 0; ii < data->bonesCount; ++ii)
 			data->bones[ii] = skeletonData->bones[readVarint(input, 1)];
 		data->target = skeletonData->bones[readVarint(input, 1)];
@@ -960,7 +960,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 
 	/* Transform constraints. */
 	skeletonData->transformConstraintsCount = readVarint(input, 1);
-	skeletonData->transformConstraints = MALLOC(&GlobalGameState->GameData, 
+	skeletonData->transformConstraints = MALLOC(
 			spTransformConstraintData*, skeletonData->transformConstraintsCount);
 	for (i = 0; i < skeletonData->transformConstraintsCount; ++i) {
 		const char* name = readString(input);
@@ -969,7 +969,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 		data->order = readVarint(input, 1);
 		FREE(name);
 		data->bonesCount = readVarint(input, 1);
-		CONST_CAST(spBoneData**, data->bones) = MALLOC(&GlobalGameState->GameData, spBoneData*, data->bonesCount);
+		CONST_CAST(spBoneData**, data->bones) = MALLOC(spBoneData*, data->bonesCount);
 		for (ii = 0; ii < data->bonesCount; ++ii)
 			data->bones[ii] = skeletonData->bones[readVarint(input, 1)];
 		data->target = skeletonData->bones[readVarint(input, 1)];
@@ -990,7 +990,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 
 	/* Path constraints */
 	skeletonData->pathConstraintsCount = readVarint(input, 1);
-	skeletonData->pathConstraints = MALLOC(&GlobalGameState->GameData, spPathConstraintData*, skeletonData->pathConstraintsCount);
+	skeletonData->pathConstraints = MALLOC(spPathConstraintData*, skeletonData->pathConstraintsCount);
 	for (i = 0; i < skeletonData->pathConstraintsCount; ++i) {
 		const char* name = readString(input);
 		/* TODO Avoid copying of name */
@@ -998,7 +998,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 		data->order = readVarint(input, 1);
 		FREE(name);
 		data->bonesCount = readVarint(input, 1);
-		CONST_CAST(spBoneData**, data->bones) = MALLOC(&GlobalGameState->GameData, spBoneData*, data->bonesCount);
+		CONST_CAST(spBoneData**, data->bones) = MALLOC(spBoneData*, data->bonesCount);
 		for (ii = 0; ii < data->bonesCount; ++ii)
 			data->bones[ii] = skeletonData->bones[readVarint(input, 1)];
 		data->target = skeletonData->slots[readVarint(input, 1)];
@@ -1022,7 +1022,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 	if (skeletonData->defaultSkin)
 		++skeletonData->skinsCount;
 
-	skeletonData->skins = MALLOC(&GlobalGameState->GameData, spSkin*, skeletonData->skinsCount);
+	skeletonData->skins = MALLOC(spSkin*, skeletonData->skinsCount);
 
 	if (skeletonData->defaultSkin)
 		skeletonData->skins[0] = skeletonData->defaultSkin;
@@ -1060,7 +1060,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 
 	/* Events. */
 	skeletonData->eventsCount = readVarint(input, 1);
-	skeletonData->events = MALLOC(&GlobalGameState->GameData, spEventData*, skeletonData->eventsCount);
+	skeletonData->events = MALLOC(spEventData*, skeletonData->eventsCount);
 	for (i = 0; i < skeletonData->eventsCount; ++i) {
 		const char* name = readString(input);
 		/* TODO Avoid copying of skinName */
@@ -1075,7 +1075,7 @@ spSkeletonData* spSkeletonBinary_readSkeletonData (spSkeletonBinary* self, const
 
 	/* Animations. */
 	skeletonData->animationsCount = readVarint(input, 1);
-	skeletonData->animations = MALLOC(&GlobalGameState->GameData, spAnimation*, skeletonData->animationsCount);
+	skeletonData->animations = MALLOC(spAnimation*, skeletonData->animationsCount);
 	for (i = 0; i < skeletonData->animationsCount; ++i) {
 		const char* name = readString(input);
 		spAnimation* animation = _spSkeletonBinary_readAnimation(self, name, input, skeletonData);

@@ -92,7 +92,7 @@ char* _spReadFile (const char* path, int* length) {
 	*length = (int)ftell(file);
 	fseek(file, 0, SEEK_SET);
 
-	data = MALLOC(&GlobalGameState->GameData, char, *length);
+	data = MALLOC(char, *length);
 	fread(data, 1, *length, file);
 	fclose(file);
 

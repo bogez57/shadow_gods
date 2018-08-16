@@ -42,7 +42,7 @@ int spBone_isYDown () {
 }
 
 spBone* spBone_create (spBoneData* data, spSkeleton* skeleton, spBone* parent) {
-	spBone* self = NEW(&GlobalGameState->GameData, spBone);
+	spBone* self = NEW(spBone);
 	CONST_CAST(spBoneData*, self->data) = data;
 	CONST_CAST(spSkeleton*, self->skeleton) = skeleton;
 	CONST_CAST(spBone*, self->parent) = parent;

@@ -43,7 +43,7 @@ void _spRegionAttachment_dispose (spAttachment* attachment) {
 }
 
 spRegionAttachment* spRegionAttachment_create (const char* name) {
-	spRegionAttachment* self = NEW(&GlobalGameState->GameData, spRegionAttachment);
+	spRegionAttachment* self = NEW(spRegionAttachment);
 	self->scaleX = 1;
 	self->scaleY = 1;
 	spColor_setFromFloats(&self->color, 1, 1, 1, 1);

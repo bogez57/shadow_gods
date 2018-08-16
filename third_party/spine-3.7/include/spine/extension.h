@@ -63,16 +63,16 @@
 
 #include <spine/dll.h>
 
-// Required for sprintf and consorts on MSVC
+/* Required for sprintf and consorts on MSVC */
 #ifdef _MSC_VER
 #pragma warning(disable:4996)
 #endif
 
 /* All allocation uses these. */
-#define MALLOC(MEMORYCHUNK,TYPE,COUNT) (PushType(&GlobalGameState->GameData, TYPE, COUNT))
-#define CALLOC(MEMORYCHUNK,TYPE,COUNT) (PushType(&GlobalGameState->GameData, TYPE, COUNT))
-#define REALLOC(PTR,TYPE,COUNT) (RePushType(&GlobalGameState->GameData, PTR, TYPE, COUNT))
-#define NEW(MEMORYCHUNK,TYPE) CALLOC(MEMORYCHUNK,TYPE,1)
+#define MALLOC(TYPE,COUNT) ((TYPE*)_spMalloc(sizeof(TYPE) * (COUNT), __FILE__, __LINE__))
+#define CALLOC(TYPE,COUNT) ((TYPE*)_spCalloc(COUNT, sizeof(TYPE), __FILE__, __LINE__))
+#define REALLOC(PTR,TYPE,COUNT) ((TYPE*)_spRealloc(PTR, sizeof(TYPE) * (COUNT)))
+#define NEW(TYPE) CALLOC(TYPE,1)
 
 /* Gets the direct super class. Type safe. */
 #define SUPER(VALUE) (&VALUE->super)
@@ -90,11 +90,12 @@
 #define VTABLE(TYPE,VALUE) ((_##TYPE##Vtable*)((TYPE*)VALUE)->vtable)
 
 /* Frees memory. Can be used on const types. */
-#define FREE(VALUE) SpineFree()
+#define FREE(VALUE) _spFree((void*)VALUE)
 
 /* Allocates a new char[], assigns it to TO, and copies FROM to it. Can be used on const types. */
-#define MALLOC_STR(MEMORYCHUNK,TO,FROM) strcpy(CONST_CAST(char*, TO) = (char*)MALLOC(&GlobalGameState->GameData, char, strlen(FROM) + 1), FROM)
+#define MALLOC_STR(TO,FROM) strcpy(CONST_CAST(char*, TO) = (char*)MALLOC(char, strlen(FROM) + 1), FROM)
 
+#define PI 3.1415926535897932385f
 #define PI2 (PI * 2)
 #define DEG_RAD (PI / 180)
 #define RAD_DEG (180 / PI)

@@ -47,7 +47,7 @@ void _spAttachmentLoader_init (spAttachmentLoader* self,
 	void (*configureAttachment) (spAttachmentLoader* self, spAttachment*),
 	void (*disposeAttachment) (spAttachmentLoader* self, spAttachment*)
 ) {
-	CONST_CAST(_spAttachmentLoaderVtable*, self->vtable) = NEW(&GlobalGameState->GameData, _spAttachmentLoaderVtable);
+	CONST_CAST(_spAttachmentLoaderVtable*, self->vtable) = NEW(_spAttachmentLoaderVtable);
 	VTABLE(spAttachmentLoader, self)->dispose = dispose;
 	VTABLE(spAttachmentLoader, self)->createAttachment = createAttachment;
 	VTABLE(spAttachmentLoader, self)->configureAttachment = configureAttachment;
@@ -87,8 +87,8 @@ void spAttachmentLoader_disposeAttachment (spAttachmentLoader* self, spAttachmen
 void _spAttachmentLoader_setError (spAttachmentLoader* self, const char* error1, const char* error2) {
 	FREE(self->error1);
 	FREE(self->error2);
-	MALLOC_STR(&GameState->GameData, self->error1, error1);
-	MALLOC_STR(&GameState->GameData, self->error2, error2);
+	MALLOC_STR(self->error1, error1);
+	MALLOC_STR(self->error2, error2);
 }
 
 void _spAttachmentLoader_setUnknownTypeError (spAttachmentLoader* self, spAttachmentType type) {

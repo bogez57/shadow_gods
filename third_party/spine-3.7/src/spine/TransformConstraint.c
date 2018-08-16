@@ -34,14 +34,14 @@
 
 spTransformConstraint* spTransformConstraint_create (spTransformConstraintData* data, const spSkeleton* skeleton) {
 	int i;
-	spTransformConstraint* self = NEW(&GlobalGameState->GameData, spTransformConstraint);
+	spTransformConstraint* self = NEW(spTransformConstraint);
 	CONST_CAST(spTransformConstraintData*, self->data) = data;
 	self->rotateMix = data->rotateMix;
 	self->translateMix = data->translateMix;
 	self->scaleMix = data->scaleMix;
 	self->shearMix = data->shearMix;
 	self->bonesCount = data->bonesCount;
-	CONST_CAST(spBone**, self->bones) = MALLOC(&GlobalGameState->GameData, spBone*, self->bonesCount);
+	CONST_CAST(spBone**, self->bones) = MALLOC(spBone*, self->bonesCount);
 	for (i = 0; i < self->bonesCount; ++i)
 		self->bones[i] = spSkeleton_findBone(skeleton, self->data->bones[i]->name);
 	self->target = spSkeleton_findBone(skeleton, self->data->target->name);

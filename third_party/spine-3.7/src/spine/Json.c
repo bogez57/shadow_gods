@@ -74,7 +74,7 @@ static int Json_strcasecmp (const char* s1, const char* s2) {
 
 /* Internal constructor. */
 static Json *Json_new (void) {
-	return (Json*)CALLOC(&GlobalGameState->GameData, Json, 1);
+	return (Json*)CALLOC(Json, 1);
 }
 
 /* Delete a Json structure. */
@@ -174,7 +174,7 @@ static const char* parse_string (Json *item, const char* str) {
 	while (*ptr != '\"' && *ptr && ++len)
 		if (*ptr++ == '\\') ptr++; /* Skip escaped quotes. */
 
-	out = MALLOC(&GlobalGameState->GameData, char, len + 1); /* The length needed for the string, roughly. */
+	out = MALLOC(char, len + 1); /* The length needed for the string, roughly. */
 	if (!out) return 0;
 
 	ptr = str + 1;
