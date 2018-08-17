@@ -2,19 +2,11 @@
 
 #include "shared.h"
 #include "atomic_types.h"
+#include "memory_handling.h"
 #include <spine/Skeleton.h>
 #include <spine/Atlas.h>
 #include <spine/SkeletonData.h>
 #include <spine/SkeletonJson.h>
-
-struct Memory_Chunk
-{
-    ui64* BaseAddress;
-    ui64* EndAddress;
-    ui64* UsedAddress;
-    ui64 Size;
-    ui64 UsedAmount;
-};
 
 struct Local_Transform
 {
@@ -92,5 +84,9 @@ struct Game_State
     spSkeletonData* SkelData{nullptr};
     spAtlas* Atlas{nullptr};
     spSkeleton* MySkeleton;
-    Memory_Chunk GameData;
+    spSkeleton* Test1{nullptr};
+    spSkeleton* Test2{nullptr};
+    spSkeleton* Test3{nullptr};
+    spSkeleton* Test4{nullptr};
+    Memory_Chunk DynamicMem;
 };

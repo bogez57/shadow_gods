@@ -20,16 +20,6 @@ global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
 
-local_func auto 
-InitMemoryChunk(Memory_Chunk* MemoryChunkToInit, ui64 SizeToReserve, Game_Memory* GameMemory) -> void
-{
-    MemoryChunkToInit->BaseAddress = (ui64 *)GameMemory->TemporaryStorage;
-    MemoryChunkToInit->EndAddress = MemoryChunkToInit->BaseAddress + SizeToReserve;
-    MemoryChunkToInit->UsedAddress = MemoryChunkToInit->BaseAddress;
-    MemoryChunkToInit->Size = SizeToReserve;
-    MemoryChunkToInit->UsedAmount = 0;
-};
-
 #include "spine2d.h"
 
 extern "C" void
@@ -52,7 +42,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(!GameMemory->IsInitialized)
     {
         //These functions current need to be called in this order
-        InitMemoryChunk(&GameState->GameData, Megabytes(10), GameMemory);
+        InitMemoryChunk(&GameState->DynamicMem, Megabytes(10), (ui64*)GameMemory->TemporaryStorage);
 
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
@@ -114,6 +104,11 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
         };
+
+        GameState->Test1 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+        GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+        GameState->Test3 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+        GameState->Test4 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
     }
 
     if (Keyboard->MoveUp.Pressed)
