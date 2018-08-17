@@ -109,6 +109,9 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
         GameState->Test3 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
         GameState->Test4 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+
+        MyDeAlloc(&GameState->DynamicMem, GameState->Test2);
+        MyDeAlloc(&GameState->DynamicMem, GameState->Test3);
     }
 
     if (Keyboard->MoveUp.Pressed)

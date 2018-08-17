@@ -1,11 +1,12 @@
 #pragma once
+#include <string.h>
 
 struct Memory_Block
 {
     b IsFree{true};
 
     sizet Size{0};
-    void* BaseAddress{nullptr};
+    ui64* BaseAddress{nullptr};
     Memory_Block* nextBlock{nullptr};
     Memory_Block* prevBlock{nullptr};
 };
@@ -55,10 +56,11 @@ _RePushType(Memory_Chunk* MemoryChunk, void* NewPtr, ui64 Size, sizet Count) -> 
     return Result;
 };
 
-#define Free(MemoryChunk, VALUE) _Free(MemoryChunk, (void*)VALUE)
+#define FreeType(Ptr, Type) _Free((ui64*)Ptr, sizeof(Type))
 auto
-_Free(Memory_Chunk* MemoryChunk, void* ptrToValue) -> void
+_Free(ui64* PtrToValue, sizet Size) -> void
 {
+    memset(PtrToValue, 0, Size);
 };
 
 auto
@@ -81,14 +83,15 @@ InitMemoryChunk(Memory_Chunk* MemoryChunk, sizet SizeToReserve, ui64* StartingAd
 
 #define MyMalloc(MemoryChunk, Size, Count) _MyMalloc(MemoryChunk, Size, Count)
 auto 
-_MyMalloc(Memory_Chunk* MemoryChunk, sizet Size, ui32 Count) -> void*
+_MyMalloc(Memory_Chunk* MemoryChunk, sizet Size, ui32 Count) -> ui64*
 {
-    void* Result{nullptr};
+    ui64* Result{nullptr};
 
+    //TODO: First part here can maybe be moved to init func
     if(!MemoryChunk->MemBlocks[0])
     {
         MemoryChunk->MemBlocks[0] = PushType(MemoryChunk, Memory_Block, 1);
-        MemoryChunk->MemBlocks[0]->BaseAddress = PushSize(MemoryChunk, Size);
+        MemoryChunk->MemBlocks[0]->BaseAddress = (ui64*)PushSize(MemoryChunk, Size);
         MemoryChunk->MemBlocks[0]->Size = Size;
         MemoryChunk->MemBlocks[0]->IsFree = false;
         MemoryChunk->MemBlocks[0]->nextBlock = PushType(MemoryChunk, Memory_Block, 1);
@@ -104,14 +107,14 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size, ui32 Count) -> void*
         {
             if(MemoryChunk->MemBlocks[BlockIndex]->IsFree)
             {
-                MemoryChunk->MemBlocks[BlockIndex]->BaseAddress = PushSize(MemoryChunk, Size);
+                MemoryChunk->MemBlocks[BlockIndex]->BaseAddress = (ui64*)PushSize(MemoryChunk, Size);
                 MemoryChunk->MemBlocks[BlockIndex]->Size = Size;
                 MemoryChunk->MemBlocks[BlockIndex]->IsFree = false;
 
                 if(!MemoryChunk->MemBlocks[BlockIndex]->nextBlock)
                 {
                     MemoryChunk->MemBlocks[BlockIndex]->nextBlock = PushType(MemoryChunk, Memory_Block, 1);
-                    MemoryChunk->MemBlocks[BlockIndex]->nextBlock->prevBlock = MemoryChunk->MemBlocks[0];
+                    MemoryChunk->MemBlocks[BlockIndex]->nextBlock->prevBlock = MemoryChunk->MemBlocks[BlockIndex];
                     MemoryChunk->MemBlocks[BlockIndex + 1] = MemoryChunk->MemBlocks[BlockIndex]->nextBlock;
                     MemoryChunk->MemBlocks[BlockIndex + 1]->IsFree = true;
                 };
@@ -124,7 +127,31 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size, ui32 Count) -> void*
     return Result;
 };
 
+#define MyDeAlloc(MemoryChunk, PtrToMemory) _MyDeAlloc(MemoryChunk, (ui64*)PtrToMemory)
 auto
-MyDeAlloc(Memory_Chunk* MemoryChunk, void* PtrToFree) -> void
+_MyDeAlloc(Memory_Chunk* MemoryChunk, ui64* MemToFree) -> void
 {
+    BGZ_ASSERT(MemToFree);
+
+    for (ui32 BlockIndex{0}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
+    {
+        if(MemoryChunk->MemBlocks[BlockIndex]->BaseAddress == MemToFree)
+        {
+            memset(MemToFree, 0, MemoryChunk->MemBlocks[BlockIndex]->Size);
+            MemoryChunk->MemBlocks[BlockIndex]->IsFree = true;
+
+            if(MemoryChunk->MemBlocks[BlockIndex]->prevBlock)
+            {
+                if(MemoryChunk->MemBlocks[BlockIndex]->prevBlock->IsFree)
+                {
+                    MemoryChunk->MemBlocks[BlockIndex]->prevBlock->Size += MemoryChunk->MemBlocks[BlockIndex]->Size;
+                    //TODO: This sets Memory_Block to 0 but it is still in the array. Need to find a way
+                    //to remove memory_block completely once deleted
+                    FreeType(MemoryChunk->MemBlocks[BlockIndex], Memory_Block);
+                };
+            };
+            
+            return;
+        };
+    };
 };
