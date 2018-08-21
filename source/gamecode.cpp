@@ -117,9 +117,9 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->Test2->slotsCount = 19;
 
         MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
-        MyDeAlloc(&GameState->DynamicMem, &GameState->Test4);
+        MyDeAlloc(&GameState->DynamicMem, &GameState->Test3);
 
-        GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+        GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 6);
         GameState->Test4 = (spAnimation *)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 1);
 
         GameState->Test2->bonesCount = 20;
