@@ -87,6 +87,7 @@ struct Game_State
     spSkeleton* Test1{nullptr};
     spSkeleton* Test2{nullptr};
     spSkeleton* Test3{nullptr};
-    spSkeleton* Test4{nullptr};
+    spAnimation* Test4{nullptr};
+    spAnimation* Test5{nullptr};
     Memory_Chunk DynamicMem;
 };

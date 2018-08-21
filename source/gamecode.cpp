@@ -9,6 +9,8 @@
 #include <boagz/error_handling.h>
 #include <boagz/error_context.cpp>
 
+#include "list.cpp"
+#include "common.cpp"
 #include "gamecode.h"
 #include "shared.h"
 #include "math.h"
@@ -108,10 +110,19 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->Test1 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
         GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
         GameState->Test3 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
-        GameState->Test4 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+        GameState->Test4 = (spAnimation *)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 1);
+        GameState->Test5 = (spAnimation *)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 1);
 
-        MyDeAlloc(&GameState->DynamicMem, GameState->Test2);
-        MyDeAlloc(&GameState->DynamicMem, GameState->Test3);
+        GameState->Test2->bonesCount = 10;
+        GameState->Test2->slotsCount = 19;
+
+        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
+        MyDeAlloc(&GameState->DynamicMem, &GameState->Test4);
+
+        GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+        GameState->Test4 = (spAnimation *)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 1);
+
+        GameState->Test2->bonesCount = 20;
     }
 
     if (Keyboard->MoveUp.Pressed)

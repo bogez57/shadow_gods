@@ -1,11 +1,14 @@
 #pragma once
 #include <string.h>
+#include "list.h"
+
+#define FIXED_BLOCK_SIZE 500
 
 struct Memory_Block
 {
     b IsFree{true};
 
-    sizet Size{0};
+    ui32 Size{0};
     ui64* BaseAddress{nullptr};
     Memory_Block* nextBlock{nullptr};
     Memory_Block* prevBlock{nullptr};
@@ -17,7 +20,8 @@ struct Memory_Chunk
     ui64* EndAddress{nullptr};
     ui64 Size{0};
     ui64 UsedAmount{0};
-    Memory_Block* MemBlocks[1000] = {};
+    Memory_Block MemBlocks[10000] = {};
+    List* FreeList;
 };
 
 #define PushSize(MemoryChunk, Size) _PushSize(MemoryChunk, Size)
@@ -42,34 +46,6 @@ _PushType(Memory_Chunk* MemoryChunk, ui64 Size, sizet Count) -> void*
     return Result;
 };
 
-//TODO: Right now this only works if nothing new was pushed onto the memory chunk between the previous allocation 
-//and this allocation. If there was then this will override it
-#define RePushType(MemoryChunk, Ptr, Type, Count) (Type*)_RePushType(MemoryChunk, Ptr, sizeof(Type), Count)
-auto
-_RePushType(Memory_Chunk* MemoryChunk, void* NewPtr, ui64 Size, sizet Count) -> void*
-{
-    BGZ_ASSERT(1 == 0)//TODO: Remove eventually - Only here so I know when this is called since I don't think it will work with spine yet
-    BGZ_ASSERT((MemoryChunk->UsedAmount + Size) <= MemoryChunk->Size);
-    BGZ_ASSERT(NewPtr > MemoryChunk->BaseAddress && NewPtr < MemoryChunk->EndAddress);
-
-    void* Result{nullptr};
-    return Result;
-};
-
-#define FreeType(Ptr, Type) _Free((ui64*)Ptr, sizeof(Type))
-auto
-_Free(ui64* PtrToValue, sizet Size) -> void
-{
-    memset(PtrToValue, 0, Size);
-};
-
-auto
-SpineFree() -> void
-{
-    //This function is used in spine's extension.h file. Since I'm not quite sure yet how I want to deallocate things from a memory 
-    //chunk I'm just going to let spine allocate things and never free them for now. 
-};
-
 ///////////////////////////////////////////
 
 local_func auto
@@ -78,79 +54,70 @@ InitMemoryChunk(Memory_Chunk* MemoryChunk, sizet SizeToReserve, ui64* StartingAd
     MemoryChunk->BaseAddress = StartingAddress;
     MemoryChunk->EndAddress = MemoryChunk->BaseAddress + SizeToReserve;
     MemoryChunk->Size = SizeToReserve; 
-    MemoryChunk->UsedAmount = 0;    
+    MemoryChunk->UsedAmount = 0;
+    list_new(&MemoryChunk->FreeList);
+
+    for(ui32 BlockIndex{0}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
+    {
+        MemoryChunk->MemBlocks[BlockIndex].Size = FIXED_BLOCK_SIZE;
+        MemoryChunk->MemBlocks[BlockIndex].IsFree = true;
+        MemoryChunk->MemBlocks[BlockIndex].BaseAddress = (ui64 *)PushSize(MemoryChunk, FIXED_BLOCK_SIZE);
+
+        if(BlockIndex != ArrayCount(MemoryChunk->MemBlocks))
+            MemoryChunk->MemBlocks[BlockIndex].nextBlock = &MemoryChunk->MemBlocks[BlockIndex + 1];
+
+        if(BlockIndex != 0)
+            MemoryChunk->MemBlocks[BlockIndex].prevBlock = &MemoryChunk->MemBlocks[BlockIndex - 1];
+
+        list_add(MemoryChunk->FreeList, &MemoryChunk->MemBlocks[BlockIndex]);
+    };
 };
 
 #define MyMalloc(MemoryChunk, Size, Count) _MyMalloc(MemoryChunk, Size, Count)
 auto 
-_MyMalloc(Memory_Chunk* MemoryChunk, sizet Size, ui32 Count) -> ui64*
+_MyMalloc(Memory_Chunk* MemoryChunk, ui32 Size, ui32 Count) -> ui64*
 {
-    ui64* Result{nullptr};
+    BGZ_ASSERT(Size <= FIXED_BLOCK_SIZE);
 
-    //TODO: First part here can maybe be moved to init func
-    if(!MemoryChunk->MemBlocks[0])
-    {
-        MemoryChunk->MemBlocks[0] = PushType(MemoryChunk, Memory_Block, 1);
-        MemoryChunk->MemBlocks[0]->BaseAddress = (ui64*)PushSize(MemoryChunk, Size);
-        MemoryChunk->MemBlocks[0]->Size = Size;
-        MemoryChunk->MemBlocks[0]->IsFree = false;
-        MemoryChunk->MemBlocks[0]->nextBlock = PushType(MemoryChunk, Memory_Block, 1);
-        MemoryChunk->MemBlocks[0]->nextBlock->prevBlock = MemoryChunk->MemBlocks[0];
-        MemoryChunk->MemBlocks[1] = MemoryChunk->MemBlocks[0]->nextBlock;
-        MemoryChunk->MemBlocks[1]->IsFree = true;
+    ListIter Iterator;
+    list_iter_init(&Iterator, MemoryChunk->FreeList);
 
-        return Result = MemoryChunk->MemBlocks[0]->BaseAddress;
-    }
-    else
+    Memory_Block* MemBlock{};
+    for(ui32 BlockIndex{0}; BlockIndex < MemoryChunk->FreeList->size; ++BlockIndex)
     {
-        for (ui32 BlockIndex{1}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
+        list_iter_next(&Iterator, &(void*)MemBlock);
+
+        if (MemBlock->IsFree)
         {
-            if(MemoryChunk->MemBlocks[BlockIndex]->IsFree)
-            {
-                MemoryChunk->MemBlocks[BlockIndex]->BaseAddress = (ui64*)PushSize(MemoryChunk, Size);
-                MemoryChunk->MemBlocks[BlockIndex]->Size = Size;
-                MemoryChunk->MemBlocks[BlockIndex]->IsFree = false;
+            MemBlock->IsFree = false;
 
-                if(!MemoryChunk->MemBlocks[BlockIndex]->nextBlock)
-                {
-                    MemoryChunk->MemBlocks[BlockIndex]->nextBlock = PushType(MemoryChunk, Memory_Block, 1);
-                    MemoryChunk->MemBlocks[BlockIndex]->nextBlock->prevBlock = MemoryChunk->MemBlocks[BlockIndex];
-                    MemoryChunk->MemBlocks[BlockIndex + 1] = MemoryChunk->MemBlocks[BlockIndex]->nextBlock;
-                    MemoryChunk->MemBlocks[BlockIndex + 1]->IsFree = true;
-                };
-
-                return Result = MemoryChunk->MemBlocks[BlockIndex]->BaseAddress;
-            };
-        };
+            return MemBlock->BaseAddress;
+        }
     };
 
+    //No free blocks left
+    ui64* Result{nullptr};
     return Result;
 };
 
-#define MyDeAlloc(MemoryChunk, PtrToMemory) _MyDeAlloc(MemoryChunk, (ui64*)PtrToMemory)
+//Memory_Block* MemoryBlockToFree = (Memory_Block*)(MemToFree - sizeof(Memory_Block));
+#define MyDeAlloc(MemoryChunk, PtrToMemory) _MyDeAlloc(MemoryChunk, (ui64**)PtrToMemory)
 auto
-_MyDeAlloc(Memory_Chunk* MemoryChunk, ui64* MemToFree) -> void
+_MyDeAlloc(Memory_Chunk* MemoryChunk, ui64** MemToFree) -> void
 {
     BGZ_ASSERT(MemToFree);
 
-    for (ui32 BlockIndex{0}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
+    for(ui32 BlockIndex{0}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
     {
-        if(MemoryChunk->MemBlocks[BlockIndex]->BaseAddress == MemToFree)
+        if(MemoryChunk->MemBlocks[BlockIndex].BaseAddress == *MemToFree)
         {
-            memset(MemToFree, 0, MemoryChunk->MemBlocks[BlockIndex]->Size);
-            MemoryChunk->MemBlocks[BlockIndex]->IsFree = true;
+            memset(MemoryChunk->MemBlocks[BlockIndex].BaseAddress, 0, MemoryChunk->MemBlocks[BlockIndex].Size);
+            MemoryChunk->MemBlocks[BlockIndex].IsFree = true;
 
-            if(MemoryChunk->MemBlocks[BlockIndex]->prevBlock)
-            {
-                if(MemoryChunk->MemBlocks[BlockIndex]->prevBlock->IsFree)
-                {
-                    MemoryChunk->MemBlocks[BlockIndex]->prevBlock->Size += MemoryChunk->MemBlocks[BlockIndex]->Size;
-                    //TODO: This sets Memory_Block to 0 but it is still in the array. Need to find a way
-                    //to remove memory_block completely once deleted
-                    FreeType(MemoryChunk->MemBlocks[BlockIndex], Memory_Block);
-                };
-            };
-            
+            list_add(MemoryChunk->FreeList, &MemoryChunk->MemBlocks[BlockIndex]);
+
+            *MemToFree = nullptr;
+
             return;
         };
     };

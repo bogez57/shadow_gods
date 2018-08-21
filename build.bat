@@ -8,8 +8,8 @@ set cwd=%~dp0\
 
 set PreProcessorSwitches=-DDEVELOPMENT_BUILD=1 -DGLEW_STATIC=1
 
-REM Debug/Development build 
-set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -std:c++17 -wd4505 -wd4101
+REM Debug/Development build                                     //Change back to -EHa-
+set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHsc- -std:c++17 -wd4505 -wd4101
 set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -opt:ref -debug:fastlink -ignore:4099
 
 set GameIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" -I %cwd%"third_party/spine-3.7/include" -I %cwd%"third_party/spine-3.7/src"
