@@ -6,8 +6,6 @@
 
 struct Memory_Block
 {
-    b IsFree{true};
-
     ui32 Size{0};
     ui64* BaseAddress{nullptr};
     Memory_Block* nextBlock{nullptr};
@@ -60,7 +58,6 @@ InitMemoryChunk(Memory_Chunk* MemoryChunk, sizet SizeToReserve, ui64* StartingAd
     for(ui32 BlockIndex{0}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
     {
         MemoryChunk->MemBlocks[BlockIndex].Size = FIXED_BLOCK_SIZE;
-        MemoryChunk->MemBlocks[BlockIndex].IsFree = true;
         MemoryChunk->MemBlocks[BlockIndex].BaseAddress = (ui64 *)PushSize(MemoryChunk, FIXED_BLOCK_SIZE);
 
         if(BlockIndex != ArrayCount(MemoryChunk->MemBlocks))
@@ -85,14 +82,14 @@ _MyMalloc(Memory_Chunk* MemoryChunk, ui32 Size, ui32 Count) -> ui64*
     Memory_Block* MemBlock{};
     for(ui32 BlockIndex{0}; BlockIndex < MemoryChunk->FreeList->size; ++BlockIndex)
     {
-        list_iter_next(&Iterator, &(void*)MemBlock);
-
-        if (MemBlock->IsFree)
+        MemBlock = (Memory_Block*)Iterator.next;
+        if (MemBlock->Size > Size)
         {
-            MemBlock->IsFree = false;
-
+            list_remove_at(MemoryChunk->FreeList, Iterator.index, &(void*)MemBlock);
             return MemBlock->BaseAddress;
         }
+
+        list_iter_next(&Iterator, NULL);
     };
 
     //No free blocks left
@@ -112,9 +109,8 @@ _MyDeAlloc(Memory_Chunk* MemoryChunk, ui64** MemToFree) -> void
         if(MemoryChunk->MemBlocks[BlockIndex].BaseAddress == *MemToFree)
         {
             memset(MemoryChunk->MemBlocks[BlockIndex].BaseAddress, 0, MemoryChunk->MemBlocks[BlockIndex].Size);
-            MemoryChunk->MemBlocks[BlockIndex].IsFree = true;
 
-            list_add(MemoryChunk->FreeList, &MemoryChunk->MemBlocks[BlockIndex]);
+            list_add_last(MemoryChunk->FreeList, &MemoryChunk->MemBlocks[BlockIndex]);
 
             *MemToFree = nullptr;
 
