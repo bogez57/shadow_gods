@@ -7,7 +7,7 @@
 struct Memory_Block
 {
     b IsFree{true};
-    ui32 Size{0};
+    sizet Size{0};
     ui64* BaseAddress{nullptr};
     Memory_Block* nextBlock{nullptr};
     Memory_Block* prevBlock{nullptr};
@@ -71,7 +71,7 @@ InitMemoryChunk(Memory_Chunk* MemoryChunk, ui32 SizeToReserve, ui64* StartingAdd
 
 #define MyMalloc(MemoryChunk, Size, Count) _MyMalloc(MemoryChunk, Size * Count)
 auto 
-_MyMalloc(Memory_Chunk* MemoryChunk, ui32 Size) -> ui64*
+_MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
 {
     BGZ_ASSERT(Size <= MemoryChunk->Size);
 
@@ -82,7 +82,7 @@ _MyMalloc(Memory_Chunk* MemoryChunk, ui32 Size) -> ui64*
         {
             if(Block->Size > Size)
             {
-                ui32 SizeDiff = Block->Size - Size;
+                sizet SizeDiff = Block->Size - Size;
                 Block->Size = Size;
                 Block->IsFree = false;
 

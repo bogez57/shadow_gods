@@ -33,26 +33,26 @@ Sqrt(f64 Number)
     return Number;
 };
 
-inline ui32
-RoundUp(ui32 NumToRound, ui32 Multiple)
+inline sizet 
+RoundUp(sizet NumToRound, sizet Multiple)
 {
     if (Multiple == 0)
         return NumToRound;
 
-    ui32 Remainder = NumToRound % Multiple; 
+    sizet Remainder = NumToRound % Multiple; 
     if(Remainder == 0)
         return NumToRound;
     
     return NumToRound + Multiple - Remainder;
 };
 
-inline ui32
-RoundDown(ui32 NumToRound, ui32 Multiple)
+inline sizet 
+RoundDown(sizet NumToRound, sizet Multiple)
 {
     if (Multiple == 0)
         return NumToRound;
 
-    ui32 Remainder = NumToRound % Multiple; 
+    sizet Remainder = NumToRound % Multiple; 
     if(Remainder == 0)
         return NumToRound;
     
