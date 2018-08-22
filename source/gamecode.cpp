@@ -120,9 +120,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         MyDeAlloc(&GameState->DynamicMem, &GameState->Test3);
 
         GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 6);
-        GameState->Test4 = (spAnimation *)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 1);
 
         GameState->Test2->bonesCount = 20;
+
+        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
     }
 
     if (Keyboard->MoveUp.Pressed)

@@ -83,16 +83,29 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
             if(Block->Size > Size)
             {
                 sizet SizeDiff = Block->Size - Size;
+
                 Block->Size = Size;
                 Block->IsFree = false;
 
                 ui32 Multiple = FIXED_BLOCK_SIZE;
                 Block->Size = RoundUp(Block->Size, Multiple);
 
-                if(Block->nextBlock->IsFree)
-                {
-                    Block->nextBlock->Size = RoundDown(SizeDiff, Multiple);
-                };
+                sizet AmountOfBlocksToTurnOff = Block->Size / FIXED_BLOCK_SIZE;
+                AmountOfBlocksToTurnOff -= 1;
+
+                {//TurnOffBlocks, set new next and prev pointers
+                    for(ui32 BlockIndex2{BlockIndex + 1}; BlockIndex2 < (BlockIndex + AmountOfBlocksToTurnOff); ++BlockIndex2)
+                    {
+                        MemoryChunk->MemBlocks[BlockIndex2].Size = 0;
+                    }
+
+                    Block->nextBlock = &MemoryChunk->MemBlocks[BlockIndex + AmountOfBlocksToTurnOff + 1];
+                    MemoryChunk->MemBlocks[BlockIndex + AmountOfBlocksToTurnOff + 1].prevBlock = Block;
+
+                    SizeDiff = RoundDown(SizeDiff, Multiple);
+                    Block->nextBlock->Size = SizeDiff;
+                    Block->nextBlock->IsFree = true;
+                }
 
                 return Block->BaseAddress;
             };
@@ -109,31 +122,32 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
 auto
 _MyDeAlloc(Memory_Chunk* MemoryChunk, ui64** MemToFree) -> void
 {
-    BGZ_ASSERT(MemToFree);
-
-    for(ui32 BlockIndex{0}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
+    if (MemToFree)
     {
-        if(MemoryChunk->MemBlocks[BlockIndex].BaseAddress == *MemToFree)
+        for (ui32 BlockIndex{0}; BlockIndex < ArrayCount(MemoryChunk->MemBlocks); ++BlockIndex)
         {
-            Memory_Block* Block = &MemoryChunk->MemBlocks[BlockIndex];
-            memset(Block->BaseAddress, 0, Block->Size);
-            Block->IsFree = true;
-
-            if(Block->nextBlock->IsFree)
+            if (MemoryChunk->MemBlocks[BlockIndex].BaseAddress == *MemToFree)
             {
-                Block->Size += Block->nextBlock->Size;
-                Block->nextBlock->Size = 0;
+                Memory_Block *Block = &MemoryChunk->MemBlocks[BlockIndex];
+                memset(Block->BaseAddress, 0, Block->Size);
+                Block->IsFree = true;
+
+                if (Block->nextBlock->IsFree)
+                {
+                    Block->Size += Block->nextBlock->Size;
+                    Block->nextBlock->Size = 0;
+                };
+
+                if (Block->prevBlock->IsFree)
+                {
+                    Block->prevBlock->Size += Block->Size;
+                    Block->Size = 0;
+                };
+
+                *MemToFree = nullptr;
+
+                return;
             };
-
-            if(Block->prevBlock->IsFree)
-            {
-                Block->prevBlock->Size += Block->Size;
-                Block->Size = 0;
-            };
-
-            *MemToFree = nullptr;
-
-            return;
         };
     };
 };
