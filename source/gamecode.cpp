@@ -46,7 +46,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         //These functions current need to be called in this order
         InitMemoryChunk(&GameState->DynamicMem, Megabytes(10), (ui64*)GameMemory->TemporaryStorage);
 
-        GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
+        /*GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
         {
             GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
@@ -77,7 +77,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         else
         {
             InvalidCodePath;
-        };
+        };*/
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;
@@ -116,8 +116,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->Test2->bonesCount = 10;
         GameState->Test2->slotsCount = 19;
 
-        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
         MyDeAlloc(&GameState->DynamicMem, &GameState->Test3);
+        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
 
         GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 6);
 
@@ -134,7 +134,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(Keyboard->MoveDown.Pressed)
     {
         spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 30.0f;
+        upperArm->rotation += 10.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
