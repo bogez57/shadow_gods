@@ -2,6 +2,12 @@
 #include <string.h>
 #include "list.h"
 
+/*
+    TODO: 
+    1.) How to void out the dellocated pointer so that it does not still point to the memory address after
+    being deallocated
+*/
+
 struct Memory_Header
 {
     b IsFree{true};
@@ -233,8 +239,10 @@ _MyReAlloc(Memory_Chunk* MemoryChunk, void* BlockToRealloc, sizet Size) -> void*
 auto
 _MyDeAlloc(Memory_Chunk* MemoryChunk, ui64* MemToFree) -> void
 {
-    if (MemToFree && MemToFree > MemoryChunk->BaseAddress && MemToFree < MemoryChunk->EndAddress)
+    if (MemToFree) 
     {
+        BGZ_ASSERT(MemToFree > MemoryChunk->BaseAddress && MemToFree < MemoryChunk->EndAddress);
+
         Memory_Header *BlockHeader = GetBlockHeader(MemToFree);
         memset(MemToFree, 0, BlockHeader->Size);
 

@@ -61,6 +61,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                         GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
                         GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
                         spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
+                        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "run", 1, 1.0f);
                     }
                     else
                     {
@@ -108,6 +109,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
+
+            spSkeleton* MySkel = (spSkeleton*)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
+
+            MyDeAlloc(&GameState->DynamicMem, MySkel);
+
+            int x = 3;
         };
     }
 
