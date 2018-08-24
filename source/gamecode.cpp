@@ -136,7 +136,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(Keyboard->MoveDown.Pressed)
     {
         spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 10.0f;
+        upperArm->rotation += 5.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)

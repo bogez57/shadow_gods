@@ -2,8 +2,6 @@
 #include <string.h>
 #include "list.h"
 
-#define FIXED_BLOCK_SIZE 500
-
 struct Memory_Header
 {
     b IsFree{true};
@@ -53,8 +51,6 @@ _FreeSize(Memory_Chunk* MemoryChunk, sizet SizeToFree) -> void
     MemoryChunk->UsedAmount -= SizeToFree;
 };
 
-///////////////////////////////////////////
-
 local_func auto
 InitMemoryChunk(Memory_Chunk* MemoryChunk, ui32 SizeToReserve, ui64* StartingAddress) -> void
 {
@@ -101,7 +97,7 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
 
                 if (SizeDiff > sizeof(Memory_Header))
                 {
-                    Memory_Header *NextBlock = (Memory_Header*)((ui8*)BlockHeader + BlockHeader->Size);
+                    Memory_Header *NextBlock = (Memory_Header*)(((ui8*)(BlockHeader + 1)) + (BlockHeader->Size));
                     NextBlock->Size = SizeDiff;
                     NextBlock->IsFree = true;
                     NextBlock->prevBlock = BlockHeader;
@@ -115,7 +111,7 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
                     BlockHeader->Size += SizeDiff;
                 }
 
-                Result = (ui64 *)((ui8*)BlockHeader + sizeof(Memory_Header));
+                Result = (ui64 *)(BlockHeader + 1);
                 return Result;
             }
         }
@@ -136,7 +132,7 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
     list_add(MemoryChunk->FilledBlocks, BlockHeader);
 
     ui64 size = sizeof(Memory_Header);
-    return (ui64*)((ui8*)BlockHeader + sizeof(Memory_Header));
+    return (ui64*)(BlockHeader + 1);
 };
 
 #define MyDeAlloc(MemoryChunk, PtrToMemory) _MyDeAlloc(MemoryChunk, (ui64*)PtrToMemory)
@@ -147,6 +143,7 @@ _MyDeAlloc(Memory_Chunk* MemoryChunk, ui64* MemToFree) -> void
     {
         Memory_Header *BlockHeader{};
         BlockHeader = (Memory_Header*)((ui8*)MemToFree - sizeof(Memory_Header));
+        memset(MemToFree, 0, BlockHeader->Size);
 
         list_remove(MemoryChunk->FilledBlocks, BlockHeader, NULL);
         BlockHeader->IsFree = true;
