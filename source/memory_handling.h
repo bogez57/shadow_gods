@@ -115,7 +115,7 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
                     BlockHeader->Size += SizeDiff;
                 }
 
-                Result = (ui64 *)(BlockHeader + 1);
+                Result = (ui64 *)((ui8*)BlockHeader + sizeof(Memory_Header));
                 return Result;
             }
         }
@@ -135,7 +135,8 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
     BlockHeader->prevBlock->nextBlock = BlockHeader;
     list_add(MemoryChunk->FilledBlocks, BlockHeader);
 
-    return (ui64*)(BlockHeader + 1);
+    ui64 size = sizeof(Memory_Header);
+    return (ui64*)((ui8*)BlockHeader + sizeof(Memory_Header));
 };
 
 #define MyDeAlloc(MemoryChunk, PtrToMemory) _MyDeAlloc(MemoryChunk, (ui64*)PtrToMemory)
@@ -145,7 +146,7 @@ _MyDeAlloc(Memory_Chunk* MemoryChunk, ui64* MemToFree) -> void
     if (MemToFree && MemToFree > MemoryChunk->BaseAddress && MemToFree < MemoryChunk->EndAddress)
     {
         Memory_Header *BlockHeader{};
-        BlockHeader = (Memory_Header *)MemToFree - 1;
+        BlockHeader = (Memory_Header*)((ui8*)MemToFree - sizeof(Memory_Header));
 
         list_remove(MemoryChunk->FilledBlocks, BlockHeader, NULL);
         BlockHeader->IsFree = true;
