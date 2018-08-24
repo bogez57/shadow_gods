@@ -46,7 +46,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         //These functions current need to be called in this order
         InitMemoryChunk(&GameState->DynamicMem, Megabytes(10), (ui64*)GameMemory->TemporaryStorage);
 
-        /*GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
+        GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)
         {
             GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
@@ -77,7 +77,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         else
         {
             InvalidCodePath;
-        };*/
+        };
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;
@@ -116,13 +116,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         GameState->Test2->bonesCount = 10;
         GameState->Test2->slotsCount = 19;
 
-        MyDeAlloc(&GameState->DynamicMem, &GameState->Test3);
-        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
+        MyDeAlloc(&GameState->DynamicMem, GameState->Test5);
+        MyDeAlloc(&GameState->DynamicMem, GameState->Test2);
+        MyDeAlloc(&GameState->DynamicMem, GameState->Test4);
 
         GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 6);
+        GameState->Test4 = (spAnimation*)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 6);
 
         GameState->Test2->bonesCount = 20;
 
+        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
         MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
     }
 
