@@ -1,5 +1,7 @@
 @echo off
 
+misc\ctime -begin timings_file_for_this_build.ctm
+
 if not defined DevEnvDir ( call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat" )
 
 REM %~dp0 represents the full directory path to your batch file 
@@ -33,3 +35,5 @@ cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %PlatformIncludePaths
 link win64_shadowgods.obj -OUT:win64_shadowgods.exe %CommonLinkerFlags% %PlatformLibraryPaths% %PlatformImportLibraries% %PlatformStaticLibraries%
 
 popd
+
+misc\ctime -end timings_file_for_this_build.ctm

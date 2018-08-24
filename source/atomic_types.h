@@ -22,7 +22,6 @@ typedef double f64;
 #define local_persist static
 #define local_func static
 #define global_variable static
-#define global_func
 
 struct v2f
 {
