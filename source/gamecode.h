@@ -7,6 +7,8 @@
 #include <spine/Atlas.h>
 #include <spine/SkeletonData.h>
 #include <spine/SkeletonJson.h>
+#include <spine/AnimationState.h>
+#include <spine/AnimationStateData.h>
 
 struct Local_Transform
 {
@@ -84,10 +86,7 @@ struct Game_State
     spSkeletonData* SkelData{nullptr};
     spAtlas* Atlas{nullptr};
     spSkeleton* MySkeleton;
-    spSkeleton* Test1{nullptr};
-    spSkeleton* Test2{nullptr};
-    spSkeleton* Test3{nullptr};
-    spAnimation* Test4{nullptr};
-    spAnimation* Test5{nullptr};
+    spAnimationStateData* AnimationStateData;
+    spAnimationState* AnimationState;
     Memory_Chunk DynamicMem;
 };

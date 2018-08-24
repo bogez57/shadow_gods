@@ -58,6 +58,9 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
                     GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
                     if (GameState->MySkeleton)
                     {
+                        GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
+                        GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
+                        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
                     }
                     else
                     {
@@ -106,27 +109,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
         };
-
-        GameState->Test1 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
-        GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 3);
-        GameState->Test3 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
-        GameState->Test4 = (spAnimation *)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 1);
-        GameState->Test5 = (spAnimation *)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 1);
-
-        GameState->Test2->bonesCount = 10;
-        GameState->Test2->slotsCount = 19;
-
-        MyDeAlloc(&GameState->DynamicMem, GameState->Test2);
-        MyDeAlloc(&GameState->DynamicMem, GameState->Test4);
-
-        GameState->Test2 = (spSkeleton *)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 2);
-        GameState->Test4 = (spAnimation*)MyMalloc(&GameState->DynamicMem, sizeof(spAnimation), 6);
-
-        GameState->Test2->bonesCount = 20;
-
-        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
-        MyDeAlloc(&GameState->DynamicMem, &GameState->Test2);
     }
+
+    spAnimationState_update(GameState->AnimationState, .007f);
+    spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
     {
@@ -136,7 +122,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(Keyboard->MoveDown.Pressed)
     {
         spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 5.0f;
+        upperArm->rotation += 30.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)

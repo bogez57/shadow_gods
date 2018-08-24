@@ -71,7 +71,7 @@
 /* All allocation uses these. */
 #define MALLOC(TYPE,COUNT) ((TYPE*)MyMalloc(&GlobalGameState->DynamicMem, sizeof(TYPE), (COUNT)))
 #define CALLOC(TYPE,COUNT) ((TYPE*)MALLOC(TYPE, COUNT))
-#define REALLOC(PTR,TYPE,COUNT) ((TYPE*)_spRealloc(PTR, sizeof(TYPE) * (COUNT)))
+#define REALLOC(PTR,TYPE,COUNT) (MyReAlloc(&GlobalGameState->DynamicMem, PTR, TYPE, COUNT))
 #define NEW(TYPE) CALLOC(TYPE,1)
 
 /* Gets the direct super class. Type safe. */
