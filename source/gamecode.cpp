@@ -15,6 +15,7 @@
 #include "shared.h"
 #include "math.h"
 #include "memory_handling.h"
+#include "memory_handling.cpp"
 
 global_variable Platform_Services GlobalPlatformServices;
 global_variable Game_Render_Cmds GlobalRenderCmds;
@@ -108,32 +109,26 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
-
-            spSkeleton* MySkel = (spSkeleton*)MyMalloc(&GameState->DynamicMem, sizeof(spSkeleton), 1);
-
-            MyDeAlloc(&GameState->DynamicMem, MySkel);
-
-            int x = 3;
         };
     }
 
-    spAnimationState_update(GameState->AnimationState, .007f);
+    spAnimationState_update(GameState->AnimationState, .017f);
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
     {
-        GameState->MySkeleton->y += 100.0f;
+        GameState->MySkeleton->y += 50.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
         spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 90.0f;
+        upperArm->rotation += 30.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
     {
-        MySkeleton->x += 50.0f;
+        MySkeleton->x += 30.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)

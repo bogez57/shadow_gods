@@ -69,9 +69,9 @@
 #endif
 
 /* All allocation uses these. */
-#define MALLOC(TYPE,COUNT) ((TYPE*)MyMalloc(&GlobalGameState->DynamicMem, sizeof(TYPE), (COUNT)))
+#define MALLOC(TYPE,COUNT) ((TYPE*)MyMalloc(sizeof(TYPE), (COUNT)))
 #define CALLOC(TYPE,COUNT) ((TYPE*)MALLOC(TYPE, COUNT))
-#define REALLOC(PTR,TYPE,COUNT) (MyReAlloc(&GlobalGameState->DynamicMem, PTR, TYPE, COUNT))
+#define REALLOC(PTR,TYPE,COUNT) (MyReAlloc(PTR, TYPE, COUNT))
 #define NEW(TYPE) CALLOC(TYPE,1)
 
 /* Gets the direct super class. Type safe. */
@@ -90,7 +90,7 @@
 #define VTABLE(TYPE,VALUE) ((_##TYPE##Vtable*)((TYPE*)VALUE)->vtable)
 
 /* Frees memory. Can be used on const types. */
-#define FREE(VALUE) MyDeAlloc(&GlobalGameState->DynamicMem, (void*)VALUE)
+#define FREE(VALUE) MyDeAlloc((void*)&VALUE)
         
 
 /* Allocates a new char[], assigns it to TO, and copies FROM to it. Can be used on const types. */

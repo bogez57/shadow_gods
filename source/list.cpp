@@ -19,7 +19,8 @@
  */
 
 #include "list.h"
-
+#include "shared.h"
+#include "memory_handling.h"
 
 struct list_s {
     size_t  size;
