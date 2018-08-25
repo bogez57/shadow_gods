@@ -88,5 +88,5 @@ struct Game_State
     spSkeleton* MySkeleton;
     spAnimationStateData* AnimationStateData;
     spAnimationState* AnimationState;
-    Memory_Chunk DynamicMem;
+    Memory_Partition DynamicMem;
 };

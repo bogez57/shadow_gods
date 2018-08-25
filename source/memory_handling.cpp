@@ -5,40 +5,42 @@
 
 /*
     TODO: 
-    1.) Split MyMalloc funcion between MallocSize and MallocType
+    1.) Split MallocType funcion between MallocSize and MallocType
     2.) Maybe get rid of FilledBlocks linked list data structure and use array instead?
     3.) Use better wording to distinguish when I want to refer to memory header and when to a block
+    4.) Right now my DeAlloc func is 0'ing the memory. Maybe move this to a calloc function like C does so freeing doesn't
+    cost any more than it needs to and you can choose when to use calloc vs malloc (initialized vs uninitialized)
 */
 
-#define PushSize(MemoryChunk, Size) _PushSize(MemoryChunk, Size)
+#define PushSize(MemPartition, Size) _PushSize(MemPartition, Size)
 auto
-_PushSize(Memory_Chunk* MemoryChunk, sizet Size) -> void*
+_PushSize(Memory_Partition* MemPartition, sizet Size) -> void*
 {
-    BGZ_ASSERT((MemoryChunk->UsedAmount + Size) <= MemoryChunk->Size);
-    void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedAmount;
-    MemoryChunk->UsedAmount += (Size);
+    BGZ_ASSERT((MemPartition->UsedAmount + Size) <= MemPartition->Size);
+    void* Result = MemPartition->BaseAddress + MemPartition->UsedAmount;
+    MemPartition->UsedAmount += (Size);
 
     return Result;
 };
 
-#define PushType(MemoryChunk, Type, Count) (Type*)_PushType(MemoryChunk, sizeof(Type), Count)
+#define PushType(MemPartition, Type, Count) (Type*)_PushType(MemPartition, sizeof(Type), Count)
 auto
-_PushType(Memory_Chunk* MemoryChunk, ui64 Size, sizet Count) -> void*
+_PushType(Memory_Partition* MemPartition, ui64 Size, sizet Count) -> void*
 {
-    BGZ_ASSERT((MemoryChunk->UsedAmount + Size) <= MemoryChunk->Size);
-    void* Result = MemoryChunk->BaseAddress + MemoryChunk->UsedAmount;
-    MemoryChunk->UsedAmount += (Size * Count);
+    BGZ_ASSERT((MemPartition->UsedAmount + Size) <= MemPartition->Size);
+    void* Result = MemPartition->BaseAddress + MemPartition->UsedAmount;
+    MemPartition->UsedAmount += (Size * Count);
 
     return Result;
 };
 
-#define FreeSize(MemoryChunk, Size) _FreeSize(MemoryChunk, Size)
+#define FreeSize(MemPartition, Size) _FreeSize(MemPartition, Size)
 auto
-_FreeSize(Memory_Chunk* MemoryChunk, sizet SizeToFree) -> void
+_FreeSize(Memory_Partition* MemPartition, sizet SizeToFree) -> void
 {
-    BGZ_ASSERT(SizeToFree < MemoryChunk->Size || SizeToFree < MemoryChunk->UsedAmount);
+    BGZ_ASSERT(SizeToFree < MemPartition->Size || SizeToFree < MemPartition->UsedAmount);
 
-    MemoryChunk->UsedAmount -= SizeToFree;
+    MemPartition->UsedAmount -= SizeToFree;
 };
 
 local_func auto
@@ -117,26 +119,26 @@ SwapLists(Memory_Header* BlockHeader, List* FromList, List* ToList) -> auto
 };
 
 local_func auto
-AppendNewFilledBlock(OUT Memory_Chunk* MemoryChunk, sizet Size) -> Memory_Header*
+AppendNewFilledBlock(OUT Memory_Partition* MemPartition, sizet Size) -> Memory_Header*
 {
     ui64 TotalSize = sizeof(Memory_Header) + Size;
-    void* NewBlock = PushSize(MemoryChunk, TotalSize);
+    void* NewBlock = PushSize(MemPartition, TotalSize);
 
     Memory_Header* BlockHeader = (Memory_Header*)NewBlock;
     BlockHeader->Size = Size;
     BlockHeader->IsFree = false;
 
-    list_get_last(MemoryChunk->FilledBlocks, &(void*)BlockHeader->prevBlock);
+    list_get_last(MemPartition->FilledBlocks, &(void*)BlockHeader->prevBlock);
     BlockHeader->prevBlock->nextBlock = BlockHeader;
-    list_add(MemoryChunk->FilledBlocks, BlockHeader);
+    list_add(MemPartition->FilledBlocks, BlockHeader);
 
     return BlockHeader;
 };
 
 local_func auto
-FreeBlockButDontZero(OUT Memory_Chunk* MemoryChunk, OUT Memory_Header* BlockHeaderToFree) -> void
+FreeBlockButDontZero(OUT Memory_Partition* MemPartition, OUT Memory_Header* BlockHeaderToFree) -> void
 {
-    list_remove(MemoryChunk->FilledBlocks, BlockHeaderToFree, NULL);
+    list_remove(MemPartition->FilledBlocks, BlockHeaderToFree, NULL);
     BlockHeaderToFree->IsFree = true;
 
     if (BlockHeaderToFree->nextBlock)
@@ -145,7 +147,7 @@ FreeBlockButDontZero(OUT Memory_Chunk* MemoryChunk, OUT Memory_Header* BlockHead
         {
             BlockHeaderToFree->Size += BlockHeaderToFree->nextBlock->Size;
             BlockHeaderToFree->nextBlock->Size = 0;
-            list_remove(MemoryChunk->FreeBlocks, BlockHeaderToFree->nextBlock, NULL);
+            list_remove(MemPartition->FreeBlocks, BlockHeaderToFree->nextBlock, NULL);
 
             if (BlockHeaderToFree->nextBlock->nextBlock)
                 BlockHeaderToFree->nextBlock = BlockHeaderToFree->nextBlock->nextBlock;
@@ -168,49 +170,49 @@ FreeBlockButDontZero(OUT Memory_Chunk* MemoryChunk, OUT Memory_Header* BlockHead
     }
     else
     {
-        FreeSize(MemoryChunk, BlockHeaderToFree->Size);
+        FreeSize(MemPartition, BlockHeaderToFree->Size);
         BlockHeaderToFree->prevBlock->nextBlock = nullptr;
     }
 
-    list_add(MemoryChunk->FreeBlocks, BlockHeaderToFree);
+    list_add(MemPartition->FreeBlocks, BlockHeaderToFree);
 };
 
 local_func auto
-InitMemoryChunk(OUT Memory_Chunk* MemoryChunk, ui32 SizeToReserve, ui64* StartingAddress) -> void 
+InitMemPartition(OUT Memory_Partition* MemPartition, ui32 SizeToReserve, ui64* StartingAddress) -> void 
 {
-    MemoryChunk->BaseAddress = StartingAddress;
-    MemoryChunk->EndAddress = MemoryChunk->BaseAddress + SizeToReserve;
-    MemoryChunk->Size = SizeToReserve; 
-    MemoryChunk->UsedAmount = 0;
+    MemPartition->BaseAddress = StartingAddress;
+    MemPartition->EndAddress = MemPartition->BaseAddress + SizeToReserve;
+    MemPartition->Size = SizeToReserve; 
+    MemPartition->UsedAmount = 0;
 
-    list_new(&MemoryChunk->FreeBlocks);
-    list_new(&MemoryChunk->FilledBlocks);
+    list_new(&MemPartition->FreeBlocks);
+    list_new(&MemPartition->FilledBlocks);
 
-    Memory_Header* InitialBlock = PushType(MemoryChunk, Memory_Header, 1);
+    Memory_Header* InitialBlock = PushType(MemPartition, Memory_Header, 1);
     InitialBlock->Size = 0;
     InitialBlock->IsFree = false;
 
-    list_add_last(MemoryChunk->FilledBlocks, InitialBlock);
+    list_add_last(MemPartition->FilledBlocks, InitialBlock);
 };
 
 auto 
-_MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
+_MallocType(Memory_Partition* MemPartition, sizet Size) -> ui64*
 {
-    BGZ_ASSERT(Size <= MemoryChunk->Size);
+    BGZ_ASSERT(Size <= MemPartition->Size);
 
     ui64* Result{nullptr};
 
-    Memory_Header* BlockHeader = GetFirstFreeBlockOfSize(Size, MemoryChunk->FreeBlocks);
+    Memory_Header* BlockHeader = GetFirstFreeBlockOfSize(Size, MemPartition->FreeBlocks);
 
     //No free blocks found
     if(!BlockHeader)
     {
-        BlockHeader = AppendNewFilledBlock(MemoryChunk, Size);
+        BlockHeader = AppendNewFilledBlock(MemPartition, Size);
     }
     else
     {
-        auto [UpdatedBlockHeader, UpdatedFreeBlocks] = SplitBlock(BlockHeader, Size, MemoryChunk->FreeBlocks);
-        SwapLists(UpdatedBlockHeader, UpdatedFreeBlocks, MemoryChunk->FilledBlocks);
+        auto [UpdatedBlockHeader, UpdatedFreeBlocks] = SplitBlock(BlockHeader, Size, MemPartition->FreeBlocks);
+        SwapLists(UpdatedBlockHeader, UpdatedFreeBlocks, MemPartition->FilledBlocks);
 
         return (ui64*)(UpdatedBlockHeader + 1);
     };
@@ -219,7 +221,7 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
 };
 
 auto
-_MyReAlloc(Memory_Chunk* MemoryChunk, void* BlockToRealloc, sizet Size) -> void*
+_ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, sizet Size) -> void*
 {
     Memory_Header* BlockHeader = GetBlockHeader(BlockToRealloc);
 
@@ -227,12 +229,12 @@ _MyReAlloc(Memory_Chunk* MemoryChunk, void* BlockToRealloc, sizet Size) -> void*
     {
         if (Size < BlockHeader->Size)
         {
-            SplitBlock(BlockHeader, Size, MemoryChunk->FreeBlocks);
+            SplitBlock(BlockHeader, Size, MemPartition->FreeBlocks);
         }
         else
         {
-            FreeBlockButDontZero(MemoryChunk, BlockHeader);
-            BlockHeader = AppendNewFilledBlock(MemoryChunk, Size);
+            FreeBlockButDontZero(MemPartition, BlockHeader);
+            BlockHeader = AppendNewFilledBlock(MemPartition, Size);
             memcpy((BlockHeader + 1), BlockToRealloc, Size);
 
             memset(BlockToRealloc, 0, BlockHeader->Size);
@@ -240,23 +242,23 @@ _MyReAlloc(Memory_Chunk* MemoryChunk, void* BlockToRealloc, sizet Size) -> void*
     }
     else
     {
-        BlockHeader = AppendNewFilledBlock(MemoryChunk, Size);
+        BlockHeader = AppendNewFilledBlock(MemPartition, Size);
     };
 
     return (void*)BlockHeader;
 };
 
 auto
-_MyDeAlloc(Memory_Chunk* MemoryChunk, ui64** MemToFree) -> void
+_DeAlloc(Memory_Partition* MemPartition, ui64** MemToFree) -> void
 {
     if (*MemToFree) 
     {
-        BGZ_ASSERT(*MemToFree > MemoryChunk->BaseAddress && *MemToFree < MemoryChunk->EndAddress);
+        BGZ_ASSERT(*MemToFree > MemPartition->BaseAddress && *MemToFree < MemPartition->EndAddress);
 
         Memory_Header *BlockHeader = GetBlockHeader(*MemToFree);
         memset(*MemToFree, 0, BlockHeader->Size);
 
-        FreeBlockButDontZero(MemoryChunk, BlockHeader);
+        FreeBlockButDontZero(MemPartition, BlockHeader);
 
         *MemToFree = nullptr;
     };
