@@ -6,6 +6,7 @@
     TODO: 
     1.) How to void out the dellocated pointer so that it does not still point to the memory address after
     being deallocated
+    2.) Split MyMalloc funcion between MallocSize and MallocType
 */
 
 struct Memory_Header
@@ -58,27 +59,34 @@ _FreeSize(Memory_Chunk* MemoryChunk, sizet SizeToFree) -> void
 };
 
 local_func auto
-SplitBlock(Memory_Header* BlockToSplit, sizet Size, List* FreeList) -> void
+SplitBlock(OUT Memory_Header* BlockToSplit, sizet Size, OUT List* FreeList) -> auto
 {
-    sizet SizeDiff = BlockToSplit->Size - Size;
-    BlockToSplit->Size = Size;
-    BlockToSplit->IsFree = false;
+    struct ChangedMemoryLayout {Memory_Header* BlockToSplit{}; List* FreeList{};};
+    ChangedMemoryLayout Result{};
+    Result.BlockToSplit = BlockToSplit;
+    Result.FreeList = FreeList;
+
+    sizet SizeDiff = Result.BlockToSplit->Size - Size;
+    Result.BlockToSplit->Size = Size;
+    Result.BlockToSplit->IsFree = false;
 
     if (SizeDiff > sizeof(Memory_Header))
     {
-        Memory_Header *NextBlock = (Memory_Header *)(((ui8 *)(BlockToSplit + 1)) + (BlockToSplit->Size));
+        Memory_Header *NextBlock = (Memory_Header *)(((ui8 *)(Result.BlockToSplit + 1)) + (Result.BlockToSplit->Size));
         NextBlock->Size = SizeDiff;
         NextBlock->IsFree = true;
-        NextBlock->prevBlock = BlockToSplit;
-        NextBlock->nextBlock = BlockToSplit->nextBlock;
-        BlockToSplit->nextBlock = NextBlock;
+        NextBlock->prevBlock = Result.BlockToSplit;
+        NextBlock->nextBlock = Result.BlockToSplit->nextBlock;
+        Result.BlockToSplit->nextBlock = NextBlock;
 
-        list_add(FreeList, NextBlock);
+        list_add(Result.FreeList, NextBlock);
     }
     else
     {
-        BlockToSplit->Size += SizeDiff;
+        Result.BlockToSplit->Size += SizeDiff;
     };
+
+    return Result;
 };
 
 local_func auto
@@ -91,7 +99,42 @@ GetBlockHeader(void* Ptr) -> Memory_Header*
 };
 
 local_func auto
-AppendNewFilledBlock(Memory_Chunk* MemoryChunk, sizet Size) -> Memory_Header*
+GetFirstFreeBlockOfSize(sizet Size, List* FreeList) -> Memory_Header*
+{
+    Memory_Header* Result{};
+
+    ListIter FreeListIter{};
+    Memory_Header* BlockHeader{};
+    list_iter_init(&FreeListIter, FreeList);
+    list_get_at(FreeList, FreeListIter.index, &(void*)BlockHeader);
+
+    for (ui32 BlockIndex{0}; BlockIndex < FreeList->size; ++BlockIndex)
+    {
+        if (BlockHeader)
+        {
+            if (BlockHeader->IsFree && BlockHeader->Size > Size)
+            {
+                Result = BlockHeader;
+                return Result;
+            }
+        }
+
+        list_iter_next(&FreeListIter, &(void *)BlockHeader);
+    };
+
+    //No free blocks found
+    return nullptr;
+};
+
+local_func auto
+SwapLists(Memory_Header* BlockHeader, List* FromList, List* ToList) -> auto
+{
+    BGZ_ASSERT(CC_OK == list_remove(FromList, BlockHeader, NULL));
+    list_add(ToList, &BlockHeader);
+};
+
+local_func auto
+AppendNewFilledBlock(OUT Memory_Chunk* MemoryChunk, sizet Size) -> Memory_Header*
 {
     ui64 TotalSize = sizeof(Memory_Header) + Size;
     void* NewBlock = PushSize(MemoryChunk, TotalSize);
@@ -108,7 +151,7 @@ AppendNewFilledBlock(Memory_Chunk* MemoryChunk, sizet Size) -> Memory_Header*
 };
 
 local_func auto
-FreeBlockButDontZero(Memory_Chunk* MemoryChunk, Memory_Header* BlockHeaderToFree) -> void
+FreeBlockButDontZero(OUT Memory_Chunk* MemoryChunk, OUT Memory_Header* BlockHeaderToFree) -> void
 {
     list_remove(MemoryChunk->FilledBlocks, BlockHeaderToFree, NULL);
     BlockHeaderToFree->IsFree = true;
@@ -150,7 +193,7 @@ FreeBlockButDontZero(Memory_Chunk* MemoryChunk, Memory_Header* BlockHeaderToFree
 };
 
 local_func auto
-InitMemoryChunk(Memory_Chunk* MemoryChunk, ui32 SizeToReserve, ui64* StartingAddress) -> void
+InitMemoryChunk(OUT Memory_Chunk* MemoryChunk, ui32 SizeToReserve, ui64* StartingAddress) -> void 
 {
     MemoryChunk->BaseAddress = StartingAddress;
     MemoryChunk->EndAddress = MemoryChunk->BaseAddress + SizeToReserve;
@@ -175,33 +218,20 @@ _MyMalloc(Memory_Chunk* MemoryChunk, sizet Size) -> ui64*
 
     ui64* Result{nullptr};
 
-    ListIter FreeIter{};
-    list_iter_init(&FreeIter, MemoryChunk->FreeBlocks);
+    Memory_Header* BlockHeader = GetFirstFreeBlockOfSize(Size, MemoryChunk->FreeBlocks);
 
-    Memory_Header* BlockHeader{};
-    list_get_at(MemoryChunk->FreeBlocks, FreeIter.index, &(void*)BlockHeader);
-
-    for (ui32 BlockIndex{0}; BlockIndex < MemoryChunk->FreeBlocks->size; ++BlockIndex)
+    //No free blocks found
+    if(!BlockHeader)
     {
-        if (BlockHeader)
-        {
-            if (BlockHeader->IsFree && BlockHeader->Size > Size)
-            {
-                list_remove(MemoryChunk->FreeBlocks, BlockHeader, NULL);
-                list_add(MemoryChunk->FilledBlocks, BlockHeader);
+        BlockHeader = AppendNewFilledBlock(MemoryChunk, Size);
+    }
+    else
+    {
+        auto [UpdatedBlockHeader, UpdatedFreeBlocks] = SplitBlock(BlockHeader, Size, MemoryChunk->FreeBlocks);
+        SwapLists(UpdatedBlockHeader, UpdatedFreeBlocks, MemoryChunk->FilledBlocks);
 
-                SplitBlock(BlockHeader, Size, MemoryChunk->FreeBlocks);
-
-                Result = (ui64 *)(BlockHeader + 1);
-                return Result;
-            }
-        }
-
-        list_iter_next(&FreeIter, &(void*)BlockHeader);
+        return (ui64*)(UpdatedBlockHeader + 1);
     };
-
-    //If no right sized free blocks
-    BlockHeader = AppendNewFilledBlock(MemoryChunk, Size);
 
     return (ui64*)(BlockHeader + 1);
 };

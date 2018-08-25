@@ -43,7 +43,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(!GameMemory->IsInitialized)
     {
-        //These functions current need to be called in this order
         InitMemoryChunk(&GameState->DynamicMem, Megabytes(10), (ui64*)GameMemory->TemporaryStorage);
 
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
@@ -129,12 +128,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(Keyboard->MoveDown.Pressed)
     {
         spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 30.0f;
+        upperArm->rotation += 90.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
     {
-        MySkeleton->x += 100.0f;
+        MySkeleton->x += 50.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)
