@@ -5,10 +5,9 @@
 
 /*
     TODO: 
-    1.) Split MallocType funcion between MallocSize and MallocType
-    2.) Maybe get rid of FilledBlocks linked list data structure and use array instead?
-    3.) Use better wording to distinguish when I want to refer to memory header and when to a block
-    4.) Right now my DeAlloc func is 0'ing the memory. Maybe move this to a calloc function like C does so freeing doesn't
+    1.) Maybe get rid of FilledBlocks linked list data structure and use array instead?
+    2.) Use better wording to distinguish when I want to refer to memory header and when to a block
+    3.) Right now my DeAlloc func is 0'ing the memory. Maybe move this to a calloc function like C does so freeing doesn't
     cost any more than it needs to and you can choose when to use calloc vs malloc (initialized vs uninitialized)
 */
 
@@ -36,7 +35,7 @@ _PushType(Memory_Partition* MemPartition, ui64 Size, sizet Count) -> void*
 
 #define FreeSize(MemPartition, Size) _FreeSize(MemPartition, Size)
 auto
-_FreeSize(Memory_Partition* MemPartition, sizet SizeToFree) -> void
+_FreeSize(Memory_Partition* MemPartition, ui64 SizeToFree) -> void
 {
     BGZ_ASSERT(SizeToFree < MemPartition->Size || SizeToFree < MemPartition->UsedAmount);
 
@@ -44,7 +43,7 @@ _FreeSize(Memory_Partition* MemPartition, sizet SizeToFree) -> void
 };
 
 local_func auto
-SplitBlock(OUT Memory_Header* BlockToSplit, sizet Size, OUT List* FreeList) -> auto
+SplitBlock(OUT Memory_Header* BlockToSplit, ui64 Size, OUT List* FreeList) -> auto
 {
     struct ChangedMemoryLayout {Memory_Header* BlockToSplit{}; List* FreeList{};};
     ChangedMemoryLayout Result{};
@@ -84,7 +83,7 @@ GetBlockHeader(void* Ptr) -> Memory_Header*
 };
 
 local_func auto
-GetFirstFreeBlockOfSize(sizet Size, List* FreeList) -> Memory_Header*
+GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> Memory_Header*
 {
     Memory_Header* Result{};
 
@@ -119,7 +118,7 @@ SwapLists(Memory_Header* BlockHeader, List* FromList, List* ToList) -> auto
 };
 
 local_func auto
-AppendNewFilledBlock(OUT Memory_Partition* MemPartition, sizet Size) -> Memory_Header*
+AppendNewFilledBlock(OUT Memory_Partition* MemPartition, ui64 Size) -> Memory_Header*
 {
     ui64 TotalSize = sizeof(Memory_Header) + Size;
     void* NewBlock = PushSize(MemPartition, TotalSize);
@@ -136,45 +135,45 @@ AppendNewFilledBlock(OUT Memory_Partition* MemPartition, sizet Size) -> Memory_H
 };
 
 local_func auto
-FreeBlockButDontZero(OUT Memory_Partition* MemPartition, OUT Memory_Header* BlockHeaderToFree) -> void
+FreeBlockButDontZero(OUT Memory_Partition* MemPartition, OUT Memory_Header* BlockToFree) -> void
 {
-    list_remove(MemPartition->FilledBlocks, BlockHeaderToFree, NULL);
-    BlockHeaderToFree->IsFree = true;
+    list_remove(MemPartition->FilledBlocks, BlockToFree, NULL);
+    BlockToFree->IsFree = true;
 
-    if (BlockHeaderToFree->nextBlock)
+    if (BlockToFree->nextBlock)
     {
-        if (BlockHeaderToFree->nextBlock->IsFree)
+        if (BlockToFree->nextBlock->IsFree)
         {
-            BlockHeaderToFree->Size += BlockHeaderToFree->nextBlock->Size;
-            BlockHeaderToFree->nextBlock->Size = 0;
-            list_remove(MemPartition->FreeBlocks, BlockHeaderToFree->nextBlock, NULL);
+            BlockToFree->Size += BlockToFree->nextBlock->Size;
+            BlockToFree->nextBlock->Size = 0;
+            list_remove(MemPartition->FreeBlocks, BlockToFree->nextBlock, NULL);
 
-            if (BlockHeaderToFree->nextBlock->nextBlock)
-                BlockHeaderToFree->nextBlock = BlockHeaderToFree->nextBlock->nextBlock;
+            if (BlockToFree->nextBlock->nextBlock)
+                BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
             else
-                BlockHeaderToFree->nextBlock = nullptr;
+                BlockToFree->nextBlock = nullptr;
         };
 
-        if (BlockHeaderToFree->prevBlock->IsFree)
+        if (BlockToFree->prevBlock->IsFree)
         {
-            BlockHeaderToFree->prevBlock->Size += BlockHeaderToFree->Size;
-            BlockHeaderToFree->Size = 0;
+            BlockToFree->prevBlock->Size += BlockToFree->Size;
+            BlockToFree->Size = 0;
 
-            if (BlockHeaderToFree->nextBlock)
-                BlockHeaderToFree->prevBlock = BlockHeaderToFree->nextBlock;
+            if (BlockToFree->nextBlock)
+                BlockToFree->prevBlock = BlockToFree->nextBlock;
             else
-                BlockHeaderToFree->prevBlock = nullptr;
+                BlockToFree->prevBlock = nullptr;
 
             return;
         }
     }
     else
     {
-        FreeSize(MemPartition, BlockHeaderToFree->Size);
-        BlockHeaderToFree->prevBlock->nextBlock = nullptr;
+        FreeSize(MemPartition, BlockToFree->Size);
+        BlockToFree->prevBlock->nextBlock = nullptr;
     }
 
-    list_add(MemPartition->FreeBlocks, BlockHeaderToFree);
+    list_add(MemPartition->FreeBlocks, BlockToFree);
 };
 
 local_func auto
@@ -196,7 +195,7 @@ InitMemPartition(OUT Memory_Partition* MemPartition, ui32 SizeToReserve, ui64* S
 };
 
 auto 
-_MallocType(Memory_Partition* MemPartition, sizet Size) -> ui64*
+_MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 {
     BGZ_ASSERT(Size <= MemPartition->Size);
 
@@ -214,14 +213,14 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> ui64*
         auto [UpdatedBlockHeader, UpdatedFreeBlocks] = SplitBlock(BlockHeader, Size, MemPartition->FreeBlocks);
         SwapLists(UpdatedBlockHeader, UpdatedFreeBlocks, MemPartition->FilledBlocks);
 
-        return (ui64*)(UpdatedBlockHeader + 1);
+        return (void*)(UpdatedBlockHeader + 1);
     };
 
-    return (ui64*)(BlockHeader + 1);
+    return (void*)(BlockHeader + 1);
 };
 
 auto
-_ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, sizet Size) -> void*
+_ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, ui64 Size) -> void*
 {
     Memory_Header* BlockHeader = GetBlockHeader(BlockToRealloc);
 

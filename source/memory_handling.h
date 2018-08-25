@@ -14,7 +14,7 @@ struct Memory_Partition
 {
     ui64* BaseAddress{nullptr};
     ui64* EndAddress{nullptr};
-    ui32 Size{0};
+    ui64 Size{0};
     ui64 UsedAmount{0};
     List* FreeBlocks{};
     List* FilledBlocks{};
