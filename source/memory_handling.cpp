@@ -76,27 +76,30 @@ GetBlockHeader(void* Ptr) -> Memory_Header*
 };
 
 local_func auto
-GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> Memory_Header*
+GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> void*
 {
-    Memory_Header* Result{};
+    void* Result{};
 
     ListIter FreeListIter{};
-    Memory_Header* BlockHeader{};
+    void* MemBlock{};
     list_iter_init(&FreeListIter, FreeList);
-    list_get_at(FreeList, FreeListIter.index, &(void*)BlockHeader);
+    list_get_at(FreeList, FreeListIter.index, &MemBlock);
+    list_iter_next(&FreeListIter, &MemBlock);
 
+    Memory_Header* BlockHeader; 
     for (ui32 BlockIndex{0}; BlockIndex < FreeList->size; ++BlockIndex)
     {
-        if (BlockHeader)
+        if (MemBlock)
         {
+            BlockHeader = (Memory_Header*)MemBlock;
             if (BlockHeader->IsFree && BlockHeader->Size > Size)
             {
-                Result = BlockHeader;
+                Result = MemBlock;
                 return Result;
             }
         }
 
-        list_iter_next(&FreeListIter, &(void *)BlockHeader);
+        list_iter_next(&FreeListIter, &MemBlock);
     };
 
     //No free blocks found
@@ -194,10 +197,11 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 
     ui64* Result{nullptr};
 
-    Memory_Header* BlockHeader = GetFirstFreeBlockOfSize(Size, MemPartition->FreeBlocks);
+    void* MemBlock = GetFirstFreeBlockOfSize(Size, MemPartition->FreeBlocks);
 
+    Memory_Header* BlockHeader = (Memory_Header*)MemBlock;
     //No free blocks found
-    if(!BlockHeader)
+    if(!MemBlock)
     {
         BlockHeader = AppendNewFilledBlock(MemPartition, Size);
     }
