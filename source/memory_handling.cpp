@@ -6,6 +6,7 @@
 /*
     TODO: 
     1.) Maybe get rid of FilledBlocks linked list data structure and use array instead?
+    2.) Alignment?
 */
 
 #define PushSize(MemPartition, Size) _PushSize(MemPartition, Size)
