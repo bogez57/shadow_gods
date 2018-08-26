@@ -6,8 +6,6 @@
 /*
     TODO: 
     1.) Maybe get rid of FilledBlocks linked list data structure and use array instead?
-    3.) Right now my DeAlloc func is 0'ing the memory. Maybe move this to a calloc function like C does so freeing doesn't
-    cost any more than it needs to and you can choose when to use calloc vs malloc (initialized vs uninitialized)
 */
 
 #define PushSize(MemPartition, Size) _PushSize(MemPartition, Size)
@@ -246,6 +244,22 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 };
 
 auto
+_CallocType(Memory_Partition* MemPartition, sizet Size) -> void*
+{
+    BGZ_ASSERT(Size <= MemPartition->Size);
+
+    void* MemBlock = _MallocType(MemPartition, Size);
+
+    if(MemBlock)
+    {
+        Block_Header *BlockHeader = GetBlockHeader(MemBlock);
+        memset(MemBlock, 0, BlockHeader->Size);
+    };
+
+    return MemBlock;
+};
+
+auto
 _ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, ui64 Size) -> void*
 {
     if(BlockToRealloc)
@@ -262,8 +276,6 @@ _ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, ui64 Size) -> voi
             void* NewBlock = AppendNewFilledBlock(MemPartition, Size);
 
             memcpy(NewBlock, BlockToRealloc, Size);
-
-            memset(BlockToRealloc, 0, BlockHeader->Size);
 
             return NewBlock;
         };
@@ -284,7 +296,6 @@ _DeAlloc(Memory_Partition* MemPartition, ui64** MemToFree) -> void
         BGZ_ASSERT(*MemToFree > MemPartition->BaseAddress && *MemToFree < MemPartition->EndAddress);
 
         Block_Header *BlockHeader = GetBlockHeader(*MemToFree);
-        memset(*MemToFree, 0, BlockHeader->Size);
 
         FreeBlockButDontZero(MemPartition, *MemToFree);
 

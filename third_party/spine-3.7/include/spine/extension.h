@@ -70,7 +70,7 @@
 
 /* All allocation uses these. */
 #define MALLOC(TYPE,COUNT) (MallocType(TYPE, COUNT))
-#define CALLOC(TYPE,COUNT) (MallocType(TYPE, COUNT))
+#define CALLOC(TYPE,COUNT) (CallocType(TYPE, COUNT))
 #define REALLOC(PTR,TYPE,COUNT) (ReAlloc(PTR, TYPE, COUNT))
 #define NEW(TYPE) CALLOC(TYPE,1)
 
