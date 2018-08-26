@@ -6,8 +6,8 @@ struct Block_Header
 {
     b IsFree{true};
     sizet Size{0};
-    Block_Header* nextBlock{nullptr};
-    Block_Header* prevBlock{nullptr};
+    void* nextBlock{nullptr};
+    void* prevBlock{nullptr};
 };
 
 struct Memory_Partition

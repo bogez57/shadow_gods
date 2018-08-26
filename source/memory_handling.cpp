@@ -51,34 +51,34 @@ GetBlockHeader(void* Ptr) -> Block_Header*
 };
 
 local_func auto
-RemoveHeader(void* MemBlock) -> void*
+GetBlockData(Block_Header* Header) -> void*
 {
-    Block_Header* MemHeader = (Block_Header*)MemBlock;
-    void* ActualBeginningOfBlockMem = (void*)(MemHeader + 1);
+   void* BlockData = (void*)(Header + 1);
 
-    return ActualBeginningOfBlockMem;
+   return BlockData;
 };
 
 local_func auto
 SplitBlock(OUT void* BlockToSplit, ui64 Size, OUT List* FreeList) -> void
 {
-    Block_Header* BlockHeader = (Block_Header*)BlockToSplit;
+    Block_Header* BlockHeader = GetBlockHeader(BlockToSplit);
+
     sizet SizeDiff = BlockHeader->Size - Size;
     BlockHeader->Size = Size;
     BlockHeader->IsFree = false;
 
     if (SizeDiff > sizeof(Block_Header))
     {
-        void* NextBlock = (((ui8 *)(RemoveHeader(BlockToSplit))) + (BlockHeader->Size - 1));
-        Block_Header* NextBlockHeader = (Block_Header*)NextBlock;
+        void* NewBlock = (((ui8*)(BlockToSplit)) + (BlockHeader->Size - 1));
+        Block_Header* NewBlockHeader = GetBlockHeader(NewBlock);
 
-        NextBlockHeader ->Size = SizeDiff;
-        NextBlockHeader ->IsFree = true;
-        NextBlockHeader ->prevBlock = BlockHeader;
-        NextBlockHeader ->nextBlock = BlockHeader->nextBlock;
-        BlockHeader->nextBlock = NextBlockHeader;
+        NewBlockHeader->Size = SizeDiff;
+        NewBlockHeader->IsFree = true;
+        NewBlockHeader->prevBlock = BlockToSplit;
+        NewBlockHeader->nextBlock = BlockHeader->nextBlock;
+        BlockHeader->nextBlock = NewBlock;
 
-        list_add(FreeList, NextBlock);
+        list_add(FreeList, NewBlock);
     }
     else
     {
@@ -97,12 +97,11 @@ GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> void*
     list_get_at(FreeList, FreeListIter.index, &MemBlock);
     list_iter_next(&FreeListIter, &MemBlock);
 
-    Block_Header* BlockHeader; 
     for (ui32 BlockIndex{0}; BlockIndex < FreeList->size; ++BlockIndex)
     {
         if (MemBlock)
         {
-            BlockHeader = (Block_Header*)MemBlock;
+            Block_Header* BlockHeader = GetBlockHeader(MemBlock);
             if (BlockHeader->IsFree && BlockHeader->Size > Size)
             {
                 Result = MemBlock;
@@ -121,21 +120,23 @@ local_func auto
 SwapLists(void* BlockToSwap, List* FromList, List* ToList) -> auto
 {
     BGZ_ASSERT(CC_OK == list_remove(FromList, BlockToSwap, NULL));
-    list_add(ToList, &BlockToSwap);
+    list_add(ToList, BlockToSwap);
 };
 
 local_func auto
 AppendNewFilledBlock(OUT Memory_Partition* MemPartition, ui64 Size) -> void*
 {
     ui64 TotalSize = sizeof(Block_Header) + Size;
-    void* NewBlock = PushSize(MemPartition, TotalSize);
+    Block_Header* BlockHeader = (Block_Header*)PushSize(MemPartition, TotalSize);
 
-    Block_Header* BlockHeader = (Block_Header*)NewBlock;
     BlockHeader->Size = Size;
     BlockHeader->IsFree = false;
 
-    list_get_last(MemPartition->FilledBlocks, &(void*)BlockHeader->prevBlock);
-    BlockHeader->prevBlock->nextBlock = BlockHeader;
+
+    list_get_last(MemPartition->FilledBlocks, &BlockHeader->prevBlock);
+
+    void* NewBlock = GetBlockData(BlockHeader);
+    GetBlockHeader(BlockHeader->prevBlock)->nextBlock = NewBlock;
 
     list_add(MemPartition->FilledBlocks, NewBlock);
 
@@ -146,27 +147,27 @@ local_func auto
 FreeBlockButDontZero(OUT Memory_Partition* MemPartition, OUT void* BlockToFree) -> void
 {
     list_remove(MemPartition->FilledBlocks, BlockToFree, NULL);
-    Block_Header* BlockHeader = (Block_Header*)BlockToFree;
+    Block_Header* BlockHeader = GetBlockHeader(BlockToFree);
 
     BlockHeader->IsFree = true;
 
     if (BlockHeader->nextBlock)
     {
-        if (BlockHeader->nextBlock->IsFree)
+        if (GetBlockHeader(BlockHeader->nextBlock)->IsFree)
         {
-            BlockHeader->Size += BlockHeader->nextBlock->Size;
-            BlockHeader->nextBlock->Size = 0;
+            BlockHeader->Size += GetBlockHeader(BlockHeader->nextBlock)->Size;
+            GetBlockHeader(BlockHeader->nextBlock)->Size = 0;
             list_remove(MemPartition->FreeBlocks, BlockHeader->nextBlock, NULL);
 
-            if (BlockHeader->nextBlock->nextBlock)
-                BlockHeader->nextBlock = BlockHeader->nextBlock->nextBlock;
+            if (GetBlockHeader(BlockHeader->nextBlock)->nextBlock)
+                BlockHeader->nextBlock = GetBlockHeader(BlockHeader->nextBlock)->nextBlock;
             else
                 BlockHeader->nextBlock = nullptr;
         };
 
-        if (BlockHeader->prevBlock->IsFree)
+        if (GetBlockHeader(BlockHeader->prevBlock)->IsFree)
         {
-            BlockHeader->prevBlock->Size += BlockHeader->Size;
+            GetBlockHeader(BlockHeader->prevBlock)->Size += BlockHeader->Size;
             BlockHeader->Size = 0;
 
             if (BlockHeader->nextBlock)
@@ -180,7 +181,7 @@ FreeBlockButDontZero(OUT Memory_Partition* MemPartition, OUT void* BlockToFree) 
     else
     {
         FreeSize(MemPartition, BlockHeader->Size);
-        BlockHeader->prevBlock->nextBlock = nullptr;
+        GetBlockHeader(BlockHeader->prevBlock)->nextBlock = nullptr;
     }
 
     list_add(MemPartition->FreeBlocks, BlockToFree);
@@ -197,10 +198,14 @@ InitMemPartition(OUT Memory_Partition* MemPartition, ui32 SizeToReserve, ui64* S
     list_new(&MemPartition->FreeBlocks);
     list_new(&MemPartition->FilledBlocks);
 
-    Block_Header* InitialBlock = PushType(MemPartition, Block_Header, 1);
-    InitialBlock->Size = 0;
-    InitialBlock->IsFree = false;
+    ui16 BlockSize = 10;
+    ui16 TotalSize = sizeof(Block_Header) + BlockSize;
+    Block_Header* InitialBlockHeader = (Block_Header*)PushSize(MemPartition, TotalSize);
 
+    InitialBlockHeader->Size = BlockSize;
+    InitialBlockHeader->IsFree = false;
+
+    void* InitialBlock = GetBlockData(InitialBlockHeader);
     list_add_last(MemPartition->FilledBlocks, InitialBlock);
 };
 
@@ -213,7 +218,6 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 
     void* MemBlock = GetFirstFreeBlockOfSize(Size, MemPartition->FreeBlocks);
 
-    Block_Header* BlockHeader = (Block_Header*)MemBlock;
     //No free blocks found
     if(!MemBlock)
     {
@@ -224,11 +228,9 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
         SplitBlock(MemBlock, Size, MemPartition->FreeBlocks);
         SwapLists(MemBlock, MemPartition->FreeBlocks, MemPartition->FilledBlocks);
 
-        MemBlock = RemoveHeader(MemBlock);
         return MemBlock;
     };
 
-    MemBlock = RemoveHeader(MemBlock);
     return MemBlock;
 };
 
@@ -238,23 +240,20 @@ _ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, ui64 Size) -> voi
     if(BlockToRealloc)
     {
         Block_Header* BlockHeader = GetBlockHeader(BlockToRealloc);
-        BlockToRealloc = (void*)BlockHeader;
 
         if (Size < BlockHeader->Size)
         {
-            SplitBlock(BlockHeader, Size, MemPartition->FreeBlocks);
+            SplitBlock(BlockToRealloc, Size, MemPartition->FreeBlocks);
         }
         else
         {
             FreeBlockButDontZero(MemPartition, BlockToRealloc);
             void* NewBlock = AppendNewFilledBlock(MemPartition, Size);
-            Block_Header* NewBlockHeader = (Block_Header*)NewBlock;
 
-            memcpy(RemoveHeader(NewBlock), BlockToRealloc, Size);
+            memcpy(NewBlock, BlockToRealloc, Size);
 
             memset(BlockToRealloc, 0, BlockHeader->Size);
 
-            NewBlock = RemoveHeader(NewBlock);
             return NewBlock;
         };
     }
@@ -276,7 +275,7 @@ _DeAlloc(Memory_Partition* MemPartition, ui64** MemToFree) -> void
         Block_Header *BlockHeader = GetBlockHeader(*MemToFree);
         memset(*MemToFree, 0, BlockHeader->Size);
 
-        FreeBlockButDontZero(MemPartition, BlockHeader);
+        FreeBlockButDontZero(MemPartition, *MemToFree);
 
         *MemToFree = nullptr;
     };
