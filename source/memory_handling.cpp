@@ -45,7 +45,7 @@ local_func auto
 GetBlockHeader(void* Ptr) -> Block_Header*
 {
     Block_Header *BlockHeader{};
-    BlockHeader = (Block_Header*)((ui8*)Ptr - sizeof(Block_Header));
+    BlockHeader = (Block_Header*)(((ui8*)Ptr) - (sizeof(Block_Header)));
 
     return BlockHeader;
 };
@@ -198,7 +198,7 @@ InitMemPartition(OUT Memory_Partition* MemPartition, ui32 SizeToReserve, ui64* S
     list_new(&MemPartition->FreeBlocks);
     list_new(&MemPartition->FilledBlocks);
 
-    ui16 BlockSize = 10;
+    ui16 BlockSize = 0;
     ui16 TotalSize = sizeof(Block_Header) + BlockSize;
     Block_Header* InitialBlockHeader = (Block_Header*)PushSize(MemPartition, TotalSize);
 
