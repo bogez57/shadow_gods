@@ -263,6 +263,8 @@ _CallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 auto
 _ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, ui64 Size) -> void*
 {
+    BGZ_ASSERT((MemPartition->UsedAmount - Size) > Size);
+
     if(BlockToRealloc)
     {
         Block_Header* BlockHeader = GetBlockHeader(BlockToRealloc);
