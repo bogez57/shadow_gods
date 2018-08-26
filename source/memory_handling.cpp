@@ -43,30 +43,6 @@ _FreeSize(Memory_Partition* MemPartition, ui64 SizeToFree) -> void
 };
 
 local_func auto
-SplitBlock(OUT Memory_Header* BlockToSplit, ui64 Size, OUT List* FreeList) -> void
-{
-    sizet SizeDiff = BlockToSplit->Size - Size;
-    BlockToSplit->Size = Size;
-    BlockToSplit->IsFree = false;
-
-    if (SizeDiff > sizeof(Memory_Header))
-    {
-        Memory_Header *NextBlock = (Memory_Header *)(((ui8 *)(BlockToSplit + 1)) + (BlockToSplit->Size - 1));
-        NextBlock->Size = SizeDiff;
-        NextBlock->IsFree = true;
-        NextBlock->prevBlock = BlockToSplit;
-        NextBlock->nextBlock = BlockToSplit->nextBlock;
-        BlockToSplit->nextBlock = NextBlock;
-
-        list_add(FreeList, NextBlock);
-    }
-    else
-    {
-        BlockToSplit->Size += SizeDiff;
-    };
-};
-
-local_func auto
 GetBlockHeader(void* Ptr) -> Memory_Header*
 {
     Memory_Header *BlockHeader{};
@@ -81,6 +57,33 @@ RemoveHeader(Memory_Header* MemHeader) -> void*
     void* ActualBeginningOfBlockMem = (void*)(MemHeader + 1);
 
     return ActualBeginningOfBlockMem;
+};
+
+local_func auto
+SplitBlock(OUT void* BlockToSplit, ui64 Size, OUT List* FreeList) -> void
+{
+    Memory_Header* BlockHeader = (Memory_Header*)BlockToSplit;
+    sizet SizeDiff = BlockHeader->Size - Size;
+    BlockHeader->Size = Size;
+    BlockHeader->IsFree = false;
+
+    if (SizeDiff > sizeof(Memory_Header))
+    {
+        void* NextBlock = (((ui8 *)(RemoveHeader(BlockHeader))) + (BlockHeader->Size - 1));
+        Memory_Header* NextBlockHeader = (Memory_Header*)NextBlock;
+
+        NextBlockHeader ->Size = SizeDiff;
+        NextBlockHeader ->IsFree = true;
+        NextBlockHeader ->prevBlock = BlockHeader;
+        NextBlockHeader ->nextBlock = BlockHeader->nextBlock;
+        BlockHeader->nextBlock = NextBlockHeader;
+
+        list_add(FreeList, NextBlock);
+    }
+    else
+    {
+        BlockHeader->Size += SizeDiff;
+    };
 };
 
 local_func auto
@@ -115,10 +118,10 @@ GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> void*
 };
 
 local_func auto
-SwapLists(Memory_Header* BlockHeader, List* FromList, List* ToList) -> auto
+SwapLists(void* BlockToSwap, List* FromList, List* ToList) -> auto
 {
-    BGZ_ASSERT(CC_OK == list_remove(FromList, BlockHeader, NULL));
-    list_add(ToList, &BlockHeader);
+    BGZ_ASSERT(CC_OK == list_remove(FromList, BlockToSwap, NULL));
+    list_add(ToList, &BlockToSwap);
 };
 
 local_func auto
@@ -219,9 +222,10 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
     }
     else
     {
-        SplitBlock(BlockHeader, Size, MemPartition->FreeBlocks);
-        SwapLists(BlockHeader, MemPartition->FreeBlocks, MemPartition->FilledBlocks);
+        SplitBlock(MemBlock, Size, MemPartition->FreeBlocks);
+        SwapLists(MemBlock, MemPartition->FreeBlocks, MemPartition->FilledBlocks);
 
+        BlockHeader = (Memory_Header*)MemBlock;
         MemBlock = RemoveHeader(BlockHeader);
         return MemBlock;
     };
