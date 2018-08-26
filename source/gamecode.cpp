@@ -1,3 +1,10 @@
+/*
+    TODO List:
+
+    - convert game units from pixels to meters
+    - Replace spine ReadFile with my platform version instead of using it's default version
+*/
+
 #if (DEVELOPMENT_BUILD)
     #define BGZ_LOGGING_ON true
     #define BGZ_ERRHANDLING_ON true

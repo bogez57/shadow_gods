@@ -5,7 +5,6 @@
     - Load XInput through LoadLibrary() (To help avoid likely "Xinput.dll not found on certain windows platforms")
     - Make current frame timing more accurate/in-sync with monitor refresh rate
     - Pass deltatime to game
-    - convert game units from pixels to meters
 */
 
 #if (DEVELOPMENT_BUILD)
