@@ -53,9 +53,11 @@ GetBlockHeader(void* Ptr) -> Block_Header*
 local_func auto
 GetBlockData(Block_Header* Header) -> void*
 {
-   void* BlockData = (void*)(Header + 1);
+    BGZ_ASSERT(Header->Size != 0);
 
-   return BlockData;
+    void* BlockData = (void *)(Header + 1);
+
+    return BlockData;
 };
 
 local_func auto
@@ -69,7 +71,7 @@ SplitBlock(OUT void* BlockToSplit, ui64 Size, OUT List* FreeList) -> void
 
     if (SizeDiff > sizeof(Block_Header))
     {
-        void* NewBlock = (((ui8*)(BlockToSplit)) + (BlockHeader->Size - 1));
+        void* NewBlock = (((ui8*)(BlockToSplit)) + ((BlockHeader->Size - 1) + (sizeof(Block_Header))));
         Block_Header* NewBlockHeader = GetBlockHeader(NewBlock);
 
         NewBlockHeader->Size = SizeDiff;
@@ -156,24 +158,26 @@ FreeBlockButDontZero(OUT Memory_Partition* MemPartition, OUT void* BlockToFree) 
         if (GetBlockHeader(BlockHeader->nextBlock)->IsFree)
         {
             BlockHeader->Size += GetBlockHeader(BlockHeader->nextBlock)->Size;
-            GetBlockHeader(BlockHeader->nextBlock)->Size = 0;
             list_remove(MemPartition->FreeBlocks, BlockHeader->nextBlock, NULL);
 
             if (GetBlockHeader(BlockHeader->nextBlock)->nextBlock)
                 BlockHeader->nextBlock = GetBlockHeader(BlockHeader->nextBlock)->nextBlock;
             else
                 BlockHeader->nextBlock = nullptr;
+
+            GetBlockHeader(BlockHeader->nextBlock)->Size = 0;
         };
 
         if (GetBlockHeader(BlockHeader->prevBlock)->IsFree)
         {
             GetBlockHeader(BlockHeader->prevBlock)->Size += BlockHeader->Size;
-            BlockHeader->Size = 0;
 
             if (BlockHeader->nextBlock)
                 BlockHeader->prevBlock = BlockHeader->nextBlock;
             else
                 BlockHeader->prevBlock = nullptr;
+
+            BlockHeader->Size = 0;
 
             return;
         }
@@ -198,7 +202,7 @@ InitMemPartition(OUT Memory_Partition* MemPartition, ui32 SizeToReserve, ui64* S
     list_new(&MemPartition->FreeBlocks);
     list_new(&MemPartition->FilledBlocks);
 
-    ui16 BlockSize = 0;
+    ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Block_Header) + BlockSize;
     Block_Header* InitialBlockHeader = (Block_Header*)PushSize(MemPartition, TotalSize);
 
@@ -214,24 +218,31 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 {
     BGZ_ASSERT(Size <= MemPartition->Size);
 
-    ui64* Result{nullptr};
+    void* Result{nullptr};
 
-    void* MemBlock = GetFirstFreeBlockOfSize(Size, MemPartition->FreeBlocks);
-
-    //No free blocks found
-    if(!MemBlock)
+    if(Size > 0)
     {
-        MemBlock = AppendNewFilledBlock(MemPartition, Size);
-    }
-    else
-    {
-        SplitBlock(MemBlock, Size, MemPartition->FreeBlocks);
-        SwapLists(MemBlock, MemPartition->FreeBlocks, MemPartition->FilledBlocks);
+        void *MemBlock = GetFirstFreeBlockOfSize(Size, MemPartition->FreeBlocks);
 
+        //No free blocks found
+        if (!MemBlock)
+        {
+            MemBlock = AppendNewFilledBlock(MemPartition, Size);
+        }
+        else
+        {
+            SplitBlock(MemBlock, Size, MemPartition->FreeBlocks);
+            SwapLists(MemBlock, MemPartition->FreeBlocks, MemPartition->FilledBlocks);
+
+            Result = MemBlock;
+            return Result;
+        };
+
+        Result = MemBlock;
         return MemBlock;
     };
 
-    return MemBlock;
+    return Result;
 };
 
 auto
