@@ -119,7 +119,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         };
     }
 
-    spAnimationState_update(GameState->AnimationState, .017f);
+    spAnimationState_update(GameState->AnimationState, .007f);
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)

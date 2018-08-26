@@ -2,12 +2,12 @@
 #include <string.h>
 #include "list.h"
 
-struct Memory_Header
+struct Block_Header
 {
     b IsFree{true};
     sizet Size{0};
-    Memory_Header* nextBlock{nullptr};
-    Memory_Header* prevBlock{nullptr};
+    Block_Header* nextBlock{nullptr};
+    Block_Header* prevBlock{nullptr};
 };
 
 struct Memory_Partition
