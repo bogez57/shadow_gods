@@ -128,7 +128,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(Keyboard->MoveRight.Pressed)
     {
-        MySkeleton->x += 10.0f;
+        MySkeleton->x += 1.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)

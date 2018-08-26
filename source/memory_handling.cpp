@@ -43,34 +43,27 @@ _FreeSize(Memory_Partition* MemPartition, ui64 SizeToFree) -> void
 };
 
 local_func auto
-SplitBlock(OUT Memory_Header* BlockToSplit, ui64 Size, OUT List* FreeList) -> auto
+SplitBlock(OUT Memory_Header* BlockToSplit, ui64 Size, OUT List* FreeList) -> void
 {
-    struct ChangedMemoryLayout {Memory_Header* BlockToSplit{}; List* FreeList{};};
-    ChangedMemoryLayout Result{};
-    Result.BlockToSplit = BlockToSplit;
-    Result.FreeList = FreeList;
-
-    sizet SizeDiff = Result.BlockToSplit->Size - Size;
-    Result.BlockToSplit->Size = Size;
-    Result.BlockToSplit->IsFree = false;
+    sizet SizeDiff = BlockToSplit->Size - Size;
+    BlockToSplit->Size = Size;
+    BlockToSplit->IsFree = false;
 
     if (SizeDiff > sizeof(Memory_Header))
     {
-        Memory_Header *NextBlock = (Memory_Header *)(((ui8 *)(Result.BlockToSplit + 1)) + (Result.BlockToSplit->Size));
+        Memory_Header *NextBlock = (Memory_Header *)(((ui8 *)(BlockToSplit + 1)) + (BlockToSplit->Size - 1));
         NextBlock->Size = SizeDiff;
         NextBlock->IsFree = true;
-        NextBlock->prevBlock = Result.BlockToSplit;
-        NextBlock->nextBlock = Result.BlockToSplit->nextBlock;
-        Result.BlockToSplit->nextBlock = NextBlock;
+        NextBlock->prevBlock = BlockToSplit;
+        NextBlock->nextBlock = BlockToSplit->nextBlock;
+        BlockToSplit->nextBlock = NextBlock;
 
-        list_add(Result.FreeList, NextBlock);
+        list_add(FreeList, NextBlock);
     }
     else
     {
-        Result.BlockToSplit->Size += SizeDiff;
+        BlockToSplit->Size += SizeDiff;
     };
-
-    return Result;
 };
 
 local_func auto
@@ -210,10 +203,10 @@ _MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
     }
     else
     {
-        auto [UpdatedBlockHeader, UpdatedFreeBlocks] = SplitBlock(BlockHeader, Size, MemPartition->FreeBlocks);
-        SwapLists(UpdatedBlockHeader, UpdatedFreeBlocks, MemPartition->FilledBlocks);
+        SplitBlock(BlockHeader, Size, MemPartition->FreeBlocks);
+        SwapLists(BlockHeader, MemPartition->FreeBlocks, MemPartition->FilledBlocks);
 
-        return (void*)(UpdatedBlockHeader + 1);
+        return (void*)(BlockHeader + 1);
     };
 
     return (void*)(BlockHeader + 1);
