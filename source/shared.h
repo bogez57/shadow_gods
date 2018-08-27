@@ -85,6 +85,9 @@ struct Platform_Services
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
     unsigned char* (*LoadRGBAImage)(const char*, int*, int*);
+    void* (*PlatMalloc)(sizet);
+    void* (*PlatCalloc)(sizet, sizet);
+    void (*PlatFree)(void*);
 };
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////

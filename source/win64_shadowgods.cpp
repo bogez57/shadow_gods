@@ -49,6 +49,32 @@ namespace Win32::Dbg
     };
 
     local_func auto
+    Malloc(sizet Size) -> void*
+    {
+        void* Result{};
+
+        Result = malloc(Size);
+
+        return Result;
+    };
+
+    local_func auto
+    Calloc(sizet Count, sizet Size) -> void*
+    {
+        void* Result{};
+
+        Result = calloc(Count, Size);
+
+        return Result;
+    };
+
+    local_func auto
+    Free(void* PtrToFree) -> void
+    {
+        free(PtrToFree);
+    };
+
+    local_func auto
     FreeFileMemory(void *FileMemory)
     {
         if (FileMemory)
@@ -751,6 +777,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
                 PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
                 PlatformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
+                PlatformServices.PlatMalloc = &Win32::Dbg::Malloc;
+                PlatformServices.PlatCalloc = &Win32::Dbg::Calloc;
+                PlatformServices.PlatFree = &Win32::Dbg::Free;
 
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;

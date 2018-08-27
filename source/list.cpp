@@ -19,8 +19,6 @@
  */
 
 #include "list.h"
-#include "shared.h"
-#include "memory_handling.h"
 
 struct list_s {
     size_t  size;
@@ -53,9 +51,9 @@ static enum cc_stat add_all_to_empty    (List *l1, List *l2);
  */
 void list_conf_init(ListConf *conf)
 {
-    conf->mem_alloc  = malloc;
-    conf->mem_calloc = calloc;
-    conf->mem_free   = free;
+    conf->mem_alloc  = GlobalPlatformServices.PlatMalloc;
+    conf->mem_calloc = GlobalPlatformServices.PlatCalloc;
+    conf->mem_free   = GlobalPlatformServices.PlatFree;
 }
 
 /**
