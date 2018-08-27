@@ -82,6 +82,7 @@ struct Read_File_Result {void* FileContents{nullptr}; ui32 FileSize{};};
 struct Platform_Services
 {
     Read_File_Result (*ReadEntireFile)(const char*);
+    char* (*ReadFileOfLength)(ui32*, const char*);
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
     unsigned char* (*LoadRGBAImage)(const char*, int*, int*);

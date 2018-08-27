@@ -166,6 +166,29 @@ namespace Win32::Dbg
     };
 
     local_func auto
+    ReadFileOfLength(ui32* length, const char* FilePath) -> char*
+    {
+        char *data;
+        FILE *file;
+        errno_t err;
+
+        if ((err = fopen_s(&file, FilePath, "rb")) != 0)
+        {
+            BGZ_ASSERT(1 == 0);
+        };
+
+        fseek(file, 0, SEEK_END);
+        *length = (i32)ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        data = (char*)malloc(*length);
+        fread(data, 1, *length, file);
+        fclose(file);
+
+        return data;
+    };
+
+    local_func auto
     LoadRGBAImage(const char* ImagePath, int* Width, int* Height) -> unsigned char*
     {
         int DesiredChannels = 4;
@@ -775,6 +798,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             { //Init game services
                 PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
+                PlatformServices.ReadFileOfLength = &Win32::Dbg::ReadFileOfLength;
                 PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
                 PlatformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
                 PlatformServices.PlatMalloc = &Win32::Dbg::Malloc;

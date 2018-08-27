@@ -149,7 +149,10 @@ void _spAtlasPage_disposeTexture (spAtlasPage* self)
 
 char* _spUtil_readFile (const char* path, int* length)
 {
-	char* Result = _spReadFile(path, length);
+	char* FileData = GlobalPlatformServices.ReadFileOfLength((ui32*)length, path);
 
-	return Result;
+	char* data = MALLOC(char, *length);
+	memcpy(data, FileData, *length);
+
+	return data;
 };
