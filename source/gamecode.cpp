@@ -14,15 +14,11 @@
 #endif
 
 #include <boagz/error_handling.h>
-#include <boagz/error_context.cpp>
 
-#include "list.cpp"
-#include "common.cpp"
 #include "gamecode.h"
 #include "shared.h"
 #include "math.h"
 #include "memory_handling.h"
-#include "memory_handling.cpp"
 
 global_variable Platform_Services GlobalPlatformServices;
 global_variable Game_Render_Cmds GlobalRenderCmds;
@@ -30,7 +26,13 @@ global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
 
-#include "spine2d.h"
+#include "list.cpp"
+#include "common.cpp"
+#include "memory_handling.cpp"
+
+//Third Party
+#include "spine.cpp"
+#include <boagz/error_context.cpp>
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
