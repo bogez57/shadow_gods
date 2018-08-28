@@ -90,6 +90,6 @@ struct Game_State
     spAnimationState* AnimationState;
     Memory_Partition StackMem;
     Memory_Partition DynamicMem;
-    Memory_Sub_Partition SpineData;
-    Memory_Sub_Partition ListData;
+    Memory_Partition SpineData;
+    Memory_Partition ListData;
 };

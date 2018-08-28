@@ -2,8 +2,6 @@
 #include <string.h>
 #include "list.h"
 
-global_variable List* FreeBlocks;
-global_variable List* FilledBlocks;
 
 struct Block_Header
 {
@@ -13,7 +11,7 @@ struct Block_Header
     void* prevBlock{nullptr};
 };
 
-struct Memory_Sub_Partition
+struct Memory_Partition
 {
     ui64* BaseAddress;
     ui64* EndAddress;
@@ -21,12 +19,54 @@ struct Memory_Sub_Partition
     ui64 Size;
 };
 
-struct Memory_Partition
+class Memory_Allocator
 {
-    ui64* BaseAddress{nullptr};
-    ui64 Size{0};
-    ui64 UsedAmount{0};
-    Memory_Sub_Partition* SubPartitions[5];
+public:
+    Memory_Allocator(ui64* BaseAddress, ui64 SizeOfMemoryStore) :
+        BaseAddress(BaseAddress),
+        TotalMemorySize(SizeOfMemoryStore),
+        UsedAmount(0)
+    {
+        for (ui32 PartitionIndex{0}; PartitionIndex < ArrayCount(this->Partitions); ++PartitionIndex)
+        {
+            this->Partitions[PartitionIndex] = nullptr;
+        };
+    };
+
+    ui64* BaseAddress;
+    ui64 UsedAmount;
+    ui64 TotalMemorySize;
+    Memory_Partition* Partitions[5];
+};
+
+class Dynamic_Allocator : public Memory_Allocator
+{
+public:
+    Dynamic_Allocator(ui64* BaseAddress, ui64 SizeOfMemoryStore) :
+        Memory_Allocator(BaseAddress, SizeOfMemoryStore)
+    {};
+
+    List* FreeBlocks;
+    List* FilledBlocks;
+
+    auto AddPartition(Memory_Partition* MemPartition) -> void;
+};
+
+auto
+Dynamic_Allocator::AddPartition(Memory_Partition* MemPartition) -> void
+{
+    BGZ_ASSERT((this->TotalMemorySize - this->UsedAmount) > MemPartition->Size);
+
+    for(ui32 PartitionIndex{0}; PartitionIndex < ArrayCount(this->Partitions); ++PartitionIndex)
+    {
+        if(this->Partitions[PartitionIndex] != nullptr)
+        {
+            MemPartition->BaseAddress = this->BaseAddress + this->UsedAmount;
+            this->UsedAmount += MemPartition->Size;
+            this->Partitions[PartitionIndex] = MemPartition;
+            return;
+        };
+    };
 };
 
 #define MallocType(Type, Count) (Type*)_MallocType(&GlobalGameState->SpineData, ((sizeof(Type)) * (Count)))

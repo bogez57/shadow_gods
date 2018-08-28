@@ -12,7 +12,7 @@
 
 #define PushSize(MemPartition, Size) _PushSize(MemPartition, Size)
 auto
-_PushSize(Memory_Sub_Partition* MemPartition, sizet Size) -> void*
+_PushSize(Memory_Partition* MemPartition, sizet Size) -> void*
 {
     BGZ_ASSERT((MemPartition->UsedAmount + Size) <= MemPartition->Size);
     void* Result = MemPartition->BaseAddress + MemPartition->UsedAmount;
@@ -23,7 +23,7 @@ _PushSize(Memory_Sub_Partition* MemPartition, sizet Size) -> void*
 
 #define PushType(MemPartition, Type, Count) (Type*)_PushType(MemPartition, sizeof(Type), Count)
 auto
-_PushType(Memory_Sub_Partition* MemPartition, ui64 Size, sizet Count) -> void*
+_PushType(Memory_Partition* MemPartition, ui64 Size, sizet Count) -> void*
 {
     BGZ_ASSERT((MemPartition->UsedAmount + Size) <= MemPartition->Size);
     void* Result = MemPartition->BaseAddress + MemPartition->UsedAmount;
@@ -34,7 +34,7 @@ _PushType(Memory_Sub_Partition* MemPartition, ui64 Size, sizet Count) -> void*
 
 #define FreeSize(MemPartition, Size) _FreeSize(MemPartition, Size)
 auto
-_FreeSize(Memory_Sub_Partition* MemPartition, ui64 SizeToFree) -> void
+_FreeSize(Memory_Partition* MemPartition, ui64 SizeToFree) -> void
 {
     BGZ_ASSERT(SizeToFree < MemPartition->Size || SizeToFree < MemPartition->UsedAmount);
 
@@ -126,7 +126,7 @@ SwapLists(void* BlockToSwap, List* FromList, List* ToList) -> auto
 };
 
 local_func auto
-AppendNewFilledBlock(OUT Memory_Sub_Partition* MemPartition, ui64 Size) -> void*
+AppendNewFilledBlock(OUT Memory_Partition* MemPartition, ui64 Size) -> void*
 {
     ui64 TotalSize = sizeof(Block_Header) + Size;
     Block_Header* BlockHeader = (Block_Header*)PushSize(MemPartition, TotalSize);
@@ -146,7 +146,7 @@ AppendNewFilledBlock(OUT Memory_Sub_Partition* MemPartition, ui64 Size) -> void*
 };
 
 local_func auto
-FreeBlockButDontZero(OUT Memory_Sub_Partition* MemPartition, OUT void* BlockToFree) -> void
+FreeBlockButDontZero(OUT Memory_Partition* MemPartition, OUT void* BlockToFree) -> void
 {
     list_remove(FilledBlocks, BlockToFree, NULL);
     Block_Header* BlockHeader = GetBlockHeader(BlockToFree);
@@ -192,36 +192,16 @@ FreeBlockButDontZero(OUT Memory_Sub_Partition* MemPartition, OUT void* BlockToFr
 };
 
 local_func auto
-InitMemPartition(OUT Memory_Partition* MemPartition, ui32 SizeToReserve, ui64* StartingAddress) -> void 
+InitPartition(Memory_Partition* Partition, ui32 SizeOfSub) -> void
 {
-    MemPartition->BaseAddress = StartingAddress;
-    MemPartition->Size = SizeToReserve; 
-    MemPartition->UsedAmount = 0;
-    for(ui32 PartitionIndex{0}; PartitionIndex < ArrayCount(MemPartition->SubPartitions); ++PartitionIndex)
-    {
-        MemPartition->SubPartitions[PartitionIndex] = nullptr;
-    };
+    Partition->BaseAddress = nullptr;
+    Partition->EndAddress = nullptr;
+    Partition->Size = SizeOfSub;
+    Partition->Used = 0;
 };
 
 local_func auto
-InitSubPartition(Memory_Partition* ParentPartition, Memory_Sub_Partition* SubPartition, ui32 SizeOfSub) -> void
-{
-    BGZ_ASSERT((ParentPartition->Size - ParentPartition->UsedAmount) > SizeOfSub);
-
-    SubPartition->Size = SizeOfSub;
-    for(ui32 PartitionIndex{0}; PartitionIndex < ArrayCount(ParentPartition->SubPartitions); ++PartitionIndex)
-    {
-        if(ParentPartition->SubPartitions[PartitionIndex] != nullptr)
-        {
-            ParentPartition->UsedAmount += SubPartition->Size;
-            ParentPartition->SubPartitions[PartitionIndex] = SubPartition;
-            return;
-        };
-    };
-};
-
-local_func auto
-InitMAlloc(Memory_Sub_Partition* SubPartition, ui32 SizeOfSub) -> void
+InitMAlloc(Memory_Partition* SubPartition, ui32 SizeOfSub) -> void
 {
     InitSubPartition(&GlobalGameState->DynamicMem, SubPartition, SizeOfSub);
 
@@ -240,7 +220,7 @@ InitMAlloc(Memory_Sub_Partition* SubPartition, ui32 SizeOfSub) -> void
 };
 
 auto 
-_MallocType(Memory_Sub_Partition* MemPartition, sizet Size) -> void*
+_MallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 {
     BGZ_ASSERT(Size <= MemPartition->Size);
 
@@ -272,7 +252,7 @@ _MallocType(Memory_Sub_Partition* MemPartition, sizet Size) -> void*
 };
 
 auto
-_CallocType(Memory_Sub_Partition* MemPartition, sizet Size) -> void*
+_CallocType(Memory_Partition* MemPartition, sizet Size) -> void*
 {
     BGZ_ASSERT(Size <= MemPartition->Size);
 
@@ -288,7 +268,7 @@ _CallocType(Memory_Sub_Partition* MemPartition, sizet Size) -> void*
 };
 
 auto
-_ReAlloc(Memory_Sub_Partition* MemPartition, void* BlockToRealloc, ui64 Size) -> void*
+_ReAlloc(Memory_Partition* MemPartition, void* BlockToRealloc, ui64 Size) -> void*
 {
     BGZ_ASSERT((MemPartition->UsedAmount - Size) > Size);
 
@@ -319,7 +299,7 @@ _ReAlloc(Memory_Sub_Partition* MemPartition, void* BlockToRealloc, ui64 Size) ->
 };
 
 auto
-_DeAlloc(Memory_Sub_Partition* MemPartition, ui64** MemToFree) -> void
+_DeAlloc(Memory_Partition* MemPartition, ui64** MemToFree) -> void
 {
     if (*MemToFree) 
     {
