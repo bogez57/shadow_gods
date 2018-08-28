@@ -88,5 +88,8 @@ struct Game_State
     spSkeleton* MySkeleton;
     spAnimationStateData* AnimationStateData;
     spAnimationState* AnimationState;
+    Memory_Partition StackMem;
     Memory_Partition DynamicMem;
+    Memory_Sub_Partition SpineData;
+    Memory_Sub_Partition ListData;
 };
