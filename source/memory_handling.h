@@ -11,7 +11,7 @@ struct Block_Header
     void* prevBlock{nullptr};
 };
 
-struct Memory_Partition
+struct Memory_Region
 {
     ui64* BaseAddress;
     ui64* EndAddress;
@@ -19,60 +19,38 @@ struct Memory_Partition
     ui64 Size;
 };
 
-class Memory_Allocator
+enum Mem_Region_Type
 {
-public:
-    Memory_Allocator(ui64* BaseAddress, ui64 SizeOfMemoryStore) :
-        BaseAddress(BaseAddress),
-        TotalMemorySize(SizeOfMemoryStore),
-        UsedAmount(0)
-    {
-        for (ui32 PartitionIndex{0}; PartitionIndex < ArrayCount(this->Partitions); ++PartitionIndex)
-        {
-            this->Partitions[PartitionIndex] = nullptr;
-        };
-    };
-
-    ui64* BaseAddress;
-    ui64 UsedAmount;
-    ui64 TotalMemorySize;
-    Memory_Partition* Partitions[5];
+    SPINE,
+    REGION_COUNT
 };
 
-class Dynamic_Allocator : public Memory_Allocator
+struct Dynamic_Mem_Allocator 
 {
-public:
-    Dynamic_Allocator(ui64* BaseAddress, ui64 SizeOfMemoryStore) :
-        Memory_Allocator(BaseAddress, SizeOfMemoryStore)
-    {};
+    Memory_Region MemRegions[REGION_COUNT];
 
     List* FreeBlocks;
     List* FilledBlocks;
-
-    auto AddPartition(Memory_Partition* MemPartition) -> void;
 };
 
-auto
-Dynamic_Allocator::AddPartition(Memory_Partition* MemPartition) -> void
+local_func auto
+CreateRegionFromPlatformMem(Game_Memory* GameMemory, ui64 Size) -> Memory_Region 
 {
-    BGZ_ASSERT((this->TotalMemorySize - this->UsedAmount) > MemPartition->Size);
+    Memory_Region Result{};
 
-    for(ui32 PartitionIndex{0}; PartitionIndex < ArrayCount(this->Partitions); ++PartitionIndex)
-    {
-        if(this->Partitions[PartitionIndex] != nullptr)
-        {
-            MemPartition->BaseAddress = this->BaseAddress + this->UsedAmount;
-            this->UsedAmount += MemPartition->Size;
-            this->Partitions[PartitionIndex] = MemPartition;
-            return;
-        };
-    };
+    Result.BaseAddress = (ui64*)((ui8*)GameMemory->TemporaryStorage) + GameMemory->TemporaryStorageUsed;
+    Result.EndAddress = (ui64*)((ui8*)Result.BaseAddress) + (Size - 1);
+    Result.Size = Size;
+    Result.UsedAmount = 0;
+    GameMemory->TemporaryStorageUsed += Size;
+
+    return Result;
 };
 
-#define MallocType(Type, Count) (Type*)_MallocType(&GlobalGameState->SpineData, ((sizeof(Type)) * (Count)))
-#define MallocSize(Size) _MallocType(&GlobalGameState->SpineData, (Size))
-#define CallocType(Type, Count) (Type*)_CallocType(&GlobalGameState->SpineData, ((sizeof(Type)) * (Count)))
-#define CallocSize(Type, Count) _CallocType(&GlobalGameState->SpineData, (Size))
-#define ReAlloc(Ptr, Type, Count) (Type*)_ReAlloc(&GlobalGameState->SpineData, Ptr, sizeof(Type) * Count)
-#define DeAlloc(PtrToMemory) _DeAlloc(&GlobalGameState->SpineData, (ui64**)PtrToMemory)
+#define MallocType(Type, Count) (Type*)_MallocType(&GlobalGameState->DynamAllocator, ((sizeof(Type)) * (Count)), SPINE)
+#define MallocSize(Size) _MallocType(&GlobalGameState->DynamicAllocator, (Size), SPINE)
+#define CallocType(Type, Count) (Type*)_CallocType(&GlobalGameState->DynamAllocator, ((sizeof(Type)) * (Count)), SPINE)
+#define CallocSize(Type, Count) _CallocType(&GlobalGameState->DynamAllocator, (Size), SPINE)
+#define ReAlloc(Ptr, Type, Count) (Type*)_ReAlloc(&GlobalGameState->DynamAllocator, Ptr, sizeof(Type) * Count, SPINE)
+#define DeAlloc(PtrToMemory) _DeAlloc(&GlobalGameState->DynamAllocator, (ui64**)PtrToMemory, SPINE)
 

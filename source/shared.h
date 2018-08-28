@@ -10,7 +10,9 @@ struct Game_Memory
 
     ui32 SizeOfPermanentStorage{};
     void* PermanentStorage{nullptr};
+
     ui64 SizeOfTemporaryStorage{};
+    ui64 TemporaryStorageUsed{};
     void* TemporaryStorage{nullptr};
     ui64 TotalSize{};
 };

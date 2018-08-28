@@ -88,8 +88,5 @@ struct Game_State
     spSkeleton* MySkeleton;
     spAnimationStateData* AnimationStateData;
     spAnimationState* AnimationState;
-    Memory_Partition StackMem;
-    Memory_Partition DynamicMem;
-    Memory_Partition SpineData;
-    Memory_Partition ListData;
+    Dynamic_Mem_Allocator DynamAllocator;
 };
