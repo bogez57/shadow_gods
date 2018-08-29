@@ -53,8 +53,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(!GameMemory->IsInitialized)
     {
-        GameState->DynamAllocator.MemRegions[SPINE] = CreateRegionFromPlatformMem(GameMemory, Megabytes(10));
-        InitDynamAllocator(&GameState->DynamAllocator, SPINE);
+        GameState->DynamAllocator.MemRegions[SPINEDATA] = CreateRegionFromPlatformMem(GameMemory, Megabytes(10));
+        InitDynamAllocator(&GameState->DynamAllocator, SPINEDATA);
 
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
         if (GameState->Atlas)

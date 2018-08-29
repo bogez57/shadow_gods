@@ -10,9 +10,8 @@
     3.) Right now, list data structure goes through C's malloc and free. Want to try and use my memory instead if I can
 */
 
-#define PushSize(MemRegion, Size) _PushSize(MemRegion, Size)
 auto
-_PushSize(Memory_Region* MemRegion, sizet Size) -> void*
+_AllocSize(Memory_Region* MemRegion, sizet Size) -> void*
 {
     BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
@@ -21,9 +20,8 @@ _PushSize(Memory_Region* MemRegion, sizet Size) -> void*
     return Result;
 };
 
-#define PushType(MemRegion, Type, Count) (Type*)_PushType(MemRegion, sizeof(Type), Count)
 auto
-_PushType(Memory_Region* MemRegion, ui64 Size, sizet Count) -> void*
+_AllocType(Memory_Region* MemRegion, ui64 Size, sizet Count) -> void*
 {
     BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
@@ -32,7 +30,6 @@ _PushType(Memory_Region* MemRegion, ui64 Size, sizet Count) -> void*
     return Result;
 };
 
-#define FreeSize(MemRegion, Size) _FreeSize(MemRegion, Size)
 auto
 _FreeSize(Memory_Region* MemRegion, ui64 SizeToFree) -> void
 {
@@ -40,6 +37,26 @@ _FreeSize(Memory_Region* MemRegion, ui64 SizeToFree) -> void
 
     MemRegion->UsedAmount -= SizeToFree;
 };
+
+//////////////////////////////////////////////////////////////////////
+
+/*** Linear Allocator ***/
+
+auto
+_PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size, Mem_Region_Type Region)-> void*
+{
+    void* Result{};
+
+    return Result;
+};
+
+auto
+_PopSize(Linear_Mem_Allocator* LinearAllocator, ui64** MemToFree, Mem_Region_Type Region) -> void
+{
+
+};
+
+/*** Dynamic Allocator ***/
 
 local_func auto
 GetBlockHeader(void* Ptr) -> Block_Header*
@@ -129,18 +146,21 @@ local_func auto
 AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_Region_Type Region) -> void*
 {
     ui64 TotalSize = sizeof(Block_Header) + Size;
-    Block_Header* BlockHeader = (Block_Header*)PushSize(&DynamAllocator->MemRegions[Region], TotalSize);
+    Block_Header* BlockHeader = (Block_Header*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
 
     BlockHeader->Size = Size;
     BlockHeader->IsFree = false;
 
-
+#if 0
     list_get_last(DynamAllocator->FilledBlocks, &BlockHeader->prevBlock);
+#endif
 
     void* NewBlock = GetBlockData(BlockHeader);
     GetBlockHeader(BlockHeader->prevBlock)->nextBlock = NewBlock;
 
+#if 0
     list_add(DynamAllocator->FilledBlocks, NewBlock);
+#endif 
 
     return NewBlock;
 };
@@ -148,7 +168,10 @@ AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_R
 local_func auto
 FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT void* BlockToFree, Mem_Region_Type Region) -> void
 {
+#if 0
     list_remove(DynamAllocator->FilledBlocks, BlockToFree, NULL);
+#endif 
+
     Block_Header* BlockHeader = GetBlockHeader(BlockToFree);
 
     BlockHeader->IsFree = true;
@@ -204,17 +227,23 @@ local_func auto
 InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region) -> void
 {
     list_new(&DynamAllocator->FreeBlocks);
+
+#if 0
     list_new(&DynamAllocator->FilledBlocks);
+#endif 
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Block_Header) + BlockSize;
-    Block_Header* InitialBlockHeader = (Block_Header*)PushSize(&DynamAllocator->MemRegions[Region], TotalSize);
+    Block_Header* InitialBlockHeader = (Block_Header*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
 
     InitialBlockHeader->Size = BlockSize;
     InitialBlockHeader->IsFree = false;
 
     void* InitialBlock = GetBlockData(InitialBlockHeader);
+
+#if 0
     list_add_last(DynamAllocator->FilledBlocks, InitialBlock);
+#endif
 };
 
 auto 
@@ -236,7 +265,9 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
         else
         {
             SplitBlock(MemBlock, Size, DynamAllocator->FreeBlocks);
+#if 0
             SwapLists(MemBlock, DynamAllocator->FreeBlocks, DynamAllocator->FilledBlocks);
+#endif
 
             Result = MemBlock;
             return Result;

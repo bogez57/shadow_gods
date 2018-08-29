@@ -89,4 +89,5 @@ struct Game_State
     spAnimationStateData* AnimationStateData;
     spAnimationState* AnimationState;
     Dynamic_Mem_Allocator DynamAllocator;
+    Linear_Mem_Allocator LinearAllocator;
 };
