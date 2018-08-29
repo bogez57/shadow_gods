@@ -2,7 +2,6 @@
     TODO List:
 
     - convert game units from pixels to meters
-    - Replace spine ReadFile with my platform version instead of using it's default version
 */
 
 #if (DEVELOPMENT_BUILD)
@@ -26,8 +25,6 @@ global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
 
-#include "list.cpp"
-#include "common.cpp"
 #include "memory_handling.cpp"
 
 //Third Party
