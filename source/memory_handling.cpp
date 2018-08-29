@@ -67,16 +67,17 @@ _PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree, Mem_Region_Type
 /*** Dynamic Allocator ***/
 
 local_func auto
-GetBlockHeader(void* Ptr) -> Block_Header*
+ConvertDataToMemoryBlock(void* Ptr) -> Memory_Block*
 {
-    Block_Header *BlockHeader{};
-    BlockHeader = (Block_Header*)(((ui8*)Ptr) - (sizeof(Block_Header)));
+    Memory_Block *BlockHeader{};
+    BlockHeader= (Memory_Block*)(((ui8*)Ptr) - (sizeof(Memory_Block)));
+    BlockHeader->data = Ptr;
 
     return BlockHeader;
 };
 
 local_func auto
-GetBlockData(Block_Header* Header) -> void*
+GetDataFromBlock(Memory_Block* Header) -> void*
 {
     BGZ_ASSERT(Header->Size != 0);
 
@@ -86,59 +87,58 @@ GetBlockData(Block_Header* Header) -> void*
 };
 
 local_func auto
-SplitBlock(OUT void* BlockToSplit, sizet SizeOfNewBlock) -> void*
+SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock) -> Memory_Block*
 {
-    Block_Header *BlockHeader = GetBlockHeader(BlockToSplit);
+    BGZ_ASSERT(BlockToSplit->data);
+    BGZ_ASSERT(SizeOfNewBlock > sizeof(Memory_Block));
 
-    void *NewBlock = (((ui8 *)(BlockToSplit)) + ((BlockHeader->Size - 1) + (sizeof(Block_Header))));
-    Block_Header *NewBlockHeader = GetBlockHeader(NewBlock);
+    Memory_Block *NewBlock = (Memory_Block*)((ui8*)(BlockToSplit) + (BlockToSplit->Size - 1) + (sizeof(Memory_Block)));
 
-    NewBlockHeader->Size = SizeOfNewBlock;
-    NewBlockHeader->prevBlock = BlockToSplit;
-    NewBlockHeader->nextBlock = BlockHeader->nextBlock;
-    BlockHeader->nextBlock = NewBlock;
+    NewBlock->Size = SizeOfNewBlock;
+    NewBlock->data = GetDataFromBlock(NewBlock);
+    NewBlock->prevBlock = BlockToSplit;
+    NewBlock->nextBlock = BlockToSplit->nextBlock;
+    BlockToSplit->nextBlock = NewBlock;
 
     return NewBlock;
 };
 
 local_func auto
-ReSizeAndMarkAsInUse(OUT void* BlockToResize, sizet NewSize, List* FreeList) -> sizet
+ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet NewSize, List* FreeList) -> sizet
 {
-    Block_Header* Header = GetBlockHeader(BlockToResize);
-    sizet SizeDiff = Header->Size - NewSize;
-    Header->Size = NewSize;
-    if (Header->IsFree)
+    sizet SizeDiff = BlockToResize->Size - NewSize;
+    BlockToResize->Size = NewSize;
+    if (BlockToResize->IsFree)
         list_remove(FreeList, BlockToResize, NULL);
 
-    Header->IsFree = false;
+    BlockToResize->IsFree = false;
 
     return SizeDiff;
 };
 
 local_func auto
-GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> void*
+GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> Memory_Block*
 {
-    void* Result{};
+    Memory_Block* Result{};
 
     ListIter FreeListIter{};
-    void* MemBlock{};
+    Memory_Block* MemBlock{};
     list_iter_init(&FreeListIter, FreeList);
-    list_get_at(FreeList, FreeListIter.index, &MemBlock);
-    list_iter_next(&FreeListIter, &MemBlock);
+    list_get_at(FreeList, FreeListIter.index, &(void*)MemBlock);
+    list_iter_next(&FreeListIter, &(void*)MemBlock);
 
     for (ui32 BlockIndex{0}; BlockIndex < FreeList->size; ++BlockIndex)
     {
         if (MemBlock)
         {
-            Block_Header* BlockHeader = GetBlockHeader(MemBlock);
-            if (BlockHeader->IsFree && BlockHeader->Size > Size)
+            if (MemBlock->IsFree && MemBlock->Size > Size)
             {
                 Result = MemBlock;
                 return Result;
             }
         }
 
-        list_iter_next(&FreeListIter, &MemBlock);
+        list_iter_next(&FreeListIter, &(void*)MemBlock);
     };
 
     //No free blocks found
@@ -146,18 +146,18 @@ GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> void*
 };
 
 local_func auto
-AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_Region_Type Region) -> void*
+AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_Region_Type Region) -> Memory_Block*
 {
-    ui64 TotalSize = sizeof(Block_Header) + Size;
-    Block_Header* BlockHeader = (Block_Header*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
+    ui64 TotalSize = sizeof(Memory_Block) + Size;
+    Memory_Block* NewBlock = (Memory_Block*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
 
-    BlockHeader->Size = Size;
-    BlockHeader->IsFree = false;
+    NewBlock->Size = Size;
+    NewBlock->IsFree = false;
+    NewBlock->data = GetDataFromBlock(NewBlock);
 
-    GetLastElem(DynamAllocator->FilledBlocks, &BlockHeader->prevBlock);
+    GetLastElem(DynamAllocator->FilledBlocks, &(void*)NewBlock->prevBlock);
 
-    void* NewBlock = GetBlockData(BlockHeader);
-    GetBlockHeader(BlockHeader->prevBlock)->nextBlock = NewBlock;
+    NewBlock->prevBlock->nextBlock = NewBlock;
 
     AddToEnd(DynamAllocator->FilledBlocks, NewBlock);
 
@@ -165,45 +165,43 @@ AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_R
 };
 
 local_func auto
-FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT void* BlockToFree, Mem_Region_Type Region) -> void
+FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block* BlockToFree, Mem_Region_Type Region) -> void
 {
-    Block_Header* BlockHeader = GetBlockHeader(BlockToFree);
+    BlockToFree->IsFree = true;
 
-    BlockHeader->IsFree = true;
-
-    if (BlockHeader->nextBlock)
+    if (BlockToFree->nextBlock)
     {
-        if (GetBlockHeader(BlockHeader->nextBlock)->IsFree)
+        if (BlockToFree->nextBlock->IsFree)
         {
-            BlockHeader->Size += GetBlockHeader(BlockHeader->nextBlock)->Size;
-            list_remove(DynamAllocator->FreeBlocks, BlockHeader->nextBlock, NULL);
+            BlockToFree->Size += BlockToFree->nextBlock->Size;
+            list_remove(DynamAllocator->FreeBlocks, BlockToFree->nextBlock, NULL);
 
-            if (GetBlockHeader(BlockHeader->nextBlock)->nextBlock)
-                BlockHeader->nextBlock = GetBlockHeader(BlockHeader->nextBlock)->nextBlock;
+            if (BlockToFree->nextBlock->nextBlock)
+                BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
             else
-                BlockHeader->nextBlock = nullptr;
+                BlockToFree->nextBlock = nullptr;
 
-            GetBlockHeader(BlockHeader->nextBlock)->Size = 0;
+            BlockToFree->nextBlock->Size = 0;
         };
 
-        if (GetBlockHeader(BlockHeader->prevBlock)->IsFree)
+        if (BlockToFree->prevBlock->IsFree)
         {
-            GetBlockHeader(BlockHeader->prevBlock)->Size += BlockHeader->Size;
+            BlockToFree->prevBlock->Size += BlockToFree->Size;
 
-            if (BlockHeader->nextBlock)
-                BlockHeader->prevBlock = BlockHeader->nextBlock;
+            if (BlockToFree->nextBlock)
+                BlockToFree->prevBlock = BlockToFree->nextBlock;
             else
-                BlockHeader->prevBlock = nullptr;
+                BlockToFree->prevBlock = nullptr;
 
-            BlockHeader->Size = 0;
+            BlockToFree->Size = 0;
 
             return;
         }
     }
     else
     {
-        FreeSize(&DynamAllocator->MemRegions[Region], BlockHeader->Size);
-        GetBlockHeader(BlockHeader->prevBlock)->nextBlock = nullptr;
+        FreeSize(&DynamAllocator->MemRegions[Region], BlockToFree->Size);
+        BlockToFree->prevBlock->nextBlock = nullptr;
     }
 
     list_add(DynamAllocator->FreeBlocks, BlockToFree);
@@ -217,13 +215,12 @@ InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region
     DynamAllocator->FilledBlocks = NewList();
 
     ui16 BlockSize = 8;
-    ui16 TotalSize = sizeof(Block_Header) + BlockSize;
-    Block_Header* InitialBlockHeader = (Block_Header*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
+    ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
+    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
 
-    InitialBlockHeader->Size = BlockSize;
-    InitialBlockHeader->IsFree = false;
-
-    void* InitialBlock = GetBlockData(InitialBlockHeader);
+    InitialBlock->Size = BlockSize;
+    InitialBlock->IsFree = false;
+    InitialBlock->data = GetDataFromBlock(InitialBlock);
 
     AddToEnd(DynamAllocator->FilledBlocks, InitialBlock);
 };
@@ -237,35 +234,33 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
 
     if(Size > 0)
     {
-        void *MemBlock = GetFirstFreeBlockOfSize(Size, DynamAllocator->FreeBlocks);
+        Memory_Block* MemBlock = GetFirstFreeBlockOfSize(Size, DynamAllocator->FreeBlocks);
 
         //No free blocks found
         if (!MemBlock)
         {
             MemBlock = AppendNewFilledBlock(DynamAllocator, Size, Region);
 
-            Result = MemBlock;
-            return MemBlock;
+            Result = MemBlock->data;
+            return Result;
         }
         else
         {
             sizet SizeDiff = ReSizeAndMarkAsInUse(MemBlock, Size, DynamAllocator->FreeBlocks);
 
-            if (SizeDiff > sizeof(Block_Header))
+            if (SizeDiff > sizeof(Memory_Block))
             {
-                void* NewBlock = SplitBlock(MemBlock, SizeDiff);
-                Block_Header* NewBlockHeader = GetBlockHeader(NewBlock);
-                NewBlockHeader->IsFree = true;
+                Memory_Block* NewBlock = SplitBlock(MemBlock, SizeDiff);
+                NewBlock->IsFree = true;
                 list_add(DynamAllocator->FreeBlocks, NewBlock);
             }
             else
             {
-                Block_Header* BlockHeader = GetBlockHeader(MemBlock);
-                BlockHeader->Size += SizeDiff;
+                MemBlock->Size += SizeDiff;
             };
 
-            Result = MemBlock;
-            return MemBlock;
+            Result = MemBlock->data;
+            return Result;
         };
    };
 
@@ -277,58 +272,61 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
 {
     BGZ_ASSERT(Size <= DynamAllocator->MemRegions[Region].Size);
 
-    void* MemBlock = _MallocType(DynamAllocator, Size, Region);
+    void* MemBlockData = _MallocType(DynamAllocator, Size, Region);
 
-    if(MemBlock)
+    if(MemBlockData)
     {
-        Block_Header *BlockHeader = GetBlockHeader(MemBlock);
-        memset(MemBlock, 0, BlockHeader->Size);
+        Memory_Block* Block = ConvertDataToMemoryBlock(MemBlockData);
+        BGZ_ASSERT(Block->Size == Size);
+        BGZ_ASSERT(Block->data);
+
+        memset(MemBlockData, 0, Block->Size);
     };
 
-    return MemBlock;
+    return MemBlockData;
 };
 
 auto
-_ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* BlockToRealloc, ui64 NewSize, Mem_Region_Type Region) -> void*
+_ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSize, Mem_Region_Type Region) -> void*
 {
     BGZ_ASSERT((DynamAllocator->MemRegions[Region].UsedAmount - NewSize) > NewSize);
 
-    if(BlockToRealloc)
-    {
-        Block_Header* ReallocBlockHeader = GetBlockHeader(BlockToRealloc);
+    Memory_Block* BlockToRealloc = ConvertDataToMemoryBlock(DataToRealloc);
 
-        if (NewSize < ReallocBlockHeader->Size)
+    if(DataToRealloc)
+    {
+        if (NewSize < BlockToRealloc->Size)
         {
             sizet SizeDiff = ReSizeAndMarkAsInUse(BlockToRealloc, NewSize, DynamAllocator->FreeBlocks);
 
-            if(SizeDiff > sizeof(Block_Header))
+            if(SizeDiff > sizeof(Memory_Block))
             {
-                void* NewBlock = SplitBlock(BlockToRealloc, SizeDiff);
-                Block_Header *NewBlockHeader = GetBlockHeader(NewBlock);
-                NewBlockHeader->IsFree = true;
+                Memory_Block* NewBlock = SplitBlock(BlockToRealloc, SizeDiff);
+                NewBlock->IsFree = true;
                 list_add(DynamAllocator->FreeBlocks, NewBlock);
             }
             else
             {
-                ReallocBlockHeader->Size += SizeDiff;
+                BlockToRealloc->Size += SizeDiff;
             };
         }
         else
         {
             FreeBlockButDontZero(DynamAllocator, BlockToRealloc, Region);
-            void* NewBlock = AppendNewFilledBlock(DynamAllocator, NewSize, Region);
+            Memory_Block* NewBlock = AppendNewFilledBlock(DynamAllocator, NewSize, Region);
 
-            memcpy(NewBlock, BlockToRealloc, NewSize);
+            memcpy(NewBlock->data, BlockToRealloc->data, NewSize);
 
-            return NewBlock;
+            return NewBlock->data;
         };
     }
     else
     {
         BlockToRealloc = AppendNewFilledBlock(DynamAllocator, NewSize, Region);
+        DataToRealloc = BlockToRealloc->data;
     };
 
-    return BlockToRealloc;
+    return DataToRealloc;
 };
 
 auto
@@ -338,9 +336,9 @@ _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree, Mem_Region_Typ
     {
         BGZ_ASSERT(*MemToFree > DynamAllocator->MemRegions[Region].BaseAddress && *MemToFree < DynamAllocator->MemRegions[Region].EndAddress);
 
-        Block_Header *BlockHeader = GetBlockHeader(*MemToFree);
+        Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 
-        FreeBlockButDontZero(DynamAllocator, *MemToFree, Region);
+        FreeBlockButDontZero(DynamAllocator, Block, Region);
 
         *MemToFree = nullptr;
     };

@@ -38,12 +38,13 @@ struct Linear_Mem_Allocator
 
 #include "MyList.h"
 
-struct Block_Header
+struct Memory_Block 
 {
     b IsFree{true};
     sizet Size{0};
-    void* nextBlock{nullptr};
-    void* prevBlock{nullptr};
+    void* data{nullptr};
+    Memory_Block* nextBlock{nullptr};
+    Memory_Block* prevBlock{nullptr};
 };
 
 struct Dynamic_Mem_Allocator 
