@@ -13,7 +13,6 @@ struct Memory_Region
 enum Mem_Region_Type
 {
     SPINEDATA,
-    LISTDATA,
     REGION_COUNT
 };
 
@@ -36,8 +35,6 @@ struct Linear_Mem_Allocator
 
 /*** Dynamic Allocator ***/
 
-#include "MyList.h"
-
 struct Memory_Block 
 {
     b IsFree{true};
@@ -51,8 +48,9 @@ struct Dynamic_Mem_Allocator
 {
     Memory_Region MemRegions[REGION_COUNT];
 
-    List* FreeBlocks;
-    MyList* FilledBlocks;
+    Memory_Block* head;
+    Memory_Block* tail;
+    ui32 AmountOfBlocks;
 };
 
 local_func auto

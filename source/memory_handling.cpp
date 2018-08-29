@@ -5,7 +5,7 @@
 
 /*
     TODO: 
-    1.) Maybe get rid of FilledBlocks linked list data structure and use array instead?
+    1.) Maybe get rid of Blocks linked list data structure and use array instead?
     2.) Alignment?
     3.) Right now, list data structure goes through C's malloc and free. Want to try and use my memory instead if I can
 */
@@ -87,7 +87,7 @@ GetDataFromBlock(Memory_Block* Header) -> void*
 };
 
 local_func auto
-SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock) -> Memory_Block*
+SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock, Dynamic_Mem_Allocator* DynamAllocator) -> Memory_Block*
 {
     BGZ_ASSERT(BlockToSplit->data);
     BGZ_ASSERT(SizeOfNewBlock > sizeof(Memory_Block));
@@ -100,45 +100,44 @@ SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock) -> Memory_Block
     NewBlock->nextBlock = BlockToSplit->nextBlock;
     BlockToSplit->nextBlock = NewBlock;
 
+    ++DynamAllocator->AmountOfBlocks;
+
     return NewBlock;
 };
 
 local_func auto
-ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet NewSize, List* FreeList) -> sizet
+ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet NewSize) -> sizet
 {
     sizet SizeDiff = BlockToResize->Size - NewSize;
     BlockToResize->Size = NewSize;
-    if (BlockToResize->IsFree)
-        list_remove(FreeList, BlockToResize, NULL);
-
     BlockToResize->IsFree = false;
 
     return SizeDiff;
 };
 
 local_func auto
-GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> Memory_Block*
+GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Memory_Block*
 {
     Memory_Block* Result{};
+    BGZ_ASSERT(DynamAllocator->head);
 
-    ListIter FreeListIter{};
-    Memory_Block* MemBlock{};
-    list_iter_init(&FreeListIter, FreeList);
-    list_get_at(FreeList, FreeListIter.index, &(void*)MemBlock);
-    list_iter_next(&FreeListIter, &(void*)MemBlock);
+    Memory_Block* MemBlock = DynamAllocator->head;
 
-    for (ui32 BlockIndex{0}; BlockIndex < FreeList->size; ++BlockIndex)
+    //Not first or last block
+    if(MemBlock->nextBlock != nullptr)
     {
-        if (MemBlock)
+        for (ui32 BlockIndex{0}; BlockIndex < DynamAllocator->AmountOfBlocks; ++BlockIndex)
         {
             if (MemBlock->IsFree && MemBlock->Size > Size)
             {
                 Result = MemBlock;
                 return Result;
             }
-        }
-
-        list_iter_next(&FreeListIter, &(void*)MemBlock);
+            else
+            {
+                MemBlock = MemBlock->nextBlock;
+            }
+        };
     };
 
     //No free blocks found
@@ -155,11 +154,12 @@ AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_R
     NewBlock->IsFree = false;
     NewBlock->data = GetDataFromBlock(NewBlock);
 
-    GetLastElem(DynamAllocator->FilledBlocks, &(void*)NewBlock->prevBlock);
+    NewBlock->prevBlock = DynamAllocator->tail;
+    NewBlock->nextBlock = nullptr;
+    DynamAllocator->tail->nextBlock = NewBlock;
+    DynamAllocator->tail = NewBlock;
 
-    NewBlock->prevBlock->nextBlock = NewBlock;
-
-    AddToEnd(DynamAllocator->FilledBlocks, NewBlock);
+    ++DynamAllocator->AmountOfBlocks;
 
     return NewBlock;
 };
@@ -169,31 +169,31 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
 {
     BlockToFree->IsFree = true;
 
+    //If not the last block
     if (BlockToFree->nextBlock)
     {
         if (BlockToFree->nextBlock->IsFree)
         {
             BlockToFree->Size += BlockToFree->nextBlock->Size;
-            list_remove(DynamAllocator->FreeBlocks, BlockToFree->nextBlock, NULL);
 
-            if (BlockToFree->nextBlock->nextBlock)
-                BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
-            else
-                BlockToFree->nextBlock = nullptr;
+            if (BlockToFree->nextBlock->nextBlock) BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
+            else BlockToFree->nextBlock = nullptr;
 
             BlockToFree->nextBlock->Size = 0;
+
+            --DynamAllocator->AmountOfBlocks;
         };
 
         if (BlockToFree->prevBlock->IsFree)
         {
             BlockToFree->prevBlock->Size += BlockToFree->Size;
 
-            if (BlockToFree->nextBlock)
-                BlockToFree->prevBlock = BlockToFree->nextBlock;
-            else
-                BlockToFree->prevBlock = nullptr;
+            if (BlockToFree->nextBlock) BlockToFree->prevBlock = BlockToFree->nextBlock;
+            else BlockToFree->prevBlock = nullptr;
 
             BlockToFree->Size = 0;
+
+            --DynamAllocator->AmountOfBlocks;
 
             return;
         }
@@ -202,18 +202,15 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
     {
         FreeSize(&DynamAllocator->MemRegions[Region], BlockToFree->Size);
         BlockToFree->prevBlock->nextBlock = nullptr;
+        DynamAllocator->tail = BlockToFree->prevBlock;
+        --DynamAllocator->AmountOfBlocks;
     }
-
-    list_add(DynamAllocator->FreeBlocks, BlockToFree);
 };
 
 local_func auto
 InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region) -> void
 {
-    list_new(&DynamAllocator->FreeBlocks);
-
-    DynamAllocator->FilledBlocks = NewList();
-
+    DynamAllocator->AmountOfBlocks = 0;
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
     Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
@@ -221,8 +218,11 @@ InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region
     InitialBlock->Size = BlockSize;
     InitialBlock->IsFree = false;
     InitialBlock->data = GetDataFromBlock(InitialBlock);
+    InitialBlock->nextBlock = nullptr;
+    InitialBlock->prevBlock = nullptr;
 
-    AddToEnd(DynamAllocator->FilledBlocks, InitialBlock);
+    DynamAllocator->head = InitialBlock;
+    DynamAllocator->tail = InitialBlock;
 };
 
 auto 
@@ -234,7 +234,7 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
 
     if(Size > 0)
     {
-        Memory_Block* MemBlock = GetFirstFreeBlockOfSize(Size, DynamAllocator->FreeBlocks);
+        Memory_Block* MemBlock = GetFirstFreeBlockOfSize(Size, DynamAllocator);
 
         //No free blocks found
         if (!MemBlock)
@@ -246,13 +246,12 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
         }
         else
         {
-            sizet SizeDiff = ReSizeAndMarkAsInUse(MemBlock, Size, DynamAllocator->FreeBlocks);
+            sizet SizeDiff = ReSizeAndMarkAsInUse(MemBlock, Size);
 
             if (SizeDiff > sizeof(Memory_Block))
             {
-                Memory_Block* NewBlock = SplitBlock(MemBlock, SizeDiff);
+                Memory_Block* NewBlock = SplitBlock(MemBlock, SizeDiff, DynamAllocator);
                 NewBlock->IsFree = true;
-                list_add(DynamAllocator->FreeBlocks, NewBlock);
             }
             else
             {
@@ -277,7 +276,6 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
     if(MemBlockData)
     {
         Memory_Block* Block = ConvertDataToMemoryBlock(MemBlockData);
-        BGZ_ASSERT(Block->Size == Size);
         BGZ_ASSERT(Block->data);
 
         memset(MemBlockData, 0, Block->Size);
@@ -297,13 +295,12 @@ _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSiz
     {
         if (NewSize < BlockToRealloc->Size)
         {
-            sizet SizeDiff = ReSizeAndMarkAsInUse(BlockToRealloc, NewSize, DynamAllocator->FreeBlocks);
+            sizet SizeDiff = ReSizeAndMarkAsInUse(BlockToRealloc, NewSize);
 
             if(SizeDiff > sizeof(Memory_Block))
             {
-                Memory_Block* NewBlock = SplitBlock(BlockToRealloc, SizeDiff);
+                Memory_Block* NewBlock = SplitBlock(BlockToRealloc, SizeDiff, DynamAllocator);
                 NewBlock->IsFree = true;
-                list_add(DynamAllocator->FreeBlocks, NewBlock);
             }
             else
             {
@@ -316,6 +313,7 @@ _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSiz
             Memory_Block* NewBlock = AppendNewFilledBlock(DynamAllocator, NewSize, Region);
 
             memcpy(NewBlock->data, BlockToRealloc->data, NewSize);
+            memset(BlockToRealloc->data, 0, BlockToRealloc->Size); //TODO: Remove if speed becomes an issue;
 
             return NewBlock->data;
         };
@@ -339,6 +337,7 @@ _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree, Mem_Region_Typ
         Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 
         FreeBlockButDontZero(DynamAllocator, Block, Region);
+        memset(*MemToFree, 0, Block->Size); //TODO: Remove if speed becomes an issue;
 
         *MemToFree = nullptr;
     };
