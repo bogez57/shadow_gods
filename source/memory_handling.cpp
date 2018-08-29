@@ -7,7 +7,6 @@
     TODO: 
     1.) Maybe get rid of Blocks linked list data structure and use array instead?
     2.) Alignment?
-    3.) Right now, list data structure goes through C's malloc and free. Want to try and use my memory instead if I can
 */
 
 auto
