@@ -45,16 +45,24 @@ _FreeSize(Memory_Region* MemRegion, ui64 SizeToFree) -> void
 auto
 _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size, Mem_Region_Type Region)-> void*
 {
-    void* Result{};
+    Memory_Region* MemRegion = &LinearAllocator->MemRegions[Region];
+    BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
+
+    void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
+    MemRegion->UsedAmount += (Size);
 
     return Result;
 };
 
 auto
-_PopSize(Linear_Mem_Allocator* LinearAllocator, ui64** MemToFree, Mem_Region_Type Region) -> void
+_PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree, Mem_Region_Type Region) -> void
 {
+    Memory_Region* MemRegion = &LinearAllocator->MemRegions[Region];
+    BGZ_ASSERT(SizeToFree < MemRegion->Size || SizeToFree < MemRegion->UsedAmount);
 
+    MemRegion->UsedAmount -= SizeToFree;
 };
+
 
 /*** Dynamic Allocator ***/
 
@@ -136,13 +144,6 @@ GetFirstFreeBlockOfSize(ui64 Size, List* FreeList) -> void*
 };
 
 local_func auto
-SwapLists(void* BlockToSwap, List* FromList, List* ToList) -> auto
-{
-    BGZ_ASSERT(CC_OK == list_remove(FromList, BlockToSwap, NULL));
-    list_add(ToList, BlockToSwap);
-};
-
-local_func auto
 AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_Region_Type Region) -> void*
 {
     ui64 TotalSize = sizeof(Block_Header) + Size;
@@ -151,16 +152,12 @@ AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_R
     BlockHeader->Size = Size;
     BlockHeader->IsFree = false;
 
-#if 0
-    list_get_last(DynamAllocator->FilledBlocks, &BlockHeader->prevBlock);
-#endif
+    GetLastElem(DynamAllocator->FilledBlocks, &BlockHeader->prevBlock);
 
     void* NewBlock = GetBlockData(BlockHeader);
     GetBlockHeader(BlockHeader->prevBlock)->nextBlock = NewBlock;
 
-#if 0
-    list_add(DynamAllocator->FilledBlocks, NewBlock);
-#endif 
+    AddToEnd(DynamAllocator->FilledBlocks, NewBlock);
 
     return NewBlock;
 };
@@ -168,10 +165,6 @@ AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_R
 local_func auto
 FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT void* BlockToFree, Mem_Region_Type Region) -> void
 {
-#if 0
-    list_remove(DynamAllocator->FilledBlocks, BlockToFree, NULL);
-#endif 
-
     Block_Header* BlockHeader = GetBlockHeader(BlockToFree);
 
     BlockHeader->IsFree = true;
@@ -215,22 +208,11 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT void* BlockT
 };
 
 local_func auto
-InitPartition(Memory_Region* Partition, ui64 Size) -> void
-{
-    Partition->BaseAddress = nullptr;
-    Partition->EndAddress = nullptr;
-    Partition->Size = Size;
-    Partition->UsedAmount = 0;
-};
-
-local_func auto
 InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region) -> void
 {
     list_new(&DynamAllocator->FreeBlocks);
 
-#if 0
-    list_new(&DynamAllocator->FilledBlocks);
-#endif 
+    DynamAllocator->FilledBlocks = NewList();
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Block_Header) + BlockSize;
@@ -241,9 +223,7 @@ InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region
 
     void* InitialBlock = GetBlockData(InitialBlockHeader);
 
-#if 0
-    list_add_last(DynamAllocator->FilledBlocks, InitialBlock);
-#endif
+    AddToEnd(DynamAllocator->FilledBlocks, InitialBlock);
 };
 
 auto 
@@ -264,10 +244,9 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
         }
         else
         {
+            //Remove Size check from SplitBlock Func to out here
             SplitBlock(MemBlock, Size, DynamAllocator->FreeBlocks);
-#if 0
-            SwapLists(MemBlock, DynamAllocator->FreeBlocks, DynamAllocator->FilledBlocks);
-#endif
+            list_remove(DynamAllocator->FreeBlocks, MemBlock, NULL);
 
             Result = MemBlock;
             return Result;

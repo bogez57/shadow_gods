@@ -36,6 +36,8 @@ struct Linear_Mem_Allocator
 
 /*** Dynamic Allocator ***/
 
+#include "MyList.h"
+
 struct Block_Header
 {
     b IsFree{true};
@@ -49,6 +51,7 @@ struct Dynamic_Mem_Allocator
     Memory_Region MemRegions[REGION_COUNT];
 
     List* FreeBlocks;
+    MyList* FilledBlocks;
 };
 
 local_func auto
