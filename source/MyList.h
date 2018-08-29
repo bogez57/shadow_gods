@@ -21,3 +21,5 @@ auto
 AddToEnd(MyList* list, void* element) -> void;
 auto
 GetLastElem(MyList *list, void** out) -> void;
+auto
+RemoveLastElem(MyList* list) -> void;

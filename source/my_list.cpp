@@ -38,3 +38,18 @@ GetLastElem(MyList *list, void** out) -> void
     *out = list->tail->data;
 };
 
+auto
+RemoveLastElem(MyList* list) -> void
+{
+    if (!list->size)
+        BGZ_ASSERT(1 == 0);
+
+    MyNode* node = list->tail; 
+    void *data = node->data;
+
+    BGZ_ASSERT(node->next != NULL);
+    list->tail = node->prev;
+
+    PopSize(sizeof(MyNode));
+    list->size--;
+};

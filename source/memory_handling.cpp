@@ -54,6 +54,15 @@ _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size, Mem_Region_Type Regi
     return Result;
 };
 
+auto
+_PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree, Mem_Region_Type Region) -> void
+{
+    Memory_Region* MemRegion = &LinearAllocator->MemRegions[Region];
+    BGZ_ASSERT(SizeToFree < MemRegion->Size || SizeToFree < MemRegion->UsedAmount);
+
+    MemRegion->UsedAmount -= SizeToFree;
+};
+
 
 /*** Dynamic Allocator ***/
 

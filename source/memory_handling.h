@@ -31,6 +31,7 @@ struct Linear_Mem_Allocator
 
 #define PushSize(Size) _PushType(&GlobalGameState->LinearAllocator, (Size), (LISTDATA))
 #define PushType(Type, Count) (Type*)_PushType(&GlobalGameState->LinearAllocator, ((sizeof(Type)) * (Count)), LISTDATA)
+#define PopSize(Size) _PopSize(&GlobalGameState->LinearAllocator, (Size), LISTDATA)
 
 
 /*** Dynamic Allocator ***/
