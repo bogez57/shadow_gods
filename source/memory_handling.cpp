@@ -12,7 +12,7 @@
 auto
 _AllocSize(Memory_Region* MemRegion, sizet Size) -> void*
 {
-    BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
+    BGZ_ERRASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size, "Not enough memory!");
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
     MemRegion->UsedAmount += (Size);
 
@@ -22,7 +22,7 @@ _AllocSize(Memory_Region* MemRegion, sizet Size) -> void*
 auto
 _AllocType(Memory_Region* MemRegion, ui64 Size, sizet Count) -> void*
 {
-    BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
+    BGZ_ERRASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size, "Not enough Memory!");
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
     MemRegion->UsedAmount += (Size * Count);
 
@@ -146,6 +146,8 @@ GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Mem
 local_func auto
 AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size, Mem_Region_Type Region) -> Memory_Block*
 {
+    BGZ_ERRCTXT1("When trying to add a new memory block to memory region");
+
     ui64 TotalSize = sizeof(Memory_Block) + Size;
     Memory_Block* NewBlock = (Memory_Block*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
 

@@ -108,7 +108,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
     if(Keyboard->MoveDown.Pressed)
     {
         spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 30.0f;
+        upperArm->rotation += 20.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
@@ -166,8 +166,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         for(int SlotIndex{0}; SlotIndex < GameState->MySkeleton->slotsCount; ++SlotIndex)
         {
             float verts[8] = {0};
-            Texture *texture;
-            spRegionAttachment *regionAttachment;
+            Texture *texture{};
+            spRegionAttachment *regionAttachment{};
 
             //If no current active attachment for slot then continue to next slot
             if(!GameState->MySkeleton->slots[SlotIndex]->attachment) continue;
