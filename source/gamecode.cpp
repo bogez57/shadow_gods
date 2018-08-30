@@ -12,6 +12,7 @@
     #define BGZ_ERRHANDLING_ON false
 #endif
 
+#define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
 
 #include "gamecode.h"
@@ -35,6 +36,8 @@ extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)
 {
+    BGZ_ERRCTXT1("When entering GameUpdate");
+
     Game_State* GameState = (Game_State*)GameMemory->PermanentStorage;
     GlobalGameState = GameState;
     GlobalPlatformServices = PlatformServices;
@@ -50,45 +53,20 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     if(!GameMemory->IsInitialized)
     {
-        GameState->DynamAllocator.MemRegions[SPINEDATA] = CreateRegionFromPlatformMem(GameMemory, Megabytes(10));
+        BGZ_ERRCTXT1("When Initializing GameMemory and GameState");
+
+        GameState->DynamAllocator.MemRegions[SPINEDATA] = CreateRegionFromGameMem(GameMemory, Megabytes(10));
         InitDynamAllocator(&GameState->DynamAllocator, SPINEDATA);
 
         GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
-        if (GameState->Atlas)
-        {
-            GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
-            if(GameState->SkelJson )
-            {
-                GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
-                if (GameState->SkelData)
-                {
-                    GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
-                    if (GameState->MySkeleton)
-                    {
-                        GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
-                        GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
-                        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
-                        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "run", 1, 1.0f);
-                    }
-                    else
-                    {
-                        InvalidCodePath;
-                    }
-                }
-                else
-                {
-                    InvalidCodePath;
-                };
-            }
-            else
-            {
-                InvalidCodePath;
-            };
-        }
-        else
-        {
-            InvalidCodePath;
-        };
+        GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
+        GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
+        GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
+        GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
+        GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
+
+        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
+        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "run", 1, 1.0f);
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;

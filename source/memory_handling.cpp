@@ -209,7 +209,10 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
 local_func auto
 InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region) -> void
 {
+    BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
+
     DynamAllocator->AmountOfBlocks = 0;
+
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
     Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&DynamAllocator->MemRegions[Region], TotalSize);
@@ -227,7 +230,7 @@ InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region
 auto 
 _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type Region) -> void*
 {
-    BGZ_ASSERT(Size <= DynamAllocator->MemRegions[Region].Size);
+    BGZ_ERRASSERT(Size <= DynamAllocator->MemRegions[Region].Size, "Size is too big for reserved memory region in dynamic allocator!");
 
     void* Result{nullptr};
 
@@ -268,7 +271,7 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
 auto
 _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type Region) -> void*
 {
-    BGZ_ASSERT(Size <= DynamAllocator->MemRegions[Region].Size);
+    BGZ_ERRASSERT(Size <= DynamAllocator->MemRegions[Region].Size, "Size is too big for reserved memory region in dynamic allocator!");
 
     void* MemBlockData = _MallocType(DynamAllocator, Size, Region);
 
@@ -286,7 +289,7 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size, Mem_Region_Type R
 auto
 _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSize, Mem_Region_Type Region) -> void*
 {
-    BGZ_ASSERT((DynamAllocator->MemRegions[Region].UsedAmount - NewSize) > NewSize);
+    BGZ_ERRASSERT((DynamAllocator->MemRegions[Region].UsedAmount - NewSize) > NewSize, "Not enough room left in memory region!");
 
     Memory_Block* BlockToRealloc = ConvertDataToMemoryBlock(DataToRealloc);
 
@@ -331,7 +334,7 @@ _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree, Mem_Region_Typ
 {
     if (*MemToFree) 
     {
-        BGZ_ASSERT(*MemToFree > DynamAllocator->MemRegions[Region].BaseAddress && *MemToFree < DynamAllocator->MemRegions[Region].EndAddress);
+        BGZ_ERRASSERT(*MemToFree > DynamAllocator->MemRegions[Region].BaseAddress && *MemToFree < DynamAllocator->MemRegions[Region].EndAddress, "Ptr to free not within memory region!");
 
         Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 

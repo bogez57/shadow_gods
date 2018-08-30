@@ -5,7 +5,7 @@ namespace Bgz
 	class ErrContext
 	{
 	public:
-		ErrContext(const char* c_ErrorContextDescription, const char* c_ErrorContexData = "");
+		ErrContext(const char* ErrorContextDescription, const char* ErrorContexData = "");
 		~ErrContext();
 		ErrContext(const ErrContext& copy) = delete;
 		void operator=(const ErrContext& copy) = delete;

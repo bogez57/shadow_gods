@@ -13,7 +13,7 @@ inline ui32
 SafeTruncateUInt64(ui64 Value)
 {
     // TODO(casey): Defines for maximum values
-    Assert(Value <= 0xFFFFFFFF);
+    BGZ_ASSERT(Value <= 0xFFFFFFFF);
     ui32 Result = (ui32)Value;
     return(Result);
 }

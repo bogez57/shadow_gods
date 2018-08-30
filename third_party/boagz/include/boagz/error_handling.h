@@ -4,16 +4,22 @@
 #include <stdlib.h>
 #include "boagz\error_context.h"
 
+#ifdef BGZ_MAX_CONTEXTS
+	#define MAX_CONTEXTS BGZ_MAX_CONTEXTS
+#else
+	#define MAX_CONTEXTS 10000
+#endif
+
 #if BGZ_LOGGING_ON
-	#define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
+	#define BgzAssert(Expression) if(!(Expression)) {*(int *)0 = 0;}
 
 	#define BGZ_ASSERT(expression) \
-		Assert(expression) 
+		BgzAssert(expression) 
 
 	#define BGZ_CONSOLE(...) \
 		do { fprintf_s(stderr, __VA_ARGS__); } while (0)
 
-	#define InvalidCodePath Assert(!"InvalidCodePath");
+	#define InvalidCodePath BgzAssert(!"InvalidCodePath");
 
 #else
 	#define BGZ_ASSERT(expression) __noop

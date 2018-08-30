@@ -54,7 +54,7 @@ struct Dynamic_Mem_Allocator
 };
 
 local_func auto
-CreateRegionFromPlatformMem(Game_Memory* GameMemory, ui64 Size) -> Memory_Region 
+CreateRegionFromGameMem(Game_Memory* GameMemory, ui64 Size) -> Memory_Region 
 {
     Memory_Region Result{};
 

@@ -4,8 +4,8 @@
 
 namespace Bgz
 {
-	thread_local const char *errorContextDescriptions[100];
-	thread_local const char *errorContextData[100];
+	thread_local const char *errorContextDescriptions[MAX_CONTEXTS];
+	thread_local const char *errorContextData[MAX_CONTEXTS];
 	thread_local unsigned int numContexts = 0;
 
 	ErrContext::ErrContext(const char *c_ErrorContextDescription, const char *c_ErrorContexData /* default value = "" */)
@@ -22,6 +22,14 @@ namespace Bgz
 
 	auto ErrContext::LogContext() -> void
 	{
+		fprintf_s(stderr, "Number of contexts %i", MAX_CONTEXTS);
+		if (numContexts > MAX_CONTEXTS)
+		{
+			fprintf_s(stderr, "Too many contexts!!!!!!");
+			int dummy = 3;
+			scanf_s("%d", &dummy);
+		};
+
 		for (unsigned int i = 0; i < numContexts; ++i)
 		{
 			//Add extra space to separate context reporting from whatever log messages came before it
