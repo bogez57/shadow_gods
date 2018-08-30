@@ -96,7 +96,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
         {//Init Game State
             GameLevel->DisplayImage.Data = PlatformServices.LoadRGBAImage(
-                                                            "4k.jpg", 
+                                                            "data/4k.jpg", 
                                                             &GameLevel->DisplayImage.Dimensions.Width,
                                                             &GameLevel->DisplayImage.Dimensions.Height);
 
