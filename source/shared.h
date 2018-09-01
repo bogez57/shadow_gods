@@ -91,6 +91,7 @@ struct Platform_Services
     void* (*PlatMalloc)(sizet);
     void* (*PlatCalloc)(sizet, sizet);
     void (*PlatFree)(void*);
+    b HasDLLBeenReloaded{false};
 };
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////

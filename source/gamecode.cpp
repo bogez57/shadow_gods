@@ -20,7 +20,7 @@
 #include "math.h"
 #include "memory_handling.h"
 
-global_variable Platform_Services GlobalPlatformServices;
+global_variable Platform_Services* GlobalPlatformServices;
 global_variable Game_Render_Cmds GlobalRenderCmds;
 global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
@@ -33,7 +33,7 @@ global_variable f32 ViewportHeight;
 #include <boagz/error_context.cpp>
 
 extern "C" void
-GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Render_Cmds RenderCmds, 
+GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -73,7 +73,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
         ViewportHeight = 720.0f;
 
         {//Init Game State
-            GameLevel->DisplayImage.Data = PlatformServices.LoadRGBAImage(
+            GameLevel->DisplayImage.Data = PlatformServices->LoadRGBAImage(
                                                             "data/4k.jpg", 
                                                             &GameLevel->DisplayImage.Dimensions.Width,
                                                             &GameLevel->DisplayImage.Dimensions.Height);
@@ -99,6 +99,13 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services PlatformServices, Game_Ren
 
     spAnimationState_update(GameState->AnimationState, .017f);
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
+
+    if(GlobalPlatformServices->HasDLLBeenReloaded)
+    {
+        BGZ_CONSOLE("It has!");
+
+        GlobalPlatformServices->HasDLLBeenReloaded = false;
+    };
 
     if (Keyboard->MoveUp.Pressed)
     {

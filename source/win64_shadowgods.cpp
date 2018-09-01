@@ -290,13 +290,14 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    FreeGameCodeDLL(Game_Code *GameCode) -> void
+    FreeGameCodeDLL(Game_Code *GameCode, Platform_Services* platformServices) -> void
     {
         if (GameCode->DLLHandle != INVALID_HANDLE_VALUE)
         {
             FreeLibrary(GameCode->DLLHandle);
             GameCode->DLLHandle = 0;
             GameCode->UpdateFunc = nullptr;
+            platformServices->HasDLLBeenReloaded = true;
         };
     };
 
@@ -849,7 +850,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
                 if(CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
                 {
-                    Win32::Dbg::FreeGameCodeDLL(&GameCode);
+                    Win32::Dbg::FreeGameCodeDLL(&GameCode, &PlatformServices);
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
                 }
 
@@ -951,7 +952,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput(&UpdatedInput, &UpdatedReplayState);
                 }
 
-                GameCode.UpdateFunc(&GameMemory, PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState; 
@@ -973,7 +974,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 f32 FrameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
                 FramePerformanceTimer.UpdateTimeCount();
 
-                BGZ_CONSOLE("ms per frame: %f\n", FrameTimeInMS);
+                //BGZ_CONSOLE("ms per frame: %f\n", FrameTimeInMS);
             };
 
             wglMakeCurrent(NULL, NULL);
