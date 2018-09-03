@@ -305,7 +305,7 @@ namespace Win32::Dbg
     InitInputRecording(Win32::Dbg::Game_Replay_State *GameReplayState) -> void
     {
         GameReplayState->InputRecording = true;
-        GameReplayState->MaxInputStructsRecorded = 0;
+        GameReplayState->TotalInputStructsRecorded = 0;
         GameReplayState->InputCount = 0;
         memcpy(GameReplayState->OriginalRecordedGameState, GameMemory.PermanentStorage, GameMemory.TotalSize);
     };
@@ -315,7 +315,7 @@ namespace Win32::Dbg
     {
         GameReplayState->RecordedInputs[GameReplayState->InputCount] = *Input;
         ++GameReplayState->InputCount;
-        ++GameReplayState->MaxInputStructsRecorded;
+        ++GameReplayState->TotalInputStructsRecorded;
     };
 
     local_func auto
@@ -343,7 +343,7 @@ namespace Win32::Dbg
     local_func auto
     PlayBackInput(Game_Input *Input, Win32::Dbg::Game_Replay_State *GameReplayState) -> void
     {
-        if (GameReplayState->InputCount < GameReplayState->MaxInputStructsRecorded)
+        if (GameReplayState->InputCount < GameReplayState->TotalInputStructsRecorded)
         {
             *Input = GameReplayState->RecordedInputs[GameReplayState->InputCount];
             ++GameReplayState->InputCount;

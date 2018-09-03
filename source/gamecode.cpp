@@ -207,7 +207,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         };
     };
 
-    spAnimationState_update(GameState->AnimationState, .007f);
+    spAnimationState_update(GameState->AnimationState, .008f);
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
@@ -218,12 +218,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     if(Keyboard->MoveDown.Pressed)
     {
         spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 20.0f;
+        upperArm->rotation += 15.0f;
     }
 
     if(Keyboard->MoveRight.Pressed)
     {
-        MySkeleton->x += 1.0f;
+        MySkeleton->x += 8.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)

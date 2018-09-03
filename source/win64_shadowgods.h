@@ -21,7 +21,7 @@ namespace Win32::Dbg
     {
         Game_Input* RecordedInputs{nullptr};
         ui32 InputCount{};
-        ui32 MaxInputStructsRecorded{};
+        ui32 TotalInputStructsRecorded{};
         void* OriginalRecordedGameState{nullptr};
 
         bool InputRecording{false};
