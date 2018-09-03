@@ -859,9 +859,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
                 if(CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
                 {
+                    BGZ_CONSOLE("About to free game dll\n");
                     Win32::Dbg::FreeGameCodeDLL(&GameCode, &PlatformServices);
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
                     FirstInputPlaybackAfterDLLReload = true;
+                    BGZ_CONSOLE("Game dll has been reloaded\n");
                 }
 
                 //TODO: Should we poll more frequently?
