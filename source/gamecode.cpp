@@ -104,6 +104,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     //DLL reload happens during playback and reloading all function pointers at that point. 
     if(GlobalPlatformServices->HasDLLBeenReloaded || GameInput->InitialInputPlaybackAfterDLLReload)
     {
+        BGZ_ERRCTXT1("When updating function pointers due to dll reload");
+
         GlobalPlatformServices->HasDLLBeenReloaded = false;
         GameInput->InitialInputPlaybackAfterDLLReload = false;
 
@@ -115,6 +117,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             {
             case SP_TIMELINE_ROTATE:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spRotateTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spRotateTimeline_getPropertyId;
             }
@@ -122,6 +125,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_SCALE:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spScaleTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spScaleTimeline_getPropertyId;
             }
@@ -129,6 +133,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_SHEAR:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spShearTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spShearTimeline_getPropertyId;
             }
@@ -136,6 +141,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_TRANSLATE:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spTranslateTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spTranslateTimeline_getPropertyId;
             }
@@ -143,6 +149,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_EVENT:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spEventTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spEventTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spEventTimeline_getPropertyId;
             }
@@ -150,6 +157,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_ATTACHMENT:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spAttachmentTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spAttachmentTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spAttachmentTimeline_getPropertyId;
             }
@@ -157,6 +165,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_COLOR:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spColorTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spColorTimeline_getPropertyId;
             }
@@ -164,6 +173,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_DEFORM:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spDeformTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spDeformTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spDeformTimeline_getPropertyId;
             }
@@ -171,6 +181,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_IKCONSTRAINT:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spIkConstraintTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spIkConstraintTimeline_getPropertyId;
             }
@@ -178,6 +189,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_PATHCONSTRAINTMIX:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spPathConstraintMixTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintMixTimeline_getPropertyId;
             }
@@ -185,6 +197,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_PATHCONSTRAINTPOSITION:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spPathConstraintPositionTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintPositionTimeline_getPropertyId;
             }
@@ -192,6 +205,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_PATHCONSTRAINTSPACING:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spPathConstraintSpacingTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintSpacingTimeline_getPropertyId;
             }
@@ -199,6 +213,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_TRANSFORMCONSTRAINT:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spTransformConstraintTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spTransformConstraintTimeline_getPropertyId;
             }
@@ -206,6 +221,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             case SP_TIMELINE_TWOCOLOR:
             {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spTwoColorTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spTwoColorTimeline_getPropertyId;
             }
