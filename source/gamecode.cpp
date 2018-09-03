@@ -66,7 +66,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
 
         spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
-        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "run", 1, 1.0f);
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;
@@ -97,19 +96,123 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         };
     }
 
-    spAnimationState_update(GameState->AnimationState, .017f);
-    spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
-
     if(GlobalPlatformServices->HasDLLBeenReloaded)
     {
-        BGZ_CONSOLE("It has!");
-
         GlobalPlatformServices->HasDLLBeenReloaded = false;
+
+        for(i32 timelineIndex{0}; timelineIndex < GameState->AnimationState->tracks[0]->animation->timelinesCount; ++timelineIndex)
+        {
+            spTimeline *Timeline = GameState->AnimationState->tracks[0]->animation->timelines[timelineIndex];
+
+            switch (Timeline->type)
+            {
+            case SP_TIMELINE_ROTATE:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spRotateTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spRotateTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_SCALE:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spScaleTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spScaleTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_SHEAR:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spShearTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spShearTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_TRANSLATE:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spTranslateTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spTranslateTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_EVENT:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spEventTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spEventTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_ATTACHMENT:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spAttachmentTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spAttachmentTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_COLOR:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spColorTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spColorTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_DEFORM:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spDeformTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spDeformTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_IKCONSTRAINT:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spIkConstraintTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spIkConstraintTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_PATHCONSTRAINTMIX:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintMixTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintMixTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_PATHCONSTRAINTPOSITION:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintPositionTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintPositionTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_PATHCONSTRAINTSPACING:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintSpacingTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintSpacingTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_TRANSFORMCONSTRAINT:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spTransformConstraintTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spTransformConstraintTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_TWOCOLOR:
+            {
+                VTABLE(spTimeline, Timeline)->apply = _spTwoColorTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spTwoColorTimeline_getPropertyId;
+            }
+            break;
+            };
+        };
     };
+
+    spAnimationState_update(GameState->AnimationState, .007f);
+    spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
     {
-        GameState->MySkeleton->y += 70.0f;
+        GameState->MySkeleton->y += 80.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
