@@ -38,6 +38,7 @@ global_variable ui32 WindowWidth{1280};
 global_variable ui32 WindowHeight{720};
 global_variable Game_Memory GameMemory{};
 global_variable bool GameRunning{};
+global_variable bool FirstPlaybackAfterDLLReload{};
 
 namespace Win32::Dbg
 {
@@ -352,6 +353,11 @@ namespace Win32::Dbg
         {
             GameReplayState->InputCount = 0;
             memcpy(GameMemory.PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory.TotalSize);
+            if(FirstPlaybackAfterDLLReload)
+            {
+                Input->InitialInputPlaybackAfterDLLReload = true;
+                FirstPlaybackAfterDLLReload = false;
+            }
         }
     }
 }   
@@ -852,6 +858,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 {
                     Win32::Dbg::FreeGameCodeDLL(&GameCode, &PlatformServices);
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
+                    FirstPlaybackAfterDLLReload = true;
                 }
 
                 //TODO: Should we poll more frequently?

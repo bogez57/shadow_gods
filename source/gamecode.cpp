@@ -34,7 +34,7 @@ global_variable f32 ViewportHeight;
 
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Render_Cmds RenderCmds, 
-                    Game_Sound_Output_Buffer* SoundOutput, const Game_Input* GameInput)
+                    Game_Sound_Output_Buffer* SoundOutput, Game_Input* GameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
@@ -96,9 +96,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         };
     }
 
-    if(GlobalPlatformServices->HasDLLBeenReloaded)
+    if(GlobalPlatformServices->HasDLLBeenReloaded || GameInput->InitialInputPlaybackAfterDLLReload)
     {
         GlobalPlatformServices->HasDLLBeenReloaded = false;
+        GameInput->InitialInputPlaybackAfterDLLReload = false;
 
         for(i32 timelineIndex{0}; timelineIndex < GameState->AnimationState->tracks[0]->animation->timelinesCount; ++timelineIndex)
         {
@@ -207,7 +208,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         };
     };
 
-    spAnimationState_update(GameState->AnimationState, .008f);
+    spAnimationState_update(GameState->AnimationState, .018f);
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
@@ -223,7 +224,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
     if(Keyboard->MoveRight.Pressed)
     {
-        MySkeleton->x += 8.0f;
+        MySkeleton->x += 10.0f;
     }
 
     if(Keyboard->MoveLeft.Pressed)

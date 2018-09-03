@@ -72,6 +72,7 @@ auto ClearTransitionCounts(Game_Controller* Controller) -> void
 
 struct Game_Input
 {
+    b InitialInputPlaybackAfterDLLReload{false};
     Game_Controller Controllers[5];
 };
 
