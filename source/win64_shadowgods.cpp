@@ -41,7 +41,6 @@ global_variable ui32 WindowWidth{1280};
 global_variable ui32 WindowHeight{720};
 global_variable Game_Memory GameMemory{};
 global_variable bool GameRunning{};
-global_variable bool FirstInputPlaybackAfterDLLReload{};
 
 namespace Win32::Dbg
 {
@@ -301,7 +300,7 @@ namespace Win32::Dbg
             FreeLibrary(GameCode->DLLHandle);
             GameCode->DLLHandle = 0;
             GameCode->UpdateFunc = nullptr;
-            platformServices->HasDLLBeenReloaded = true;
+            platformServices->DLLJustReloaded = true;
         };
     };
 
@@ -356,11 +355,6 @@ namespace Win32::Dbg
         {
             GameReplayState->InputCount = 0;
             memcpy(GameMemory.PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory.TotalSize);
-            if(FirstInputPlaybackAfterDLLReload)
-            {
-                Input->InitialInputPlaybackAfterDLLReload = true;
-                FirstInputPlaybackAfterDLLReload = false;
-            }
         }
     }
 }   
@@ -859,11 +853,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
                 if(CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
                 {
-                    BGZ_CONSOLE("About to free game dll\n");
                     Win32::Dbg::FreeGameCodeDLL(&GameCode, &PlatformServices);
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
-                    FirstInputPlaybackAfterDLLReload = true;
-                    BGZ_CONSOLE("Game dll has been reloaded\n");
                 }
 
                 //TODO: Should we poll more frequently?

@@ -72,7 +72,6 @@ auto ClearTransitionCounts(Game_Controller* Controller) -> void
 
 struct Game_Input
 {
-    b InitialInputPlaybackAfterDLLReload{false};
     Game_Controller Controllers[5];
 };
 
@@ -92,7 +91,7 @@ struct Platform_Services
     void* (*PlatMalloc)(sizet);
     void* (*PlatCalloc)(sizet, sizet);
     void (*PlatFree)(void*);
-    b HasDLLBeenReloaded{false};
+    b DLLJustReloaded{false};
 };
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////

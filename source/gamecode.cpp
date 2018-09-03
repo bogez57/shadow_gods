@@ -32,6 +32,133 @@ global_variable f32 ViewportHeight;
 #include "spine.cpp"
 #include <boagz/error_context.cpp>
 
+local_func auto
+ReloadCorrectSpineFunctionPtrs(spAnimationState* animationState) -> void
+{
+    for (i32 trackIndex{0}; trackIndex < animationState->tracksCount; ++trackIndex)
+    {
+        for (i32 timelineIndex{0}; timelineIndex < animationState->tracks[trackIndex]->animation->timelinesCount; ++timelineIndex)
+        {
+            spTimeline *Timeline = animationState->tracks[trackIndex]->animation->timelines[timelineIndex];
+
+            switch (Timeline->type)
+            {
+            case SP_TIMELINE_ROTATE:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spRotateTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spRotateTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_SCALE:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spScaleTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spScaleTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_SHEAR:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spShearTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spShearTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_TRANSLATE:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spTranslateTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spTranslateTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_EVENT:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spEventTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spEventTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spEventTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_ATTACHMENT:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spAttachmentTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spAttachmentTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spAttachmentTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_COLOR:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spColorTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spColorTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_DEFORM:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spDeformTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spDeformTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spDeformTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_IKCONSTRAINT:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spIkConstraintTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spIkConstraintTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_PATHCONSTRAINTMIX:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintMixTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintMixTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_PATHCONSTRAINTPOSITION:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintPositionTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintPositionTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_PATHCONSTRAINTSPACING:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintSpacingTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintSpacingTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_TRANSFORMCONSTRAINT:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spTransformConstraintTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spTransformConstraintTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_TWOCOLOR:
+            {
+                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
+                VTABLE(spTimeline, Timeline)->apply = _spTwoColorTimeline_apply;
+                VTABLE(spTimeline, Timeline)->getPropertyId = _spTwoColorTimeline_getPropertyId;
+            }
+            break;
+            };
+        };
+    };
+};
+
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, Game_Input* GameInput)
@@ -101,141 +228,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     //for all spine animation timeline vtables. This is because upon every DLL reload functions can be mapped to 
     //new function addresses. This would mean old spine function pointer addresses would be invalid on DLL
     //reload. Also, for input playback, since the original game state is copied over to playback the input
-    //this also copies over old function ptr addresses. Have fixed this somewhat by flagging when the initial 
-    //DLL reload happens during playback and reloading all function pointers at that point. 
-    if(GlobalPlatformServices->HasDLLBeenReloaded || GameInput->InitialInputPlaybackAfterDLLReload)
+    //this also copies over old function ptr addresses. Currently correcting this by checking when ptr's don't match and
+    //just reloading func ptr's. This will happen on every loop of playback
+    if(GlobalPlatformServices->DLLJustReloaded || 
+           *VTABLE(spTimeline, GameState->AnimationState->tracks[0]->animation->timelines[0])->apply != _spRotateTimeline_apply)
     {
-        BGZ_ERRCTXT1("When updating function pointers due to dll reload");
+        GlobalPlatformServices->DLLJustReloaded = false;
+        ReloadCorrectSpineFunctionPtrs(GameState->AnimationState);
+   };
 
-        GlobalPlatformServices->HasDLLBeenReloaded = false;
-        GameInput->InitialInputPlaybackAfterDLLReload = false;
-        BGZ_CONSOLE("Updating all func ptrs after dll reload");
-
-        for(i32 trackIndex{0}; trackIndex < GameState->AnimationState->tracksCount; ++trackIndex)
-        {
-            for (i32 timelineIndex{0}; timelineIndex < GameState->AnimationState->tracks[trackIndex]->animation->timelinesCount; ++timelineIndex)
-            {
-                spTimeline *Timeline = GameState->AnimationState->tracks[trackIndex]->animation->timelines[timelineIndex];
-
-                switch (Timeline->type)
-                {
-                case SP_TIMELINE_ROTATE:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spRotateTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spRotateTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_SCALE:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spScaleTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spScaleTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_SHEAR:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spShearTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spShearTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_TRANSLATE:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spTranslateTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spTranslateTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_EVENT:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spEventTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spEventTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spEventTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_ATTACHMENT:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spAttachmentTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spAttachmentTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spAttachmentTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_COLOR:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spColorTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spColorTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_DEFORM:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spDeformTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spDeformTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spDeformTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_IKCONSTRAINT:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spIkConstraintTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spIkConstraintTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_PATHCONSTRAINTMIX:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spPathConstraintMixTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintMixTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_PATHCONSTRAINTPOSITION:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spPathConstraintPositionTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintPositionTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_PATHCONSTRAINTSPACING:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spPathConstraintSpacingTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintSpacingTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_TRANSFORMCONSTRAINT:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spTransformConstraintTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spTransformConstraintTimeline_getPropertyId;
-                }
-                break;
-
-                case SP_TIMELINE_TWOCOLOR:
-                {
-                    VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                    VTABLE(spTimeline, Timeline)->apply = _spTwoColorTimeline_apply;
-                    VTABLE(spTimeline, Timeline)->getPropertyId = _spTwoColorTimeline_getPropertyId;
-                }
-                break;
-                };
-            };
-        };
-    };
-
-    spAnimationState_update(GameState->AnimationState, .008f);
+    spAnimationState_update(GameState->AnimationState, .007f);
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
