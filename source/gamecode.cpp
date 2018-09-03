@@ -96,6 +96,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         };
     }
 
+    //In order for live code reloading to work somewhat reliably I need to supply new function addresses
+    //for all spine animation timeline vtables. This is because upon every DLL reload functions can be mapped to 
+    //new function addresses. This would mean old spine function pointer addresses would be invalid on DLL
+    //reload. Also, for input playback, since the original game state is copied over to playback the input
+    //this also copies over old function ptr addresses. Have fixed this somewhat by flagging when the initial 
+    //DLL reload happens during playback and reloading all function pointers at that point. 
     if(GlobalPlatformServices->HasDLLBeenReloaded || GameInput->InitialInputPlaybackAfterDLLReload)
     {
         GlobalPlatformServices->HasDLLBeenReloaded = false;
@@ -208,7 +214,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         };
     };
 
-    spAnimationState_update(GameState->AnimationState, .018f);
+    spAnimationState_update(GameState->AnimationState, .008f);
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
