@@ -5,6 +5,9 @@
     - Load XInput through LoadLibrary() (To help avoid likely "Xinput.dll not found on certain windows platforms")
     - Make current frame timing more accurate/in-sync with monitor refresh rate
     - Pass deltatime to game
+    - Fix dll reloading which currently free's and reload's game code twice upon building. I believe this is because
+    when comparing file times between old and new dll write times the game tends to update fast enough that the times
+    are still the same upon the second run through of the loop since the last run through. 
 */
 
 #if (DEVELOPMENT_BUILD)
