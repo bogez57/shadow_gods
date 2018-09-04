@@ -33,13 +33,13 @@ global_variable f32 ViewportHeight;
 #include <boagz/error_context.cpp>
 
 local_func auto
-ReloadCorrectSpineFunctionPtrs(spAnimationState* animationState) -> void
+ReloadCorrectSpineFunctionPtrs(spSkeletonData* skelData) -> void
 {
-    for (i32 trackIndex{0}; trackIndex < animationState->tracksCount; ++trackIndex)
+    for (i32 animationIndex{0}; animationIndex < skelData->animationsCount; ++animationIndex)
     {
-        for (i32 timelineIndex{0}; timelineIndex < animationState->tracks[trackIndex]->animation->timelinesCount; ++timelineIndex)
+        for (i32 timelineIndex{0}; timelineIndex < skelData->animations[animationIndex]->timelinesCount; ++timelineIndex)
         {
-            spTimeline *Timeline = animationState->tracks[trackIndex]->animation->timelines[timelineIndex];
+            spTimeline *Timeline = skelData->animations[animationIndex]->timelines[timelineIndex];
 
             switch (Timeline->type)
             {
@@ -234,7 +234,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
            *VTABLE(spTimeline, GameState->AnimationState->tracks[0]->animation->timelines[0])->apply != _spRotateTimeline_apply)
     {
         GlobalPlatformServices->DLLJustReloaded = false;
-        ReloadCorrectSpineFunctionPtrs(GameState->AnimationState);
+        ReloadCorrectSpineFunctionPtrs(GameState->SkelData);
    };
 
     spAnimationState_update(GameState->AnimationState, .007f);
