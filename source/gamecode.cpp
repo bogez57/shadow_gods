@@ -193,7 +193,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
 
         spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
-        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "run", 1, .5f);
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;
@@ -231,14 +230,13 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     //this also copies over old function ptr addresses. Currently correcting this by checking when ptr's don't match and
     //just reloading func ptr's. This will happen on every loop of playback
     if(GlobalPlatformServices->DLLJustReloaded || 
-           *VTABLE(spTimeline, GameState->AnimationState->tracks[0]->animation->timelines[0])->apply != _spRotateTimeline_apply)
+           *VTABLE(spTimeline, GameState->SkelData->animations[0]->timelines[0])->apply != _spRotateTimeline_apply)
     {
         GlobalPlatformServices->DLLJustReloaded = false;
         ReloadCorrectSpineFunctionPtrs(GameState->SkelData);
    };
 
     spAnimationState_update(GameState->AnimationState, .007f);
-    spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     if (Keyboard->MoveUp.Pressed)
     {
@@ -275,6 +273,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     if(Keyboard->ActionLeft.Pressed)
     {
     }
+
+    spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
 
     spSkeleton_updateWorldTransform(GameState->MySkeleton);
 
