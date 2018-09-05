@@ -88,5 +88,7 @@ struct Game_State
     spSkeleton* MySkeleton;
     spAnimationStateData* AnimationStateData;
     spAnimationState* AnimationState;
+    spAnimation* Animation;
+    spTrackEntry* entry;
     Dynamic_Mem_Allocator DynamAllocator;
 };

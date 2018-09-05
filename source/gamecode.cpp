@@ -25,6 +25,7 @@ global_variable Game_Render_Cmds GlobalRenderCmds;
 global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
+void(*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
 
 #include "memory_handling.cpp"
 
@@ -33,8 +34,38 @@ global_variable f32 ViewportHeight;
 #include <boagz/error_context.cpp>
 
 local_func auto
-ReloadCorrectSpineFunctionPtrs(spSkeletonData* skelData) -> void
+MyListener(spAnimationState* state, spEventType type, spTrackEntry* entry, spEvent* event) -> void
 {
+   switch (type) 
+   {
+   case SP_ANIMATION_START:
+       printf("Animation %s started on track %i\n", entry->animation->name, entry->trackIndex);
+       break;
+   case SP_ANIMATION_INTERRUPT:
+       printf("Animation %s interrupted on track %i\n", entry->animation->name, entry->trackIndex);
+       break;
+   case SP_ANIMATION_END:
+       printf("Animation %s ended on track %i\n", entry->animation->name, entry->trackIndex);
+       break;
+   case SP_ANIMATION_COMPLETE:
+       printf("Animation %s completed on track %i\n", entry->animation->name, entry->trackIndex);
+       break;
+   case SP_ANIMATION_DISPOSE:
+       printf("Track entry for animation %s disposed on track %i\n", entry->animation->name, entry->trackIndex);
+       break;
+   case SP_ANIMATION_EVENT:
+       printf("User defined event for animation %s on track %i\n", entry->animation->name, entry->trackIndex);
+       break;
+   default:
+       printf("Unknown event type: %i", type);
+   }
+}
+
+local_func auto
+ReloadCorrectSpineFunctionPtrs(spSkeletonData* skelData, spAnimationState* animationState) -> void
+{
+    animationState->listener = MyListener;
+
     for (i32 animationIndex{0}; animationIndex < skelData->animationsCount; ++animationIndex)
     {
         for (i32 timelineIndex{0}; timelineIndex < skelData->animations[animationIndex]->timelinesCount; ++timelineIndex)
@@ -190,9 +221,15 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
         GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
         GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
+
+        spAnimationStateData_setMixByName(GameState->AnimationStateData, "idle", "walk", 0.4f);
         GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
 
-        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
+        GameState->AnimationState->listener = MyListener;
+        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "idle", 1);
+
+        //For dll reloading/live code editing purposes
+        SpineFuncPtrTest = _spAttachmentTimeline_apply;
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;
@@ -229,28 +266,29 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     //reload. Also, for input playback, since the original game state is copied over to playback the input
     //this also copies over old function ptr addresses. Currently correcting this by checking when ptr's don't match and
     //just reloading func ptr's. This will happen on every loop of playback
-    if(GlobalPlatformServices->DLLJustReloaded || 
-           *VTABLE(spTimeline, GameState->SkelData->animations[0]->timelines[0])->apply != _spRotateTimeline_apply)
+    if(GlobalPlatformServices->DLLJustReloaded || SpineFuncPtrTest != _spAttachmentTimeline_apply)
     {
+        BGZ_CONSOLE("Dll reloaded!");
+        SpineFuncPtrTest = _spAttachmentTimeline_apply;
         GlobalPlatformServices->DLLJustReloaded = false;
-        ReloadCorrectSpineFunctionPtrs(GameState->SkelData);
-   };
+        ReloadCorrectSpineFunctionPtrs(GameState->SkelData, GameState->AnimationState);
+    };
 
-    spAnimationState_update(GameState->AnimationState, .007f);
+    spAnimationState_update(GameState->AnimationState, .016f);
 
-    if (Keyboard->MoveUp.Pressed)
+    if (Keyboard->MoveUp.Pressed) 
     {
         GameState->MySkeleton->y += 80.0f;
     }
 
     if(Keyboard->MoveDown.Pressed)
     {
-        spBone* upperArm = spSkeleton_findBone(GameState->MySkeleton, "front-upper-arm");
-        upperArm->rotation += 15.0f;
     }
 
-    if(Keyboard->MoveRight.Pressed)
+    if(Keyboard->MoveRight.Pressed && Keyboard->MoveRight.NumTransitionsPerFrame == 1)
     {
+        BGZ_CONSOLE("Hit!");
+        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 0);
         MySkeleton->x += 1.0f;
     }
 
@@ -275,7 +313,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     }
 
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
-
     spSkeleton_updateWorldTransform(GameState->MySkeleton);
 
     {//Render
