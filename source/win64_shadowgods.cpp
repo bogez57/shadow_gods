@@ -364,7 +364,6 @@ namespace Win32
     local_func auto
     ProcessKeyboardMessage(Button_State* NewState, b32 IsDown) -> void
     {
-
         if (NewState->Pressed != IsDown)
         {
             NewState->Pressed = IsDown;

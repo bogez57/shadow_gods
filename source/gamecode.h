@@ -90,5 +90,6 @@ struct Game_State
     spAnimationState* AnimationState;
     spAnimation* Animation;
     spTrackEntry* entry;
+    int OldTransitions;
     Dynamic_Mem_Allocator DynamAllocator;
 };

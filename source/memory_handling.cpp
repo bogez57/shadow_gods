@@ -176,11 +176,16 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
         if (BlockToFree->nextBlock->IsFree)
         {
             BlockToFree->Size += BlockToFree->nextBlock->Size;
-
-            if (BlockToFree->nextBlock->nextBlock) BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
-            else BlockToFree->nextBlock = nullptr;
-
             BlockToFree->nextBlock->Size = 0;
+
+            if (BlockToFree->nextBlock->nextBlock)
+            {
+                BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
+            }
+            else 
+            {
+                BlockToFree->nextBlock = nullptr;
+            };
 
             --DynamAllocator->AmountOfBlocks;
         };

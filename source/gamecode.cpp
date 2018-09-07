@@ -257,6 +257,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
+
+            GameState->OldTransitions = 0;
         };
     }
 
@@ -285,15 +287,19 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     {
     }
 
-    if(Keyboard->MoveRight.Pressed && Keyboard->MoveRight.NumTransitionsPerFrame == 1)
+    if(Keyboard->MoveRight.Pressed)
     {
-        BGZ_CONSOLE("Hit!");
-        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 0);
+        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "walk", 0, 0);
         MySkeleton->x += 1.0f;
+    }
+    else if ((GameState->OldTransitions - Keyboard->MoveRight.NumTransitionsPerFrame) == 1)
+    {
+        spAnimationState_setEmptyAnimation(GameState->AnimationState, 1, .2f);
     }
 
     if(Keyboard->MoveLeft.Pressed)
     {
+        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "run", 0, 0);
     }
 
     if(Keyboard->ActionUp.Pressed)
@@ -311,6 +317,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     if(Keyboard->ActionLeft.Pressed)
     {
     }
+
+    GameState->OldTransitions = Keyboard->MoveRight.NumTransitionsPerFrame;
 
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
     spSkeleton_updateWorldTransform(GameState->MySkeleton);
