@@ -190,6 +190,42 @@ ReloadCorrectSpineFunctionPtrs(spSkeletonData* skelData, spAnimationState* anima
     };
 };
 
+auto
+OnKeyPress(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
+{
+    if(KeyState.Pressed && KeyState.NumTransitionsPerFrame)
+    {
+        Action(gameState);
+    };
+};
+
+inline auto
+OnKeyRepeat(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
+{
+    if(KeyState.Pressed && (KeyState.NumTransitionsPerFrame == 0))
+    {
+        Action(gameState);
+    };
+};
+
+inline auto
+OnKeyComboPress(Button_State KeyState1, Button_State KeyState2, Game_State* gameState, void(*Action)(Game_State*)) -> void
+{
+    if(KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
+    {
+        Action(gameState);
+    };
+};
+
+inline auto
+OnKeyRelease(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
+{
+    if(!KeyState.Pressed && KeyState.NumTransitionsPerFrame)
+    {
+        Action(gameState);
+    };
+};
+
 extern "C" void
 GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Render_Cmds RenderCmds, 
                     Game_Sound_Output_Buffer* SoundOutput, Game_Input* GameInput)
@@ -204,7 +240,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     Camera* GameCamera = &GameState->GameCamera;
     Player* Fighter1 = &GameState->Fighter1;
     Level* GameLevel = &GameState->GameLevel;
-    spSkeleton* MySkeleton = GameState->MySkeleton;
 
     const Game_Controller* Keyboard = &GameInput->Controllers[0];
     const Game_Controller* GamePad = &GameInput->Controllers[1];
@@ -224,6 +259,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
         spAnimationStateData_setMixByName(GameState->AnimationStateData, "idle", "walk", 0.2f);
         spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "idle", 0.2f);
+        spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "run", 0.2f);
+        spAnimationStateData_setMixByName(GameState->AnimationStateData, "run", "idle", 0.2f);
         GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
 
         GameState->AnimationState->listener = MyListener;
@@ -286,26 +323,21 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     {
     }
 
-    //Key pressed and held
-    if(Keyboard->MoveRight.Pressed)
-    {
-        if(Keyboard->MoveRight.NumTransitionsPerFrame)
-        {
-            spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
-        };
-        MySkeleton->x += 1.0f;
-    }
+    OnKeyPress(Keyboard->MoveRight, GameState, [](Game_State* gameState){
+        spAnimationState_setAnimationByName(gameState->AnimationState, 0, "walk", 1);
+    });
 
-    //Key released
-    if(!Keyboard->MoveRight.Pressed && Keyboard->MoveRight.NumTransitionsPerFrame)
-    {
-        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "idle", 1);
-    }
+    OnKeyRepeat(Keyboard->MoveRight, GameState, [](Game_State* gameState){
+        gameState->MySkeleton->x += 3.0f;
+    });
 
-    if(Keyboard->MoveLeft.Pressed)
-    {
-        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "run", 0, 0);
-    }
+    OnKeyComboPress(Keyboard->MoveRight, Keyboard->ActionUp, GameState, [](Game_State* gameState){
+        spAnimationState_setAnimationByName(gameState->AnimationState, 0, "run", 1);
+    });
+
+    OnKeyRelease(Keyboard->MoveRight, GameState, [](Game_State* gameState){
+        spAnimationState_setAnimationByName(gameState->AnimationState, 0, "idle", 1);
+    });
 
     if(Keyboard->ActionUp.Pressed)
     {
