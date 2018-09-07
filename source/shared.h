@@ -23,7 +23,7 @@ struct Button_State
     //Capturing these transistions just helps to ensure we do not miss a button press (e.g. if user presses button once at
     //beginning of the frame, and then again at the end assuming multiple polling, with this scheme we would be able to capture 
     //both presses instead of just the one at the beginning).
-    int NumTransitionsPerFrame; 
+    i32 NumTransitionsPerFrame; 
     b32 Pressed;
 };
 

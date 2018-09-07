@@ -222,7 +222,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
         GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
 
-        spAnimationStateData_setMixByName(GameState->AnimationStateData, "idle", "walk", 0.4f);
+        spAnimationStateData_setMixByName(GameState->AnimationStateData, "idle", "walk", 0.2f);
+        spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "idle", 0.2f);
         GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
 
         GameState->AnimationState->listener = MyListener;
@@ -257,8 +258,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
             GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
             GameCamera->ZoomFactor = 1.0f;
-
-            GameState->OldTransitions = 0;
         };
     }
 
@@ -287,14 +286,20 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     {
     }
 
+    //Key pressed and held
     if(Keyboard->MoveRight.Pressed)
     {
-        spAnimationState_addAnimationByName(GameState->AnimationState, 1, "walk", 0, 0);
+        if(Keyboard->MoveRight.NumTransitionsPerFrame)
+        {
+            spAnimationState_setAnimationByName(GameState->AnimationState, 0, "walk", 1);
+        };
         MySkeleton->x += 1.0f;
     }
-    else if ((GameState->OldTransitions - Keyboard->MoveRight.NumTransitionsPerFrame) == 1)
+
+    //Key released
+    if(!Keyboard->MoveRight.Pressed && Keyboard->MoveRight.NumTransitionsPerFrame)
     {
-        spAnimationState_setEmptyAnimation(GameState->AnimationState, 1, .2f);
+        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "idle", 1);
     }
 
     if(Keyboard->MoveLeft.Pressed)
@@ -317,8 +322,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     if(Keyboard->ActionLeft.Pressed)
     {
     }
-
-    GameState->OldTransitions = Keyboard->MoveRight.NumTransitionsPerFrame;
 
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
     spSkeleton_updateWorldTransform(GameState->MySkeleton);
