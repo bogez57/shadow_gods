@@ -200,7 +200,7 @@ OnKeyPress(Button_State KeyState, Game_State* gameState, void(*Action)(Game_Stat
 };
 
 inline auto
-OnKeyRepeat(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
+OnKeyHold(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
 {
     if(KeyState.Pressed && (KeyState.NumTransitionsPerFrame == 0))
     {
@@ -216,6 +216,16 @@ OnKeyComboPress(Button_State KeyState1, Button_State KeyState2, Game_State* game
         Action(gameState);
     };
 };
+
+inline auto
+OnKeyComboRepeat(Button_State KeyState1, Button_State KeyState2, Game_State* gameState, void(*Action)(Game_State*)) -> void
+{
+    if(KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
+    {
+        Action(gameState);
+    };
+};
+
 
 inline auto
 OnKeyRelease(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
@@ -327,8 +337,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         spAnimationState_setAnimationByName(gameState->AnimationState, 0, "walk", 1);
     });
 
-    OnKeyRepeat(Keyboard->MoveRight, GameState, [](Game_State* gameState){
+    OnKeyHold(Keyboard->MoveRight, GameState, [](Game_State* gameState){
         gameState->MySkeleton->x += 3.0f;
+    });
+
+    OnKeyHold(Keyboard->MoveDown, GameState, [](Game_State* gameState){
+        spAnimationState_addAnimationByName(gameState->AnimationState, 1, "shoot", 0, 0);
     });
 
     OnKeyComboPress(Keyboard->MoveRight, Keyboard->ActionUp, GameState, [](Game_State* gameState){
@@ -337,6 +351,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
     OnKeyRelease(Keyboard->MoveRight, GameState, [](Game_State* gameState){
         spAnimationState_setAnimationByName(gameState->AnimationState, 0, "idle", 1);
+    });
+
+    OnKeyRelease(Keyboard->MoveDown, GameState, [](Game_State* gameState){
+        spAnimationState_setEmptyAnimation(gameState->AnimationState, 1, .1f);
     });
 
     if(Keyboard->ActionUp.Pressed)
