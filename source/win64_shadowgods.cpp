@@ -393,8 +393,8 @@ namespace Win32
 
                     Game_Controller* Keyboard = &Input->Controllers[0];
 
-                    //Since we are comparing IsDown and WasDown below, we need to use == and != to convert these bit tests to 
-                    //actual 0 or 1 values.
+                    //Since we are comparing IsDown and WasDown below to filter out key repeats, we need to use == and != 
+                    //to convert these bit tests to actual 0 or 1 values.
                     b32 WasDown = ((Message.lParam & (1 << 30)) != 0);
                     b32 IsDown = ((Message.lParam & (1 << 31)) == 0);
 

@@ -25,7 +25,6 @@ global_variable Game_Render_Cmds GlobalRenderCmds;
 global_variable Game_State* GlobalGameState;
 global_variable f32 ViewportWidth;
 global_variable f32 ViewportHeight;
-void(*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
 
 #include "memory_handling.cpp"
 
@@ -277,7 +276,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         spAnimationState_setAnimationByName(GameState->AnimationState, 0, "idle", 1);
 
         //For dll reloading/live code editing purposes
-        SpineFuncPtrTest = _spAttachmentTimeline_apply;
+        GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;
@@ -309,15 +308,13 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     }
 
     //In order for live code reloading to work somewhat reliably I need to supply new function addresses
-    //for all spine animation timeline vtables. This is because upon every DLL reload functions can be mapped to 
-    //new function addresses. This would mean old spine function pointer addresses would be invalid on DLL
-    //reload. Also, for input playback, since the original game state is copied over to playback the input
-    //this also copies over old function ptr addresses. Currently correcting this by checking when ptr's don't match and
-    //just reloading func ptr's. This will happen on every loop of playback
-    if(GlobalPlatformServices->DLLJustReloaded || SpineFuncPtrTest != _spAttachmentTimeline_apply)
+    //for all spine animation timelines upon dll reload. Also, for input playback, since the original game state is copied over to 
+    //playback the input this also copies over old function ptr addresses. Currently correcting this by checking when ptr's don't match 
+    //(by just picking a random spine func to check) and just reloading func ptr's. This will happen on every loop of playback
+    if(GlobalPlatformServices->DLLJustReloaded || GameState->SpineFuncPtrTest != _spAttachmentTimeline_apply)
     {
         BGZ_CONSOLE("Dll reloaded!");
-        SpineFuncPtrTest = _spAttachmentTimeline_apply;
+        GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
         GlobalPlatformServices->DLLJustReloaded = false;
         ReloadCorrectSpineFunctionPtrs(GameState->SkelData, GameState->AnimationState);
     };
