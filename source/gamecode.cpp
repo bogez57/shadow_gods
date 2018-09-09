@@ -277,6 +277,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
         //For dll reloading/live code editing purposes
         GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
+        GameState->EmptyAnim = SP_EMPTY_ANIMATION;
 
         GameMemory->IsInitialized = true;
         ViewportWidth = 1280.0f;
@@ -315,6 +316,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     {
         BGZ_CONSOLE("Dll reloaded!");
         GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
+        SP_EMPTY_ANIMATION = GameState->EmptyAnim;
         GlobalPlatformServices->DLLJustReloaded = false;
         ReloadCorrectSpineFunctionPtrs(GameState->SkelData, GameState->AnimationState);
     };
@@ -335,7 +337,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     });
 
     OnKeyHold(Keyboard->MoveRight, GameState, [](Game_State* gameState){
-        gameState->MySkeleton->x += 3.0f;
+        gameState->MySkeleton->x += 10.0f;
     });
 
     OnKeyHold(Keyboard->MoveDown, GameState, [](Game_State* gameState){
