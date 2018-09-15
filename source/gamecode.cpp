@@ -301,7 +301,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
         GameCamera->ViewWidth = ViewportWidth;
         GameCamera->ViewHeight = ViewportHeight;
-        GameCamera->LookAt = GameLevel->CenterPoint;
+        GameCamera->LookAt = {(ViewportWidth/2.0f), (ViewportHeight/2.0f)};
         GameCamera->ViewCenter = {GameCamera->ViewWidth / 2.0f, GameCamera->ViewHeight / 2.0f};
         GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
         GameCamera->ZoomFactor = 1.0f;
@@ -391,30 +391,34 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             {
                 regionAttachment = (spRegionAttachment *)GameState->MySkeleton->slots[SlotIndex]->attachment;
                 texture = (Texture *)((spAtlasRegion *)regionAttachment->rendererObject)->page->rendererObject;
+
                 spRegionAttachment_computeWorldVertices(regionAttachment, GameState->MySkeleton->slots[SlotIndex]->bone, verts, 0, 2);
+
+                Drawable_Rect SpineImage{
+                    v2f{verts[0], verts[1]},
+                    v2f{verts[2], verts[3]},
+                    v2f{verts[4], verts[5]},
+                    v2f{verts[6], verts[7]}};
+
+                v2f UVArray[4] = {
+                    v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
+                    v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
+                    v2f{regionAttachment->uvs[4], regionAttachment->uvs[5]},
+                    v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
+
+                {//Transform to Camera Space
+                    v2f TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+
+                    for (ui32 VertIndex{0}; VertIndex < ArrayCount(SpineImage.Corners); ++VertIndex)
+                    {
+                        SpineImage.Corners[VertIndex] += TranslationToCameraSpace;
+                    };
+                };
+
+                //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
+                //current DrawTexture func first though to accept proper uvs
+                RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
             };
-
-            Drawable_Rect SpineImage{
-                v2f{verts[0], verts[1]},
-                v2f{verts[2], verts[3]},
-                v2f{verts[4], verts[5]},
-                v2f{verts[6], verts[7]}};
-
-            //Transform to Camera Space
-            {
-                v2f TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
-                //Transform here......
-            };
-
-            v2f UVArray[4] = {
-                v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
-                v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
-                v2f{regionAttachment->uvs[4], regionAttachment->uvs[5]},
-                v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
-
-            //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
-            //current DrawTexture func first though to accept proper uvs
-            RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
         };
     };
 };
