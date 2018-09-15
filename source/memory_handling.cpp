@@ -214,7 +214,7 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
 };
 
 local_func auto
-InitDynamAllocator(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region) -> void
+InitDynamAllocatorRegion(Dynamic_Mem_Allocator* DynamAllocator, Mem_Region_Type Region) -> void
 {
     BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
 

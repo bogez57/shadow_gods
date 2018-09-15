@@ -247,7 +247,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     GlobalRenderCmds = RenderCmds;
 
     Camera* GameCamera = &GameState->GameCamera;
-    Player* Fighter1 = &GameState->Fighter1;
     Level* GameLevel = &GameState->GameLevel;
 
     const Game_Controller* Keyboard = &GameInput->Controllers[0];
@@ -257,55 +256,55 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     {
         BGZ_ERRCTXT1("When Initializing GameMemory and GameState");
 
+        GameMemory->IsInitialized = true;
+        ViewportWidth = 1280.0f;
+        ViewportHeight = 720.0f;
+
+        //Split game memory into more specific memory regions
         GameState->DynamAllocator.MemRegions[SPINEDATA] = CreateRegionFromGameMem(GameMemory, Megabytes(10));
-        InitDynamAllocator(&GameState->DynamAllocator, SPINEDATA);
+        InitDynamAllocatorRegion(&GameState->DynamAllocator, SPINEDATA);
 
-        GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
-        GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
-        GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
-        GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
-        GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
+        { //Init spine stuff
+            GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
+            GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
+            GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
+            GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
+            GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
 
-        spAnimationStateData_setMixByName(GameState->AnimationStateData, "idle", "walk", 0.2f);
-        spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "idle", 0.2f);
-        spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "run", 0.2f);
-        spAnimationStateData_setMixByName(GameState->AnimationStateData, "run", "idle", 0.2f);
-        GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
+            spAnimationStateData_setMixByName(GameState->AnimationStateData, "idle", "walk", 0.2f);
+            spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "idle", 0.2f);
+            spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "run", 0.2f);
+            spAnimationStateData_setMixByName(GameState->AnimationStateData, "run", "idle", 0.2f);
 
-        GameState->AnimationState->listener = MyListener;
-        spAnimationState_setAnimationByName(GameState->AnimationState, 0, "idle", 1);
+            GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
+
+            spAnimationState_setAnimationByName(GameState->AnimationState, 0, "idle", 1);
+
+            GameState->AnimationState->listener = MyListener;
+        };
+
+        GameLevel->DisplayImage.Data = PlatformServices->LoadRGBAImage(
+                                             "data/4k.jpg",
+                                             &GameLevel->DisplayImage.Dimensions.Width,
+                                             &GameLevel->DisplayImage.Dimensions.Height);
+
+        //TODO: Move out to renderer
+        GameLevel->CurrentTexture = RenderCmds.LoadTexture(GameLevel->DisplayImage);
 
         //For dll reloading/live code editing purposes
         GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
         GameState->EmptyAnim = SP_EMPTY_ANIMATION;
 
-        GameMemory->IsInitialized = true;
-        ViewportWidth = 1280.0f;
-        ViewportHeight = 720.0f;
+        GameLevel->Dimensions.Width = (f32)GameLevel->DisplayImage.Dimensions.Width;
+        GameLevel->Dimensions.Height = (f32)GameLevel->DisplayImage.Dimensions.Height;
+        GameLevel->CenterPoint = {(f32)GameLevel->Dimensions.Width / 2, (f32)GameLevel->Dimensions.Height / 2};
 
-        {//Init Game State
-            GameLevel->DisplayImage.Data = PlatformServices->LoadRGBAImage(
-                                                            "data/4k.jpg", 
-                                                            &GameLevel->DisplayImage.Dimensions.Width,
-                                                            &GameLevel->DisplayImage.Dimensions.Height);
-
-            //TODO: Move out to renderer
-            GameLevel->CurrentTexture = RenderCmds.LoadTexture(GameLevel->DisplayImage);
-
-            GameLevel->Dimensions.Width = (f32)GameLevel->DisplayImage.Dimensions.Width;
-            GameLevel->Dimensions.Height = (f32)GameLevel->DisplayImage.Dimensions.Height;
-            GameLevel->CenterPoint = {(f32)GameLevel->Dimensions.Width / 2, (f32)GameLevel->Dimensions.Height / 2};
-
-            Fighter1->WorldPos.x = GameLevel->CenterPoint.x - 100.0f;
-            Fighter1->WorldPos.y = GameLevel->CenterPoint.y - 300.0f;
-
-            GameCamera->ViewWidth = ViewportWidth;
-            GameCamera->ViewHeight = ViewportHeight;
-            GameCamera->LookAt = GameLevel->CenterPoint;
-            GameCamera->ViewCenter = {GameCamera->ViewWidth/2.0f, GameCamera->ViewHeight/2.0f};
-            GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
-            GameCamera->ZoomFactor = 1.0f;
-        };
+        GameCamera->ViewWidth = ViewportWidth;
+        GameCamera->ViewHeight = ViewportHeight;
+        GameCamera->LookAt = GameLevel->CenterPoint;
+        GameCamera->ViewCenter = {GameCamera->ViewWidth / 2.0f, GameCamera->ViewHeight / 2.0f};
+        GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
+        GameCamera->ZoomFactor = 1.0f;
     }
 
     //In order for live code reloading to work somewhat reliably I need to supply new function addresses
@@ -323,25 +322,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
     spAnimationState_update(GameState->AnimationState, .016f);
 
-    if (Keyboard->MoveUp.Pressed) 
-    {
-        GameState->MySkeleton->y += 80.0f;
-    }
-
-    if(Keyboard->MoveDown.Pressed)
-    {
-    }
+    OnKeyPress(Keyboard->MoveUp, GameState, [](Game_State* gameState){
+        gameState->MySkeleton->y += 10.0f;
+    });
 
     OnKeyPress(Keyboard->MoveRight, GameState, [](Game_State* gameState){
         spAnimationState_setAnimationByName(gameState->AnimationState, 0, "walk", 1);
     });
 
     OnKeyHold(Keyboard->MoveRight, GameState, [](Game_State* gameState){
-        gameState->MySkeleton->x += 10.0f;
-    });
-
-    OnKeyHold(Keyboard->MoveDown, GameState, [](Game_State* gameState){
-        spAnimationState_addAnimationByName(gameState->AnimationState, 1, "shoot", 0, 0);
+        gameState->MySkeleton->x += 3.0f;
     });
 
     OnKeyComboPress(Keyboard->MoveRight, Keyboard->ActionUp, GameState, [](Game_State* gameState){
@@ -352,25 +342,13 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         spAnimationState_setAnimationByName(gameState->AnimationState, 0, "idle", 1);
     });
 
+    OnKeyHold(Keyboard->MoveDown, GameState, [](Game_State* gameState){
+        spAnimationState_addAnimationByName(gameState->AnimationState, 1, "shoot", 0, 0);
+    });
+
     OnKeyRelease(Keyboard->MoveDown, GameState, [](Game_State* gameState){
         spAnimationState_setEmptyAnimation(gameState->AnimationState, 1, .1f);
     });
-
-    if(Keyboard->ActionUp.Pressed)
-    {
-    }
-
-    if(Keyboard->ActionDown.Pressed)
-    {
-    }
-
-    if(Keyboard->ActionRight.Pressed)
-    {
-    }
-
-    if(Keyboard->ActionLeft.Pressed)
-    {
-    }
 
     spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
     spSkeleton_updateWorldTransform(GameState->MySkeleton);
@@ -422,6 +400,12 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
                 v2f{verts[4], verts[5]},
                 v2f{verts[6], verts[7]}};
 
+            //Transform to Camera Space
+            {
+                v2f TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+                //Transform here......
+            };
+
             v2f UVArray[4] = {
                 v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
                 v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
@@ -431,19 +415,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
             //current DrawTexture func first though to accept proper uvs
             RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
-        };
-
-        {//Draw Players
-            Drawable_Rect CameraSpacePositions{};
-
-            //Draw Images to limbs
-            for(i32 LimbIndex{0}; LimbIndex < ArrayCount(Fighter1->Body.Limbs); ++LimbIndex)
-            {
-                {
-                    //Transform to Camera Space
-                    v2f TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
-                };
-            };
         };
     };
 };
