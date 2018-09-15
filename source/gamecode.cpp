@@ -248,6 +248,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
     Camera* GameCamera = &GameState->GameCamera;
     Level* GameLevel = &GameState->GameLevel;
+    Fighter* player = &GameState->player;
+    Fighter* ai = &GameState->ai;
 
     const Game_Controller* Keyboard = &GameInput->Controllers[0];
     const Game_Controller* GamePad = &GameInput->Controllers[1];
@@ -268,7 +270,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
             GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
             GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
-            GameState->MySkeleton = spSkeleton_create(GameState->SkelData);
             GameState->AnimationStateData = spAnimationStateData_create(GameState->SkelData);
 
             spAnimationStateData_setMixByName(GameState->AnimationStateData, "idle", "walk", 0.2f);
@@ -276,11 +277,19 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             spAnimationStateData_setMixByName(GameState->AnimationStateData, "walk", "run", 0.2f);
             spAnimationStateData_setMixByName(GameState->AnimationStateData, "run", "idle", 0.2f);
 
-            GameState->AnimationState = spAnimationState_create(GameState->AnimationStateData);
+            {//Setup fighters
+                player->skeleton = spSkeleton_create(GameState->SkelData);
+                ai->skeleton = spSkeleton_create(GameState->SkelData);
 
-            spAnimationState_setAnimationByName(GameState->AnimationState, 0, "idle", 1);
+                player->animationState = spAnimationState_create(GameState->AnimationStateData);
+                ai->animationState = spAnimationState_create(GameState->AnimationStateData);
 
-            GameState->AnimationState->listener = MyListener;
+                spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
+                player->animationState->listener = MyListener;
+
+                player->worldPos = {0.0f, 0.0f};
+                ai->worldPos = {500.0f, 0.0f};
+            };
         };
 
         GameLevel->DisplayImage.Data = PlatformServices->LoadRGBAImage(
@@ -317,41 +326,48 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
         SP_EMPTY_ANIMATION = GameState->EmptyAnim;
         GlobalPlatformServices->DLLJustReloaded = false;
-        ReloadCorrectSpineFunctionPtrs(GameState->SkelData, GameState->AnimationState);
+        ReloadCorrectSpineFunctionPtrs(GameState->SkelData, player->animationState);
     };
 
-    spAnimationState_update(GameState->AnimationState, .016f);
+    spAnimationState_update(player->animationState, .016f);
 
     OnKeyPress(Keyboard->MoveUp, GameState, [](Game_State* gameState){
-        gameState->MySkeleton->y += 10.0f;
     });
 
     OnKeyPress(Keyboard->MoveRight, GameState, [](Game_State* gameState){
-        spAnimationState_setAnimationByName(gameState->AnimationState, 0, "walk", 1);
+        spAnimationState_setAnimationByName(gameState->player.animationState, 0, "walk", 1);
     });
 
     OnKeyHold(Keyboard->MoveRight, GameState, [](Game_State* gameState){
-        gameState->MySkeleton->x += 3.0f;
+        gameState->player.worldPos.x += 3.0f;
     });
 
     OnKeyComboPress(Keyboard->MoveRight, Keyboard->ActionUp, GameState, [](Game_State* gameState){
-        spAnimationState_setAnimationByName(gameState->AnimationState, 0, "run", 1);
+        //spAnimationState_setAnimationByName(gameState->AnimationState, 0, "run", 1);
     });
 
     OnKeyRelease(Keyboard->MoveRight, GameState, [](Game_State* gameState){
-        spAnimationState_setAnimationByName(gameState->AnimationState, 0, "idle", 1);
+        spAnimationState_setAnimationByName(gameState->player.animationState, 0, "idle", 1);
     });
 
     OnKeyHold(Keyboard->MoveDown, GameState, [](Game_State* gameState){
-        spAnimationState_addAnimationByName(gameState->AnimationState, 1, "shoot", 0, 0);
+        //spAnimationState_addAnimationByName(gameState->AnimationState, 1, "shoot", 0, 0);
     });
 
     OnKeyRelease(Keyboard->MoveDown, GameState, [](Game_State* gameState){
-        spAnimationState_setEmptyAnimation(gameState->AnimationState, 1, .1f);
+        //spAnimationState_setEmptyAnimation(gameState->AnimationState, 1, .1f);
     });
 
-    spAnimationState_apply(GameState->AnimationState, GameState->MySkeleton);
-    spSkeleton_updateWorldTransform(GameState->MySkeleton);
+    //Needed for spine to correctly update bones
+    player->skeleton->x = player->worldPos.x;
+    player->skeleton->y = player->worldPos.y;
+    ai->skeleton->x = ai->worldPos.x;
+    ai->skeleton->y = ai->worldPos.y;
+
+    spAnimationState_apply(player->animationState, player->skeleton);
+    spSkeleton_updateWorldTransform(player->skeleton);
+    spAnimationState_apply(ai->animationState, ai->skeleton);
+    spSkeleton_updateWorldTransform(ai->skeleton);
 
     {//Render
         RenderCmds.Init();
@@ -378,46 +394,52 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
             BackgroundCanvas = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
         };
 
-        for(int SlotIndex{0}; SlotIndex < GameState->MySkeleton->slotsCount; ++SlotIndex)
+        Fighter* Fighters[2] = {player, ai};
+        for(i32 FighterIndex{0}; FighterIndex < ArrayCount(Fighters); ++FighterIndex)
         {
-            float verts[8] = {0};
-            Texture *texture{};
-            spRegionAttachment *regionAttachment{};
-
-            //If no current active attachment for slot then continue to next slot
-            if(!GameState->MySkeleton->slots[SlotIndex]->attachment) continue;
-
-            if (GameState->MySkeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
+            for (i32 SlotIndex{0}; SlotIndex < Fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
             {
-                regionAttachment = (spRegionAttachment *)GameState->MySkeleton->slots[SlotIndex]->attachment;
-                texture = (Texture *)((spAtlasRegion *)regionAttachment->rendererObject)->page->rendererObject;
+                float verts[8] = {0};
+                Texture *texture{};
+                spRegionAttachment *regionAttachment{};
+                spSkeleton* skeleton = Fighters[FighterIndex]->skeleton;
 
-                spRegionAttachment_computeWorldVertices(regionAttachment, GameState->MySkeleton->slots[SlotIndex]->bone, verts, 0, 2);
+                //If no current active attachment for slot then continue to next slot
+                if (!skeleton->slots[SlotIndex]->attachment)
+                    continue;
 
-                Drawable_Rect SpineImage{
-                    v2f{verts[0], verts[1]},
-                    v2f{verts[2], verts[3]},
-                    v2f{verts[4], verts[5]},
-                    v2f{verts[6], verts[7]}};
+                if (skeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
+                {
+                    regionAttachment = (spRegionAttachment *)skeleton->slots[SlotIndex]->attachment;
+                    texture = (Texture *)((spAtlasRegion *)regionAttachment->rendererObject)->page->rendererObject;
 
-                v2f UVArray[4] = {
-                    v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
-                    v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
-                    v2f{regionAttachment->uvs[4], regionAttachment->uvs[5]},
-                    v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
+                    spRegionAttachment_computeWorldVertices(regionAttachment, skeleton->slots[SlotIndex]->bone, verts, 0, 2);
 
-                {//Transform to Camera Space
-                    v2f TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+                    Drawable_Rect SpineImage{
+                        v2f{verts[0], verts[1]},
+                        v2f{verts[2], verts[3]},
+                        v2f{verts[4], verts[5]},
+                        v2f{verts[6], verts[7]}};
 
-                    for (ui32 VertIndex{0}; VertIndex < ArrayCount(SpineImage.Corners); ++VertIndex)
-                    {
-                        SpineImage.Corners[VertIndex] += TranslationToCameraSpace;
+                    v2f UVArray[4] = {
+                        v2f{regionAttachment->uvs[0], regionAttachment->uvs[1]},
+                        v2f{regionAttachment->uvs[2], regionAttachment->uvs[3]},
+                        v2f{regionAttachment->uvs[4], regionAttachment->uvs[5]},
+                        v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
+
+                    { //Transform to Camera Space
+                        v2f TranslationToCameraSpace = GameCamera->ViewCenter - GameCamera->LookAt;
+
+                        for (ui32 VertIndex{0}; VertIndex < ArrayCount(SpineImage.Corners); ++VertIndex)
+                        {
+                            SpineImage.Corners[VertIndex] += TranslationToCameraSpace;
+                        };
                     };
-                };
 
-                //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
-                //current DrawTexture func first though to accept proper uvs
-                RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
+                    //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
+                    //current DrawTexture func first though to accept proper uvs
+                    RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
+                };
             };
         };
     };

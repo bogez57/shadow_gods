@@ -10,6 +10,13 @@
 #include <spine/AnimationState.h>
 #include <spine/AnimationStateData.h>
 
+struct Fighter 
+{
+    spSkeleton* skeleton;
+    spAnimationState* animationState;
+    v2f worldPos;
+};
+
 struct Level
 {
     v2f Dimensions;
@@ -35,9 +42,9 @@ struct Game_State
     spSkeletonJson* SkelJson{nullptr};
     spSkeletonData* SkelData{nullptr};
     spAtlas* Atlas{nullptr};
-    spSkeleton* MySkeleton;
+    Fighter player{};
+    Fighter ai{};
     spAnimationStateData* AnimationStateData;
-    spAnimationState* AnimationState;
     spAnimation* Animation;
     spTrackEntry* entry;
     void(*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
