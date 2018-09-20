@@ -263,8 +263,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         ViewportHeight = 720.0f;
 
         //Split game memory into more specific memory regions
-        GameState->MemRegions[DYNAMIC] = CreateRegionFromGameMem(GameMemory, Megabytes(10));
-        InitDynamAllocator(&GameState->DynamAllocator);
+        auto[UpdatedGameMemory, DynamicMemRegion] = CreateRegionFromGameMem(*GameMemory, Megabytes(10));
+        *GameMemory = UpdatedGameMemory; GameState->MemRegions[DYNAMIC] = DynamicMemRegion;
+
+        GameState->DynamAllocator = CreateAndInitDynamAllocator();
 
         { //Init spine stuff
             GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
@@ -339,7 +341,7 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     });
 
     OnKeyHold(Keyboard->MoveRight, GameState, [](Game_State* gameState){
-        gameState->player.worldPos.x += 3.0f;
+        gameState->player.worldPos.x += 1.0f;
     });
 
     OnKeyComboPress(Keyboard->MoveRight, Keyboard->ActionUp, GameState, [](Game_State* gameState){

@@ -52,18 +52,18 @@ struct Dynamic_Mem_Allocator
     ui32 AmountOfBlocks;
 };
 
-local_func auto
-CreateRegionFromGameMem(Game_Memory* GameMemory, ui64 Size) -> Memory_Region 
+auto CreateRegionFromGameMem(Game_Memory GameMemory, ui64 Size)
 {
-    Memory_Region Result{};
+    Memory_Region newRegion{};
 
-    Result.BaseAddress = (ui64*)((ui8*)GameMemory->TemporaryStorage) + GameMemory->TemporaryStorageUsed;
-    Result.EndAddress = (ui64*)((ui8*)Result.BaseAddress) + (Size - 1);
-    Result.Size = Size;
-    Result.UsedAmount = 0;
-    GameMemory->TemporaryStorageUsed += Size;
+    newRegion.BaseAddress = (ui64*)((ui8*)GameMemory.TemporaryStorage) + GameMemory.TemporaryStorageUsed;
+    newRegion.EndAddress = (ui64*)((ui8*)newRegion.BaseAddress) + (Size - 1);
+    newRegion.Size = Size;
+    newRegion.UsedAmount = 0;
+    GameMemory.TemporaryStorageUsed += Size;
 
-    return Result;
+    struct MultipleValues{Game_Memory mem; Memory_Region region;};
+    return MultipleValues{GameMemory, newRegion};
 };
 
 #define MallocType(Type, Count) (Type*)_MallocType(&GlobalGameState->DynamAllocator, ((sizeof(Type)) * (Count)))
