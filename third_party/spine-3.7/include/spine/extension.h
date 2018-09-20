@@ -90,7 +90,7 @@
 #define VTABLE(TYPE,VALUE) ((_##TYPE##Vtable*)((TYPE*)VALUE)->vtable)
 
 /* Frees memory. Can be used on const types. */
-#define FREE(VALUE) DeAlloc((void*)&VALUE)
+#define FREE(VALUE) DeAlloc(VALUE)
         
 
 /* Allocates a new char[], assigns it to TO, and copies FROM to it. Can be used on const types. */

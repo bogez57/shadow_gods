@@ -263,8 +263,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         ViewportHeight = 720.0f;
 
         //Split game memory into more specific memory regions
-        GameState->DynamAllocator.MemRegions[SPINEDATA] = CreateRegionFromGameMem(GameMemory, Megabytes(10));
-        InitDynamAllocatorRegion(&GameState->DynamAllocator, SPINEDATA);
+        GameState->MemRegions[DYNAMIC] = CreateRegionFromGameMem(GameMemory, Megabytes(10));
+        InitDynamAllocator(&GameState->DynamAllocator);
 
         { //Init spine stuff
             GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);

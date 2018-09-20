@@ -12,7 +12,8 @@ struct Memory_Region
 
 enum Mem_Region_Type
 {
-    SPINEDATA,
+    DYNAMIC,
+    LINEAR,
     REGION_COUNT
 };
 
@@ -28,9 +29,9 @@ struct Linear_Mem_Allocator
     Memory_Region MemRegions[REGION_COUNT];
 };
 
-#define PushSize(Size) _PushType(&GlobalGameState->LinearAllocator, (Size), (LISTDATA))
-#define PushType(Type, Count) (Type*)_PushType(&GlobalGameState->LinearAllocator, ((sizeof(Type)) * (Count)), LISTDATA)
-#define PopSize(Size) _PopSize(&GlobalGameState->LinearAllocator, (Size), LISTDATA)
+#define PushSize(Size) _PushType(&GlobalGameState->LinearAllocator, (Size))
+#define PushType(Type, Count) (Type*)_PushType(&GlobalGameState->LinearAllocator, ((sizeof(Type)) * (Count)))
+#define PopSize(Size) _PopSize(&GlobalGameState->LinearAllocator, (Size))
 
 
 /*** Dynamic Allocator ***/
@@ -46,8 +47,6 @@ struct Memory_Block
 
 struct Dynamic_Mem_Allocator 
 {
-    Memory_Region MemRegions[REGION_COUNT];
-
     Memory_Block* head;
     Memory_Block* tail;
     ui32 AmountOfBlocks;
@@ -67,10 +66,10 @@ CreateRegionFromGameMem(Game_Memory* GameMemory, ui64 Size) -> Memory_Region
     return Result;
 };
 
-#define MallocType(Type, Count) (Type*)_MallocType(&GlobalGameState->DynamAllocator, ((sizeof(Type)) * (Count)), SPINEDATA)
-#define MallocSize(Size) _MallocType(&GlobalGameState->DynamicAllocator, (Size), SPINEDATA)
-#define CallocType(Type, Count) (Type*)_CallocType(&GlobalGameState->DynamAllocator, ((sizeof(Type)) * (Count)), SPINEDATA)
-#define CallocSize(Type, Count) _CallocType(&GlobalGameState->DynamAllocator, (Size), SPINEDATA)
-#define ReAlloc(Ptr, Type, Count) (Type*)_ReAlloc(&GlobalGameState->DynamAllocator, Ptr, sizeof(Type) * Count, SPINEDATA)
-#define DeAlloc(PtrToMemory) _DeAlloc(&GlobalGameState->DynamAllocator, (ui64**)PtrToMemory, SPINEDATA)
+#define MallocType(Type, Count) (Type*)_MallocType(&GlobalGameState->DynamAllocator, ((sizeof(Type)) * (Count)))
+#define MallocSize(Size) _MallocType(&GlobalGameState->DynamicAllocator, (Size))
+#define CallocType(Type, Count) (Type*)_CallocType(&GlobalGameState->DynamAllocator, ((sizeof(Type)) * (Count)))
+#define CallocSize(Type, Count) _CallocType(&GlobalGameState->DynamAllocator, (Size))
+#define ReAlloc(Ptr, Type, Count) (Type*)_ReAlloc(&GlobalGameState->DynamAllocator, Ptr, sizeof(Type) * Count)
+#define DeAlloc(PtrToMemory) _DeAlloc(&GlobalGameState->DynamAllocator, (ui64**)&PtrToMemory)
 

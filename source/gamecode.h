@@ -49,5 +49,6 @@ struct Game_State
     spTrackEntry* entry;
     void(*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
     spAnimation* EmptyAnim;
+    Memory_Region MemRegions[REGION_COUNT];
     Dynamic_Mem_Allocator DynamAllocator;
 };
