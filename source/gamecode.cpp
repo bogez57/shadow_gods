@@ -61,15 +61,13 @@ MyListener(spAnimationState* state, spEventType type, spTrackEntry* entry, spEve
 }
 
 local_func auto
-ReloadCorrectSpineFunctionPtrs(spSkeletonData* skelData, spAnimationState* animationState) -> void
+ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
 {
-    animationState->listener = MyListener;
-
-    for (i32 animationIndex{0}; animationIndex < skelData->animationsCount; ++animationIndex)
+    for (i32 animationIndex{0}; animationIndex < skelData.animationsCount; ++animationIndex)
     {
-        for (i32 timelineIndex{0}; timelineIndex < skelData->animations[animationIndex]->timelinesCount; ++timelineIndex)
+        for (i32 timelineIndex{0}; timelineIndex < skelData.animations[animationIndex]->timelinesCount; ++timelineIndex)
         {
-            spTimeline *Timeline = skelData->animations[animationIndex]->timelines[timelineIndex];
+            spTimeline *Timeline = skelData.animations[animationIndex]->timelines[timelineIndex];
 
             switch (Timeline->type)
             {
@@ -187,6 +185,8 @@ ReloadCorrectSpineFunctionPtrs(spSkeletonData* skelData, spAnimationState* anima
             };
         };
     };
+
+    return skelData;
 };
 
 auto
@@ -316,17 +316,17 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         GameCamera->ZoomFactor = 1.0f;
     }
 
-    //In order for live code reloading to work somewhat reliably I need to supply new function addresses
-    //for all spine animation timelines upon dll reload. Also, for input playback, since the original game state is copied over to 
-    //playback the input this also copies over old function ptr addresses. Currently correcting this by checking when ptr's don't match 
-    //(by just picking a random spine func to check) and just reloading func ptr's. This will happen on every loop of playback
     if(GlobalPlatformServices->DLLJustReloaded || GameState->SpineFuncPtrTest != _spAttachmentTimeline_apply)
     {
         BGZ_CONSOLE("Dll reloaded!");
-        GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
-        SP_EMPTY_ANIMATION = GameState->EmptyAnim;
-        GlobalPlatformServices->DLLJustReloaded = false;
-        ReloadCorrectSpineFunctionPtrs(GameState->SkelData, player->animationState);
+
+        {//Perform necessary operations to keep spine working with live code editing/input playback
+            GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
+            SP_EMPTY_ANIMATION = GameState->EmptyAnim;
+            GlobalPlatformServices->DLLJustReloaded = false;
+            *GameState->SkelData = ReloadAllSpineTimelineFunctionPtrs(*GameState->SkelData);
+            player->animationState->listener = MyListener;
+        };
     };
 
     spAnimationState_update(player->animationState, .016f);
