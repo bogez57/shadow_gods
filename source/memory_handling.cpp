@@ -9,7 +9,8 @@
     2.) Alignment?
 */
 
-void* _AllocSize(Memory_Region* MemRegion, sizet Size)
+auto
+_AllocSize(Memory_Region* MemRegion, sizet Size) -> void*
 {
     BGZ_ERRASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size, "Not enough memory!");
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
@@ -18,7 +19,8 @@ void* _AllocSize(Memory_Region* MemRegion, sizet Size)
     return Result;
 };
 
-void* _AllocType(Memory_Region* MemRegion, ui64 Size, sizet Count)
+auto
+_AllocType(Memory_Region* MemRegion, ui64 Size, sizet Count) -> void*
 {
     BGZ_ERRASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size, "Not enough Memory!");
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
@@ -27,7 +29,8 @@ void* _AllocType(Memory_Region* MemRegion, ui64 Size, sizet Count)
     return Result;
 };
 
-void _FreeSize(Memory_Region* MemRegion, ui64 SizeToFree)
+auto
+_FreeSize(Memory_Region* MemRegion, ui64 SizeToFree) -> void
 {
     BGZ_ASSERT(SizeToFree < MemRegion->Size || SizeToFree < MemRegion->UsedAmount);
 
@@ -38,7 +41,8 @@ void _FreeSize(Memory_Region* MemRegion, ui64 SizeToFree)
 
 /*** Linear Allocator ***/
 
-void* _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size)
+auto
+_PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size)-> void*
 {
     Memory_Region* MemRegion = &GlobalGameState->MemRegions[LINEAR];
     BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
@@ -49,7 +53,8 @@ void* _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size)
     return Result;
 };
 
-void _PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree)
+auto
+_PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree) -> void
 {
     Memory_Region* MemRegion = &GlobalGameState->MemRegions[LINEAR];
     BGZ_ASSERT(SizeToFree < MemRegion->Size || SizeToFree < MemRegion->UsedAmount);
@@ -60,7 +65,8 @@ void _PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree)
 
 /*** Dynamic Allocator ***/
 
-local_func Memory_Block* ConvertDataToMemoryBlock(void* Ptr)
+local_func auto
+ConvertDataToMemoryBlock(void* Ptr) -> Memory_Block*
 {
     Memory_Block *BlockHeader{};
     BlockHeader= (Memory_Block*)(((ui8*)Ptr) - (sizeof(Memory_Block)));
@@ -69,7 +75,8 @@ local_func Memory_Block* ConvertDataToMemoryBlock(void* Ptr)
     return BlockHeader;
 };
 
-local_func void* GetDataFromBlock(Memory_Block* Header)
+local_func auto
+GetDataFromBlock(Memory_Block* Header) -> void*
 {
     BGZ_ASSERT(Header->Size != 0);
 
@@ -78,7 +85,8 @@ local_func void* GetDataFromBlock(Memory_Block* Header)
     return BlockData;
 };
 
-local_func Memory_Block* SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock, Dynamic_Mem_Allocator* DynamAllocator)
+local_func auto
+SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock, Dynamic_Mem_Allocator* DynamAllocator) -> Memory_Block*
 {
     BGZ_ASSERT(BlockToSplit->data);
     BGZ_ASSERT(SizeOfNewBlock > sizeof(Memory_Block));
@@ -96,7 +104,8 @@ local_func Memory_Block* SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOf
     return NewBlock;
 };
 
-local_func sizet ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet NewSize)
+local_func auto
+ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet NewSize) -> sizet
 {
     sizet SizeDiff = BlockToResize->Size - NewSize;
     BlockToResize->Size = NewSize;
@@ -105,7 +114,8 @@ local_func sizet ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet New
     return SizeDiff;
 };
 
-local_func Memory_Block* GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator)
+local_func auto
+GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Memory_Block*
 {
     Memory_Block* Result{};
     BGZ_ASSERT(DynamAllocator->head);
@@ -133,7 +143,8 @@ local_func Memory_Block* GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocato
     return nullptr;
 };
 
-local_func Memory_Block* AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size)
+local_func auto
+AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Memory_Block*
 {
     BGZ_ERRCTXT1("When trying to add a new memory block to dynamic memory");
 
@@ -154,7 +165,8 @@ local_func Memory_Block* AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAl
     return NewBlock;
 };
 
-local_func void FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block* BlockToFree)
+local_func auto
+FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block* BlockToFree) -> void
 {
     BlockToFree->IsFree = true;
 
@@ -201,7 +213,8 @@ local_func void FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, 
     }
 };
 
-Dynamic_Mem_Allocator CreateAndInitDynamAllocator()
+auto
+CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator 
 {
     BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
 
@@ -225,7 +238,8 @@ Dynamic_Mem_Allocator CreateAndInitDynamAllocator()
     return DynamAllocator;
 };
 
-local_func void* _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size)
+auto 
+_MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRASSERT(Size <= GlobalGameState->MemRegions[DYNAMIC].Size, "Size is too big to allocate for dynamic memory region!");
 
@@ -265,7 +279,8 @@ local_func void* _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size)
     return Result;
 };
 
-local_func void* _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size)
+auto
+_CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRASSERT(Size <= GlobalGameState->MemRegions[DYNAMIC].Size, "Size is too big to allocate for dynamic memory region!");
 
