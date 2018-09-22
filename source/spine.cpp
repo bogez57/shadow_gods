@@ -16,8 +16,7 @@
 #include <spine/extension.c>
 #include <spine/IkConstraint.c>
 #include <spine/IkConstraintData.c>
-#include <spine/json.h>
-#include <spine/json.c>
+#include <spine/Json.c>
 #include <spine/MeshAttachment.c>
 #include <spine/PathAttachment.c>
 #include <spine/PathConstraint.c>

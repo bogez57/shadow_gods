@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "boagz\error_context.h"
 
 #ifdef BGZ_MAX_CONTEXTS
@@ -11,7 +12,7 @@
 #endif
 
 #if BGZ_LOGGING_ON
-	#define BgzAssert(Expression) if(!(Expression)) {*(int *)0 = 0;}
+	#define BgzAssert(Expression) if(!(Expression)) {assert(1==0);}
 
 	#define BGZ_ASSERT(expression) \
 		BgzAssert(expression) 

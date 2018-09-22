@@ -1,10 +1,11 @@
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+#include <Windows.h>
+#include <assert.h>
 #include <stdint.h>
 
-#define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
+#define Assert(Expression) if(!(Expression)) {assert(1==0);}
 
 namespace bgz
 {
