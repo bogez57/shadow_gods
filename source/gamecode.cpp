@@ -35,6 +35,33 @@ global_variable f32 ViewportHeight;
 #include <boagz/error_context.cpp>
 
 local_func auto
+FlipImage(Image image) -> Image
+{
+    i32 widthInBytes = image.Dimensions.Width * 4;
+    unsigned char *p_topRowOfTexels = nullptr;
+    unsigned char *p_bottomRowOfTexels = nullptr;
+    unsigned char temp = 0;
+    i32 halfHeight = image.Dimensions.Height / 2;
+
+    for (i32 row = 0; row < halfHeight; ++row)
+    {
+        p_topRowOfTexels = image.Data + row * widthInBytes;
+        p_bottomRowOfTexels = image.Data + (image.Dimensions.Height - row - 1) * widthInBytes;
+
+        for (i32 col = 0; col < widthInBytes; ++col)
+        {
+            temp = *p_topRowOfTexels;
+            *p_topRowOfTexels = *p_bottomRowOfTexels;
+            *p_bottomRowOfTexels = temp;
+            p_topRowOfTexels++;
+            p_bottomRowOfTexels++;
+        };
+    };
+
+    return image;
+};
+
+local_func auto
 MyListener(spAnimationState* state, spEventType type, spTrackEntry* entry, spEvent* event) -> void
 {
    switch (type) 
@@ -276,6 +303,30 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
         GameState->DynamAllocator = CreateAndInitDynamAllocator();
 
+        GameLevel->DisplayImage.Data = PlatformServices->LoadRGBAImage(
+                                             "data/4k.jpg",
+                                             &GameLevel->DisplayImage.Dimensions.Width,
+                                             &GameLevel->DisplayImage.Dimensions.Height);
+
+        //Since opengl will read-in image upside down
+        GameLevel->DisplayImage = FlipImage(GameLevel->DisplayImage);
+        GameLevel->CurrentTexture = RenderCmds.LoadTexture(GameLevel->DisplayImage);//TODO: Move out to renderer
+
+        //For dll reloading/live code editing purposes
+        GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
+        GameState->EmptyAnim = SP_EMPTY_ANIMATION;
+
+        GameLevel->Dimensions.Width = (f32)GameLevel->DisplayImage.Dimensions.Width;
+        GameLevel->Dimensions.Height = (f32)GameLevel->DisplayImage.Dimensions.Height;
+        GameLevel->CenterPoint = {(f32)GameLevel->Dimensions.Width / 2, (f32)GameLevel->Dimensions.Height / 2};
+
+        GameCamera->ViewWidth = ViewportWidth;
+        GameCamera->ViewHeight = ViewportHeight;
+        GameCamera->LookAt = GameLevel->CenterPoint;
+        GameCamera->ViewCenter = {GameCamera->ViewWidth / 2.0f, GameCamera->ViewHeight / 2.0f};
+        GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
+        GameCamera->ZoomFactor = 1.0f;
+
         { //Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
@@ -294,42 +345,19 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
                 player->animationState = spAnimationState_create(GameState->AnimationStateData);
                 spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
                 player->animationState->listener = MyListener;
-                player->worldPos = {200.0f, 80.0f};
+                player->worldPos = {(GameLevel->Dimensions.Width/2.0f) - 300.0f, (GameLevel->Dimensions.Height/2.0f) - 300.0f};
                 player->skeleton->scaleX = .6f;
                 player->skeleton->scaleY = .6f;
 
                 ai->skeleton = spSkeleton_create(GameState->SkelData);
                 ai->animationState = spAnimationState_create(GameState->AnimationStateData);
                 spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
-                ai->worldPos = {900.0f, 80.0f};
+                ai->worldPos =  {(GameLevel->Dimensions.Width/2.0f) + 300.0f, (GameLevel->Dimensions.Height/2.0f) - 300.0f};
                 ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
             };
         };
-
-        GameLevel->DisplayImage.Data = PlatformServices->LoadRGBAImage(
-                                             "data/4k.jpg",
-                                             &GameLevel->DisplayImage.Dimensions.Width,
-                                             &GameLevel->DisplayImage.Dimensions.Height);
-
-        //TODO: Move out to renderer
-        GameLevel->CurrentTexture = RenderCmds.LoadTexture(GameLevel->DisplayImage);
-
-        //For dll reloading/live code editing purposes
-        GameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
-        GameState->EmptyAnim = SP_EMPTY_ANIMATION;
-
-        GameLevel->Dimensions.Width = (f32)GameLevel->DisplayImage.Dimensions.Width;
-        GameLevel->Dimensions.Height = (f32)GameLevel->DisplayImage.Dimensions.Height;
-        GameLevel->CenterPoint = {(f32)GameLevel->Dimensions.Width / 2, (f32)GameLevel->Dimensions.Height / 2};
-
-        GameCamera->ViewWidth = ViewportWidth;
-        GameCamera->ViewHeight = ViewportHeight;
-        GameCamera->LookAt = {(ViewportWidth/2.0f), (ViewportHeight/2.0f)};
-        GameCamera->ViewCenter = {GameCamera->ViewWidth / 2.0f, GameCamera->ViewHeight / 2.0f};
-        GameCamera->DilatePoint = GameCamera->ViewCenter - v2f{0.0f, 200.0f};
-        GameCamera->ZoomFactor = 1.0f;
-    }
+    };
 
     if(GlobalPlatformServices->DLLJustReloaded || GameState->SpineFuncPtrTest != _spAttachmentTimeline_apply)
     {
@@ -410,14 +438,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             BackgroundCanvas = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
 
-            v2f UVArray[4] = {
-                    v2f{0.0f, 0.0f},
-                    v2f{0.0f, 1.0f},
-                    v2f{1.0f, 1.0f},
-                    v2f{0.0f, 1.0f}};
-
-            //Image currently flipped because I took flipping code out of my image loading function due to spine already
-            //having that in place. However background does not go through spine so need to manual flip image again for background
             RenderCmds.DrawBackground(GameLevel->CurrentTexture.ID, BackgroundCanvas, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
         };
 
@@ -462,6 +482,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
                             SpineImage.Corners[VertIndex] += TranslationToCameraSpace;
                         };
                     };
+
+                    SpineImage = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, SpineImage);
 
                     RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
                 };
