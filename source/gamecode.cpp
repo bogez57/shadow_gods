@@ -12,6 +12,8 @@
     #define BGZ_ERRHANDLING_ON false
 #endif
 
+#define _CRT_SECURE_NO_WARNINGS //to surpress things like 'use printf_s func instead!'
+
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
 
@@ -180,6 +182,12 @@ ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
                 VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
                 VTABLE(spTimeline, Timeline)->apply = _spTwoColorTimeline_apply;
                 VTABLE(spTimeline, Timeline)->getPropertyId = _spTwoColorTimeline_getPropertyId;
+            }
+            break;
+
+            case SP_TIMELINE_DRAWORDER:
+            {
+                //Adding this currently to satisfy clang compiler warning. Might need to implement in future
             }
             break;
             };
