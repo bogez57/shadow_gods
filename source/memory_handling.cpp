@@ -44,7 +44,7 @@ _FreeSize(Memory_Region* MemRegion, ui64 SizeToFree) -> void
 auto
 _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size)-> void*
 {
-    Memory_Region* MemRegion = &GlobalGameState->MemRegions[LINEAR];
+    Memory_Region* MemRegion = &globalGameState->memRegions[LINEAR];
     BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
 
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
@@ -56,7 +56,7 @@ _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size)-> void*
 auto
 _PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree) -> void
 {
-    Memory_Region* MemRegion = &GlobalGameState->MemRegions[LINEAR];
+    Memory_Region* MemRegion = &globalGameState->memRegions[LINEAR];
     BGZ_ASSERT(SizeToFree < MemRegion->Size || SizeToFree < MemRegion->UsedAmount);
 
     MemRegion->UsedAmount -= SizeToFree;
@@ -151,7 +151,7 @@ local_func auto
 AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Memory_Block*
 {
     ui64 TotalSize = sizeof(Memory_Block) + Size;
-    Memory_Block* NewBlock = (Memory_Block*)AllocSize(&GlobalGameState->MemRegions[DYNAMIC], TotalSize);
+    Memory_Block* NewBlock = (Memory_Block*)AllocSize(&globalGameState->memRegions[DYNAMIC], TotalSize);
 
     NewBlock->Size = Size;
     NewBlock->IsFree = false;
@@ -208,7 +208,7 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
     }
     else
     {
-        FreeSize(&GlobalGameState->MemRegions[DYNAMIC], BlockToFree->Size);
+        FreeSize(&globalGameState->memRegions[DYNAMIC], BlockToFree->Size);
         BlockToFree->prevBlock->nextBlock = nullptr;
         DynamAllocator->tail = BlockToFree->prevBlock;
         --DynamAllocator->AmountOfBlocks;
@@ -220,13 +220,13 @@ CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
 {
     BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
 
-    Dynamic_Mem_Allocator DynamAllocator{};
+    Dynamic_Mem_Allocator dynamAllocator{};
 
-    DynamAllocator.AmountOfBlocks = 0;
+    dynamAllocator.AmountOfBlocks = 0;
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
-    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&GlobalGameState->MemRegions[DYNAMIC], TotalSize);
+    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&globalGameState->memRegions[DYNAMIC], TotalSize);
 
     InitialBlock->Size = BlockSize;
     InitialBlock->IsFree = false;
@@ -234,10 +234,10 @@ CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
     InitialBlock->nextBlock = nullptr;
     InitialBlock->prevBlock = nullptr;
 
-    DynamAllocator.head = InitialBlock;
-    DynamAllocator.tail = InitialBlock;
+    dynamAllocator.head = InitialBlock;
+    dynamAllocator.tail = InitialBlock;
 
-    return DynamAllocator;
+    return dynamAllocator;
 };
 
 auto 
@@ -245,7 +245,7 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRCTXT1("When trying to allocate in dymamic memory");
 
-    BGZ_ERRASSERT(Size <= (GlobalGameState->MemRegions[DYNAMIC].Size - GlobalGameState->MemRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    BGZ_ERRASSERT(Size <= (globalGameState->memRegions[DYNAMIC].Size - globalGameState->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* Result{nullptr};
 
@@ -288,7 +288,7 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRCTXT1("When trying to allocate and initialize memory in dymamic memory");
 
-    BGZ_ERRASSERT(Size <= (GlobalGameState->MemRegions[DYNAMIC].Size - GlobalGameState->MemRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    BGZ_ERRASSERT(Size <= (globalGameState->memRegions[DYNAMIC].Size - globalGameState->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* MemBlockData = _MallocType(DynamAllocator, Size);
 
@@ -306,7 +306,7 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 auto
 _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSize) -> void*
 {
-    BGZ_ERRASSERT((GlobalGameState->MemRegions[DYNAMIC].UsedAmount - NewSize) > NewSize, "Not enough room left in memory region!");
+    BGZ_ERRASSERT((globalGameState->memRegions[DYNAMIC].UsedAmount - NewSize) > NewSize, "Not enough room left in memory region!");
 
     Memory_Block* BlockToRealloc = ConvertDataToMemoryBlock(DataToRealloc);
 
@@ -353,7 +353,7 @@ _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree) -> void
 
     if (*MemToFree) 
     {
-        BGZ_ERRASSERT(*MemToFree > GlobalGameState->MemRegions[DYNAMIC].BaseAddress && *MemToFree < GlobalGameState->MemRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
+        BGZ_ERRASSERT(*MemToFree > globalGameState->memRegions[DYNAMIC].BaseAddress && *MemToFree < globalGameState->memRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
 
         Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 

@@ -19,36 +19,36 @@ struct Fighter
 
 struct Level
 {
-    v2f Dimensions;
-    v2f CenterPoint;
-    Image DisplayImage;
-    Texture CurrentTexture;
+    v2f dimensions;
+    v2f centerPoint;
+    Image displayImage;
+    Texture currentTexture;
 };
 
 struct Camera
 {
-    v2f LookAt;
-    v2f ViewCenter;
-    f32 ViewWidth;
-    f32 ViewHeight;
-    v2f DilatePoint;
-    f32 ZoomFactor;
+    v2f lookAt;
+    v2f viewCenter;
+    f32 viewWidth;
+    f32 viewHeight;
+    v2f dilatePoint;
+    f32 zoomFactor;
 };
 
 struct Game_State
 {
-    Camera GameCamera;
-    Level GameLevel;
-    spSkeletonJson* SkelJson{nullptr};
-    spSkeletonData* SkelData{nullptr};
-    spAtlas* Atlas{nullptr};
+    Camera gameCamera;
+    Level gameLevel;
+    spSkeletonJson* skelJson{nullptr};
+    spSkeletonData* skelData{nullptr};
+    spAtlas* atlas{nullptr};
     Fighter player{};
     Fighter ai{};
-    spAnimationStateData* AnimationStateData;
-    spAnimation* Animation;
+    spAnimationStateData* animationStateData;
+    spAnimation* animation;
     spTrackEntry* entry;
     void(*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
-    spAnimation* EmptyAnim;
-    Memory_Region MemRegions[REGION_COUNT];
-    Dynamic_Mem_Allocator DynamAllocator;
+    spAnimation* emptyAnim;
+    Memory_Region memRegions[REGION_COUNT];
+    Dynamic_Mem_Allocator dynamAllocator;
 };

@@ -51,9 +51,9 @@ static enum cc_stat add_all_to_empty    (List *l1, List *l2);
  */
 void list_conf_init(ListConf *conf)
 {
-    conf->mem_alloc  = GlobalPlatformServices.PlatMalloc;
-    conf->mem_calloc = GlobalPlatformServices.PlatCalloc;
-    conf->mem_free   = GlobalPlatformServices.PlatFree;
+    conf->mem_alloc  = globalPlatformServices.PlatMalloc;
+    conf->mem_calloc = globalPlatformServices.PlatCalloc;
+    conf->mem_free   = globalPlatformServices.PlatFree;
 }
 
 /**

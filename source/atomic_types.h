@@ -38,7 +38,7 @@ struct v2f
         };
         struct
         {
-            f32 Width, Height;
+            f32 width, height;
         };
     };
 };
@@ -172,7 +172,7 @@ struct v2i
         };
         struct
         {
-            int Width, Height;
+            int width, height;
         };
     };
 };
