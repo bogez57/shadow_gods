@@ -649,8 +649,8 @@ namespace GL
     LoadTexture(Image ImageToSendToGPU) -> Texture
     {
         Texture ResultingTexture{};
-        ResultingTexture.dimensions.width = ImageToSendToGPU.dimensions.width;
-        ResultingTexture.dimensions.height = ImageToSendToGPU.dimensions.height;
+        ResultingTexture.size.width = ImageToSendToGPU.size.width;
+        ResultingTexture.size.height = ImageToSendToGPU.size.height;
 
         ui8* ImageData = ImageToSendToGPU.Data;
 
@@ -659,7 +659,7 @@ namespace GL
         glBindTexture(GL_TEXTURE_2D, ResultingTexture.ID);
 
         glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA, ResultingTexture.dimensions.width, ResultingTexture.dimensions.height, 
+            GL_TEXTURE_2D, 0, GL_RGBA, ResultingTexture.size.width, ResultingTexture.size.height, 
             0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

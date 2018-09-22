@@ -131,15 +131,15 @@ float _spMath_pow2out_apply(float a) {
 void _spAtlasPage_createTexture (spAtlasPage* self, const char* path)
 {
 	Image image;
-	image.Data = globalPlatformServices->LoadRGBAImage(path, &image.dimensions.width, &image.dimensions.height);
+	image.Data = globalPlatformServices->LoadRGBAImage(path, &image.size.width, &image.size.height);
 	//Need to create heap like memory
 	Texture texture = globalRenderCmds.LoadTexture(image);
 	Texture* textureptr = MALLOC(Texture, 1);
 	*textureptr = texture;
 
 	self->rendererObject = textureptr;
-	self->width = image.dimensions.width;
-	self->height = image.dimensions.height;
+	self->width = image.size.width;
+	self->height = image.size.height;
 };
 
 void _spAtlasPage_disposeTexture (spAtlasPage* self)

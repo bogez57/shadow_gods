@@ -17,9 +17,9 @@ struct Fighter
     v2f worldPos;
 };
 
-struct Level
+struct StageInfo
 {
-    v2f dimensions;
+    v2f size;
     v2f centerPoint;
     Image displayImage;
     Texture currentTexture;
@@ -35,16 +35,19 @@ struct Camera
     f32 zoomFactor;
 };
 
+struct StageData
+{
+    StageInfo info;
+};
+
 struct Game_State
 {
     Camera gameCamera;
-    Level gameLevel;
-    spSkeletonJson* skelJson{nullptr};
+    StageData stage{};
     spSkeletonData* skelData{nullptr};
-    spAtlas* atlas{nullptr};
+    spAnimationStateData* animationStateData{nullptr};
     Fighter player{};
     Fighter ai{};
-    spAnimationStateData* animationStateData;
     spAnimation* animation;
     spTrackEntry* entry;
     void(*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);

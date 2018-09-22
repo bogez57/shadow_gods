@@ -38,16 +38,16 @@ global_variable f32 viewportHeight;
 local_func auto
 FlipImage(Image image) -> Image
 {
-    i32 widthInBytes = image.dimensions.width * 4;
+    i32 widthInBytes = image.size.width * 4;
     unsigned char *p_topRowOfTexels = nullptr;
     unsigned char *p_bottomRowOfTexels = nullptr;
     unsigned char temp = 0;
-    i32 halfHeight= image.dimensions.height/ 2;
+    i32 halfHeight= image.size.height/ 2;
 
     for (i32 row = 0; row < halfHeight; ++row)
     {
         p_topRowOfTexels = image.Data + row * widthInBytes;
-        p_bottomRowOfTexels = image.Data + (image.dimensions.height- row - 1) * widthInBytes;
+        p_bottomRowOfTexels = image.Data + (image.size.height- row - 1) * widthInBytes;
 
         for (i32 col = 0; col < widthInBytes; ++col)
         {
@@ -284,7 +284,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
 
     deltaT = platformServices->prevFrameTimeInSecs;
     Camera* gameCamera = &gameState->gameCamera;
-    Level* gameLevel = &gameState->gameLevel;
+    StageData* stage = &gameState->stage;
     Fighter* player = &gameState->player;
     Fighter* ai = &gameState->ai;
 
@@ -305,26 +305,26 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
 
         gameState->dynamAllocator = CreateAndInitDynamAllocator();
 
-        gameLevel->displayImage.Data = platformServices->LoadRGBAImage(
+        stage->info.displayImage.Data = platformServices->LoadRGBAImage(
                                              "data/4k.jpg",
-                                             &gameLevel->displayImage.dimensions.width,
-                                             &gameLevel->displayImage.dimensions.height);
+                                             &stage->info.displayImage.size.width,
+                                             &stage->info.displayImage.size.height);
 
         //Since opengl will read-in image upside down
-        gameLevel->displayImage = FlipImage(gameLevel->displayImage);
-        gameLevel->currentTexture = renderCmds.LoadTexture(gameLevel->displayImage);//TODO: Move out to renderer
+        stage->info.displayImage = FlipImage(stage->info.displayImage);
+        stage->info.currentTexture = renderCmds.LoadTexture(stage->info.displayImage);//TODO: Move out to renderer
 
         //For dll reloading/live code editing purposes
         gameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
         gameState->emptyAnim = SP_EMPTY_ANIMATION;
 
-        gameLevel->dimensions.width = (f32)gameLevel->displayImage.dimensions.width;
-        gameLevel->dimensions.height = (f32)gameLevel->displayImage.dimensions.height;
-        gameLevel->centerPoint = {(f32)gameLevel->dimensions.width / 2, (f32)gameLevel->dimensions.height / 2};
+        stage->info.size.width = (f32)stage->info.displayImage.size.width;
+        stage->info.size.height = (f32)stage->info.displayImage.size.height;
+        stage->info.centerPoint = {(f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2};
 
         gameCamera->viewWidth = viewportWidth;
         gameCamera->viewHeight = viewportHeight;
-        gameCamera->lookAt = {gameLevel->centerPoint.x, gameLevel->centerPoint.y - 600.0f};
+        gameCamera->lookAt = {stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f};
         gameCamera->viewCenter = {gameCamera->viewWidth / 2.0f, gameCamera->viewHeight / 2.0f};
         gameCamera->dilatePoint = gameCamera->viewCenter - v2f{0.0f, 200.0f};
         gameCamera->zoomFactor = 1.0f;
@@ -332,10 +332,11 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         { //Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
-            gameState->atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
-            gameState->skelJson = spSkeletonJson_create(gameState->atlas);
-            gameState->skelData = spSkeletonJson_readSkeletonDataFile(gameState->skelJson, "data/spineboy-ess.json");
+            spAtlas* atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
+            spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
+            gameState->skelData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/spineboy-ess.json");
             gameState->animationStateData = spAnimationStateData_create(gameState->skelData);
+            spSkeletonJson_dispose(skelJson);
 
             spAnimationStateData_setMixByName(gameState->animationStateData, "idle", "walk", 0.2f);
             spAnimationStateData_setMixByName(gameState->animationStateData, "walk", "idle", 0.2f);
@@ -347,14 +348,14 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                 player->animationState = spAnimationState_create(gameState->animationStateData);
                 spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
                 player->animationState->listener = MyListener;
-                player->worldPos = {(gameLevel->dimensions.width/2.0f) - 300.0f, (gameLevel->dimensions.height/2.0f) - 900.0f};
+                player->worldPos = {(stage->info.size.width/2.0f) - 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 player->skeleton->scaleX = .6f;
                 player->skeleton->scaleY = .6f;
 
                 ai->skeleton = spSkeleton_create(gameState->skelData);
                 ai->animationState = spAnimationState_create(gameState->animationStateData);
                 spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
-                ai->worldPos =  {(gameLevel->dimensions.width/2.0f) + 300.0f, (gameLevel->dimensions.height/2.0f) - 900.0f};
+                ai->worldPos =  {(stage->info.size.width/2.0f) + 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
             };
@@ -435,12 +436,12 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
 
             backgroundCanvas = ProduceRectFromBottomLeftPoint(
                                         backgroundCameraSpace.Origin, 
-                                        (f32)gameLevel->dimensions.width, 
-                                        (f32)gameLevel->dimensions.height);
+                                        (f32)stage->info.size.width, 
+                                        (f32)stage->info.size.height);
 
             backgroundCanvas = DilateAboutArbitraryPoint(gameCamera->dilatePoint, gameCamera->zoomFactor, backgroundCanvas);
 
-            renderCmds.DrawBackground(gameLevel->currentTexture.ID, backgroundCanvas, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+            renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
         };
 
         Fighter* fighters[2] = {player, ai};

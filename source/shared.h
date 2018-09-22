@@ -100,13 +100,13 @@ struct Platform_Services
 struct Image
 {
     unsigned char* Data;
-    v2i dimensions;
+    v2i size;
 };
 
 struct Texture
 {
     ui32 ID;
-    v2i dimensions;
+    v2i size;
 };
 
 struct Drawable_Rect
