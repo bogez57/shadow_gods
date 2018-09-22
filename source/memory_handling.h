@@ -26,7 +26,6 @@ enum Mem_Region_Type
 
 struct Linear_Mem_Allocator 
 {
-    Memory_Region MemRegions[REGION_COUNT];
 };
 
 #define PushSize(Size) _PushType(&GlobalGameState->LinearAllocator, (Size))

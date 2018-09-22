@@ -277,6 +277,8 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
         GameState->DynamAllocator = CreateAndInitDynamAllocator();
 
         { //Init spine stuff
+            BGZ_ERRCTXT1("When Initializing Spine stuff");
+
             GameState->Atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
             GameState->SkelJson = spSkeletonJson_create(GameState->Atlas);
             GameState->SkelData = spSkeletonJson_readSkeletonDataFile(GameState->SkelJson, "data/spineboy-ess.json");
