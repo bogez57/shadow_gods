@@ -30,6 +30,7 @@ global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
 #include "memory_handling.cpp"
+#include "memory_allocators.cpp"
 
 //Third Party
 #include "spine.cpp"

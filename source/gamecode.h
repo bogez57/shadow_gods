@@ -45,12 +45,6 @@ struct Stage_Data
     Camera gameCamera;
 };
 
-struct Memory_Handler
-{
-    Memory_Region memRegions[REGION_COUNT];
-    Dynamic_Mem_Allocator dynamAllocator;
-};
-
 struct Game_State
 {
     Stage_Data stage{};
