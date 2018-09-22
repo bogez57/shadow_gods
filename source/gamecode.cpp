@@ -322,7 +322,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
 
         gameCamera->viewWidth = viewportWidth;
         gameCamera->viewHeight = viewportHeight;
-        gameCamera->lookAt = gameLevel->centerPoint;
+        gameCamera->lookAt = {gameLevel->centerPoint.x, gameLevel->centerPoint.y - 600.0f};
         gameCamera->viewCenter = {gameCamera->viewWidth / 2.0f, gameCamera->viewHeight / 2.0f};
         gameCamera->dilatePoint = gameCamera->viewCenter - v2f{0.0f, 200.0f};
         gameCamera->zoomFactor = 1.0f;
@@ -345,14 +345,14 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                 player->animationState = spAnimationState_create(gameState->animationStateData);
                 spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
                 player->animationState->listener = MyListener;
-                player->worldPos = {(gameLevel->dimensions.width/2.0f) - 300.0f, (gameLevel->dimensions.height/2.0f) - 300.0f};
+                player->worldPos = {(gameLevel->dimensions.width/2.0f) - 300.0f, (gameLevel->dimensions.height/2.0f) - 900.0f};
                 player->skeleton->scaleX = .6f;
                 player->skeleton->scaleY = .6f;
 
                 ai->skeleton = spSkeleton_create(gameState->skelData);
                 ai->animationState = spAnimationState_create(gameState->animationStateData);
                 spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
-                ai->worldPos =  {(gameLevel->dimensions.width/2.0f) + 300.0f, (gameLevel->dimensions.height/2.0f) - 300.0f};
+                ai->worldPos =  {(gameLevel->dimensions.width/2.0f) + 300.0f, (gameLevel->dimensions.height/2.0f) - 900.0f};
                 ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
             };
@@ -376,7 +376,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     spAnimationState_update(ai->animationState, .016f);
 
     OnKeyPress(keyboard->MoveUp, gameState, [](Game_State* gameState){
-        gameState->gameCamera.lookAt.x -= 4.02f;
+        gameState->gameCamera.zoomFactor -= .02f;
     });
 
     OnKeyPress(keyboard->MoveRight, gameState, [](Game_State* gameState){
