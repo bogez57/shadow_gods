@@ -675,23 +675,23 @@ namespace GL
     }
 
     local_func auto
-    DrawBackground(ui32 TextureID, v2f CameraViewDimensions, v2f MinUV, v2f MaxUV) -> void
+    DrawBackground(ui32 TextureID, Drawable_Rect BackgroundImage, v2f MinUV, v2f MaxUV) -> void
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
 
         glBegin(GL_QUADS);
         glTexCoord2f(MinUV.x, MinUV.y);
-        glVertex2f(0.0f, 0.0f);
+        glVertex2f(BackgroundImage.BottomLeft.x, BackgroundImage.BottomLeft.y);
 
         glTexCoord2f(MaxUV.x, MinUV.y);
-        glVertex2f(CameraViewDimensions.x, 0.0f);
+        glVertex2f(BackgroundImage.BottomRight.x, BackgroundImage.BottomRight.y);
 
         glTexCoord2f(MaxUV.x, MaxUV.y);
-        glVertex2f(CameraViewDimensions.x, CameraViewDimensions.y);
+        glVertex2f(BackgroundImage.TopRight.x, BackgroundImage.TopRight.y);
 
         glTexCoord2f(MinUV.x, MaxUV.y);
-        glVertex2f(0.0f, CameraViewDimensions.y);
+        glVertex2f(BackgroundImage.TopLeft.x, BackgroundImage.TopLeft.y);
 
         glEnd();
         glFlush();

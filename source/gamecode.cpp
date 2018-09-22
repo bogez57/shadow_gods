@@ -291,16 +291,19 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
 
             {//Setup fighters
                 player->skeleton = spSkeleton_create(GameState->SkelData);
-                ai->skeleton = spSkeleton_create(GameState->SkelData);
-
                 player->animationState = spAnimationState_create(GameState->AnimationStateData);
-                ai->animationState = spAnimationState_create(GameState->AnimationStateData);
-
                 spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
                 player->animationState->listener = MyListener;
+                player->worldPos = {200.0f, 80.0f};
+                player->skeleton->scaleX = .6f;
+                player->skeleton->scaleY = .6f;
 
-                player->worldPos = {0.0f, 0.0f};
-                ai->worldPos = {500.0f, 0.0f};
+                ai->skeleton = spSkeleton_create(GameState->SkelData);
+                ai->animationState = spAnimationState_create(GameState->AnimationStateData);
+                spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
+                ai->worldPos = {900.0f, 80.0f};
+                ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
+                ai->skeleton->scaleY = 0.6f;
             };
         };
 
@@ -342,8 +345,10 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
     };
 
     spAnimationState_update(player->animationState, .016f);
+    spAnimationState_update(ai->animationState, .016f);
 
     OnKeyPress(Keyboard->MoveUp, GameState, [](Game_State* gameState){
+        gameState->GameCamera.ZoomFactor -= .02f;
     });
 
     OnKeyPress(Keyboard->MoveRight, GameState, [](Game_State* gameState){
@@ -404,6 +409,16 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
                                         (f32)GameLevel->Dimensions.Height);
 
             BackgroundCanvas = DilateAboutArbitraryPoint(GameCamera->DilatePoint, GameCamera->ZoomFactor, BackgroundCanvas);
+
+            v2f UVArray[4] = {
+                    v2f{0.0f, 0.0f},
+                    v2f{0.0f, 1.0f},
+                    v2f{1.0f, 1.0f},
+                    v2f{0.0f, 1.0f}};
+
+            //Image currently flipped because I took flipping code out of my image loading function due to spine already
+            //having that in place. However background does not go through spine so need to manual flip image again for background
+            RenderCmds.DrawBackground(GameLevel->CurrentTexture.ID, BackgroundCanvas, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
         };
 
         Fighter* Fighters[2] = {player, ai};
@@ -448,8 +463,6 @@ GameUpdate(Game_Memory* GameMemory, Platform_Services* PlatformServices, Game_Re
                         };
                     };
 
-                    //Need to try sending down uvs from region attachment to hopefully show correct region of image. Need to modify
-                    //current DrawTexture func first though to accept proper uvs
                     RenderCmds.DrawTexture(texture->ID, SpineImage, UVArray);
                 };
             };
