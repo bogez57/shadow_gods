@@ -35,23 +35,26 @@ struct Camera
     f32 zoomFactor;
 };
 
-struct StageData
+struct Stage_Data
 {
-    StageInfo info;
+    StageInfo info{};
+    spSkeletonData* commonSkeletonData{nullptr};
+    spAnimationStateData* commonAnimationData{nullptr};
+    Fighter player{};
+    Fighter ai{};
+    Camera gameCamera;
+};
+
+struct Memory_Handler
+{
+    Memory_Region memRegions[REGION_COUNT];
+    Dynamic_Mem_Allocator dynamAllocator;
 };
 
 struct Game_State
 {
-    Camera gameCamera;
-    StageData stage{};
-    spSkeletonData* skelData{nullptr};
-    spAnimationStateData* animationStateData{nullptr};
-    Fighter player{};
-    Fighter ai{};
-    spAnimation* animation;
-    spTrackEntry* entry;
+    Stage_Data stage{};
     void(*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
     spAnimation* emptyAnim;
-    Memory_Region memRegions[REGION_COUNT];
-    Dynamic_Mem_Allocator dynamAllocator;
+    Memory_Handler memHandler;
 };

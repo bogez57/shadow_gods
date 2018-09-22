@@ -24,7 +24,7 @@
 
 global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmds globalRenderCmds;
-global_variable Game_State* globalGameState;
+global_variable Memory_Handler* globalMemHandler;
 global_variable f32 deltaT;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
@@ -226,48 +226,48 @@ ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
 };
 
 auto
-OnKeyPress(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
+OnKeyPress(Button_State KeyState, Stage_Data* stage, void(*Action)(Stage_Data*)) -> void
 {
     if(KeyState.Pressed && KeyState.NumTransitionsPerFrame)
     {
-        Action(gameState);
+        Action(stage);
     };
 };
 
 inline auto
-OnKeyHold(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
+OnKeyHold(Button_State KeyState, Stage_Data* stage, void(*Action)(Stage_Data*)) -> void
 {
     if(KeyState.Pressed && (KeyState.NumTransitionsPerFrame == 0))
     {
-        Action(gameState);
+        Action(stage);
     };
 };
 
 inline auto
-OnKeyComboPress(Button_State KeyState1, Button_State KeyState2, Game_State* gameState, void(*Action)(Game_State*)) -> void
+OnKeyComboPress(Button_State KeyState1, Button_State KeyState2, Stage_Data* stage, void(*Action)(Stage_Data*)) -> void
 {
     if(KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
     {
-        Action(gameState);
+        Action(stage);
     };
 };
 
 inline auto
-OnKeyComboRepeat(Button_State KeyState1, Button_State KeyState2, Game_State* gameState, void(*Action)(Game_State*)) -> void
+OnKeyComboRepeat(Button_State KeyState1, Button_State KeyState2, Stage_Data* stage, void(*Action)(Stage_Data*)) -> void
 {
     if(KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
     {
-        Action(gameState);
+        Action(stage);
     };
 };
 
 
 inline auto
-OnKeyRelease(Button_State KeyState, Game_State* gameState, void(*Action)(Game_State*)) -> void
+OnKeyRelease(Button_State KeyState, Stage_Data* stage, void(*Action)(Stage_Data*)) -> void
 {
     if(!KeyState.Pressed && KeyState.NumTransitionsPerFrame)
     {
-        Action(gameState);
+        Action(stage);
     };
 };
 
@@ -278,15 +278,15 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     BGZ_ERRCTXT1("When entering GameUpdate");
 
     Game_State* gameState = (Game_State*)gameMemory->PermanentStorage;
-    globalGameState = gameState;
+    globalMemHandler = &gameState->memHandler;
     globalPlatformServices = platformServices;
     globalRenderCmds = renderCmds;
 
     deltaT = platformServices->prevFrameTimeInSecs;
-    Camera* gameCamera = &gameState->gameCamera;
-    StageData* stage = &gameState->stage;
-    Fighter* player = &gameState->player;
-    Fighter* ai = &gameState->ai;
+    Stage_Data* stage = &gameState->stage;
+    Camera* gameCamera = &stage->gameCamera;
+    Fighter* player = &stage->player;
+    Fighter* ai = &stage->ai;
 
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
@@ -301,9 +301,9 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
 
         //Split game memory into more specific memory regions
         auto[updatedGameMemory, dynamicMemRegion] = CreateRegionFromGameMem(*gameMemory, Megabytes(10));
-        *gameMemory = updatedGameMemory; gameState->memRegions[DYNAMIC] = dynamicMemRegion;
+        *gameMemory = updatedGameMemory; gameState->memHandler.memRegions[DYNAMIC] = dynamicMemRegion;
 
-        gameState->dynamAllocator = CreateAndInitDynamAllocator();
+        gameState->memHandler.dynamAllocator = CreateAndInitDynamAllocator();
 
         stage->info.displayImage.Data = platformServices->LoadRGBAImage(
                                              "data/4k.jpg",
@@ -334,26 +334,26 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
 
             spAtlas* atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
             spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
-            gameState->skelData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/spineboy-ess.json");
-            gameState->animationStateData = spAnimationStateData_create(gameState->skelData);
+            stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/spineboy-ess.json");
+            stage->commonAnimationData = spAnimationStateData_create(stage->commonSkeletonData);
             spSkeletonJson_dispose(skelJson);
 
-            spAnimationStateData_setMixByName(gameState->animationStateData, "idle", "walk", 0.2f);
-            spAnimationStateData_setMixByName(gameState->animationStateData, "walk", "idle", 0.2f);
-            spAnimationStateData_setMixByName(gameState->animationStateData, "walk", "run", 0.2f);
-            spAnimationStateData_setMixByName(gameState->animationStateData, "run", "idle", 0.2f);
+            spAnimationStateData_setMixByName(stage->commonAnimationData, "idle", "walk", 0.2f);
+            spAnimationStateData_setMixByName(stage->commonAnimationData, "walk", "idle", 0.2f);
+            spAnimationStateData_setMixByName(stage->commonAnimationData, "walk", "run", 0.2f);
+            spAnimationStateData_setMixByName(stage->commonAnimationData, "run", "idle", 0.2f);
 
             {//Setup fighters
-                player->skeleton = spSkeleton_create(gameState->skelData);
-                player->animationState = spAnimationState_create(gameState->animationStateData);
+                player->skeleton = spSkeleton_create(stage->commonSkeletonData);
+                player->animationState = spAnimationState_create(stage->commonAnimationData);
                 spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
                 player->animationState->listener = MyListener;
                 player->worldPos = {(stage->info.size.width/2.0f) - 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 player->skeleton->scaleX = .6f;
                 player->skeleton->scaleY = .6f;
 
-                ai->skeleton = spSkeleton_create(gameState->skelData);
-                ai->animationState = spAnimationState_create(gameState->animationStateData);
+                ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
+                ai->animationState = spAnimationState_create(stage->commonAnimationData);
                 spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
                 ai->worldPos =  {(stage->info.size.width/2.0f) + 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
@@ -370,7 +370,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
             gameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
             SP_EMPTY_ANIMATION = gameState->emptyAnim;
             globalPlatformServices->DLLJustReloaded = false;
-            *gameState->skelData = ReloadAllSpineTimelineFunctionPtrs(*gameState->skelData);
+            *stage->commonSkeletonData = ReloadAllSpineTimelineFunctionPtrs(*stage->commonSkeletonData);
             player->animationState->listener = MyListener;
         };
     };
@@ -378,32 +378,32 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);
 
-    OnKeyPress(keyboard->MoveUp, gameState, [](Game_State* gameState){
-        gameState->gameCamera.zoomFactor -= .02f;
+    OnKeyPress(keyboard->MoveUp, stage, [](Stage_Data* stage){
+        stage->gameCamera.zoomFactor -= .02f;
     });
 
-    OnKeyPress(keyboard->MoveRight, gameState, [](Game_State* gameState){
-        spAnimationState_setAnimationByName(gameState->player.animationState, 0, "walk", 1);
+    OnKeyPress(keyboard->MoveRight, stage, [](Stage_Data* stage){
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "walk", 1);
     });
 
-    OnKeyHold(keyboard->MoveRight, gameState, [](Game_State* gameState){
-        gameState->player.worldPos.x += 2.0f;
+    OnKeyHold(keyboard->MoveRight, stage, [](Stage_Data* stage){
+        stage->player.worldPos.x += 1.0f;
     });
 
-    OnKeyComboPress(keyboard->MoveRight, keyboard->ActionUp, gameState, [](Game_State* gameState){
-        //spAnimationState_setAnimationByName(gameState->animationState, 0, "run", 1);
+    OnKeyComboPress(keyboard->MoveRight, keyboard->ActionUp, stage, [](Stage_Data* stage){
+        //spAnimationState_setAnimationByName(stage->commonAnimationState, 0, "run", 1);
     });
 
-    OnKeyRelease(keyboard->MoveRight, gameState, [](Game_State* gameState){
-        spAnimationState_setAnimationByName(gameState->player.animationState, 0, "idle", 1);
+    OnKeyRelease(keyboard->MoveRight, stage, [](Stage_Data* stage){
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "idle", 1);
     });
 
-    OnKeyHold(keyboard->MoveDown, gameState, [](Game_State* gameState){
-        //spAnimationState_addAnimationByName(gameState->animationState, 1, "shoot", 0, 0);
+    OnKeyHold(keyboard->MoveDown, stage, [](Stage_Data* stage){
+        //spAnimationState_addAnimationByName(stage->commonAnimationState, 1, "shoot", 0, 0);
     });
 
-    OnKeyRelease(keyboard->MoveDown, gameState, [](Game_State* gameState){
-        //spAnimationState_setEmptyAnimation(gameState->animationState, 1, .1f);
+    OnKeyRelease(keyboard->MoveDown, stage, [](Stage_Data* stage){
+        //spAnimationState_setEmptyAnimation(stage->commonAnimationState, 1, .1f);
     });
 
     //Needed for spine to correctly update bones
