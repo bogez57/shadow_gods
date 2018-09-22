@@ -285,7 +285,6 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
 
     deltaT = platformServices->prevFrameTimeInSecs;
     Stage_Data* stage = &gameState->stage;
-    Camera* gameCamera = &stage->gameCamera;
     Fighter* player = &stage->player;
     Fighter* ai = &stage->ai;
 
@@ -323,12 +322,12 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         stage->info.size.height = (f32)stage->info.displayImage.size.height;
         stage->info.centerPoint = {(f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2};
 
-        gameCamera->viewWidth = viewportWidth;
-        gameCamera->viewHeight = viewportHeight;
-        gameCamera->lookAt = {stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f};
-        gameCamera->viewCenter = {gameCamera->viewWidth / 2.0f, gameCamera->viewHeight / 2.0f};
-        gameCamera->dilatePoint = gameCamera->viewCenter - v2f{0.0f, 200.0f};
-        gameCamera->zoomFactor = 1.0f;
+        stage->camera.viewWidth = viewportWidth;
+        stage->camera.viewHeight = viewportHeight;
+        stage->camera.lookAt = {stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f};
+        stage->camera.viewCenter = {stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f};
+        stage->camera.dilatePoint = stage->camera.viewCenter - v2f{0.0f, 200.0f};
+        stage->camera.zoomFactor = 1.0f;
 
         { //Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
@@ -380,7 +379,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     spAnimationState_update(ai->animationState, deltaT);
 
     OnKeyPress(keyboard->MoveUp, stage, [](Stage_Data* stage){
-        stage->gameCamera.zoomFactor -= .02f;
+        stage->camera.zoomFactor -= .02f;
     });
 
     OnKeyPress(keyboard->MoveRight, stage, [](Stage_Data* stage){
@@ -431,7 +430,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
             backgroundWorldSpace.Origin = {0.0f, 0.0f};
 
             {//Transform to Camera Space
-                v2f translationToCameraSpace = gameCamera->viewCenter - gameCamera->lookAt;
+                v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
                 backgroundCameraSpace.Origin = backgroundWorldSpace.Origin + translationToCameraSpace;
             };
 
@@ -440,7 +439,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                                         (f32)stage->info.size.width, 
                                         (f32)stage->info.size.height);
 
-            backgroundCanvas = DilateAboutArbitraryPoint(gameCamera->dilatePoint, gameCamera->zoomFactor, backgroundCanvas);
+            backgroundCanvas = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, backgroundCanvas);
 
             renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
         };
@@ -479,7 +478,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                         v2f{regionAttachment->uvs[6], regionAttachment->uvs[7]}};
 
                     { //Transform to Camera Space
-                        v2f translationToCameraSpace = gameCamera->viewCenter - gameCamera->lookAt;
+                        v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
 
                         for (ui32 VertIndex{0}; VertIndex < ArrayCount(spineImage.Corners); ++VertIndex)
                         {
@@ -487,7 +486,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                         };
                     };
 
-                    spineImage = DilateAboutArbitraryPoint(gameCamera->dilatePoint, gameCamera->zoomFactor, spineImage);
+                    spineImage = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, spineImage);
 
                     renderCmds.DrawTexture(texture->ID, spineImage, UVArray);
                 };

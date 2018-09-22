@@ -25,7 +25,7 @@ struct StageInfo
     Texture currentTexture;
 };
 
-struct Camera
+struct Game_Camera
 {
     v2f lookAt;
     v2f viewCenter;
@@ -42,7 +42,7 @@ struct Stage_Data
     spAnimationStateData* commonAnimationData{nullptr};
     Fighter player{};
     Fighter ai{};
-    Camera gameCamera;
+    Game_Camera camera;
 };
 
 struct Game_State
