@@ -25,6 +25,7 @@
 global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmds globalRenderCmds;
 global_variable Game_State* globalGameState;
+global_variable f32 deltaT;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
@@ -281,6 +282,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     globalPlatformServices = platformServices;
     globalRenderCmds = renderCmds;
 
+    deltaT = platformServices->prevFrameTimeInSecs;
     Camera* gameCamera = &gameState->gameCamera;
     Level* gameLevel = &gameState->gameLevel;
     Fighter* player = &gameState->player;
@@ -372,8 +374,8 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         };
     };
 
-    spAnimationState_update(player->animationState, .016f);
-    spAnimationState_update(ai->animationState, .016f);
+    spAnimationState_update(player->animationState, deltaT);
+    spAnimationState_update(ai->animationState, deltaT);
 
     OnKeyPress(keyboard->MoveUp, gameState, [](Game_State* gameState){
         gameState->gameCamera.zoomFactor -= .02f;
@@ -384,7 +386,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     });
 
     OnKeyHold(keyboard->MoveRight, gameState, [](Game_State* gameState){
-        gameState->player.worldPos.x += 1.0f;
+        gameState->player.worldPos.x += 2.0f;
     });
 
     OnKeyComboPress(keyboard->MoveRight, keyboard->ActionUp, gameState, [](Game_State* gameState){

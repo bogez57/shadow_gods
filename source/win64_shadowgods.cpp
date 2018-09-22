@@ -780,7 +780,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Game_Input Input{};
             Game_Sound_Output_Buffer SoundBuffer{};
             Game_Render_Cmds RenderCmds{};
-            Platform_Services PlatformServices{};
+            Platform_Services platformServices{};
             Win32::Dbg::Game_Replay_State GameReplayState{};
             Win32::Game_Code GameCode{Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll")};
             BGZ_ASSERT(GameCode.DLLHandle);
@@ -799,14 +799,14 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             }
 
             { //Init game services
-                PlatformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
-                PlatformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
-                PlatformServices.ReadFileOfLength = &Win32::Dbg::ReadFileOfLength;
-                PlatformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
-                PlatformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
-                PlatformServices.PlatMalloc = &Win32::Dbg::Malloc;
-                PlatformServices.PlatCalloc = &Win32::Dbg::Calloc;
-                PlatformServices.PlatFree = &Win32::Dbg::Free;
+                platformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
+                platformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
+                platformServices.ReadFileOfLength = &Win32::Dbg::ReadFileOfLength;
+                platformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
+                platformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
+                platformServices.PlatMalloc = &Win32::Dbg::Malloc;
+                platformServices.PlatCalloc = &Win32::Dbg::Calloc;
+                platformServices.PlatFree = &Win32::Dbg::Free;
 
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
@@ -852,7 +852,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
                 if(CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
                 {
-                    Win32::Dbg::FreeGameCodeDLL(&GameCode, &PlatformServices);
+                    Win32::Dbg::FreeGameCodeDLL(&GameCode, &platformServices);
                     GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
                 }
 
@@ -954,7 +954,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput(&UpdatedInput, &UpdatedReplayState);
                 }
 
-                GameCode.UpdateFunc(&GameMemory, &PlatformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &platformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState; 
@@ -973,10 +973,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 SwapBuffers(WindowContext);
 
-                f32 FrameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
+                f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
+                platformServices.prevFrameTimeInSecs = FramePerformanceTimer.SecondsElapsed();
+
                 FramePerformanceTimer.UpdateTimeCount();
 
-                //BGZ_CONSOLE("ms per frame: %f\n", FrameTimeInMS);
+                //BGZ_CONSOLE("ms per frame: %f\n", frameTimeInMS);
             };
 
             wglMakeCurrent(NULL, NULL);

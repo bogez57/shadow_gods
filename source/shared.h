@@ -92,6 +92,7 @@ struct Platform_Services
     void* (*PlatCalloc)(sizet, sizet);
     void (*PlatFree)(void*);
     b DLLJustReloaded{false};
+    f32 prevFrameTimeInSecs{};
 };
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
