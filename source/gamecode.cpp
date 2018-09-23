@@ -227,6 +227,20 @@ ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
 };
 
 auto
+SetMainCollisionBoxOnFighter(Fighter fighter) -> Fighter
+{
+    return fighter;
+};
+
+auto
+CheckForFighterCollisions(Fighter fighter1, Fighter fighter2) -> b
+{
+    b collisionStatus{false};
+
+    return collisionStatus;
+};
+
+auto
 OnKeyPress(Button_State KeyState, Stage_Data* stage, void(*Action)(Stage_Data*)) -> void
 {
     if(KeyState.Pressed && KeyState.NumTransitionsPerFrame)
@@ -322,12 +336,14 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         stage->info.size.height = (f32)stage->info.displayImage.size.height;
         stage->info.centerPoint = {(f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2};
 
-        stage->camera.viewWidth = viewportWidth;
-        stage->camera.viewHeight = viewportHeight;
-        stage->camera.lookAt = {stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f};
-        stage->camera.viewCenter = {stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f};
-        stage->camera.dilatePoint = stage->camera.viewCenter - v2f{0.0f, 200.0f};
-        stage->camera.zoomFactor = 1.0f;
+        {//Set stage camera
+            stage->camera.viewWidth = viewportWidth;
+            stage->camera.viewHeight = viewportHeight;
+            stage->camera.lookAt = {stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f};
+            stage->camera.viewCenter = {stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f};
+            stage->camera.dilatePoint = stage->camera.viewCenter - v2f{0.0f, 200.0f};
+            stage->camera.zoomFactor = 1.0f;
+        };
 
         { //Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
@@ -351,13 +367,17 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                 player->worldPos = {(stage->info.size.width/2.0f) - 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 player->skeleton->scaleX = .6f;
                 player->skeleton->scaleY = .6f;
-
+                *player = SetMainCollisionBoxOnFighter(*player);
+                player->prevFrameWorldPos = {0.0f, 0.0f};
+ 
                 ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
                 ai->animationState = spAnimationState_create(stage->commonAnimationData);
                 spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
                 ai->worldPos =  {(stage->info.size.width/2.0f) + 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
+                *ai = SetMainCollisionBoxOnFighter(*ai);
+                ai->prevFrameWorldPos = {0.0f, 0.0f};
             };
         };
     };
@@ -406,6 +426,14 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         //spAnimationState_setEmptyAnimation(stage->commonAnimationState, 1, .1f);
     });
 
+    b collision = CheckForFighterCollisions(*player, *ai);
+
+    if(collision)
+    {
+        player->worldPos = player->prevFrameWorldPos;
+        ai->worldPos = ai->prevFrameWorldPos;
+    };
+
     //Needed for spine to correctly update bones
     player->skeleton->x = player->worldPos.x;
     player->skeleton->y = player->worldPos.y;
@@ -416,6 +444,8 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     spSkeleton_updateWorldTransform(player->skeleton);
     spAnimationState_apply(ai->animationState, ai->skeleton);
     spSkeleton_updateWorldTransform(ai->skeleton);
+
+    player->prevFrameWorldPos = player->worldPos;
 
     {//Render
         renderCmds.Init();

@@ -15,6 +15,7 @@ struct Fighter
     spSkeleton* skeleton;
     spAnimationState* animationState;
     v2f worldPos;
+    v2f prevFrameWorldPos;
 };
 
 struct StageInfo
