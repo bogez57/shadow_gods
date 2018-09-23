@@ -191,6 +191,7 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRCTXT1("When trying to allocate in dymamic memory");
 
+    BGZ_ERRASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
     BGZ_ERRASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* Result{nullptr};
@@ -234,6 +235,7 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRCTXT1("When trying to allocate and initialize memory in dymamic memory");
 
+    BGZ_ERRASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
     BGZ_ERRASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* MemBlockData = _MallocType(DynamAllocator, Size);
@@ -252,6 +254,9 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 auto
 _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSize) -> void*
 {
+    BGZ_ERRCTXT1("When trying to reallocate memory in dymamic memory");
+
+    BGZ_ERRASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
     BGZ_ERRASSERT((globalMemHandler->memRegions[DYNAMIC].UsedAmount - NewSize) > NewSize, "Not enough room left in memory region!");
 
     Memory_Block* BlockToRealloc = ConvertDataToMemoryBlock(DataToRealloc);
