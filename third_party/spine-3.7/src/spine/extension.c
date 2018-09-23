@@ -132,7 +132,7 @@ void _spAtlasPage_createTexture (spAtlasPage* self, const char* path)
 {
 	Image image;
 	image.Data = globalPlatformServices->LoadRGBAImage(path, &image.size.width, &image.size.height);
-	//Need to create heap like memory
+	
 	Texture texture = globalRenderCmds.LoadTexture(image);
 	Texture* textureptr = MALLOC(Texture, 1);
 	*textureptr = texture;
@@ -144,7 +144,12 @@ void _spAtlasPage_createTexture (spAtlasPage* self, const char* path)
 
 void _spAtlasPage_disposeTexture (spAtlasPage* self)
 {
+    BGZ_ERRCTXT1("When disposing of texture in spine's atlaspage");
+	BGZ_ERRASSERT(self->rendererObject, "Texture does not exist!");
 
+	FREE(self->rendererObject);
+	self->width = 0;
+	self->height = 0;
 };
 
 char* _spUtil_readFile (const char* path, int* length)
