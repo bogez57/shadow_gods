@@ -227,12 +227,14 @@ ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
 };
 
 auto
-UpdateMainCollisionBoxOnFighter(Fighter* fighter) -> void
+UpdateMainCollisionBoxOnFighter(Fighter fighter) -> Fighter
 {
-    f32 halfFighterWidth = (fighter->skeleton->data->width/2.0f) * AbsoluteVal(fighter->skeleton->scaleX);
-    f32 fighterHeight = fighter->skeleton->data->height * AbsoluteVal(fighter->skeleton->scaleY);
-    fighter->collisionBox.minCorner = {fighter->worldPos.x - halfFighterWidth, fighter->worldPos.y};
-    fighter->collisionBox.maxCorner = {fighter->worldPos.x + halfFighterWidth, fighter->worldPos.y + fighterHeight};
+    f32 halfFighterWidth = (fighter.skeleton->data->width/2.0f) * AbsoluteVal(fighter.skeleton->scaleX);
+    f32 fighterHeight = fighter.skeleton->data->height * AbsoluteVal(fighter.skeleton->scaleY);
+    fighter.collisionBox.minCorner = {fighter.worldPos.x - halfFighterWidth, fighter.worldPos.y};
+    fighter.collisionBox.maxCorner = {fighter.worldPos.x + halfFighterWidth, fighter.worldPos.y + fighterHeight};
+
+    return fighter;
 };
 
 auto
@@ -388,7 +390,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                 player->worldPos = {(stage->info.size.width/2.0f) - 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 player->skeleton->scaleX = 0.6f;
                 player->skeleton->scaleY = 0.6f;
-                UpdateMainCollisionBoxOnFighter(player);
+                *player = UpdateMainCollisionBoxOnFighter(*player);
  
                 ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
                 ai->animationState = spAnimationState_create(stage->commonAnimationData);
@@ -396,7 +398,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                 ai->worldPos =  {(stage->info.size.width/2.0f) + 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
-                UpdateMainCollisionBoxOnFighter(ai);
+                *ai = UpdateMainCollisionBoxOnFighter(*ai);
             };
         };
     };
@@ -445,8 +447,8 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         //spAnimationState_setEmptyAnimation(stage->commonAnimationState, 1, .1f);
     });
 
-    UpdateMainCollisionBoxOnFighter(player);
-    UpdateMainCollisionBoxOnFighter(ai);
+    *player = UpdateMainCollisionBoxOnFighter(*player);
+    *ai = UpdateMainCollisionBoxOnFighter(*ai);
 
     b collision = CheckForFighterCollisions(player, ai);
     if(collision)
