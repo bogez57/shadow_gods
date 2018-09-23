@@ -227,17 +227,33 @@ ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
 };
 
 auto
-SetMainCollisionBoxOnFighter(Fighter fighter) -> Fighter
+UpdateMainCollisionBoxOnFighter(Fighter* fighter) -> void
 {
-    return fighter;
+    f32 halfFighterWidth = (fighter->skeleton->data->width/2.0f) * AbsoluteVal(fighter->skeleton->scaleX);
+    f32 fighterHeight = fighter->skeleton->data->height * AbsoluteVal(fighter->skeleton->scaleY);
+    fighter->collisionBox.minCorner = {fighter->worldPos.x - halfFighterWidth, fighter->worldPos.y};
+    fighter->collisionBox.maxCorner = {fighter->worldPos.x + halfFighterWidth, fighter->worldPos.y + fighterHeight};
 };
 
 auto
-CheckForFighterCollisions(Fighter fighter1, Fighter fighter2) -> b
+CheckForFighterCollisions(const Fighter* fighter1, const Fighter* fighter2) -> b
 {
-    b collisionStatus{false};
+    //Exit returning NO intersection between bounding boxes
+    if (fighter1->collisionBox.maxCorner.x < fighter2->collisionBox.minCorner.x ||
+        fighter1->collisionBox.minCorner.x > fighter2->collisionBox.maxCorner.x)
+    {
+        return false;
+    }
 
-    return collisionStatus;
+    //Exit returning NO intersection between bounding boxes
+    if (fighter1->collisionBox.maxCorner.y < fighter2->collisionBox.minCorner.y ||
+        fighter1->collisionBox.minCorner.y > fighter2->collisionBox.maxCorner.y)
+    {
+        return false;
+    }
+
+    //Else intersection and thus collision has occured!
+    return true;
 };
 
 auto
@@ -313,6 +329,11 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
+        //Make sure everything is initialized
+        gameState->stage = {};
+        gameState->memHandler = {};
+        gameState->emptyAnim = {};
+
         //Split game memory into more specific memory regions
         auto[updatedGameMemory, dynamicMemRegion] = CreateRegionFromGameMem(*gameMemory, Megabytes(10));
         *gameMemory = updatedGameMemory; gameState->memHandler.memRegions[DYNAMIC] = dynamicMemRegion;
@@ -365,10 +386,9 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                 spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
                 player->animationState->listener = MyListener;
                 player->worldPos = {(stage->info.size.width/2.0f) - 300.0f, (stage->info.size.height/2.0f) - 900.0f};
-                player->skeleton->scaleX = .6f;
-                player->skeleton->scaleY = .6f;
-                *player = SetMainCollisionBoxOnFighter(*player);
-                player->prevFrameWorldPos = {0.0f, 0.0f};
+                player->skeleton->scaleX = 0.6f;
+                player->skeleton->scaleY = 0.6f;
+                UpdateMainCollisionBoxOnFighter(player);
  
                 ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
                 ai->animationState = spAnimationState_create(stage->commonAnimationData);
@@ -376,8 +396,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
                 ai->worldPos =  {(stage->info.size.width/2.0f) + 300.0f, (stage->info.size.height/2.0f) - 900.0f};
                 ai->skeleton->scaleX = -0.6f;//Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
-                *ai = SetMainCollisionBoxOnFighter(*ai);
-                ai->prevFrameWorldPos = {0.0f, 0.0f};
+                UpdateMainCollisionBoxOnFighter(ai);
             };
         };
     };
@@ -399,7 +418,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     spAnimationState_update(ai->animationState, deltaT);
 
     OnKeyPress(keyboard->MoveUp, stage, [](Stage_Data* stage){
-        stage->camera.zoomFactor -= .02f;
+        stage->player.worldPos.y += 10.0f;
     });
 
     OnKeyPress(keyboard->MoveRight, stage, [](Stage_Data* stage){
@@ -426,12 +445,13 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         //spAnimationState_setEmptyAnimation(stage->commonAnimationState, 1, .1f);
     });
 
-    b collision = CheckForFighterCollisions(*player, *ai);
+    UpdateMainCollisionBoxOnFighter(player);
+    UpdateMainCollisionBoxOnFighter(ai);
 
+    b collision = CheckForFighterCollisions(player, ai);
     if(collision)
     {
-        player->worldPos = player->prevFrameWorldPos;
-        ai->worldPos = ai->prevFrameWorldPos;
+        BGZ_CONSOLE("Colllision occured!");
     };
 
     //Needed for spine to correctly update bones
@@ -444,8 +464,6 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     spSkeleton_updateWorldTransform(player->skeleton);
     spAnimationState_apply(ai->animationState, ai->skeleton);
     spSkeleton_updateWorldTransform(ai->skeleton);
-
-    player->prevFrameWorldPos = player->worldPos;
 
     {//Render
         renderCmds.Init();

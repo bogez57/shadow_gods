@@ -10,12 +10,19 @@
 #include <spine/AnimationState.h>
 #include <spine/AnimationStateData.h>
 
+struct AABB
+{
+    v2f minCorner;
+    v2f maxCorner;
+};
+
 struct Fighter 
 {
     spSkeleton* skeleton;
     spAnimationState* animationState;
     v2f worldPos;
     v2f prevFrameWorldPos;
+    AABB collisionBox;
 };
 
 struct StageInfo
