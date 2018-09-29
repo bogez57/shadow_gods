@@ -371,9 +371,9 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
         { //Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
-            spAtlas* atlas = spAtlas_createFromFile("data/spineboy.atlas", 0);
+            spAtlas* atlas = spAtlas_createFromFile("data/hero.atlas", 0);
             spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
-            stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/spineboy-ess.json");
+            stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/hero-ess.json");
             stage->commonAnimationData = spAnimationStateData_create(stage->commonSkeletonData);
             spSkeletonJson_dispose(skelJson);
 
@@ -381,6 +381,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
             spAnimationStateData_setMixByName(stage->commonAnimationData, "walk", "idle", 0.2f);
             spAnimationStateData_setMixByName(stage->commonAnimationData, "walk", "run", 0.2f);
             spAnimationStateData_setMixByName(stage->commonAnimationData, "run", "idle", 0.2f);
+            spAnimationStateData_setMixByName(stage->commonAnimationData, "attack", "idle", 0.2f);
 
             {//Setup fighters
                 player->skeleton = spSkeleton_create(stage->commonSkeletonData);
@@ -420,7 +421,11 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     spAnimationState_update(ai->animationState, deltaT);
 
     OnKeyPress(keyboard->MoveUp, stage, [](Stage_Data* stage){
-        stage->player.worldPos.y += 10.0f;
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "attack", 0);
+    });
+
+    OnKeyRelease(keyboard->MoveUp, stage, [](Stage_Data* stage){
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "idle", 1);
     });
 
     OnKeyPress(keyboard->MoveRight, stage, [](Stage_Data* stage){
@@ -432,7 +437,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     });
 
     OnKeyComboPress(keyboard->MoveRight, keyboard->ActionUp, stage, [](Stage_Data* stage){
-        //spAnimationState_setAnimationByName(stage->commonAnimationState, 0, "run", 1);
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "run", 1);
     });
 
     OnKeyRelease(keyboard->MoveRight, stage, [](Stage_Data* stage){
