@@ -238,18 +238,18 @@ UpdateMainCollisionBoxOnFighter(Fighter fighter) -> Fighter
 };
 
 auto
-CheckForFighterCollisions(const Fighter* fighter1, const Fighter* fighter2) -> b
+CheckForFighterCollisions(AABB fighter1Box, AABB fighter2Box) -> b
 {
     //Exit returning NO intersection between bounding boxes
-    if (fighter1->collisionBox.maxCorner.x < fighter2->collisionBox.minCorner.x ||
-        fighter1->collisionBox.minCorner.x > fighter2->collisionBox.maxCorner.x)
+    if (fighter1Box.maxCorner.x < fighter2Box.minCorner.x ||
+        fighter1Box.minCorner.x > fighter2Box.maxCorner.x)
     {
         return false;
     }
 
     //Exit returning NO intersection between bounding boxes
-    if (fighter1->collisionBox.maxCorner.y < fighter2->collisionBox.minCorner.y ||
-        fighter1->collisionBox.minCorner.y > fighter2->collisionBox.maxCorner.y)
+    if (fighter1Box.maxCorner.y < fighter2Box.minCorner.y ||
+        fighter1Box.minCorner.y > fighter2Box.maxCorner.y)
     {
         return false;
     }
@@ -455,7 +455,7 @@ GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Re
     *player = UpdateMainCollisionBoxOnFighter(*player);
     *ai = UpdateMainCollisionBoxOnFighter(*ai);
 
-    b collision = CheckForFighterCollisions(player, ai);
+    b collision = CheckForFighterCollisions(player->collisionBox, ai->collisionBox);
     if(collision)
     {
         BGZ_CONSOLE("Colllision occured!");
