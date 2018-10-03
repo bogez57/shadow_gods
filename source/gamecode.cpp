@@ -514,8 +514,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 spRegionAttachment* regionAttachment{};
                 spSkeleton*         skeleton = fighters[FighterIndex]->skeleton;
 
-                // If no current active attachment for
-                // slot then continue to next slot
+                // If no current active attachment for slot then continue to next slot
                 if (!skeleton->slots[SlotIndex]->attachment)
                     continue;
 

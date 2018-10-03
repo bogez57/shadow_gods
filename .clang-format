@@ -1,4 +1,5 @@
 Language: Cpp  
+AlignConsecutiveDeclarations: true
 BasedOnStyle: Webkit
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -12,10 +13,13 @@ BraceWrapping:
   BeforeElse: true
   SplitEmptyFunction: false
   SplitEmptyRecord: false
-AlignConsecutiveDeclarations: true
 BinPackArguments: true 
 BinPackParameters: true
+
+# Number of characters allowed on a line. 0 means no limit
+ColumnLimit: 0 
+
 Cpp11BracedListStyle: false
-SortIncludes: false
 FixNamespaceComments: true
 NamespaceIndentation: All
+SortIncludes: false
