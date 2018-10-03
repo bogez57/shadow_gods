@@ -191,14 +191,14 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    LoadRGBAImage(const char* ImagePath, int* Width, int* Height) -> unsigned char*
+    LoadRGBAImage(const char* ImagePath, int* Width, int* Height) -> ui8*
     {
         int            DesiredChannels = 4;
         int            NumOfLoadedChannels{};
         unsigned char* ImageData = stbi_load(ImagePath, Width, Height, &NumOfLoadedChannels, DesiredChannels);
         BGZ_ASSERT(ImageData);
 
-        return ImageData;
+        return (ui8*)ImageData;
     }
 
     local_func auto

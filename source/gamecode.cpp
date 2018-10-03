@@ -37,11 +37,11 @@ global_variable f32 viewportHeight;
 
 local_func auto FlipImage(Image image) -> Image
 {
-    i32            widthInBytes = image.size.width * 4;
-    unsigned char* p_topRowOfTexels = nullptr;
-    unsigned char* p_bottomRowOfTexels = nullptr;
-    unsigned char  temp = 0;
-    i32            halfHeight = image.size.height / 2;
+    i32  widthInBytes = image.size.width * 4;
+    ui8* p_topRowOfTexels = nullptr;
+    ui8* p_bottomRowOfTexels = nullptr;
+    ui8  temp = 0;
+    i32  halfHeight = image.size.height / 2;
 
     for (i32 row = 0; row < halfHeight; ++row)
     {

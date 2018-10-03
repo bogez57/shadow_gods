@@ -90,7 +90,7 @@ struct Platform_Services
     char* (*ReadFileOfLength)(ui32*, const char*);
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
-    unsigned char* (*LoadRGBAImage)(const char*, int*, int*);
+    ui8* (*LoadRGBAImage)(const char*, int*, int*);
     void* (*PlatMalloc)(sizet);
     void* (*PlatCalloc)(sizet, sizet);
     void (*PlatFree)(void*);
@@ -102,8 +102,8 @@ struct Platform_Services
 
 struct Image
 {
-    unsigned char* Data;
-    v2i            size;
+    ui8* Data;
+    v2i  size;
 };
 
 struct Texture
