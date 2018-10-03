@@ -2,21 +2,26 @@
 
 #include <stdint.h>
 
-typedef int8_t i8;
+enum class MyByte : unsigned char
+{
+};
+
+typedef int8_t  i8;
 typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
-typedef i32 b32;
-typedef bool b;
+typedef i32     b32;
+typedef bool    b;
+typedef MyByte  Byte;
 
-typedef uint8_t ui8;
+typedef uint8_t  ui8;
 typedef uint16_t ui16;
 typedef uint32_t ui32;
 typedef uint64_t ui64;
 
 typedef size_t sizet;
 
-typedef float f32;
+typedef float  f32;
 typedef double f64;
 
 #define local_persist static
@@ -43,36 +48,36 @@ struct v2f
     };
 };
 
-v2f::v2f(f32 x, f32 y) :
-    x(x),
-    y(y)
+v2f::v2f(f32 x, f32 y)
+    : x(x)
+    , y(y)
 {}
 
 inline v2f
-operator*(f32 A,  v2f B)
+operator*(f32 A, v2f B)
 {
     v2f Result;
 
-    Result.x = A*B.x;
-    Result.y = A*B.y;
+    Result.x = A * B.x;
+    Result.y = A * B.y;
 
-    return(Result);
+    return (Result);
 }
 
 inline v2f
 operator*(v2f B, f32 A)
 {
-    v2f Result = A*B;
+    v2f Result = A * B;
 
-    return(Result);
+    return (Result);
 }
 
-inline  v2f&
+inline v2f&
 operator*=(v2f& B, f32 A)
 {
     B = A * B;
 
-    return(B);
+    return (B);
 }
 
 inline v2f
@@ -83,7 +88,7 @@ operator+(v2f A, v2f B)
     Result.x = A.x + B.x;
     Result.y = A.y + B.y;
 
-    return(Result);
+    return (Result);
 }
 
 inline v2f&
@@ -91,7 +96,7 @@ operator+=(v2f& A, v2f B)
 {
     A = A + B;
 
-    return(A);
+    return (A);
 }
 
 inline v2f&
@@ -100,7 +105,7 @@ operator+=(v2f& A, f32 B)
     A.x = A.x + B;
     A.y = A.y + B;
 
-    return(A);
+    return (A);
 }
 
 inline v2f&
@@ -109,7 +114,7 @@ operator-=(v2f& A, f32 B)
     A.x = A.x - B;
     A.y = A.y - B;
 
-    return(A);
+    return (A);
 }
 
 inline v2f&
@@ -118,7 +123,7 @@ operator-=(v2f& A, v2f B)
     A.x = A.x - B.x;
     A.y = A.y - B.y;
 
-    return(A);
+    return (A);
 }
 
 inline v2f
@@ -129,7 +134,7 @@ operator-(v2f A, v2f B)
     Result.x = A.x - B.x;
     Result.y = A.y - B.y;
 
-    return(Result);
+    return (Result);
 }
 
 struct v3f
@@ -152,10 +157,10 @@ struct v3f
     };
 };
 
-v3f::v3f(f32 x, f32 y, f32 z) :
-    x(x),
-    y(y),
-    z(z)
+v3f::v3f(f32 x, f32 y, f32 z)
+    : x(x)
+    , y(y)
+    , z(z)
 {}
 
 struct v2i
@@ -177,36 +182,36 @@ struct v2i
     };
 };
 
-v2i::v2i(int x, int y) :
-    x(x),
-    y(y)
+v2i::v2i(int x, int y)
+    : x(x)
+    , y(y)
 {}
 
 inline v2i
-operator*(int A,  v2i B)
+operator*(int A, v2i B)
 {
     v2i Result;
 
-    Result.x = A*B.x;
-    Result.y = A*B.y;
+    Result.x = A * B.x;
+    Result.y = A * B.y;
 
-    return(Result);
+    return (Result);
 }
 
 inline v2i
 operator*(v2i B, int A)
 {
-    v2i Result = A*B;
+    v2i Result = A * B;
 
-    return(Result);
+    return (Result);
 }
 
-inline  v2i&
+inline v2i&
 operator*=(v2i& B, int A)
 {
     B = A * B;
 
-    return(B);
+    return (B);
 }
 
 inline v2i
@@ -217,7 +222,7 @@ operator+(v2i A, v2i B)
     Result.x = A.x + B.x;
     Result.y = A.y + B.y;
 
-    return(Result);
+    return (Result);
 }
 
 inline v2i&
@@ -225,7 +230,7 @@ operator+=(v2i& A, v2i B)
 {
     A = A + B;
 
-    return(A);
+    return (A);
 }
 
 inline v2i&
@@ -234,7 +239,7 @@ operator+=(v2i& A, int B)
     A.x = A.x + B;
     A.y = A.y + B;
 
-    return(A);
+    return (A);
 }
 
 inline v2i&
@@ -243,7 +248,7 @@ operator-=(v2i& A, int B)
     A.x = A.x - B;
     A.y = A.y - B;
 
-    return(A);
+    return (A);
 }
 
 inline v2i&
@@ -252,7 +257,7 @@ operator-=(v2i& A, v2i B)
     A.x = A.x - B.x;
     A.y = A.y - B.y;
 
-    return(A);
+    return (A);
 }
 
 inline v2i
@@ -263,7 +268,7 @@ operator-(v2i A, v2i B)
     Result.x = A.x - B.x;
     Result.y = A.y - B.y;
 
-    return(Result);
+    return (Result);
 }
 
 struct v3i
@@ -286,10 +291,10 @@ struct v3i
     };
 };
 
-v3i::v3i(int x, int y, int z) :
-    x(x),
-    y(y),
-    z(z)
+v3i::v3i(int x, int y, int z)
+    : x(x)
+    , y(y)
+    , z(z)
 {}
 
 struct m2x2

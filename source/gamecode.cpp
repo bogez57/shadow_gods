@@ -66,27 +66,39 @@ local_func auto MyListener(spAnimationState* state, spEventType type, spTrackEnt
     switch (type)
     {
     case SP_ANIMATION_START:
+    {
         printf("Animation %s started on track %i\n", entry->animation->name, entry->trackIndex);
         break;
+    }
     case SP_ANIMATION_INTERRUPT:
+    {
         printf("Animation %s interrupted on track %i\n", entry->animation->name, entry->trackIndex);
         break;
+    }
     case SP_ANIMATION_END:
+    {
         printf("Animation %s ended on track %i\n", entry->animation->name, entry->trackIndex);
         break;
+    }
     case SP_ANIMATION_COMPLETE:
+    {
         printf("Animation %s completed on track %i\n", entry->animation->name, entry->trackIndex);
         break;
+    }
     case SP_ANIMATION_DISPOSE:
+    {
         printf("Track entry for animation %s disposed on track %i\n",
             entry->animation->name,
             entry->trackIndex);
         break;
+    }
     case SP_ANIMATION_EVENT:
+    {
         printf("User defined event for animation %s on track %i\n",
             entry->animation->name,
             entry->trackIndex);
         break;
+    }
     default:
         printf("Unknown event type: %i", type);
     }
