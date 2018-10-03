@@ -1,0 +1,21 @@
+Language: Cpp  
+BasedOnStyle: Webkit
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: true
+  AfterStruct: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterUnion: true
+  BeforeElse: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+AlignConsecutiveDeclarations: true
+BinPackArguments: true 
+BinPackParameters: true
+Cpp11BracedListStyle: false
+SortIncludes: false
+FixNamespaceComments: true
+NamespaceIndentation: All

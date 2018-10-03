@@ -6,31 +6,31 @@
 
 struct Game_Memory
 {
-    bool IsInitialized{false};
+    bool IsInitialized{ false };
 
-    ui32 SizeOfPermanentStorage{};
-    void* PermanentStorage{nullptr};
+    ui32  SizeOfPermanentStorage{};
+    void* PermanentStorage{ nullptr };
 
-    ui64 SizeOfTemporaryStorage{};
-    ui64 TemporaryStorageUsed{};
-    void* TemporaryStorage{nullptr};
-    ui64 TotalSize{};
+    ui64  SizeOfTemporaryStorage{};
+    ui64  TemporaryStorageUsed{};
+    void* TemporaryStorage{ nullptr };
+    ui64  TotalSize{};
 };
 
 struct Button_State
 {
     //1 button transition == from button up to down or vice versa, NOT up->down->up (which would be one full button press and release)
     //Capturing these transistions just helps to ensure we do not miss a button press (e.g. if user presses button once at
-    //beginning of the frame, and then again at the end assuming multiple polling, with this scheme we would be able to capture 
+    //beginning of the frame, and then again at the end assuming multiple polling, with this scheme we would be able to capture
     //both presses instead of just the one at the beginning).
-    i32 NumTransitionsPerFrame; 
+    i32 NumTransitionsPerFrame;
     b32 Pressed;
 };
 
 struct Game_Controller
 {
     b32 IsConnected;
-    b32 IsAnalog;    
+    b32 IsAnalog;
 
     v2f LThumbStick;
     v2f RThumbStick;
@@ -44,12 +44,12 @@ struct Game_Controller
             Button_State MoveDown;
             Button_State MoveLeft;
             Button_State MoveRight;
-            
+
             Button_State ActionUp;
             Button_State ActionDown;
             Button_State ActionLeft;
             Button_State ActionRight;
-            
+
             Button_State LeftShoulder;
             Button_State RightShoulder;
             Button_State LeftTrigger;
@@ -59,7 +59,7 @@ struct Game_Controller
             Button_State Start;
             //All buttons must be added above this line
         };
-    }; 
+    };
 };
 
 auto ClearTransitionCounts(Game_Controller* Controller) -> void
@@ -77,10 +77,13 @@ struct Game_Input
 
 struct Game_Sound_Output_Buffer
 {
-
 };
 
-struct Read_File_Result {void* FileContents{nullptr}; ui32 FileSize{};};
+struct Read_File_Result
+{
+    void* FileContents{ nullptr };
+    ui32  FileSize{};
+};
 struct Platform_Services
 {
     Read_File_Result (*ReadEntireFile)(const char*);
@@ -91,7 +94,7 @@ struct Platform_Services
     void* (*PlatMalloc)(sizet);
     void* (*PlatCalloc)(sizet, sizet);
     void (*PlatFree)(void*);
-    b DLLJustReloaded{false};
+    b   DLLJustReloaded{ false };
     f32 prevFrameTimeInSecs{};
 };
 
@@ -100,18 +103,18 @@ struct Platform_Services
 struct Image
 {
     unsigned char* Data;
-    v2i size;
+    v2i            size;
 };
 
 struct Texture
 {
     ui32 ID;
-    v2i size;
+    v2i  size;
 };
 
 struct Drawable_Rect
 {
-    union 
+    union
     {
         v2f Corners[4];
         struct
@@ -131,19 +134,14 @@ struct Coordinate_System
     v2f YBasis;
 };
 
-auto
-ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
+auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
 {
     Drawable_Rect Result;
-    v2f MinPoint;
-    v2f MaxPoint;
+    v2f           MinPoint;
+    v2f           MaxPoint;
 
-    MinPoint = {
-        OriginPoint.x - (Width / 2),
-        OriginPoint.y - (Height / 2)};
-    MaxPoint = {
-        OriginPoint.x + (Width / 2),
-        OriginPoint.y + (Height / 2)};
+    MinPoint = { OriginPoint.x - (Width / 2), OriginPoint.y - (Height / 2) };
+    MaxPoint = { OriginPoint.x + (Width / 2), OriginPoint.y + (Height / 2) };
 
     Result.BottomLeft = MinPoint;
     Result.BottomRight.x = MinPoint.x + Width;
@@ -155,21 +153,19 @@ ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_R
     return Result;
 };
 
-auto 
-ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
+auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
 {
     Drawable_Rect Result;
 
-    Result.BottomLeft = {OriginPoint.x - (Width/2.0f), OriginPoint.y};
-    Result.BottomRight = {OriginPoint.x + (Width/2.0f), OriginPoint.y};
-    Result.TopRight = {Result.BottomRight.x, OriginPoint.y + Height};
-    Result.TopLeft = {Result.BottomLeft.x, OriginPoint.y + Height};
+    Result.BottomLeft = { OriginPoint.x - (Width / 2.0f), OriginPoint.y };
+    Result.BottomRight = { OriginPoint.x + (Width / 2.0f), OriginPoint.y };
+    Result.TopRight = { Result.BottomRight.x, OriginPoint.y + Height };
+    Result.TopLeft = { Result.BottomLeft.x, OriginPoint.y + Height };
 
     return Result;
 };
 
-auto 
-ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
+auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
 {
     Drawable_Rect Result;
 
@@ -184,19 +180,17 @@ ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawab
     return Result;
 };
 
-auto 
-LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
+auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
 {
     f32 RotationInRadians = RotationInDegress * (PI / 180.0f);
-    v2f RotatedXBasis = VectorToRotate.x * v2f{Cos(RotationInRadians), Sin(RotationInRadians)};
-    v2f RotatedYBasis = VectorToRotate.y * v2f{-Sin(RotationInRadians), Cos(RotationInRadians)};
+    v2f RotatedXBasis = VectorToRotate.x * v2f{ Cos(RotationInRadians), Sin(RotationInRadians) };
+    v2f RotatedYBasis = VectorToRotate.y * v2f{ -Sin(RotationInRadians), Cos(RotationInRadians) };
     v2f NewRotatedVector = RotatedXBasis + RotatedYBasis;
 
     return NewRotatedVector;
 };
 
-auto
-DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
+auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
 {
     Drawable_Rect DilatedRect{};
 
@@ -210,8 +204,7 @@ DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect Re
     return DilatedRect;
 };
 
-auto
-RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Drawable_Rect RectToRotate) -> Drawable_Rect
+auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Drawable_Rect RectToRotate) -> Drawable_Rect
 {
     Drawable_Rect RotatedRect{};
 

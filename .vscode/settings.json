@@ -10,29 +10,48 @@
         "xiosbase": "cpp",
         "boundingboxattachment.c": "cpp"
     },
-
     /********************
         Vim Settings
     *********************/
-
     "vim.otherModesKeyBindingsNonRecursive": [
         {
-            "before" : ["j"],
-            "after" : ["g", "j"],
+            "before": [
+                "j"
+            ],
+            "after": [
+                "g",
+                "j"
+            ],
         },
         {
-            "before" : ["k"],
-            "after" : ["g", "k"]
+            "before": [
+                "k"
+            ],
+            "after": [
+                "g",
+                "k"
+            ]
         },
     ],
     "vim.otherModesKeyBindings": [
         {
-            "before" : ["J"],
-            "after" : ["<C-f>"]
+            "before": [
+                "J"
+            ],
+            "after": [
+                "<C-f>"
+            ]
         },
         {
-            "before" : ["K"],
-            "after" : ["<C-b>"]
+            "before": [
+                "K"
+            ],
+            "after": [
+                "<C-b>"
+            ]
         },
-    ]
+    ],
+    "editor.formatOnSave": true,
+    "C_Cpp.clang_format_fallbackStyle": "none",
+    "C_Cpp.clang_format_path": "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
 }

@@ -14,8 +14,8 @@
 local_func auto
 ConvertDataToMemoryBlock(void* Ptr) -> Memory_Block*
 {
-    Memory_Block *BlockHeader{};
-    BlockHeader= (Memory_Block*)(((ui8*)Ptr) - (sizeof(Memory_Block)));
+    Memory_Block* BlockHeader{};
+    BlockHeader = (Memory_Block*)(((ui8*)Ptr) - (sizeof(Memory_Block)));
     BlockHeader->data = Ptr;
 
     return BlockHeader;
@@ -26,13 +26,12 @@ GetDataFromBlock(Memory_Block* Header) -> void*
 {
     BGZ_ASSERT(Header->Size != 0);
 
-    void* BlockData = (void *)(Header + 1);
+    void* BlockData = (void*)(Header + 1);
 
     return BlockData;
 };
 
-auto
-CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator 
+auto CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
 {
     BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
 
@@ -40,8 +39,8 @@ CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
 
     dynamAllocator.AmountOfBlocks = 0;
 
-    ui16 BlockSize = 8;
-    ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
+    ui16          BlockSize = 8;
+    ui16          TotalSize = sizeof(Memory_Block) + BlockSize;
     Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&globalMemHandler->memRegions[DYNAMIC], TotalSize);
 
     InitialBlock->Size = BlockSize;
@@ -64,7 +63,7 @@ SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock, Dynamic_Mem_All
     BGZ_ERRASSERT(BlockToSplit->data, "Memory block data does not exist!");
     BGZ_ERRASSERT(SizeOfNewBlock > sizeof(Memory_Block), "Cannot fit new requested block size into block!");
 
-    Memory_Block *NewBlock = (Memory_Block*)((ui8*)(BlockToSplit) + (BlockToSplit->Size - 1) + (sizeof(Memory_Block)));
+    Memory_Block* NewBlock = (Memory_Block*)((ui8*)(BlockToSplit) + (BlockToSplit->Size - 1) + (sizeof(Memory_Block)));
 
     NewBlock->Size = SizeOfNewBlock;
     NewBlock->data = GetDataFromBlock(NewBlock);
@@ -98,9 +97,9 @@ GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Mem
     Memory_Block* MemBlock = DynamAllocator->head;
 
     //Not first or last block
-    if(MemBlock->nextBlock != nullptr)
+    if (MemBlock->nextBlock != nullptr)
     {
-        for (ui32 BlockIndex{0}; BlockIndex < DynamAllocator->AmountOfBlocks; ++BlockIndex)
+        for (ui32 BlockIndex{ 0 }; BlockIndex < DynamAllocator->AmountOfBlocks; ++BlockIndex)
         {
             if (MemBlock->IsFree && MemBlock->Size > Size)
             {
@@ -121,7 +120,7 @@ GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Mem
 local_func auto
 AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Memory_Block*
 {
-    ui64 TotalSize = sizeof(Memory_Block) + Size;
+    ui64          TotalSize = sizeof(Memory_Block) + Size;
     Memory_Block* NewBlock = (Memory_Block*)AllocSize(&globalMemHandler->memRegions[DYNAMIC], TotalSize);
 
     NewBlock->Size = Size;
@@ -155,7 +154,7 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
             {
                 BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
             }
-            else 
+            else
             {
                 BlockToFree->nextBlock = nullptr;
             };
@@ -167,8 +166,10 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
         {
             BlockToFree->prevBlock->Size += BlockToFree->Size;
 
-            if (BlockToFree->nextBlock) BlockToFree->prevBlock = BlockToFree->nextBlock;
-            else BlockToFree->prevBlock = nullptr;
+            if (BlockToFree->nextBlock)
+                BlockToFree->prevBlock = BlockToFree->nextBlock;
+            else
+                BlockToFree->prevBlock = nullptr;
 
             BlockToFree->Size = 0;
 
@@ -186,17 +187,16 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
     }
 };
 
-auto 
-_MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
+auto _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRCTXT1("When trying to allocate in dymamic memory");
 
     BGZ_ERRASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
     BGZ_ERRASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
-    void* Result{nullptr};
+    void* Result{ nullptr };
 
-    if(Size > 0)
+    if (Size > 0)
     {
         Memory_Block* MemBlock = GetFirstFreeBlockOfSize(Size, DynamAllocator);
 
@@ -225,13 +225,12 @@ _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
             Result = MemBlock->data;
             return Result;
         };
-   };
+    };
 
     return Result;
 };
 
-auto
-_CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
+auto _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 {
     BGZ_ERRCTXT1("When trying to allocate and initialize memory in dymamic memory");
 
@@ -240,7 +239,7 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
 
     void* MemBlockData = _MallocType(DynamAllocator, Size);
 
-    if(MemBlockData)
+    if (MemBlockData)
     {
         Memory_Block* Block = ConvertDataToMemoryBlock(MemBlockData);
         BGZ_ASSERT(Block->data);
@@ -251,8 +250,7 @@ _CallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
     return MemBlockData;
 };
 
-auto
-_ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSize) -> void*
+auto _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSize) -> void*
 {
     BGZ_ERRCTXT1("When trying to reallocate memory in dymamic memory");
 
@@ -261,13 +259,13 @@ _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSiz
 
     Memory_Block* BlockToRealloc = ConvertDataToMemoryBlock(DataToRealloc);
 
-    if(DataToRealloc)
+    if (DataToRealloc)
     {
         if (NewSize < BlockToRealloc->Size)
         {
             sizet SizeDiff = ReSizeAndMarkAsInUse(BlockToRealloc, NewSize);
 
-            if(SizeDiff > sizeof(Memory_Block))
+            if (SizeDiff > sizeof(Memory_Block))
             {
                 Memory_Block* NewBlock = SplitBlock(BlockToRealloc, SizeDiff, DynamAllocator);
                 NewBlock->IsFree = true;
@@ -297,12 +295,11 @@ _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 NewSiz
     return DataToRealloc;
 };
 
-auto
-_DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree) -> void
+auto _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree) -> void
 {
     BGZ_ERRCTXT1("When trying to free some memory in dynamic memory");
 
-    if (*MemToFree) 
+    if (*MemToFree)
     {
         BGZ_ERRASSERT(*MemToFree > globalMemHandler->memRegions[DYNAMIC].BaseAddress && *MemToFree < globalMemHandler->memRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
 
@@ -315,13 +312,11 @@ _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree) -> void
     };
 };
 
-
 /******************************************************* 
    Linear Allocator 
 ********************************************************/
 
-auto
-_PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size)-> void*
+auto _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size) -> void*
 {
     Memory_Region* MemRegion = &globalMemHandler->memRegions[LINEAR];
     BGZ_ASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size);
@@ -332,8 +327,7 @@ _PushType(Linear_Mem_Allocator* LinearAllocator, ui64 Size)-> void*
     return Result;
 };
 
-auto
-_PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree) -> void
+auto _PopSize(Linear_Mem_Allocator* LinearAllocator, ui64 SizeToFree) -> void
 {
     Memory_Region* MemRegion = &globalMemHandler->memRegions[LINEAR];
     BGZ_ASSERT(SizeToFree < MemRegion->Size || SizeToFree < MemRegion->UsedAmount);

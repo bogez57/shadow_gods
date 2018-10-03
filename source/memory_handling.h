@@ -13,13 +13,13 @@ struct Memory_Region
 {
     ui64* BaseAddress;
     ui64* EndAddress;
-    ui64 UsedAmount;
-    ui64 Size;
+    ui64  UsedAmount;
+    ui64  Size;
 };
 
 struct Memory_Handler
 {
-    Memory_Region memRegions[REGION_COUNT];
+    Memory_Region         memRegions[REGION_COUNT];
     Dynamic_Mem_Allocator dynamAllocator;
 };
 
