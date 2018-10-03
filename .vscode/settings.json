@@ -1,8 +1,11 @@
 {
+    /********************
+        VS Code Settings
+    *********************/
     "debug.allowBreakpointsEverywhere": true,
     "terminal.integrated.shell.windows": "C:\\WINDOWS\\System32\\cmd.exe",
-    "C_Cpp.errorSquiggles": "Disabled",
     "editor.formatOnType": false,
+    "editor.formatOnSave": true,
     "editor.fontSize": 18,
     "files.associations": {
         "cstdio": "cpp",
@@ -51,7 +54,10 @@
             ]
         },
     ],
-    "editor.formatOnSave": true,
+    /********************
+        Clang-format Settings
+    *********************/
     "C_Cpp.clang_format_fallbackStyle": "none",
     "C_Cpp.clang_format_path": "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
+    "C_Cpp.errorSquiggles": "Disabled",
 }

@@ -247,10 +247,8 @@ auto UpdateMainCollisionBoxOnFighter(Fighter fighter) -> Fighter
 {
     f32 halfFighterWidth = (fighter.skeleton->data->width / 2.0f) * AbsoluteVal(fighter.skeleton->scaleX);
     f32 fighterHeight = fighter.skeleton->data->height * AbsoluteVal(fighter.skeleton->scaleY);
-    fighter.collisionBox.minCorner = { fighter.worldPos.x - halfFighterWidth,
-        fighter.worldPos.y };
-    fighter.collisionBox.maxCorner = { fighter.worldPos.x + halfFighterWidth,
-        fighter.worldPos.y + fighterHeight };
+    fighter.collisionBox.minCorner = { fighter.worldPos.x - halfFighterWidth, fighter.worldPos.y };
+    fighter.collisionBox.maxCorner = { fighter.worldPos.x + halfFighterWidth, fighter.worldPos.y + fighterHeight };
 
     return fighter;
 };
@@ -440,7 +438,9 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         spAnimationState_setAnimationByName(stage->player.animationState, 0, "walk", 1);
     });
 
-    OnKeyHold(keyboard->MoveRight, stage, [](Stage_Data* stage) { stage->player.worldPos.x += 1.0f; });
+    OnKeyHold(keyboard->MoveRight, stage, [](Stage_Data* stage) {
+        stage->player.worldPos.x += 1.0f;
+    });
 
     OnKeyComboPress(keyboard->MoveRight, keyboard->ActionUp, stage, [](Stage_Data* stage) {
         spAnimationState_setAnimationByName(stage->player.animationState, 0, "run", 1);
