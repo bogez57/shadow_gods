@@ -106,10 +106,10 @@ local_func auto MyListener(spAnimationState* state, spEventType type, spTrackEnt
 
 local_func auto ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
 {
-    for (i32 animationIndex{ 0 }; animationIndex < skelData.animationsCount;
+    for (i32 animationIndex { 0 }; animationIndex < skelData.animationsCount;
          ++animationIndex)
     {
-        for (i32 timelineIndex{ 0 };
+        for (i32 timelineIndex { 0 };
              timelineIndex < skelData.animations[animationIndex]->timelinesCount;
              ++timelineIndex)
         {
@@ -369,29 +369,23 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             stage->camera.viewHeight = viewportHeight;
             stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f };
             stage->camera.viewCenter = { stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f };
-            stage->camera.dilatePoint = stage->camera.viewCenter - v2f{ 0.0f, 200.0f };
+            stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
 
         { // Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
-            spAtlas*        atlas = spAtlas_createFromFile("data/hero.atlas", 0);
+            spAtlas*        atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
             spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
-            stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/hero-ess.json");
+            stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/yellow_god.json");
             stage->commonAnimationData = spAnimationStateData_create(stage->commonSkeletonData);
             spSkeletonJson_dispose(skelJson);
-
-            spAnimationStateData_setMixByName(stage->commonAnimationData, "idle", "walk", 0.2f);
-            spAnimationStateData_setMixByName(stage->commonAnimationData, "walk", "idle", 0.2f);
-            spAnimationStateData_setMixByName(stage->commonAnimationData, "walk", "run", 0.2f);
-            spAnimationStateData_setMixByName(stage->commonAnimationData, "run", "idle", 0.2f);
-            spAnimationStateData_setMixByName(stage->commonAnimationData, "attack", "idle", 0.2f);
 
             { // Setup fighters
                 player->skeleton = spSkeleton_create(stage->commonSkeletonData);
                 player->animationState = spAnimationState_create(stage->commonAnimationData);
-                spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
+                spAnimationState_setAnimationByName(player->animationState, 0, "Idle", 1);
                 player->animationState->listener = MyListener;
                 player->worldPos = { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
                 player->skeleton->scaleX = 0.6f;
@@ -400,7 +394,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
                 ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
                 ai->animationState = spAnimationState_create(stage->commonAnimationData);
-                spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
+                spAnimationState_setAnimationByName(ai->animationState, 0, "Idle", 1);
                 ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
                 ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
@@ -427,15 +421,14 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_update(ai->animationState, deltaT);
 
     OnKeyPress(keyboard->MoveUp, stage, [](Stage_Data* stage) {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "attack", 0);
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Punch", 0);
     });
 
     OnKeyRelease(keyboard->MoveUp, stage, [](Stage_Data* stage) {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "idle", 1);
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Idle", 1);
     });
 
     OnKeyPress(keyboard->MoveRight, stage, [](Stage_Data* stage) {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "walk", 1);
     });
 
     OnKeyHold(keyboard->MoveRight, stage, [](Stage_Data* stage) {
@@ -443,11 +436,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     });
 
     OnKeyComboPress(keyboard->MoveRight, keyboard->ActionUp, stage, [](Stage_Data* stage) {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "run", 1);
     });
 
     OnKeyRelease(keyboard->MoveRight, stage, [](Stage_Data* stage) {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "idle", 1);
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Idle", 1);
     });
 
     OnKeyHold(keyboard->MoveDown, stage, [](Stage_Data* stage) {
@@ -486,9 +478,9 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         renderCmds.ClearScreen();
 
         { // Draw Level Background
-            Coordinate_System backgroundWorldSpace{};
-            Coordinate_System backgroundCameraSpace{};
-            Drawable_Rect     backgroundCanvas{};
+            Coordinate_System backgroundWorldSpace {};
+            Coordinate_System backgroundCameraSpace {};
+            Drawable_Rect     backgroundCanvas {};
 
             backgroundWorldSpace.Origin = { 0.0f, 0.0f };
 
@@ -501,17 +493,17 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
             backgroundCanvas = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, backgroundCanvas);
 
-            renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f });
+            renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f });
         };
 
         Fighter* fighters[2] = { player, ai };
-        for (i32 FighterIndex{ 0 }; FighterIndex < ArrayCount(fighters); ++FighterIndex)
+        for (i32 FighterIndex { 0 }; FighterIndex < ArrayCount(fighters); ++FighterIndex)
         {
-            for (i32 SlotIndex{ 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
+            for (i32 SlotIndex { 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
             {
                 float               verts[8] = { 0 };
-                Texture*            texture{};
-                spRegionAttachment* regionAttachment{};
+                Texture*            texture {};
+                spRegionAttachment* regionAttachment {};
                 spSkeleton*         skeleton = fighters[FighterIndex]->skeleton;
 
                 // If no current active attachment for slot then continue to next slot
@@ -525,24 +517,24 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
                     spRegionAttachment_computeWorldVertices(regionAttachment, skeleton->slots[SlotIndex]->bone, verts, 0, 2);
 
-                    Drawable_Rect spineImage{
-                        v2f{ verts[0], verts[1] },
-                        v2f{ verts[2], verts[3] },
-                        v2f{ verts[4], verts[5] },
-                        v2f{ verts[6], verts[7] }
+                    Drawable_Rect spineImage {
+                        v2f { verts[0], verts[1] },
+                        v2f { verts[2], verts[3] },
+                        v2f { verts[4], verts[5] },
+                        v2f { verts[6], verts[7] }
                     };
 
                     v2f UVArray[4] = {
-                        v2f{ regionAttachment->uvs[0], regionAttachment->uvs[1] },
-                        v2f{ regionAttachment->uvs[2], regionAttachment->uvs[3] },
-                        v2f{ regionAttachment->uvs[4], regionAttachment->uvs[5] },
-                        v2f{ regionAttachment->uvs[6], regionAttachment->uvs[7] }
+                        v2f { regionAttachment->uvs[0], regionAttachment->uvs[1] },
+                        v2f { regionAttachment->uvs[2], regionAttachment->uvs[3] },
+                        v2f { regionAttachment->uvs[4], regionAttachment->uvs[5] },
+                        v2f { regionAttachment->uvs[6], regionAttachment->uvs[7] }
                     };
 
                     { // Transform to Camera Space
                         v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
 
-                        for (ui32 VertIndex{ 0 }; VertIndex < ArrayCount(spineImage.Corners);
+                        for (ui32 VertIndex { 0 }; VertIndex < ArrayCount(spineImage.Corners);
                              ++VertIndex)
                         {
                             spineImage.Corners[VertIndex] += translationToCameraSpace;
