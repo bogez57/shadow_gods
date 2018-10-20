@@ -490,6 +490,22 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_apply(ai->animationState, ai->skeleton);
     spSkeleton_updateWorldTransform(ai->skeleton);
 
+    spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "damage-boxes", "punch_collision_box");
+    float                    worldVerts[8] = { 0 };
+
+    spVertexAttachment_computeWorldVertices(&rHandCollisionBox->super, spSkeleton_findSlot(player->skeleton, "damage-boxes"), 0, rHandCollisionBox->super.verticesCount, worldVerts, 0, 2);
+
+    v2f vecA{ worldVerts[0], worldVerts[1] };
+    v2f vecB{ worldVerts[2], worldVerts[3] };
+    v2f vecC{ worldVerts[4], worldVerts[5] };
+    v2f vecD{ worldVerts[6], worldVerts[7] };
+
+    v2f Result1 = vecA - vecB;
+    v2f Result2 = vecD - vecC;
+
+    BGZ_CONSOLE("Vec1.x = %f, Vec1.y = %f\n", Result1.x, Result1.y);
+    BGZ_CONSOLE("Vec2.x = %f, Vec2.y = %f\n", Result2.x, Result2.y);
+
     { // Render
         renderCmds.Init();
 

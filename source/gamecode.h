@@ -45,17 +45,17 @@ struct Game_Camera
 
 struct Stage_Data
 {
-    StageInfo             info {};
-    spSkeletonData*       commonSkeletonData { nullptr };
-    spAnimationStateData* commonAnimationData { nullptr };
-    Fighter               player {};
-    Fighter               ai {};
+    StageInfo             info{};
+    spSkeletonData*       commonSkeletonData{ nullptr };
+    spAnimationStateData* commonAnimationData{ nullptr };
+    Fighter               player{};
+    Fighter               ai{};
     Game_Camera           camera;
 };
 
 struct Game_State
 {
-    Stage_Data stage {};
+    Stage_Data stage{};
     void (*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
     spAnimation*   emptyAnim;
     Memory_Handler memHandler;
