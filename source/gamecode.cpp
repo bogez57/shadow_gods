@@ -106,10 +106,10 @@ local_func auto MyListener(spAnimationState* state, spEventType type, spTrackEnt
 
 local_func auto ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
 {
-    for (i32 animationIndex { 0 }; animationIndex < skelData.animationsCount;
+    for (i32 animationIndex{ 0 }; animationIndex < skelData.animationsCount;
          ++animationIndex)
     {
-        for (i32 timelineIndex { 0 };
+        for (i32 timelineIndex{ 0 };
              timelineIndex < skelData.animations[animationIndex]->timelinesCount;
              ++timelineIndex)
         {
@@ -360,7 +360,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             stage->camera.viewHeight = viewportHeight;
             stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f };
             stage->camera.viewCenter = { stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f };
-            stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
+            stage->camera.dilatePoint = stage->camera.viewCenter - v2f{ 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
 
@@ -396,10 +396,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "damage-boxes", "punch_collision_box");
 
                 v2f collisionVectors[4] = {
-                    v2f { rHandCollisionBox->super.vertices[0], rHandCollisionBox->super.vertices[1] },
-                    v2f { rHandCollisionBox->super.vertices[2], rHandCollisionBox->super.vertices[3] },
-                    v2f { rHandCollisionBox->super.vertices[4], rHandCollisionBox->super.vertices[5] },
-                    v2f { rHandCollisionBox->super.vertices[6], rHandCollisionBox->super.vertices[7] },
+                    v2f{ rHandCollisionBox->super.vertices[0], rHandCollisionBox->super.vertices[1] },
+                    v2f{ rHandCollisionBox->super.vertices[2], rHandCollisionBox->super.vertices[3] },
+                    v2f{ rHandCollisionBox->super.vertices[4], rHandCollisionBox->super.vertices[5] },
+                    v2f{ rHandCollisionBox->super.vertices[6], rHandCollisionBox->super.vertices[7] },
                 };
 
                 { //Turn into parallelogram if quadrilateral isn't already. This is for easier minkowski collision detection
@@ -411,17 +411,20 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                     if (diffVec01 != diffVec32)
                     {
                         collisionVectors[3] = collisionVectors[2] + diffVec01;
+                        rHandCollisionBox->super.vertices[6] = collisionVectors[3].x;
+                        rHandCollisionBox->super.vertices[7] = collisionVectors[3].y;
                     };
 
                     if (diffVec12 != diffVec03)
                     {
                         collisionVectors[0] = collisionVectors[3] + diffVec12;
+                        rHandCollisionBox->super.vertices[0] = collisionVectors[0].x;
+                        rHandCollisionBox->super.vertices[1] = collisionVectors[0].y;
                     };
 
-                    v2f centerPoint {};
                     { // Find center of newly formed paralloegram
-                        centerPoint.x = ((collisionVectors[0].x + collisionVectors[2].x) / 2);
-                        centerPoint.y = ((collisionVectors[0].y + collisionVectors[2].y) / 2);
+                        rHandCollisionBox->centerPoint.x = ((collisionVectors[0].x + collisionVectors[2].x) / 2);
+                        rHandCollisionBox->centerPoint.y = ((collisionVectors[0].y + collisionVectors[2].y) / 2);
                     };
                 };
             };
@@ -493,9 +496,9 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         renderCmds.ClearScreen();
 
         { // Draw Level Background
-            Coordinate_System backgroundWorldSpace {};
-            Coordinate_System backgroundCameraSpace {};
-            Drawable_Rect     backgroundCanvas {};
+            Coordinate_System backgroundWorldSpace{};
+            Coordinate_System backgroundCameraSpace{};
+            Drawable_Rect     backgroundCanvas{};
 
             backgroundWorldSpace.Origin = { 0.0f, 0.0f };
 
@@ -508,17 +511,17 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
             backgroundCanvas = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, backgroundCanvas);
 
-            renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f });
+            renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f });
         };
 
         Fighter* fighters[2] = { player, ai };
-        for (i32 FighterIndex { 0 }; FighterIndex < ArrayCount(fighters); ++FighterIndex)
+        for (i32 FighterIndex{ 0 }; FighterIndex < ArrayCount(fighters); ++FighterIndex)
         {
-            for (i32 SlotIndex { 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
+            for (i32 SlotIndex{ 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
             {
                 float               verts[8] = { 0 };
-                Texture*            texture {};
-                spRegionAttachment* regionAttachment {};
+                Texture*            texture{};
+                spRegionAttachment* regionAttachment{};
                 spSkeleton*         skeleton = fighters[FighterIndex]->skeleton;
 
                 // If no current active attachment for slot then continue to next slot
@@ -532,24 +535,24 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
                     spRegionAttachment_computeWorldVertices(regionAttachment, skeleton->slots[SlotIndex]->bone, verts, 0, 2);
 
-                    Drawable_Rect spineImage {
-                        v2f { verts[0], verts[1] },
-                        v2f { verts[2], verts[3] },
-                        v2f { verts[4], verts[5] },
-                        v2f { verts[6], verts[7] }
+                    Drawable_Rect spineImage{
+                        v2f{ verts[0], verts[1] },
+                        v2f{ verts[2], verts[3] },
+                        v2f{ verts[4], verts[5] },
+                        v2f{ verts[6], verts[7] }
                     };
 
                     v2f UVArray[4] = {
-                        v2f { regionAttachment->uvs[0], regionAttachment->uvs[1] },
-                        v2f { regionAttachment->uvs[2], regionAttachment->uvs[3] },
-                        v2f { regionAttachment->uvs[4], regionAttachment->uvs[5] },
-                        v2f { regionAttachment->uvs[6], regionAttachment->uvs[7] }
+                        v2f{ regionAttachment->uvs[0], regionAttachment->uvs[1] },
+                        v2f{ regionAttachment->uvs[2], regionAttachment->uvs[3] },
+                        v2f{ regionAttachment->uvs[4], regionAttachment->uvs[5] },
+                        v2f{ regionAttachment->uvs[6], regionAttachment->uvs[7] }
                     };
 
                     { // Transform to Camera Space
                         v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
 
-                        for (ui32 VertIndex { 0 }; VertIndex < ArrayCount(spineImage.Corners);
+                        for (ui32 VertIndex{ 0 }; VertIndex < ArrayCount(spineImage.Corners);
                              ++VertIndex)
                         {
                             spineImage.Corners[VertIndex] += translationToCameraSpace;
