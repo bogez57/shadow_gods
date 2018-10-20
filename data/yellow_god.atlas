@@ -4,133 +4,133 @@ size: 2048,256
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-Head
+head
   rotate: false
   xy: 1518, 128
   size: 123, 126
   orig: 123, 126
   offset: 0, 0
   index: -1
-Left Bicep
+left-bicep
   rotate: true
   xy: 175, 6
   size: 72, 87
   orig: 72, 87
   offset: 0, 0
   index: -1
-Left Foot
+left-foot
   rotate: false
   xy: 2, 9
   size: 171, 69
   orig: 171, 69
   offset: 0, 0
   index: -1
-Left Forearm
+left-forearm
   rotate: true
   xy: 270, 2
   size: 128, 129
   orig: 128, 129
   offset: 0, 0
   index: -1
-Left Hand
+left-hand
   rotate: false
   xy: 710, 42
   size: 77, 87
   orig: 77, 87
   offset: 0, 0
   index: -1
-Left Leg
+left-leg
   rotate: true
   xy: 562, 131
   size: 123, 277
   orig: 123, 277
   offset: 0, 0
   index: -1
-Left Shin
+left-shin
   rotate: true
   xy: 841, 140
   size: 114, 260
   orig: 114, 260
   offset: 0, 0
   index: -1
-Left Shoulder
+left-shoulder
   rotate: true
   xy: 1939, 166
   size: 88, 93
   orig: 88, 93
   offset: 0, 0
   index: -1
-Neck
+neck
   rotate: false
   xy: 532, 12
   size: 86, 117
   orig: 86, 117
   offset: 0, 0
   index: -1
-Pelvis
+pelvis
   rotate: false
   xy: 1365, 122
   size: 151, 132
   orig: 151, 132
   offset: 0, 0
   index: -1
-Right Bicep
+right-bicep
   rotate: true
   xy: 1643, 110
   size: 73, 87
   orig: 73, 87
   offset: 0, 0
   index: -1
-Right Foot
+right-foot
   rotate: false
   xy: 1643, 185
   size: 171, 69
   orig: 171, 69
   offset: 0, 0
   index: -1
-Right Forearm
+right-forearm
   rotate: true
   xy: 401, 2
   size: 128, 129
   orig: 128, 129
   offset: 0, 0
   index: -1
-Right Hand
+right-hand
   rotate: false
   xy: 1732, 96
   size: 77, 87
   orig: 77, 87
   offset: 0, 0
   index: -1
-Right Leg
+right-leg
   rotate: true
   xy: 270, 132
   size: 122, 290
   orig: 122, 290
   offset: 0, 0
   index: -1
-Right Shin
+right-shin
   rotate: true
   xy: 1103, 140
   size: 114, 260
   orig: 114, 260
   offset: 0, 0
   index: -1
-Right Shoulder
+right-shoulder
   rotate: false
   xy: 620, 36
   size: 88, 93
   orig: 88, 93
   offset: 0, 0
   index: -1
-Torso
+torso
   rotate: true
   xy: 2, 80
   size: 174, 266
   orig: 174, 266
   offset: 0, 0
   index: -1
-Trap
+trap
   rotate: false
   xy: 1816, 169
   size: 121, 85
