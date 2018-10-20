@@ -392,8 +392,38 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 ai->skeleton->scaleY = 0.6f;
             };
 
-            { //Make sure spine bounding box (aka collision box) is square in shape
+            { //Make sure spine bounding box (aka collision box) is a rectangle
                 spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "damage-boxes", "punch_collision_box");
+
+                v2f collisionVectors[4] = {
+                    v2f { rHandCollisionBox->super.vertices[0], rHandCollisionBox->super.vertices[1] },
+                    v2f { rHandCollisionBox->super.vertices[2], rHandCollisionBox->super.vertices[3] },
+                    v2f { rHandCollisionBox->super.vertices[4], rHandCollisionBox->super.vertices[5] },
+                    v2f { rHandCollisionBox->super.vertices[6], rHandCollisionBox->super.vertices[7] },
+                };
+
+                { //Turn into parallelogram if quadrilateral isn't already. This is for easier minkowski collision detection
+                    v2f diffVec01 = collisionVectors[0] - collisionVectors[1];
+                    v2f diffVec32 = collisionVectors[3] - collisionVectors[2];
+                    v2f diffVec12 = collisionVectors[1] - collisionVectors[2];
+                    v2f diffVec03 = collisionVectors[0] - collisionVectors[3];
+
+                    if (diffVec01 != diffVec32)
+                    {
+                        collisionVectors[3] = collisionVectors[2] + diffVec01;
+                    };
+
+                    if (diffVec12 != diffVec03)
+                    {
+                        collisionVectors[0] = collisionVectors[3] + diffVec12;
+                    };
+
+                    v2f centerPoint {};
+                    { // Find center of newly formed paralloegram
+                        centerPoint.x = ((collisionVectors[0].x + collisionVectors[2].x) / 2);
+                        centerPoint.y = ((collisionVectors[0].y + collisionVectors[2].y) / 2);
+                    };
+                };
             };
         };
     };

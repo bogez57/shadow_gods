@@ -48,6 +48,28 @@ v2f::v2f(f32 x, f32 y)
     , y(y)
 {}
 
+inline b
+operator==(v2f A, v2f B)
+{
+    b Result { false };
+
+    if (A.x == B.x && A.y == B.y)
+        Result = true;
+
+    return Result;
+};
+
+inline b
+operator!=(v2f A, v2f B)
+{
+    b Result { false };
+
+    if (A.x != B.x || A.y != B.y)
+        Result = true;
+
+    return Result;
+};
+
 inline v2f
 operator*(f32 A, v2f B)
 {
