@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "t4rn4k2ZUUgxDdazn7pldZR4h7M", "spine": "3.7.42-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "Ns+yg31Tg5nntkHegjarqjlIuzs", "spine": "3.7.42-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -13.25, "y": 489.02 },
@@ -42,10 +42,18 @@
 	{ "name": "right-shoulder", "bone": "right-shoulder", "attachment": "right-shoulder" },
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
 	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
-	{ "name": "damage-boxes", "bone": "right-hand" }
+	{ "name": "damage-boxes", "bone": "right-hand" },
+	{ "name": "collision-box", "bone": "torso", "attachment": "test-box" }
 ],
 "skins": {
 	"default": {
+		"collision-box": {
+			"test-box": {
+				"type": "boundingbox",
+				"vertexCount": 4,
+				"vertices": [ 221.12, 94.27, 214.63, -92.49, -2.21, -88.02, 10.52, 100.82 ]
+			}
+		},
 		"damage-boxes": {
 			"punch_collision_box": {
 				"type": "boundingbox",
@@ -121,7 +129,7 @@
 	}
 },
 "animations": {
-	"idle": {
+	"Idle": {
 		"bones": {
 			"head": {
 				"rotate": [
@@ -208,7 +216,7 @@
 			}
 		}
 	},
-	"kick": {
+	"Kick": {
 		"bones": {
 			"left-shin": {
 				"rotate": [
@@ -341,7 +349,7 @@
 			}
 		}
 	},
-	"punch": {
+	"Punch": {
 		"slots": {
 			"damage-boxes": {
 				"attachment": [
@@ -472,7 +480,7 @@
 			}
 		}
 	},
-	"punch-flurry": {
+	"Punch Flurry": {
 		"bones": {
 			"right-forearm": {
 				"rotate": [
