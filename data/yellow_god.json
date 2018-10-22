@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "Ns+yg31Tg5nntkHegjarqjlIuzs", "spine": "3.7.42-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "j229y8yfxFeAQVlFU/v/N1+TdOc", "spine": "3.7.42-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -13.25, "y": 489.02 },
@@ -51,7 +51,7 @@
 			"test-box": {
 				"type": "boundingbox",
 				"vertexCount": 4,
-				"vertices": [ 221.12, 94.27, 214.63, -92.49, -2.21, -88.02, 10.52, 100.82 ]
+				"vertices": [ 332.07, 185.83, 319.04, -188.7, -115.8, -179.74, -90.29, 198.97 ]
 			}
 		},
 		"damage-boxes": {

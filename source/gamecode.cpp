@@ -435,7 +435,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             };
 
             { //Make sure spine bounding box (aka collision box) is a rectangle
-                spBoundingBoxAttachment* vunerableBoxVerts = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "collision-box", "test-box");
+                spBoundingBoxAttachment* vunerableBoxVerts = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(ai->skeleton, "collision-box", "test-box");
 
                 vunerableBoxVerts->super.vertices = ForceParallelogram(vunerableBoxVerts->super.vertices);
 
@@ -466,7 +466,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     });
 
     OnKeyRelease(keyboard->MoveUp, stage, [](Stage_Data* stage) {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Idle", 1);
     });
 
     OnKeyPress(keyboard->MoveRight, stage, [](Stage_Data* stage) {
@@ -516,8 +515,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     rHandCollisionBox->centerPoint = CreateCenterPointOfParallelogram(hitBoxWorldVerts);
 
     AABB aiGreenBox {
-        v2f { vunerableBoxWorldVerts[0], vunerableBoxWorldVerts[1] },
-        v2f { vunerableBoxWorldVerts[4], vunerableBoxWorldVerts[5] }
+        v2f { vunerableBoxWorldVerts[4], vunerableBoxWorldVerts[5] },
+        v2f { vunerableBoxWorldVerts[0], vunerableBoxWorldVerts[1] }
     };
 
     if (rHandCollisionBox->centerPoint.x > aiGreenBox.minCorner.x && rHandCollisionBox->centerPoint.x < aiGreenBox.maxCorner.x && rHandCollisionBox->centerPoint.y > aiGreenBox.minCorner.y && rHandCollisionBox->centerPoint.y < aiGreenBox.maxCorner.y)
