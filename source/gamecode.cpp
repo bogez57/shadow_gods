@@ -328,8 +328,8 @@ auto CreateCenterPointOfParallelogram(f32* parallelogramVerts) -> v2f
 {
     v2f centerPoint {};
 
-    centerPoint.x = ((parallelogramVerts[0] + parallelogramVerts[4]) / 2);
-    centerPoint.y = ((parallelogramVerts[1] + parallelogramVerts[5]) / 2);
+    centerPoint.x = ((parallelogramVerts[2] + parallelogramVerts[6]) / 2);
+    centerPoint.y = ((parallelogramVerts[3] + parallelogramVerts[7]) / 2);
 
     return centerPoint;
 };
@@ -428,12 +428,18 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             Fighter* fighters[2] = { player, ai };
             for (i32 fighterIndex { 0 }; fighterIndex < ArrayCount(fighters); ++fighterIndex)
             {
-                for (i32 slotIndex { 0 }; slotIndex < player->skeleton->slotsCount; ++slotIndex)
+                for (i32 slotIndex { 0 }; slotIndex < fighters[fighterIndex]->skeleton->slotsCount; ++slotIndex)
                 {
+                    spSkeleton* skeleton = fighters[fighterIndex]->skeleton;
+
+                    // If no current active attachment for slot then continue to next slot
+                    if (!skeleton->slots[slotIndex]->attachment)
+                        continue;
+
                     //Force all collision boxes to be parallelograms for easier collision detection
-                    if (player->skeleton->slots[slotIndex]->attachment->type == SP_ATTACHMENT_BOUNDING_BOX)
+                    if (skeleton->slots[slotIndex]->attachment->type == SP_ATTACHMENT_BOUNDING_BOX)
                     {
-                        spBoundingBoxAttachment* collisionBox = (spBoundingBoxAttachment*)player->skeleton->slots[slotIndex]->attachment;
+                        spBoundingBoxAttachment* collisionBox = (spBoundingBoxAttachment*)skeleton->slots[slotIndex]->attachment;
 
                         collisionBox->super.vertices = ForceParallelogram(collisionBox->super.vertices);
 
@@ -503,23 +509,24 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_apply(ai->animationState, ai->skeleton);
     spSkeleton_updateWorldTransform(ai->skeleton);
 
-    f32 hitBoxWorldVerts[8] = { 0 };
-    f32 vunerableBoxWorldVerts[8] = { 0 };
+    f32 playerCollisionBoxWorld[8] = { 0 };
+    f32 aiCollisionBoxWorld[8] = { 0 };
 
-    spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "damage-boxes", "punch_collision_box");
-    spBoundingBoxAttachment* testBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(ai->skeleton, "collision-box", "test-box");
+    spBoundingBoxAttachment* playerCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "collision-box", "test-box");
+    spBoundingBoxAttachment* aiCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(ai->skeleton, "collision-box", "test-box");
 
-    spVertexAttachment_computeWorldVertices(&rHandCollisionBox->super, spSkeleton_findSlot(player->skeleton, "damage-boxes"), 0, rHandCollisionBox->super.verticesCount, hitBoxWorldVerts, 0, 2);
-    spVertexAttachment_computeWorldVertices(&testBox->super, spSkeleton_findSlot(ai->skeleton, "collision-box"), 0, testBox->super.verticesCount, vunerableBoxWorldVerts, 0, 2);
+    spVertexAttachment_computeWorldVertices(&playerCollisionBox->super, spSkeleton_findSlot(player->skeleton, "collision-box"), 0, playerCollisionBox->super.verticesCount, playerCollisionBoxWorld, 0, 2);
+    spVertexAttachment_computeWorldVertices(&aiCollisionBox->super, spSkeleton_findSlot(ai->skeleton, "collision-box"), 0, aiCollisionBox->super.verticesCount, aiCollisionBoxWorld, 0, 2);
 
-    rHandCollisionBox->centerPoint = CreateCenterPointOfParallelogram(hitBoxWorldVerts);
+    playerCollisionBox->centerPoint = CreateCenterPointOfParallelogram(playerCollisionBoxWorld);
+    aiCollisionBox->centerPoint = CreateCenterPointOfParallelogram(aiCollisionBoxWorld);
 
-    AABB aiGreenBox {
-        v2f { vunerableBoxWorldVerts[4], vunerableBoxWorldVerts[5] },
-        v2f { vunerableBoxWorldVerts[0], vunerableBoxWorldVerts[1] }
+    AABB aiAABB {
+        v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] },
+        v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] }
     };
 
-    if (rHandCollisionBox->centerPoint.x > aiGreenBox.minCorner.x && rHandCollisionBox->centerPoint.x < aiGreenBox.maxCorner.x && rHandCollisionBox->centerPoint.y > aiGreenBox.minCorner.y && rHandCollisionBox->centerPoint.y < aiGreenBox.maxCorner.y)
+    if (playerCollisionBox->centerPoint.x > aiAABB.minCorner.x && playerCollisionBox->centerPoint.x < aiAABB.maxCorner.x && playerCollisionBox->centerPoint.y > aiAABB.minCorner.y && playerCollisionBox->centerPoint.y < aiAABB.maxCorner.y)
     {
         BGZ_CONSOLE("Collision!!!");
     };

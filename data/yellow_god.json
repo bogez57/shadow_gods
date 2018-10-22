@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "j229y8yfxFeAQVlFU/v/N1+TdOc", "spine": "3.7.42-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "aqGoYCMd1ywgZVMmTEDoj86TTpU", "spine": "3.7.42-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -13.25, "y": 489.02 },
@@ -51,14 +51,7 @@
 			"test-box": {
 				"type": "boundingbox",
 				"vertexCount": 4,
-				"vertices": [ 332.07, 185.83, 319.04, -188.7, -115.8, -179.74, -90.29, 198.97 ]
-			}
-		},
-		"damage-boxes": {
-			"punch_collision_box": {
-				"type": "boundingbox",
-				"vertexCount": 4,
-				"vertices": [ 9.53, 32.61, 12.33, -31.45, 84.64, -34.48, 83.39, 29.03 ]
+				"vertices": [ 289.54, 150.73, 279.02, -151.82, -72.26, -144.58, -51.65, 161.35 ]
 			}
 		},
 		"head": {
@@ -350,14 +343,6 @@
 		}
 	},
 	"Punch": {
-		"slots": {
-			"damage-boxes": {
-				"attachment": [
-					{ "time": 0.1, "name": "punch_collision_box" },
-					{ "time": 0.2, "name": null }
-				]
-			}
-		},
 		"bones": {
 			"left-forearm": {
 				"rotate": [
