@@ -67,36 +67,26 @@ local_func auto MyListener(spAnimationState* state, spEventType type, spTrackEnt
     {
     case SP_ANIMATION_START:
     {
-        printf("Animation %s started on track %i\n", entry->animation->name, entry->trackIndex);
         break;
     }
     case SP_ANIMATION_INTERRUPT:
     {
-        printf("Animation %s interrupted on track %i\n", entry->animation->name, entry->trackIndex);
         break;
     }
     case SP_ANIMATION_END:
     {
-        printf("Animation %s ended on track %i\n", entry->animation->name, entry->trackIndex);
         break;
     }
     case SP_ANIMATION_COMPLETE:
     {
-        printf("Animation %s completed on track %i\n", entry->animation->name, entry->trackIndex);
         break;
     }
     case SP_ANIMATION_DISPOSE:
     {
-        printf("Track entry for animation %s disposed on track %i\n",
-            entry->animation->name,
-            entry->trackIndex);
         break;
     }
     case SP_ANIMATION_EVENT:
     {
-        printf("User defined event for animation %s on track %i\n",
-            entry->animation->name,
-            entry->trackIndex);
         break;
     }
     default:
@@ -301,6 +291,49 @@ inline auto OnKeyRelease(Button_State KeyState, Stage_Data* stage, void (*Action
     };
 };
 
+auto ForceParallelogram(f32* shapeVerts) -> f32*
+{
+    v2f shapeVectors[4] = {
+        v2f { shapeVerts[0], shapeVerts[1] },
+        v2f { shapeVerts[2], shapeVerts[3] },
+        v2f { shapeVerts[4], shapeVerts[5] },
+        v2f { shapeVerts[6], shapeVerts[7] },
+    };
+
+    { //Turn into parallelogram if quadrilateral isn't already. This is for easier minkowski collision detection
+        v2f diffVecAB = shapeVectors[0] - shapeVectors[1];
+        v2f diffVecDC = shapeVectors[3] - shapeVectors[2];
+        v2f diffVecBC = shapeVectors[1] - shapeVectors[2];
+        v2f diffVecAD = shapeVectors[0] - shapeVectors[3];
+
+        if (diffVecAB != diffVecDC)
+        {
+            shapeVectors[3] = shapeVectors[2] + diffVecAB;
+            shapeVerts[6] = shapeVectors[3].x;
+            shapeVerts[7] = shapeVectors[3].y;
+        };
+
+        if (diffVecBC != diffVecAD)
+        {
+            shapeVectors[0] = shapeVectors[3] + diffVecBC;
+            shapeVerts[0] = shapeVectors[0].x;
+            shapeVerts[1] = shapeVectors[0].y;
+        };
+    };
+
+    return shapeVerts;
+};
+
+auto CreateCenterPointOfParallelogram(f32* parallelogramVerts) -> v2f
+{
+    v2f centerPoint {};
+
+    centerPoint.x = ((parallelogramVerts[0] + parallelogramVerts[4]) / 2);
+    centerPoint.y = ((parallelogramVerts[1] + parallelogramVerts[5]) / 2);
+
+    return centerPoint;
+};
+
 extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -395,75 +428,19 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             { //Make sure spine bounding box (aka collision box) is a rectangle
                 spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "damage-boxes", "punch_collision_box");
 
-                v2f collisionVectors[4] = {
-                    v2f { rHandCollisionBox->super.vertices[0], rHandCollisionBox->super.vertices[1] },
-                    v2f { rHandCollisionBox->super.vertices[2], rHandCollisionBox->super.vertices[3] },
-                    v2f { rHandCollisionBox->super.vertices[4], rHandCollisionBox->super.vertices[5] },
-                    v2f { rHandCollisionBox->super.vertices[6], rHandCollisionBox->super.vertices[7] },
-                };
+                rHandCollisionBox->super.vertices = ForceParallelogram(rHandCollisionBox->super.vertices);
 
-                { //Turn into parallelogram if quadrilateral isn't already. This is for easier minkowski collision detection
-                    v2f diffVec01 = collisionVectors[0] - collisionVectors[1];
-                    v2f diffVec32 = collisionVectors[3] - collisionVectors[2];
-                    v2f diffVec12 = collisionVectors[1] - collisionVectors[2];
-                    v2f diffVec03 = collisionVectors[0] - collisionVectors[3];
-
-                    if (diffVec01 != diffVec32)
-                    {
-                        collisionVectors[3] = collisionVectors[2] + diffVec01;
-                        rHandCollisionBox->super.vertices[6] = collisionVectors[3].x;
-                        rHandCollisionBox->super.vertices[7] = collisionVectors[3].y;
-                    };
-
-                    if (diffVec12 != diffVec03)
-                    {
-                        collisionVectors[0] = collisionVectors[3] + diffVec12;
-                        rHandCollisionBox->super.vertices[0] = collisionVectors[0].x;
-                        rHandCollisionBox->super.vertices[1] = collisionVectors[0].y;
-                    };
-
-                    { // Find center of newly formed paralloegram
-                        rHandCollisionBox->centerPoint.x = ((collisionVectors[0].x + collisionVectors[2].x) / 2);
-                        rHandCollisionBox->centerPoint.y = ((collisionVectors[0].y + collisionVectors[2].y) / 2);
-                    };
-                };
+                // Find center of newly formed paralloegram
+                rHandCollisionBox->centerPoint = CreateCenterPointOfParallelogram(rHandCollisionBox->super.vertices);
             };
 
             { //Make sure spine bounding box (aka collision box) is a rectangle
-                spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "collision-box", "test-box");
+                spBoundingBoxAttachment* vunerableBoxVerts = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "collision-box", "test-box");
 
-                v2f collisionVectors[4] = {
-                    v2f { rHandCollisionBox->super.vertices[0], rHandCollisionBox->super.vertices[1] },
-                    v2f { rHandCollisionBox->super.vertices[2], rHandCollisionBox->super.vertices[3] },
-                    v2f { rHandCollisionBox->super.vertices[4], rHandCollisionBox->super.vertices[5] },
-                    v2f { rHandCollisionBox->super.vertices[6], rHandCollisionBox->super.vertices[7] },
-                };
+                vunerableBoxVerts->super.vertices = ForceParallelogram(vunerableBoxVerts->super.vertices);
 
-                { //Turn into parallelogram if quadrilateral isn't already. This is for easier minkowski collision detection
-                    v2f diffVec01 = collisionVectors[0] - collisionVectors[1];
-                    v2f diffVec32 = collisionVectors[3] - collisionVectors[2];
-                    v2f diffVec12 = collisionVectors[1] - collisionVectors[2];
-                    v2f diffVec03 = collisionVectors[0] - collisionVectors[3];
-
-                    if (diffVec01 != diffVec32)
-                    {
-                        collisionVectors[3] = collisionVectors[2] + diffVec01;
-                        rHandCollisionBox->super.vertices[6] = collisionVectors[3].x;
-                        rHandCollisionBox->super.vertices[7] = collisionVectors[3].y;
-                    };
-
-                    if (diffVec12 != diffVec03)
-                    {
-                        collisionVectors[0] = collisionVectors[3] + diffVec12;
-                        rHandCollisionBox->super.vertices[0] = collisionVectors[0].x;
-                        rHandCollisionBox->super.vertices[1] = collisionVectors[0].y;
-                    };
-
-                    { // Find center of newly formed paralloegram
-                        rHandCollisionBox->centerPoint.x = ((collisionVectors[0].x + collisionVectors[2].x) / 2);
-                        rHandCollisionBox->centerPoint.y = ((collisionVectors[0].y + collisionVectors[2].y) / 2);
-                    };
-                };
+                // Find center of newly formed paralloegram
+                vunerableBoxVerts->centerPoint = CreateCenterPointOfParallelogram(vunerableBoxVerts->super.vertices);
             };
         };
     };
@@ -527,18 +504,25 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_apply(ai->animationState, ai->skeleton);
     spSkeleton_updateWorldTransform(ai->skeleton);
 
-    float HitBoxVerts[8] = { 0 };
-    float VunerableBoxVerts[8] = { 0 };
+    f32 hitBoxWorldVerts[8] = { 0 };
+    f32 vunerableBoxWorldVerts[8] = { 0 };
 
     spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "damage-boxes", "punch_collision_box");
-    spBoundingBoxAttachment* testBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "collision-box", "test-box");
+    spBoundingBoxAttachment* testBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(ai->skeleton, "collision-box", "test-box");
 
-    spVertexAttachment_computeWorldVertices(&rHandCollisionBox->super, spSkeleton_findSlot(player->skeleton, "damage-boxes"), 0, rHandCollisionBox->super.verticesCount, HitBoxVerts, 0, 2);
-    spVertexAttachment_computeWorldVertices(&rHandCollisionBox->super, spSkeleton_findSlot(player->skeleton, "collision-box"), 0, testBox->super.verticesCount, VunerableBoxVerts, 0, 2);
+    spVertexAttachment_computeWorldVertices(&rHandCollisionBox->super, spSkeleton_findSlot(player->skeleton, "damage-boxes"), 0, rHandCollisionBox->super.verticesCount, hitBoxWorldVerts, 0, 2);
+    spVertexAttachment_computeWorldVertices(&testBox->super, spSkeleton_findSlot(ai->skeleton, "collision-box"), 0, testBox->super.verticesCount, vunerableBoxWorldVerts, 0, 2);
 
-    { // Find center
-        rHandCollisionBox->centerPoint.x = ((HitBoxVerts[0] + HitBoxVerts[4]) / 2);
-        rHandCollisionBox->centerPoint.y = ((HitBoxVerts[1] + HitBoxVerts[5]) / 2);
+    rHandCollisionBox->centerPoint = CreateCenterPointOfParallelogram(hitBoxWorldVerts);
+
+    AABB aiGreenBox {
+        v2f { vunerableBoxWorldVerts[0], vunerableBoxWorldVerts[1] },
+        v2f { vunerableBoxWorldVerts[4], vunerableBoxWorldVerts[5] }
+    };
+
+    if (rHandCollisionBox->centerPoint.x > aiGreenBox.minCorner.x && rHandCollisionBox->centerPoint.x < aiGreenBox.maxCorner.x && rHandCollisionBox->centerPoint.y > aiGreenBox.minCorner.y && rHandCollisionBox->centerPoint.y < aiGreenBox.maxCorner.y)
+    {
+        BGZ_CONSOLE("Collision!!!");
     };
 
     { // Render
