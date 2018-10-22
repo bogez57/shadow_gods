@@ -425,22 +425,22 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 ai->skeleton->scaleY = 0.6f;
             };
 
-            { //Make sure spine bounding box (aka collision box) is a rectangle
-                spBoundingBoxAttachment* rHandCollisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(player->skeleton, "damage-boxes", "punch_collision_box");
+            Fighter* fighters[2] = { player, ai };
+            for (i32 fighterIndex { 0 }; fighterIndex < ArrayCount(fighters); ++fighterIndex)
+            {
+                for (i32 slotIndex { 0 }; slotIndex < player->skeleton->slotsCount; ++slotIndex)
+                {
+                    //Force all collision boxes to be parallelograms for easier collision detection
+                    if (player->skeleton->slots[slotIndex]->attachment->type == SP_ATTACHMENT_BOUNDING_BOX)
+                    {
+                        spBoundingBoxAttachment* collisionBox = (spBoundingBoxAttachment*)player->skeleton->slots[slotIndex]->attachment;
 
-                rHandCollisionBox->super.vertices = ForceParallelogram(rHandCollisionBox->super.vertices);
+                        collisionBox->super.vertices = ForceParallelogram(collisionBox->super.vertices);
 
-                // Find center of newly formed paralloegram
-                rHandCollisionBox->centerPoint = CreateCenterPointOfParallelogram(rHandCollisionBox->super.vertices);
-            };
-
-            { //Make sure spine bounding box (aka collision box) is a rectangle
-                spBoundingBoxAttachment* vunerableBoxVerts = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(ai->skeleton, "collision-box", "test-box");
-
-                vunerableBoxVerts->super.vertices = ForceParallelogram(vunerableBoxVerts->super.vertices);
-
-                // Find center of newly formed paralloegram
-                vunerableBoxVerts->centerPoint = CreateCenterPointOfParallelogram(vunerableBoxVerts->super.vertices);
+                        // Find center of newly formed paralloegram
+                        collisionBox->centerPoint = CreateCenterPointOfParallelogram(collisionBox->super.vertices);
+                    };
+                };
             };
         };
     };
