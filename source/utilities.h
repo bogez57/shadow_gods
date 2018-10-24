@@ -17,3 +17,17 @@ SafeTruncateUInt64(ui64 Value)
     ui32 Result = (ui32)Value;
     return (Result);
 }
+
+inline auto Swap(f32* a, f32* b) -> void
+{
+    f32 c { *a };
+    *a = *b;
+    *b = c;
+};
+
+inline auto Swap(v2f* a, v2f* b) -> void
+{
+    v2f c { *a };
+    *a = *b;
+    *b = c;
+};

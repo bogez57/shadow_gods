@@ -20,6 +20,7 @@
 #include "math.h"
 #include "shared.h"
 #include "memory_handling.h"
+#include "utilities.h"
 
 global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmds globalRenderCmds;
@@ -430,7 +431,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 spAnimationState_setAnimationByName(ai->animationState, 0, "Idle", 1);
 
                 ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-                ai->skeleton->scaleX = 0.6f; // Flip ai fighter to start
+                ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
             };
 
@@ -520,21 +521,49 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spVertexAttachment_computeWorldVertices(&collisionBox->super, spSkeleton_findSlot(ai->skeleton, "collision-box"), 0, collisionBox->super.verticesCount, aiCollisionBoxWorld, 0, 2);
     spVertexAttachment_computeWorldVertices(&collisionBox->super, spSkeleton_findSlot(player->skeleton, "collision-box"), 0, collisionBox->super.verticesCount, playerCollisionBoxWorld, 0, 2);
 
+    { //Make sure verts are in clockwise order
+        v2f aiCollisionBoxVecs[4] = {
+            v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] },
+            v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] },
+            v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] },
+            v2f { aiCollisionBoxWorld[6], aiCollisionBoxWorld[7] },
+        };
+
+        f32 area {};
+        i32 vecArrayLength = ArrayCount(aiCollisionBoxVecs);
+        for (i32 vecIndex { 0 }; vecIndex < vecArrayLength; ++vecIndex)
+        {
+            i32 nextVector = (vecIndex + 1) % vecArrayLength;
+            area += aiCollisionBoxVecs[vecIndex].x * aiCollisionBoxVecs[nextVector].y;
+            area -= aiCollisionBoxVecs[nextVector].x * aiCollisionBoxVecs[vecIndex].y;
+        }
+
+        if (area < 0)
+        {
+            //clockwise
+            BGZ_CONSOLE("clockwise");
+        }
+        else
+        {
+            //counter-clockwise, need to make clockwise
+            Swap(&aiCollisionBoxVecs[0], &aiCollisionBoxVecs[2]);
+            aiCollisionBoxWorld[0] = aiCollisionBoxVecs[0].x;
+            aiCollisionBoxWorld[1] = aiCollisionBoxVecs[0].y;
+            aiCollisionBoxWorld[4] = aiCollisionBoxVecs[2].x;
+            aiCollisionBoxWorld[5] = aiCollisionBoxVecs[2].y;
+        }
+    }
+
     v2f playerBoxCenterPoint = CreateCenterPointOfParallelogram(playerCollisionBoxWorld);
     v2f aiBoxCenterPoint = CreateCenterPointOfParallelogram(aiCollisionBoxWorld);
-
-    AABB aiAABB {
-        v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] },
-        v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] }
-    };
 
     v2f newCollisionBoxShape[4] = {};
     {
         v2f playerCollisionBoxVecs[4] = {
+            v2f { playerCollisionBoxWorld[6], playerCollisionBoxWorld[7] },
             v2f { playerCollisionBoxWorld[0], playerCollisionBoxWorld[1] },
             v2f { playerCollisionBoxWorld[2], playerCollisionBoxWorld[3] },
             v2f { playerCollisionBoxWorld[4], playerCollisionBoxWorld[5] },
-            v2f { playerCollisionBoxWorld[6], playerCollisionBoxWorld[7] },
         };
 
         v2f aiCollisionBoxVecs[4] = {
@@ -559,8 +588,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     };
 
     AABB newBoxAABB {
-        v2f { newCollisionBoxShape[3].x, newCollisionBoxShape[3].y },
-        v2f { newCollisionBoxShape[1].x, newCollisionBoxShape[1].y }
+        v2f { newCollisionBoxShape[0].x, newCollisionBoxShape[0].y },
+        v2f { newCollisionBoxShape[2].x, newCollisionBoxShape[2].y }
     };
 
     if (playerBoxCenterPoint.x > newBoxAABB.minCorner.x && playerBoxCenterPoint.x < newBoxAABB.maxCorner.x && playerBoxCenterPoint.y > newBoxAABB.minCorner.y && playerBoxCenterPoint.y < newBoxAABB.maxCorner.y)
