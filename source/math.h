@@ -1,7 +1,7 @@
 #pragma once
 
 #include "atomic_types.h"
-#include <math.h>//TODO: Remove and replace with own, faster platform specific implementations
+#include <math.h> //TODO: Remove and replace with own, faster platform specific implementations
 
 #define PI 3.1415926535897932385f
 
@@ -9,6 +9,13 @@ inline f32
 AbsoluteVal(f32 Value)
 {
     f32 Result = (f32)fabs(Value);
+    return Result;
+}
+
+inline v2f
+AbsoluteVal(v2f Value)
+{
+    v2f Result { (f32)fabs(Value.x), (f32)fabs(Value.y) };
     return Result;
 }
 
@@ -33,28 +40,28 @@ Sqrt(f64 Number)
     return Number;
 };
 
-inline sizet 
+inline sizet
 RoundUp(sizet NumToRound, sizet Multiple)
 {
     if (Multiple == 0)
         return NumToRound;
 
-    sizet Remainder = NumToRound % Multiple; 
-    if(Remainder == 0)
+    sizet Remainder = NumToRound % Multiple;
+    if (Remainder == 0)
         return NumToRound;
-    
+
     return NumToRound + Multiple - Remainder;
 };
 
-inline sizet 
+inline sizet
 RoundDown(sizet NumToRound, sizet Multiple)
 {
     if (Multiple == 0)
         return NumToRound;
 
-    sizet Remainder = NumToRound % Multiple; 
-    if(Remainder == 0)
+    sizet Remainder = NumToRound % Multiple;
+    if (Remainder == 0)
         return NumToRound;
-    
+
     return NumToRound - Remainder;
 };

@@ -44,7 +44,6 @@ extern "C" {
 typedef struct spBoundingBoxAttachment
 {
     spVertexAttachment super;
-    v2f                centerPoint;
 } spBoundingBoxAttachment;
 
 SP_API spBoundingBoxAttachment* spBoundingBoxAttachment_create(const char* name);

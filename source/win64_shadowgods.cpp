@@ -8,6 +8,7 @@
     - Fix dll reloading which currently free's and reload's game code twice upon building. I believe this is because
     when comparing file times between old and new dll write times the game tends to update fast enough that the times
     are still the same upon the second run through of the loop since the last run through. 
+    - Make an array class
 */
 
 #if (DEVELOPMENT_BUILD)
@@ -37,10 +38,10 @@
 #include "win64_shadowgods.h"
 #include "shared.h"
 
-global_variable ui32 WindowWidth{ 1280 };
-global_variable ui32 WindowHeight{ 720 };
-global_variable Game_Memory GameMemory{};
-global_variable bool        GameRunning{};
+global_variable ui32 WindowWidth { 1280 };
+global_variable ui32 WindowHeight { 720 };
+global_variable Game_Memory GameMemory {};
+global_variable bool        GameRunning {};
 
 namespace Win32::Dbg
 {
@@ -54,7 +55,7 @@ namespace Win32::Dbg
     local_func auto
     Malloc(sizet Size) -> void*
     {
-        void* Result{};
+        void* Result {};
 
         Result = malloc(Size);
 
@@ -64,7 +65,7 @@ namespace Win32::Dbg
     local_func auto
     Calloc(sizet Count, sizet Size) -> void*
     {
-        void* Result{};
+        void* Result {};
 
         Result = calloc(Count, Size);
 
@@ -120,13 +121,13 @@ namespace Win32::Dbg
     local_func auto
     ReadEntireFile(const char* FileName) -> Read_File_Result
     {
-        Read_File_Result Result{};
+        Read_File_Result Result {};
 
         HANDLE FileHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
 
         if (FileHandle != INVALID_HANDLE_VALUE)
         {
-            LARGE_INTEGER FileSize{};
+            LARGE_INTEGER FileSize {};
             if (GetFileSizeEx(FileHandle, &FileSize))
             {
                 ui32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
@@ -194,7 +195,7 @@ namespace Win32::Dbg
     LoadRGBAImage(const char* ImagePath, int* Width, int* Height) -> ui8*
     {
         int            DesiredChannels = 4;
-        int            NumOfLoadedChannels{};
+        int            NumOfLoadedChannels {};
         unsigned char* ImageData = stbi_load(ImagePath, Width, Height, &NumOfLoadedChannels, DesiredChannels);
         BGZ_ASSERT(ImageData);
 
@@ -231,8 +232,8 @@ namespace Win32::Dbg
     inline auto
     GetFileTime(const char* FileName) -> FILETIME
     {
-        FILETIME                  TimeFileWasLastWrittenTo{};
-        WIN32_FILE_ATTRIBUTE_DATA FileData{};
+        FILETIME                  TimeFileWasLastWrittenTo {};
+        WIN32_FILE_ATTRIBUTE_DATA FileData {};
 
         if (GetFileAttributesEx(FileName, GetFileExInfoStandard, &FileData))
         {
@@ -245,7 +246,7 @@ namespace Win32::Dbg
     local_func auto
     LoadGameCodeDLL(const char* GameCodeDLL) -> Game_Code
     {
-        Game_Code   GameCode{};
+        Game_Code   GameCode {};
         const char* GameCodeTempDLL = "build/game_temp.dll";
 
         GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
@@ -253,9 +254,9 @@ namespace Win32::Dbg
         //Copy app code dll file to a temp file and load that temp file so that original app code dll can be written to while exe
         //is running. This is For live editing purposes. Code is currently being looped because the modified source dll that gets compiled
         //apparently isn't unlocked by Windows in time for it to be copied upon the first few CopyFile() function calls.
-        bool CopyFileFuncNotWorking{ true };
-        ui32 Counter{};
-        ui32 MaxAllowedLoops{ 5000 };
+        bool CopyFileFuncNotWorking { true };
+        ui32 Counter {};
+        ui32 MaxAllowedLoops { 5000 };
 
         while (CopyFileFuncNotWorking)
         {
@@ -333,9 +334,9 @@ namespace Win32::Dbg
     EndInputPlayBack(Game_Input* Input, Win32::Dbg::Game_Replay_State* GameReplayState) -> void
     {
         GameReplayState->InputPlayBack = false;
-        for (ui32 ControllerIndex{ 0 }; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
+        for (ui32 ControllerIndex { 0 }; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex)
         {
-            for (ui32 ButtonIndex{ 0 }; ButtonIndex < ArrayCount(Input->Controllers[ControllerIndex].Buttons); ++ButtonIndex)
+            for (ui32 ButtonIndex { 0 }; ButtonIndex < ArrayCount(Input->Controllers[ControllerIndex].Buttons); ++ButtonIndex)
             {
                 Input->Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
             }
@@ -494,7 +495,7 @@ namespace Win32
     LRESULT CALLBACK
     ProgramWindowCallback(HWND WindowHandle, UINT Message, WPARAM wParam, LPARAM lParam)
     {
-        LRESULT Result{ 0 };
+        LRESULT Result { 0 };
 
         HDC WindowContext = GetDC(WindowHandle);
 
@@ -506,10 +507,10 @@ namespace Win32
             {
                 { //Init OpenGL
                     //Pixel format you would like to have if possible
-                    PIXELFORMATDESCRIPTOR DesiredPixelFormat{};
+                    PIXELFORMATDESCRIPTOR DesiredPixelFormat {};
                     //Pixel format that windows actually gives you based on your desired pixel format and what the system
                     //acutally has available (32 bit color capabilites? etc.)
-                    PIXELFORMATDESCRIPTOR SuggestedPixelFormat{};
+                    PIXELFORMATDESCRIPTOR SuggestedPixelFormat {};
 
                     DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
                     DesiredPixelFormat.nVersion = 1;
@@ -653,7 +654,7 @@ namespace GL
     local_func auto
     LoadTexture(Image ImageToSendToGPU) -> Texture
     {
-        Texture ResultingTexture{};
+        Texture ResultingTexture {};
         ResultingTexture.size.width = ImageToSendToGPU.size.width;
         ResultingTexture.size.height = ImageToSendToGPU.size.height;
 
@@ -760,7 +761,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     UINT DesiredSchedulerGranularityMS = 1;
     BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR)
 
-    WNDCLASS WindowProperties{};
+    WNDCLASS WindowProperties {};
     WindowProperties.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
     WindowProperties.lpfnWndProc = Win32::ProgramWindowCallback;
     WindowProperties.hInstance = CurrentProgramInstance;
@@ -777,17 +778,17 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         {
 
 #if DEVELOPMENT_BUILD
-            void* BaseAddress{ (void*)Terabytes(2) };
+            void* BaseAddress { (void*)Terabytes(2) };
 #else
-            void* BaseAddress{ (void*)0 };
+            void* BaseAddress { (void*)0 };
 #endif
 
-            Game_Input                    Input{};
-            Game_Sound_Output_Buffer      SoundBuffer{};
-            Game_Render_Cmds              RenderCmds{};
-            Platform_Services             platformServices{};
-            Win32::Dbg::Game_Replay_State GameReplayState{};
-            Win32::Game_Code              GameCode{ Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll") };
+            Game_Input                    Input {};
+            Game_Sound_Output_Buffer      SoundBuffer {};
+            Game_Render_Cmds              RenderCmds {};
+            Platform_Services             platformServices {};
+            Win32::Dbg::Game_Replay_State GameReplayState {};
+            Win32::Game_Code              GameCode { Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle);
 
             { //Init Game Memory
@@ -822,8 +823,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             }
 
             ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();
-            int  GameRefreshRate{};
-            f32  TargetSecondsPerFrame{};
+            int  GameRefreshRate {};
+            f32  TargetSecondsPerFrame {};
 
             switch (MonitorRefreshRate)
             {
@@ -851,7 +852,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             GameRunning = true;
 
-            bgz::Timer FramePerformanceTimer{};
+            bgz::Timer FramePerformanceTimer {};
             FramePerformanceTimer.Init();
 
             while (GameRunning)
@@ -872,7 +873,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                         Game_Input                    NewInput;
                         Win32::Dbg::Game_Replay_State NewGameReplayState;
                     };
-                    Input_Result Result{};
+                    Input_Result Result {};
 
                     for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     {
