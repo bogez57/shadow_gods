@@ -430,7 +430,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 spAnimationState_setAnimationByName(ai->animationState, 0, "Idle", 1);
 
                 ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-                ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
+                ai->skeleton->scaleX = 0.6f; // Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
             };
 
@@ -559,8 +559,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     };
 
     AABB newBoxAABB {
-        v2f { newCollisionBoxShape[1].x, newCollisionBoxShape[1].y },
-        v2f { newCollisionBoxShape[3].x, newCollisionBoxShape[3].y }
+        v2f { newCollisionBoxShape[3].x, newCollisionBoxShape[3].y },
+        v2f { newCollisionBoxShape[1].x, newCollisionBoxShape[1].y }
     };
 
     if (playerBoxCenterPoint.x > newBoxAABB.minCorner.x && playerBoxCenterPoint.x < newBoxAABB.maxCorner.x && playerBoxCenterPoint.y > newBoxAABB.minCorner.y && playerBoxCenterPoint.y < newBoxAABB.maxCorner.y)
