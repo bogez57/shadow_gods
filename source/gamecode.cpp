@@ -21,6 +21,7 @@
 #include "shared.h"
 #include "memory_handling.h"
 #include "utilities.h"
+#include "array.h"
 
 global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmds globalRenderCmds;
@@ -32,6 +33,7 @@ global_variable f32 viewportHeight;
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
 // Third Party
+#include "array.h"
 #include "spine.cpp"
 #include <boagz/error_context.cpp>
 
@@ -467,6 +469,14 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->animationState->listener = MyListener;
         };
     };
+
+    MyArray<int> array {};
+
+    array.Push(11);
+
+    int a = array.At(0);
+
+    BGZ_CONSOLE("%i", a);
 
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);
