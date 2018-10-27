@@ -530,20 +530,18 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spVertexAttachment_computeWorldVertices(&collisionBox->super, spSkeleton_findSlot(player->skeleton, "collision-box"), 0, collisionBox->super.verticesCount, playerCollisionBoxWorld, 0, 2);
 
     { //Make sure verts are in clockwise order
-        v2f aiCollisionBoxVecs[4] = {
-            v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] },
-            v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] },
-            v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] },
-            v2f { aiCollisionBoxWorld[6], aiCollisionBoxWorld[7] },
-        };
+        Dynam_Array<v2f> aiCollisionBoxVecs { 4 };
+        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] });
+        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] });
+        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] });
+        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[6], aiCollisionBoxWorld[7] });
 
         f32 area {};
-        i32 vecArrayLength = ArrayCount(aiCollisionBoxVecs);
-        for (i32 vecIndex { 0 }; vecIndex < vecArrayLength; ++vecIndex)
+        for (i32 vecIndex { 0 }; vecIndex < aiCollisionBoxVecs.size; ++vecIndex)
         {
-            i32 nextVector = (vecIndex + 1) % vecArrayLength;
-            area += aiCollisionBoxVecs[vecIndex].x * aiCollisionBoxVecs[nextVector].y;
-            area -= aiCollisionBoxVecs[nextVector].x * aiCollisionBoxVecs[vecIndex].y;
+            i32 nextVector = (vecIndex + 1) % aiCollisionBoxVecs.size;
+            area += aiCollisionBoxVecs.At(vecIndex).x * aiCollisionBoxVecs.At(nextVector).y;
+            area -= aiCollisionBoxVecs.At(nextVector).x * aiCollisionBoxVecs.At(vecIndex).y;
         }
 
         if (area < 0)
@@ -554,11 +552,13 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         else
         {
             //counter-clockwise, need to make clockwise
-            Swap(&aiCollisionBoxVecs[0], &aiCollisionBoxVecs[2]);
-            aiCollisionBoxWorld[0] = aiCollisionBoxVecs[0].x;
-            aiCollisionBoxWorld[1] = aiCollisionBoxVecs[0].y;
-            aiCollisionBoxWorld[4] = aiCollisionBoxVecs[2].x;
-            aiCollisionBoxWorld[5] = aiCollisionBoxVecs[2].y;
+            v2f* vec1 = &aiCollisionBoxVecs.elements[0];
+            v2f* vec2 = &aiCollisionBoxVecs.elements[2];
+            Swap(vec1, vec2);
+            aiCollisionBoxWorld[0] = aiCollisionBoxVecs.At(0).x;
+            aiCollisionBoxWorld[1] = aiCollisionBoxVecs.At(0).y;
+            aiCollisionBoxWorld[4] = aiCollisionBoxVecs.At(2).x;
+            aiCollisionBoxWorld[5] = aiCollisionBoxVecs.At(2).y;
         }
     }
 

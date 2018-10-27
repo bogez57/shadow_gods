@@ -28,11 +28,9 @@
 
 #include "kvec.h"
 int main() {
-	kvec_t(int) array;
-	kv_init(array);
 	kv_push(int, array, 10); // append
-	kv_a(int, array, 20) = 5; // dynamic
-	kv_A(array, 20) = 4; // static
+	kv_a(int, array, 20) = 5; // insert at index: is dynamic - will resize if over bounds
+	kv_A(array, 20) = 4; // insert at index: is static - will not resize if you try and index over bounds
 	kv_destroy(array);
 	return 0;
 }
@@ -90,7 +88,7 @@ int main() {
                                                                                              : 0),                                                   \
     (array).elements[(i)])
 
-template <typename T>
+template <typename Type>
 class Dynam_Array
 {
 public:
@@ -98,20 +96,28 @@ public:
     Dynam_Array(size_t initialSize)
         : capacity(initialSize)
     {
-        kv_resize(T, *this, capacity);
+        kv_resize(Type, *this, capacity);
         memset(this->elements, 0, initialSize);
     };
 
-    void InitArray() {};
-    void Push(T element)
+    void Push(Type element)
     {
-        kv_push(T, *this, element);
+        kv_push(Type, *this, element);
     };
-    T At(ui32 Index)
+    Type At(ui32 Index)
     {
-        return kv_a(T, *this, Index);
+        Type result = kv_a(Type, *this, Index);
+        return result;
     };
 
     size_t size {}, capacity {};
-    T*     elements { nullptr };
+    Type*  elements { nullptr };
+};
+
+template <typename Type>
+void SwapArrays(Dynam_Array<Type>* array1, Dynam_Array<Type>* array2)
+{
+    Dynam_Array<Type>* arrayTemp = array1;
+    array1 = array2;
+    array2 = arrayTemp;
 };
