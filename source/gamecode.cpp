@@ -21,7 +21,6 @@
 #include "shared.h"
 #include "memory_handling.h"
 #include "utilities.h"
-#include "array.h"
 
 global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmds globalRenderCmds;
