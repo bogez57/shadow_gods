@@ -470,13 +470,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         };
     };
 
-    Dynam_Array<int> array { 10 };
+    Dynam_Array<Fighter*> array {};
 
-    array.Push(11);
+    array.Push(player);
 
-    int a = array.At(0);
-
-    BGZ_CONSOLE("%i", a);
+    BGZ_CONSOLE("%f", array.At(0)->skeleton->scaleX);
 
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);

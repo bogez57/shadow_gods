@@ -51,66 +51,67 @@ int main() {
 
 #define kv_roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
 
-#define kv_destroy(v) free((v).a)
-#define kv_A(v, i) ((v).a[(i)])
-#define kv_pop(v) ((v).a[--(v).n])
-#define kv_size(v) ((v).n)
-#define kv_max(v) ((v).m)
+#define kv_destroy(array) free((array).elements)
+#define kv_A(array, i) ((array).elements[(i)])
+#define kv_pop(array) ((array).elements[--(array).size])
+#define kv_size(array) ((array).size)
+#define kv_max(array) ((array).capacity)
 
-#define kv_resize(type, v, s) ((v).m = (s), (v).a = (type*)ReAlloc((v).a, type, (v).m))
+#define kv_resize(type, array, size) ((array).capacity = (size), (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity))
 
-#define kv_copy(type, v1, v0)                          \
-    do                                                 \
-    {                                                  \
-        if ((v1).m < (v0).n)                           \
-            kv_resize(type, v1, (v0).n);               \
-        (v1).n = (v0).n;                               \
-        memcpy((v1).a, (v0).a, sizeof(type) * (v0).n); \
+#define kv_copy(type, newArr, originalArr)                                                    \
+    do                                                                                        \
+    {                                                                                         \
+        if ((newArr).capacity < (originalArr).capacity)                                       \
+            kv_resize(type, newArr, (originalArr).size);                                      \
+        (newArr).n = (originalArr).size;                                                      \
+        memcpy((newArr).elements, (originalArr).elements, sizeof(type) * (originalArr).size); \
     } while (0)
 
-#define kv_push(type, v, x)                             \
-    do                                                  \
-    {                                                   \
-        if ((v).n == (v).m)                             \
-        {                                               \
-            (v).m = (v).m ? (v).m << 1 : 2;             \
-            (v).a = (type*)ReAlloc((v).a, type, (v).m); \
-        }                                               \
-        (v).a[(v).n++] = (x);                           \
+#define kv_push(type, array, element)                                                    \
+    do                                                                                   \
+    {                                                                                    \
+        if ((array).size == (array).capacity)                                            \
+        {                                                                                \
+            (array).capacity = (array).capacity ? (array).capacity << 1 : 2;             \
+            (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity); \
+        }                                                                                \
+        (array).elements[(array).size++] = (element);                                    \
     } while (0)
 
-#define kv_pushp(type, v) (((v).n == (v).m) ? ((v).m = ((v).m ? (v).m << 1 : 2),                   \
-                                                  (v).a = (type*)ReAlloc((v).a, (type), (v).m), 0) \
-                                            : 0),                                                  \
-                          ((v).a + ((v).n++))
+#define kv_pushp(type, array) (((array).size == (array).capacity) ? ((array).capacity = ((array).capacity ? (array).capacity << 1 : 2),                   \
+                                                                        (array).elements = (type*)ReAlloc((array).elements, (type), (array).capacity), 0) \
+                                                                  : 0),                                                                                   \
+                              ((array).elements + ((array).size++))
 
-#define kv_a(type, v, i) (((v).m <= (size_t)(i) ? ((v).m = (v).n = (i) + 1, kv_roundup32((v).m),     \
-                                                      (v).a = (type*)ReAlloc((v).a, type, (v).m), 0) \
-                                                : (v).n <= (size_t)(i) ? (v).n = (i) + 1             \
-                                                                       : 0),                         \
-    (v).a[(i)])
+#define kv_a(type, array, i) (((array).capacity <= (size_t)(i) ? ((array).capacity = (array).size = (i) + 1, kv_roundup32((array).capacity),         \
+                                                                     (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity), 0) \
+                                                               : (array).size <= (size_t)(i) ? (array).size = (i) + 1                                \
+                                                                                             : 0),                                                   \
+    (array).elements[(i)])
 
 template <typename T>
 class Dynam_Array
 {
 public:
-    Dynam_Array(size_t size)
-        : m(size)
+    Dynam_Array() = default;
+    Dynam_Array(size_t initialSize)
+        : capacity(initialSize)
     {
-        kv_resize(T, *this, m);
-        memset(this->a, 0, size);
+        kv_resize(T, *this, capacity);
+        memset(this->elements, 0, initialSize);
     };
 
     void InitArray() {};
-    void Push(T number)
+    void Push(T element)
     {
-        kv_push(T, *this, number);
+        kv_push(T, *this, element);
     };
     T At(ui32 Index)
     {
         return kv_a(T, *this, Index);
     };
 
-    size_t n {}, m {};
-    T*     a { nullptr };
+    size_t size {}, capacity {};
+    T*     elements { nullptr };
 };
