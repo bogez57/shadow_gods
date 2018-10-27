@@ -470,7 +470,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         };
     };
 
-    MyArray<int> array {};
+    Dynam_Array<int> array { 10 };
 
     array.Push(11);
 

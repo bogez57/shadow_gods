@@ -45,19 +45,12 @@ int main() {
 
 */
 
-#ifndef AC_KVEC_H
-#define AC_KVEC_H
+#pragma once
 
 #include <stdlib.h>
 
 #define kv_roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
 
-#define kvec_t(type)          \
-    struct                    \
-    {                         \
-        size_t n {}, m {};    \
-        type*  a { nullptr }; \
-    }
 #define kv_destroy(v) free((v).a)
 #define kv_A(v, i) ((v).a[(i)])
 #define kv_pop(v) ((v).a[--(v).n])
@@ -98,21 +91,26 @@ int main() {
     (v).a[(i)])
 
 template <typename T>
-class MyArray
+class Dynam_Array
 {
 public:
+    Dynam_Array(size_t size)
+        : m(size)
+    {
+        kv_resize(T, *this, m);
+        memset(this->a, 0, size);
+    };
+
     void InitArray() {};
     void Push(T number)
     {
-        kv_push(T, this->member, number);
+        kv_push(T, *this, number);
     };
     T At(ui32 Index)
     {
-        return kv_a(T, this->member, Index);
+        return kv_a(T, *this, Index);
     };
 
-private:
-    kvec_t(T) member;
+    size_t n {}, m {};
+    T*     a { nullptr };
 };
-
-#endif
