@@ -145,7 +145,7 @@ void _spAtlasPage_createTexture (spAtlasPage* self, const char* path)
 void _spAtlasPage_disposeTexture (spAtlasPage* self)
 {
     BGZ_ERRCTXT1("When disposing of texture in spine's atlaspage");
-	BGZ_ERRASSERT(self->rendererObject, "Texture does not exist!");
+	BGZ_ASSERT(self->rendererObject, "Texture does not exist!");
 
 	FREE(self->rendererObject);
 	self->width = 0;

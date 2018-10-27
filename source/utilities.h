@@ -12,11 +12,10 @@
 inline ui32
 SafeTruncateUInt64(ui64 Value)
 {
-    // TODO(casey): Defines for maximum values
-    BGZ_ASSERT(Value <= 0xFFFFFFFF);
+    BGZ_ASSERT(Value <= 0xFFFFFFFF, "Make sure there wouldn't be information lost with truncate if value was over 32-bits");
     ui32 Result = (ui32)Value;
     return (Result);
-}
+};
 
 inline auto Swap(f32* a, f32* b) -> void
 {

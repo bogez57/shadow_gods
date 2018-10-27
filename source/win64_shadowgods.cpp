@@ -13,9 +13,11 @@
 
 #if (DEVELOPMENT_BUILD)
 
+#define BGZ_ERRHANDLING_ON true
 #define BGZ_LOGGING_ON true
 #else
 
+#define BGZ_ERRHANDLING_ON false
 #define BGZ_LOGGING_ON false
 #endif
 
@@ -37,6 +39,9 @@
 #include "utilities.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
+
+#define BGZ_MAX_CONTEXTS 10000
+#include <boagz/error_context.cpp>
 
 global_variable ui32 WindowWidth { 1280 };
 global_variable ui32 WindowHeight { 720 };
@@ -177,7 +182,7 @@ namespace Win32::Dbg
 
         if ((err = fopen_s(&file, FilePath, "rb")) != 0)
         {
-            BGZ_ASSERT(1 == 0);
+            InvalidCodePath;
         };
 
         fseek(file, 0, SEEK_END);
@@ -197,7 +202,7 @@ namespace Win32::Dbg
         int            DesiredChannels = 4;
         int            NumOfLoadedChannels {};
         unsigned char* ImageData = stbi_load(ImagePath, Width, Height, &NumOfLoadedChannels, DesiredChannels);
-        BGZ_ASSERT(ImageData);
+        BGZ_ASSERT(ImageData, "Invalid image data");
 
         return (ui8*)ImageData;
     }
@@ -759,7 +764,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
     //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;
-    BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR)
+    BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR, "Error when trying to set windows granularity!");
 
     WNDCLASS WindowProperties {};
     WindowProperties.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
@@ -789,7 +794,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Platform_Services             platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code              GameCode { Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll") };
-            BGZ_ASSERT(GameCode.DLLHandle);
+            BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
             { //Init Game Memory
                 GameMemory.SizeOfPermanentStorage = Megabytes(64);
@@ -847,7 +852,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             }
             break;
             default:
-                InvalidCodePath //Unkown monitor refresh rate
+                InvalidCodePath; //Unkown monitor refresh rate
             };
 
             GameRunning = true;

@@ -4,7 +4,7 @@
 
 auto CreateRegionFromGameMem(Game_Memory GameMemory, ui64 Size)
 {
-    Memory_Region newRegion{};
+    Memory_Region newRegion {};
 
     newRegion.BaseAddress = (ui64*)((ui8*)GameMemory.TemporaryStorage) + GameMemory.TemporaryStorageUsed;
     newRegion.EndAddress = (ui64*)((ui8*)newRegion.BaseAddress) + (Size - 1);
@@ -12,35 +12,36 @@ auto CreateRegionFromGameMem(Game_Memory GameMemory, ui64 Size)
     newRegion.UsedAmount = 0;
     GameMemory.TemporaryStorageUsed += Size;
 
-    struct MultipleValues{Game_Memory mem; Memory_Region region;};
-    return MultipleValues{GameMemory, newRegion};
+    struct MultipleValues
+    {
+        Game_Memory   mem;
+        Memory_Region region;
+    };
+    return MultipleValues { GameMemory, newRegion };
 };
 
-auto
-_AllocType(Memory_Region* MemRegion, ui64 Size, sizet Count) -> void*
+auto _AllocType(Memory_Region* MemRegion, ui64 size, sizet Count) -> void*
 {
-    BGZ_ERRASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size, "Not enough Memory!");
+    BGZ_ASSERT((MemRegion->UsedAmount + size) <= MemRegion->Size, "Memory requested, %x bytes, greater than maximum region size of %x bytes!", (MemRegion->UsedAmount + size), MemRegion->Size);
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
-    MemRegion->UsedAmount += (Size * Count);
+    MemRegion->UsedAmount += (size * Count);
 
     return Result;
 };
 
-auto
-_AllocSize(Memory_Region* MemRegion, sizet Size) -> void*
+auto _AllocSize(Memory_Region* MemRegion, sizet size) -> void*
 {
-    BGZ_ERRASSERT((MemRegion->UsedAmount + Size) <= MemRegion->Size, "Not enough memory!");
+    BGZ_ASSERT((MemRegion->UsedAmount + size) <= MemRegion->Size, "Memory requested, %x bytes, greater than maximum region size of %x bytes!", (MemRegion->UsedAmount + size), MemRegion->Size);
     void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
-    MemRegion->UsedAmount += (Size);
+    MemRegion->UsedAmount += (size);
 
     return Result;
 };
 
-auto
-_FreeSize(Memory_Region* MemRegion, ui64 SizeToFree) -> void
+auto _FreeSize(Memory_Region* MemRegion, ui64 sizeToFree) -> void
 {
-    BGZ_ASSERT(SizeToFree < MemRegion->Size || SizeToFree < MemRegion->UsedAmount);
+    BGZ_ASSERT(sizeToFree < MemRegion->Size, "Trying to free more bytes then memory region holds!");
+    BGZ_ASSERT(sizeToFree < MemRegion->UsedAmount, "Trying to free %x bytes with only %x bytes used!", sizeToFree, MemRegion->UsedAmount);
 
-    MemRegion->UsedAmount -= SizeToFree;
+    MemRegion->UsedAmount -= sizeToFree;
 };
-
