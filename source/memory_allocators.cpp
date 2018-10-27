@@ -14,7 +14,7 @@
 local_func auto
 ConvertDataToMemoryBlock(void* Ptr) -> Memory_Block*
 {
-    Memory_Block* BlockHeader{};
+    Memory_Block* BlockHeader {};
     BlockHeader = (Memory_Block*)(((ui8*)Ptr) - (sizeof(Memory_Block)));
     BlockHeader->data = Ptr;
 
@@ -35,7 +35,7 @@ auto CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
 {
     BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
 
-    Dynamic_Mem_Allocator dynamAllocator{};
+    Dynamic_Mem_Allocator dynamAllocator {};
 
     dynamAllocator.AmountOfBlocks = 0;
 
@@ -93,13 +93,13 @@ GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Mem
 
     BGZ_ERRASSERT(DynamAllocator->head, "No head for dynamic memory list!");
 
-    Memory_Block* Result{};
+    Memory_Block* Result {};
     Memory_Block* MemBlock = DynamAllocator->head;
 
     //Not first or last block
     if (MemBlock->nextBlock != nullptr)
     {
-        for (ui32 BlockIndex{ 0 }; BlockIndex < DynamAllocator->AmountOfBlocks; ++BlockIndex)
+        for (ui32 BlockIndex { 0 }; BlockIndex < DynamAllocator->AmountOfBlocks; ++BlockIndex)
         {
             if (MemBlock->IsFree && MemBlock->Size > Size)
             {
@@ -194,7 +194,7 @@ auto _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
     BGZ_ERRASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
     BGZ_ERRASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
-    void* Result{ nullptr };
+    void* Result { nullptr };
 
     if (Size > 0)
     {
@@ -257,10 +257,11 @@ auto _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 N
     BGZ_ERRASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
     BGZ_ERRASSERT((globalMemHandler->memRegions[DYNAMIC].UsedAmount - NewSize) > NewSize, "Not enough room left in memory region!");
 
-    Memory_Block* BlockToRealloc = ConvertDataToMemoryBlock(DataToRealloc);
-
+    Memory_Block* BlockToRealloc;
     if (DataToRealloc)
     {
+        BlockToRealloc = ConvertDataToMemoryBlock(DataToRealloc);
+
         if (NewSize < BlockToRealloc->Size)
         {
             sizet SizeDiff = ReSizeAndMarkAsInUse(BlockToRealloc, NewSize);
