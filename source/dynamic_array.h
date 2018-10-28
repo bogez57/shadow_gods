@@ -37,36 +37,39 @@
 #include <stdlib.h>
 
 #define Roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
-#define ResizeArr(type, array, size) ((array).capacity = (size), (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity))
 
+//Not quite sure what this does yet
+/*
 #define kv_pushp(type, array) (((array).size == (array).capacity) ? ((array).capacity = ((array).capacity ? (array).capacity << 1 : 2),                   \
                                                                         (array).elements = (type*)ReAlloc((array).elements, (type), (array).capacity), 0) \
                                                                   : 0),                                                                                   \
                               ((array).elements + ((array).size++))
-
-//Resize array if inserting over bounds
-#define DynamicInsert(type, array, i) (((array).capacity <= (size_t)(i) ? ((array).capacity = (array).size = (i) + 1, Roundup32((array).capacity),            \
-                                                                              (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity), 0) \
-                                                                        : (array).size <= (size_t)(i) ? (array).size = (i) + 1                                \
-                                                                                                      : 0),                                                   \
-    (array).elements[(i)])
+*/
 
 template <typename Type>
 class Dynam_Array
 {
 public:
     Dynam_Array() = default;
+
     Dynam_Array(size_t initialSize)
         : capacity(initialSize)
     {
-        ResizeArr(Type, *this, capacity);
+        *this = ResizeArray<Type>(*this, capacity);
         memset(this->elements, 0, initialSize);
     };
+
     Type operator[](i32 i) const;
 
     void Insert(Type element, ui32 AtIndex)
     {
-        DynamicInsert(Type, *this, AtIndex) = element;
+        ((this->capacity <= (size_t)(AtIndex) ? (this->capacity = this->size = (AtIndex) + 1,
+                                                    Roundup32(this->capacity),
+                                                    this->elements = (Type*)ReAlloc(this->elements, Type, this->capacity),
+                                                    0)
+                                              : this->size <= (size_t)(AtIndex) ? this->size = (AtIndex) + 1 : 0),
+            this->elements[(AtIndex)])
+            = element;
     };
 
     //Resize array if appending over bounds
@@ -113,6 +116,14 @@ Type Dynam_Array<Type>::operator[](i32 Index) const
     BGZ_ASSERT(Index < this->size, "Trying to access index out of current array bounds! Is it because array has been manually destroyed: %s", hasArrayBeenDestroyed ? "Yes" : "No");
     BGZ_ASSERT(1 == 0, "Please don't use brackets to access array elements yet");
     return this->elements[Index];
+};
+
+template <typename Type>
+Dynam_Array<Type> ResizeArray(Dynam_Array<Type> arrayToResize, size_t size)
+{
+    (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)ReAlloc(arrayToResize.elements, Type, arrayToResize.capacity));
+
+    return arrayToResize;
 };
 
 template <typename Type>
