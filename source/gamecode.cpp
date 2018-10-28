@@ -545,7 +545,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         else
         {
             //counter-clockwise, need to make clockwise
-            v2f* vec1 = &aiCollisionBoxVecs.elements[0];
+            v2f* vec1 = &aiCollisionBoxVecs.elements[0]; //TODO: Don't give access like this
             v2f* vec2 = &aiCollisionBoxVecs.elements[2];
             Swap(vec1, vec2);
             aiCollisionBoxWorld[0] = aiCollisionBoxVecs.At(0).x;

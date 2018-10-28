@@ -82,6 +82,7 @@ public:
         ResizeArr(Type, *this, capacity);
         memset(this->elements, 0, initialSize);
     };
+    Type operator[](i32 i) const;
 
     void Insert(Type element, ui32 AtIndex)
     {
@@ -114,6 +115,14 @@ public:
     size_t size {}, capacity {};
     b      hasArrayBeenDestroyed { false };
     Type*  elements { nullptr };
+};
+
+template <typename Type>
+Type Dynam_Array<Type>::operator[](i32 Index) const
+{
+    BGZ_ASSERT(Index < this->size, "Trying to access index out of current array bounds! Is it because array has been manually destroyed: %s", hasArrayBeenDestroyed ? "Yes" : "No");
+    BGZ_ASSERT(1 == 0, "Please don't use brackets to access array elements yet");
+    return this->elements[Index];
 };
 
 template <typename Type>
