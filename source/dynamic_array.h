@@ -38,26 +38,6 @@
 
 #define Roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
 #define ResizeArr(type, array, size) ((array).capacity = (size), (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity))
-#define CopyArr(type, newArr, originalArr)                                                    \
-    do                                                                                        \
-    {                                                                                         \
-        if ((newArr).capacity < (originalArr).capacity)                                       \
-            ResizeArr(type, newArr, (originalArr).size);                                      \
-        (newArr).size = (originalArr).size;                                                   \
-        memcpy((newArr).elements, (originalArr).elements, sizeof(type) * (originalArr).size); \
-    } while (0)
-
-//Resize array if appending over bounds
-#define DynamicAppend(type, array, element)                                              \
-    do                                                                                   \
-    {                                                                                    \
-        if ((array).size == (array).capacity)                                            \
-        {                                                                                \
-            (array).capacity = (array).capacity ? (array).capacity << 1 : 2;             \
-            (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity); \
-        }                                                                                \
-        (array).elements[(array).size++] = (element);                                    \
-    } while (0)
 
 #define kv_pushp(type, array) (((array).size == (array).capacity) ? ((array).capacity = ((array).capacity ? (array).capacity << 1 : 2),                   \
                                                                         (array).elements = (type*)ReAlloc((array).elements, (type), (array).capacity), 0) \
@@ -88,22 +68,32 @@ public:
     {
         DynamicInsert(Type, *this, AtIndex) = element;
     };
+
+    //Resize array if appending over bounds
     void PushBack(Type element)
     {
-        DynamicAppend(Type, *this, element);
+        if (this->size == this->capacity)
+        {
+            this->capacity = this->capacity ? this->capacity << 1 : 2;
+            this->elements = (Type*)ReAlloc(this->elements, Type, this->capacity);
+        }
+        this->elements[this->size++] = (element);
     };
+
     void PopBack()
     {
         this->elements[size - 1].x = 0;
         this->elements[size - 1].y = 0;
         this->elements[--this->size];
     };
+
     Type At(ui32 Index)
     {
         BGZ_ASSERT(Index < this->size, "Trying to access index out of current array bounds! Is it because array has been manually destroyed: %s", hasArrayBeenDestroyed ? "Yes" : "No");
         Type result = this->elements[Index];
         return result;
     };
+
     void Destroy()
     {
         DeAlloc(this->elements);
@@ -128,7 +118,13 @@ Type Dynam_Array<Type>::operator[](i32 Index) const
 template <typename Type>
 Dynam_Array<Type> CopyArray(Dynam_Array<Type> sourceArray, Dynam_Array<Type> destinationArray)
 {
-    CopyArr(Type, destinationArray, sourceArray);
+    if (destinationArray.capacity < sourceArray.capacity)
+    {
+        ResizeArr(Type, destinationArray, sourceArray.size);
+    };
+
+    destinationArray.size = sourceArray.size;
+    memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.size);
 
     return destinationArray;
 };
