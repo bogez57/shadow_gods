@@ -32,7 +32,7 @@ global_variable f32 viewportHeight;
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
 // Third Party
-#include "array.h"
+#include "dynamic_array.h"
 #include "spine.cpp"
 #include <boagz/error_context.cpp>
 
