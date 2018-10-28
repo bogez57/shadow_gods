@@ -469,12 +469,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         };
     };
 
-    Dynam_Array<Fighter*> array {};
-
-    array.Push(player);
-
-    BGZ_CONSOLE("%f", array.At(0)->skeleton->scaleX);
-
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);
 
@@ -530,10 +524,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     { //Make sure verts are in clockwise order
         Dynam_Array<v2f> aiCollisionBoxVecs { 4 };
-        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] });
-        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] });
-        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] });
-        aiCollisionBoxVecs.Push(v2f { aiCollisionBoxWorld[6], aiCollisionBoxWorld[7] });
+        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] });
+        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] });
+        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] });
+        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[6], aiCollisionBoxWorld[7] });
 
         f32 area {};
         for (i32 vecIndex { 0 }; vecIndex < aiCollisionBoxVecs.size; ++vecIndex)

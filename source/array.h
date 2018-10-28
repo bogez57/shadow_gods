@@ -24,49 +24,31 @@
 */
 
 /*
-  An example:
-
-#include "kvec.h"
-int main() {
-	kv_push(int, array, 10); // append
-	kv_a(int, array, 20) = 5; // insert at index: is dynamic - will resize if over bounds
-	kv_A(array, 20) = 4; // insert at index: is static - will not resize if you try and index over bounds
-	kv_destroy(array);
-	return 0;
-}
-*/
-
-/*
   2008-09-22 (0.1.0):
 
 	* The initial version.
 
 */
 
+//TODO: Need to overload brackets [] operator for class as long as array's elements are accesible
+
 #pragma once
 
 #include <stdlib.h>
 
-#define kv_roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
-
-#define kv_destroy(array) free((array).elements)
-#define kv_A(array, i) ((array).elements[(i)])
-#define kv_pop(array) ((array).elements[--(array).size])
-#define kv_size(array) ((array).size)
-#define kv_max(array) ((array).capacity)
-
-#define kv_resize(type, array, size) ((array).capacity = (size), (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity))
-
-#define kv_copy(type, newArr, originalArr)                                                    \
+#define Roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
+#define ResizeArr(type, array, size) ((array).capacity = (size), (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity))
+#define CopyArr(type, newArr, originalArr)                                                    \
     do                                                                                        \
     {                                                                                         \
         if ((newArr).capacity < (originalArr).capacity)                                       \
-            kv_resize(type, newArr, (originalArr).size);                                      \
-        (newArr).n = (originalArr).size;                                                      \
+            ResizeArr(type, newArr, (originalArr).size);                                      \
+        (newArr).size = (originalArr).size;                                                   \
         memcpy((newArr).elements, (originalArr).elements, sizeof(type) * (originalArr).size); \
     } while (0)
 
-#define kv_push(type, array, element)                                                    \
+//Resize array if appending over bounds
+#define DynamicAppend(type, array, element)                                              \
     do                                                                                   \
     {                                                                                    \
         if ((array).size == (array).capacity)                                            \
@@ -82,10 +64,11 @@ int main() {
                                                                   : 0),                                                                                   \
                               ((array).elements + ((array).size++))
 
-#define kv_a(type, array, i) (((array).capacity <= (size_t)(i) ? ((array).capacity = (array).size = (i) + 1, kv_roundup32((array).capacity),         \
-                                                                     (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity), 0) \
-                                                               : (array).size <= (size_t)(i) ? (array).size = (i) + 1                                \
-                                                                                             : 0),                                                   \
+//Resize array if inserting over bounds
+#define DynamicInsert(type, array, i) (((array).capacity <= (size_t)(i) ? ((array).capacity = (array).size = (i) + 1, Roundup32((array).capacity),            \
+                                                                              (array).elements = (type*)ReAlloc((array).elements, type, (array).capacity), 0) \
+                                                                        : (array).size <= (size_t)(i) ? (array).size = (i) + 1                                \
+                                                                                                      : 0),                                                   \
     (array).elements[(i)])
 
 template <typename Type>
@@ -96,22 +79,49 @@ public:
     Dynam_Array(size_t initialSize)
         : capacity(initialSize)
     {
-        kv_resize(Type, *this, capacity);
+        ResizeArr(Type, *this, capacity);
         memset(this->elements, 0, initialSize);
     };
 
-    void Push(Type element)
+    void Insert(Type element, ui32 AtIndex)
     {
-        kv_push(Type, *this, element);
+        DynamicInsert(Type, *this, AtIndex) = element;
+    };
+    void PushBack(Type element)
+    {
+        DynamicAppend(Type, *this, element);
+    };
+    void PopBack()
+    {
+        this->elements[size - 1].x = 0;
+        this->elements[size - 1].y = 0;
+        this->elements[--this->size];
     };
     Type At(ui32 Index)
     {
-        Type result = kv_a(Type, *this, Index);
+        BGZ_ASSERT(Index < this->size, "Trying to access index out of current array bounds! Is it because array has been manually destroyed: %s", hasArrayBeenDestroyed ? "Yes" : "No");
+        Type result = this->elements[Index];
         return result;
+    };
+    void Destroy()
+    {
+        DeAlloc(this->elements);
+        this->size = 0;
+        this->capacity = 0;
+        hasArrayBeenDestroyed = true;
     };
 
     size_t size {}, capacity {};
+    b      hasArrayBeenDestroyed { false };
     Type*  elements { nullptr };
+};
+
+template <typename Type>
+Dynam_Array<Type> CopyArray(Dynam_Array<Type> sourceArray, Dynam_Array<Type> destinationArray)
+{
+    CopyArr(Type, destinationArray, sourceArray);
+
+    return destinationArray;
 };
 
 template <typename Type>
