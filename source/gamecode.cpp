@@ -252,44 +252,54 @@ auto CheckForFighterCollisions(AABB fighter1Box, AABB fighter2Box) -> b
     return true;
 };
 
-auto OnKeyPress(Button_State KeyState, Stage_Data* stage, void (*Action)(Stage_Data*)) -> void
+inline b KeyPressed(Button_State KeyState)
 {
     if (KeyState.Pressed && KeyState.NumTransitionsPerFrame)
     {
-        Action(stage);
+        return true;
     };
+
+    return false;
 };
 
-inline auto OnKeyHold(Button_State KeyState, Stage_Data* stage, void (*Action)(Stage_Data*)) -> void
+inline b KeyHeld(Button_State KeyState)
 {
     if (KeyState.Pressed && (KeyState.NumTransitionsPerFrame == 0))
     {
-        Action(stage);
+        return true;
     };
+
+    return false;
 };
 
-inline auto OnKeyComboPress(Button_State KeyState1, Button_State KeyState2, Stage_Data* stage, void (*Action)(Stage_Data*)) -> void
+inline b KeyComboPressed(Button_State KeyState1, Button_State KeyState2)
 {
     if (KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
     {
-        Action(stage);
+        return true;
     };
+
+    return false;
 };
 
-inline auto OnKeyComboRepeat(Button_State KeyState1, Button_State KeyState2, Stage_Data* stage, void (*Action)(Stage_Data*)) -> void
+inline b KeyComboHeld(Button_State KeyState1, Button_State KeyState2)
 {
     if (KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
     {
-        Action(stage);
+        return true;
     };
+
+    return false;
 };
 
-inline auto OnKeyRelease(Button_State KeyState, Stage_Data* stage, void (*Action)(Stage_Data*)) -> void
+inline b KeyReleased(Button_State KeyState)
 {
     if (!KeyState.Pressed && KeyState.NumTransitionsPerFrame)
     {
-        Action(stage);
+        return true;
     };
+
+    return false;
 };
 
 auto ForceParallelogram(f32* shapeVerts) -> f32*
@@ -472,36 +482,15 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);
 
-    OnKeyPress(keyboard->MoveUp, stage, [](Stage_Data* stage) {
+    if (KeyPressed(keyboard->MoveUp))
+    {
         spAnimationState_setAnimationByName(stage->player.animationState, 0, "Punch", 0);
-    });
+    };
 
-    OnKeyRelease(keyboard->MoveUp, stage, [](Stage_Data* stage) {
-    });
-
-    OnKeyPress(keyboard->MoveRight, stage, [](Stage_Data* stage) {
-    });
-
-    OnKeyHold(keyboard->MoveRight, stage, [](Stage_Data* stage) {
-        stage->player.worldPos.x += 1.0f;
-    });
-
-    OnKeyComboPress(keyboard->MoveRight, keyboard->ActionUp, stage, [](Stage_Data* stage) {
-    });
-
-    OnKeyRelease(keyboard->MoveRight, stage, [](Stage_Data* stage) {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Idle", 1);
-    });
-
-    OnKeyHold(keyboard->MoveDown, stage, [](Stage_Data* stage) {
-        // spAnimationState_addAnimationByName(stage->commonAnimationState,
-        // 1, "shoot", 0, 0);
-    });
-
-    OnKeyRelease(keyboard->MoveDown, stage, [](Stage_Data* stage) {
-        // spAnimationState_setEmptyAnimation(stage->commonAnimationState,
-        // 1, .1f);
-    });
+    if (KeyReleased(keyboard->MoveUp))
+    {
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Idle", 0);
+    };
 
     // Needed for spine to correctly update bones
     player->skeleton->x = player->worldPos.x;

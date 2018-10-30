@@ -6,23 +6,22 @@
 
 struct Game_Memory
 {
-    bool IsInitialized{ false };
+    bool IsInitialized { false };
 
-    ui32  SizeOfPermanentStorage{};
-    void* PermanentStorage{ nullptr };
+    ui32  SizeOfPermanentStorage {};
+    void* PermanentStorage { nullptr };
 
-    ui64  SizeOfTemporaryStorage{};
-    ui64  TemporaryStorageUsed{};
-    void* TemporaryStorage{ nullptr };
-    ui64  TotalSize{};
+    ui64  SizeOfTemporaryStorage {};
+    ui64  TemporaryStorageUsed {};
+    void* TemporaryStorage { nullptr };
+    ui64  TotalSize {};
 };
 
 struct Button_State
 {
-    //1 button transition == from button up to down or vice versa, NOT up->down->up (which would be one full button press and release)
-    //Capturing these transistions just helps to ensure we do not miss a button press (e.g. if user presses button once at
-    //beginning of the frame, and then again at the end assuming multiple polling, with this scheme we would be able to capture
-    //both presses instead of just the one at the beginning).
+    //1 button transition == from button up to down or vice versa (up->down or down->up), NOT up->down->up (which would be one full button press and release)
+    //Capturing these transistions just helps to ensure we do not miss any button presses during a frame (so each press that was polled and captured by
+    //the OS will be reflected within our current input scheme)
     i32 NumTransitionsPerFrame;
     b32 Pressed;
 };
@@ -81,8 +80,8 @@ struct Game_Sound_Output_Buffer
 
 struct Read_File_Result
 {
-    void* FileContents{ nullptr };
-    ui32  FileSize{};
+    void* FileContents { nullptr };
+    ui32  FileSize {};
 };
 struct Platform_Services
 {
@@ -94,8 +93,8 @@ struct Platform_Services
     void* (*PlatMalloc)(sizet);
     void* (*PlatCalloc)(sizet, sizet);
     void (*PlatFree)(void*);
-    b   DLLJustReloaded{ false };
-    f32 prevFrameTimeInSecs{};
+    b   DLLJustReloaded { false };
+    f32 prevFrameTimeInSecs {};
 };
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
@@ -183,8 +182,8 @@ auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> D
 auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
 {
     f32 RotationInRadians = RotationInDegress * (PI / 180.0f);
-    v2f RotatedXBasis = VectorToRotate.x * v2f{ Cos(RotationInRadians), Sin(RotationInRadians) };
-    v2f RotatedYBasis = VectorToRotate.y * v2f{ -Sin(RotationInRadians), Cos(RotationInRadians) };
+    v2f RotatedXBasis = VectorToRotate.x * v2f { Cos(RotationInRadians), Sin(RotationInRadians) };
+    v2f RotatedYBasis = VectorToRotate.y * v2f { -Sin(RotationInRadians), Cos(RotationInRadians) };
     v2f NewRotatedVector = RotatedXBasis + RotatedYBasis;
 
     return NewRotatedVector;
@@ -192,7 +191,7 @@ auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
 
 auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
 {
-    Drawable_Rect DilatedRect{};
+    Drawable_Rect DilatedRect {};
 
     for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
     {
@@ -206,7 +205,7 @@ auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Re
 
 auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Drawable_Rect RectToRotate) -> Drawable_Rect
 {
-    Drawable_Rect RotatedRect{};
+    Drawable_Rect RotatedRect {};
 
     for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToRotate.Corners); ++CornerIndex)
     {
