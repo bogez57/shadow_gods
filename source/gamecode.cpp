@@ -335,22 +335,12 @@ auto ForceParallelogram(f32* shapeVerts) -> f32*
     return shapeVerts;
 };
 
-auto CreateCenterPointOfParallelogram(f32* parallelogramVerts) -> v2f //TODO: make array class to use instead
+local_func v2f FindCenterOfRectangle(AABB rectangle)
 {
     v2f centerPoint {};
 
-    centerPoint.x = ((parallelogramVerts[2] + parallelogramVerts[6]) / 2);
-    centerPoint.y = ((parallelogramVerts[3] + parallelogramVerts[7]) / 2);
-
-    return centerPoint;
-};
-
-auto CreateCenterPointOfParallelogram(v2f parallelogramVectors[4]) -> v2f
-{
-    v2f centerPoint {};
-
-    centerPoint.x = ((parallelogramVectors[0].x + parallelogramVectors[2].x) / 2);
-    centerPoint.y = ((parallelogramVectors[0].y + parallelogramVectors[2].y) / 2);
+    centerPoint.x = ((rectangle.minCorner.x + rectangle.maxCorner.x) / 2);
+    centerPoint.y = ((rectangle.maxCorner.y + rectangle.maxCorner.y) / 2);
 
     return centerPoint;
 };
@@ -374,15 +364,20 @@ b CheckIfVertsInClockwiseOrder(const Dynam_Array<v2f>* vertsToCheck)
     return false;
 };
 
-Dynam_Array<v2f> CreateNewHurtBoxShapeToTestAgainst(const Dynam_Array<v2f>* hitBoxShape, const Dynam_Array<v2f>* hurtBoxShape)
+local_func Collision_Box CreateNewHurtBoxShapeToTestAgainst(Collision_Box hitBox, Collision_Box hurtBox)
 {
-    Dynam_Array<v2f> newHurtBoxShape { 4 };
-    newHurtBoxShape.PushBack(hitBoxShape->At(0) + hurtBoxShape->At(0));
-    newHurtBoxShape.PushBack(hitBoxShape->At(1) + hurtBoxShape->At(1));
-    newHurtBoxShape.PushBack(hitBoxShape->At(2) + hurtBoxShape->At(2));
-    newHurtBoxShape.PushBack(hitBoxShape->At(3) + hurtBoxShape->At(3));
+    Collision_Box newHurtBoxForCollisionTest {};
 
-    return newHurtBoxShape;
+    newHurtBoxForCollisionTest.bounds.minCorner = hitBox.bounds.minCorner + hurtBox.bounds.minCorner;
+    newHurtBoxForCollisionTest.bounds.maxCorner = hitBox.bounds.maxCorner + hurtBox.bounds.maxCorner;
+
+    newHurtBoxForCollisionTest.centerPoint = FindCenterOfRectangle(newHurtBoxForCollisionTest.bounds);
+    v2f centerPointDifference = AbsoluteVal(hurtBox.centerPoint - newHurtBoxForCollisionTest.centerPoint);
+
+    newHurtBoxForCollisionTest.bounds.minCorner -= centerPointDifference;
+    newHurtBoxForCollisionTest.bounds.maxCorner -= centerPointDifference;
+
+    return newHurtBoxForCollisionTest;
 };
 
 extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -538,42 +533,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_apply(ai->animationState, ai->skeleton);
     spSkeleton_updateWorldTransform(ai->skeleton);
 
-    f32 playerCollisionBoxWorld[8] = { 0 };
-    f32 aiCollisionBoxWorld[8] = { 0 };
-
-    spBoundingBoxAttachment* collisionBox = (spBoundingBoxAttachment*)spSkeleton_getAttachmentForSlotName(ai->skeleton, "collision-box", "test-box");
-
-    spVertexAttachment_computeWorldVertices(&collisionBox->super, spSkeleton_findSlot(ai->skeleton, "collision-box"), 0, collisionBox->super.verticesCount, aiCollisionBoxWorld, 0, 2);
-    spVertexAttachment_computeWorldVertices(&collisionBox->super, spSkeleton_findSlot(player->skeleton, "collision-box"), 0, collisionBox->super.verticesCount, playerCollisionBoxWorld, 0, 2);
-
-    v2f playerBoxCenterPoint = CreateCenterPointOfParallelogram(playerCollisionBoxWorld);
-    v2f aiBoxCenterPoint = CreateCenterPointOfParallelogram(aiCollisionBoxWorld);
-
-    Dynam_Array<v2f> newCollisionBoxShape { 4 };
-
-    {
-        Dynam_Array<v2f> playerCollisionBoxVecs { 4 };
-        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[6], playerCollisionBoxWorld[7] });
-        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[0], playerCollisionBoxWorld[1] });
-        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[2], playerCollisionBoxWorld[3] });
-        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[4], playerCollisionBoxWorld[5] });
-
-        Dynam_Array<v2f> aiCollisionBoxVecs { 4 };
-        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[0], playerCollisionBoxWorld[1] });
-        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[2], playerCollisionBoxWorld[3] });
-        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[4], playerCollisionBoxWorld[5] });
-        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[6], playerCollisionBoxWorld[7] });
-
-        newCollisionBoxShape = CreateNewHurtBoxShapeToTestAgainst(&playerCollisionBoxVecs, &aiCollisionBoxVecs);
-
-        v2f newShapeBoxCenterPoint = CreateCenterPointOfParallelogram(newCollisionBoxShape.elements);
-        v2f centerPointDifference = AbsoluteVal(aiBoxCenterPoint - newShapeBoxCenterPoint);
-
-        newCollisionBoxShape.Insert(newCollisionBoxShape.At(0) -= centerPointDifference, 0);
-        newCollisionBoxShape.Insert(newCollisionBoxShape.At(1) -= centerPointDifference, 1);
-        newCollisionBoxShape.Insert(newCollisionBoxShape.At(2) -= centerPointDifference, 2);
-        newCollisionBoxShape.Insert(newCollisionBoxShape.At(3) -= centerPointDifference, 3);
-    };
+    /*
+    newCollisionBoxShape = CreateNewHurtBoxShapeToTestAgainst(&playerCollisionBoxVecs, &aiCollisionBoxVecs);
 
     AABB newBoxAABB {
         v2f { newCollisionBoxShape.At(0).x, newCollisionBoxShape.At(0).y },
@@ -584,6 +545,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     {
         BGZ_CONSOLE("Collision!!!");
     };
+    */
 
     { // Render
         renderCmds.Init();
