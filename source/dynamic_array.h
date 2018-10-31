@@ -90,7 +90,7 @@ public:
         this->elements[--this->size];
     };
 
-    Type At(ui32 Index)
+    Type At(ui32 Index) const
     {
         BGZ_ASSERT(Index < this->size, "Trying to access index out of current array bounds! Is it because array has been manually destroyed: %s", hasArrayBeenDestroyed ? "Yes" : "No");
         Type result = this->elements[Index];

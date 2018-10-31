@@ -355,6 +355,36 @@ auto CreateCenterPointOfParallelogram(v2f parallelogramVectors[4]) -> v2f
     return centerPoint;
 };
 
+b CheckIfVertsInClockwiseOrder(const Dynam_Array<v2f>* vertsToCheck)
+{
+    f32 area {};
+    for (i32 vecIndex { 0 }; vecIndex < vertsToCheck->size; ++vecIndex)
+    {
+        i32 nextVector = (vecIndex + 1) % vertsToCheck->size;
+        area += vertsToCheck->At(vecIndex).x * vertsToCheck->At(nextVector).y;
+        area -= vertsToCheck->At(nextVector).x * vertsToCheck->At(vecIndex).y;
+    }
+
+    if (area < 0)
+    {
+        //clockwise
+        return true;
+    }
+
+    return false;
+};
+
+Dynam_Array<v2f> CreateNewHurtBoxShapeToTestAgainst(const Dynam_Array<v2f>* hitBoxShape, const Dynam_Array<v2f>* hurtBoxShape)
+{
+    Dynam_Array<v2f> newHurtBoxShape { 4 };
+    newHurtBoxShape.PushBack(hitBoxShape->At(0) + hurtBoxShape->At(0));
+    newHurtBoxShape.PushBack(hitBoxShape->At(1) + hurtBoxShape->At(1));
+    newHurtBoxShape.PushBack(hitBoxShape->At(2) + hurtBoxShape->At(2));
+    newHurtBoxShape.PushBack(hitBoxShape->At(3) + hurtBoxShape->At(3));
+
+    return newHurtBoxShape;
+};
+
 extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -492,6 +522,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         spAnimationState_setAnimationByName(stage->player.animationState, 0, "Idle", 0);
     };
 
+    if (KeyHeld(keyboard->MoveRight))
+    {
+        player->worldPos.x += 2.0f;
+    }
+
     // Needed for spine to correctly update bones
     player->skeleton->x = player->worldPos.x;
     player->skeleton->y = player->worldPos.y;
@@ -511,75 +546,38 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spVertexAttachment_computeWorldVertices(&collisionBox->super, spSkeleton_findSlot(ai->skeleton, "collision-box"), 0, collisionBox->super.verticesCount, aiCollisionBoxWorld, 0, 2);
     spVertexAttachment_computeWorldVertices(&collisionBox->super, spSkeleton_findSlot(player->skeleton, "collision-box"), 0, collisionBox->super.verticesCount, playerCollisionBoxWorld, 0, 2);
 
-    { //Make sure verts are in clockwise order
-        Dynam_Array<v2f> aiCollisionBoxVecs { 4 };
-        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] });
-        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] });
-        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] });
-        aiCollisionBoxVecs.PushBack(v2f { aiCollisionBoxWorld[6], aiCollisionBoxWorld[7] });
-
-        f32 area {};
-        for (i32 vecIndex { 0 }; vecIndex < aiCollisionBoxVecs.size; ++vecIndex)
-        {
-            i32 nextVector = (vecIndex + 1) % aiCollisionBoxVecs.size;
-            area += aiCollisionBoxVecs.At(vecIndex).x * aiCollisionBoxVecs.At(nextVector).y;
-            area -= aiCollisionBoxVecs.At(nextVector).x * aiCollisionBoxVecs.At(vecIndex).y;
-        }
-
-        if (area < 0)
-        {
-            //clockwise
-            BGZ_CONSOLE("clockwise");
-        }
-        else
-        {
-            //counter-clockwise, need to make clockwise
-            v2f* vec1 = &aiCollisionBoxVecs.elements[0]; //TODO: Don't give access like this
-            v2f* vec2 = &aiCollisionBoxVecs.elements[2];
-            Swap(vec1, vec2);
-            aiCollisionBoxWorld[0] = aiCollisionBoxVecs.At(0).x;
-            aiCollisionBoxWorld[1] = aiCollisionBoxVecs.At(0).y;
-            aiCollisionBoxWorld[4] = aiCollisionBoxVecs.At(2).x;
-            aiCollisionBoxWorld[5] = aiCollisionBoxVecs.At(2).y;
-        }
-    }
-
     v2f playerBoxCenterPoint = CreateCenterPointOfParallelogram(playerCollisionBoxWorld);
     v2f aiBoxCenterPoint = CreateCenterPointOfParallelogram(aiCollisionBoxWorld);
 
-    v2f newCollisionBoxShape[4] = {};
+    Dynam_Array<v2f> newCollisionBoxShape { 4 };
+
     {
-        v2f playerCollisionBoxVecs[4] = {
-            v2f { playerCollisionBoxWorld[6], playerCollisionBoxWorld[7] },
-            v2f { playerCollisionBoxWorld[0], playerCollisionBoxWorld[1] },
-            v2f { playerCollisionBoxWorld[2], playerCollisionBoxWorld[3] },
-            v2f { playerCollisionBoxWorld[4], playerCollisionBoxWorld[5] },
-        };
+        Dynam_Array<v2f> playerCollisionBoxVecs { 4 };
+        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[6], playerCollisionBoxWorld[7] });
+        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[0], playerCollisionBoxWorld[1] });
+        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[2], playerCollisionBoxWorld[3] });
+        playerCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[4], playerCollisionBoxWorld[5] });
 
-        v2f aiCollisionBoxVecs[4] = {
-            v2f { aiCollisionBoxWorld[0], aiCollisionBoxWorld[1] },
-            v2f { aiCollisionBoxWorld[2], aiCollisionBoxWorld[3] },
-            v2f { aiCollisionBoxWorld[4], aiCollisionBoxWorld[5] },
-            v2f { aiCollisionBoxWorld[6], aiCollisionBoxWorld[7] },
-        };
+        Dynam_Array<v2f> aiCollisionBoxVecs { 4 };
+        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[0], playerCollisionBoxWorld[1] });
+        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[2], playerCollisionBoxWorld[3] });
+        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[4], playerCollisionBoxWorld[5] });
+        aiCollisionBoxVecs.PushBack(v2f { playerCollisionBoxWorld[6], playerCollisionBoxWorld[7] });
 
-        newCollisionBoxShape[0] = playerCollisionBoxVecs[0] + aiCollisionBoxVecs[0];
-        newCollisionBoxShape[1] = playerCollisionBoxVecs[1] + aiCollisionBoxVecs[1];
-        newCollisionBoxShape[2] = playerCollisionBoxVecs[2] + aiCollisionBoxVecs[2];
-        newCollisionBoxShape[3] = playerCollisionBoxVecs[3] + aiCollisionBoxVecs[3];
+        newCollisionBoxShape = CreateNewHurtBoxShapeToTestAgainst(&playerCollisionBoxVecs, &aiCollisionBoxVecs);
 
-        v2f newShapeBoxCenterPoint = CreateCenterPointOfParallelogram(newCollisionBoxShape);
+        v2f newShapeBoxCenterPoint = CreateCenterPointOfParallelogram(newCollisionBoxShape.elements);
         v2f centerPointDifference = AbsoluteVal(aiBoxCenterPoint - newShapeBoxCenterPoint);
 
-        newCollisionBoxShape[0] -= centerPointDifference;
-        newCollisionBoxShape[1] -= centerPointDifference;
-        newCollisionBoxShape[2] -= centerPointDifference;
-        newCollisionBoxShape[3] -= centerPointDifference;
+        newCollisionBoxShape.Insert(newCollisionBoxShape.At(0) -= centerPointDifference, 0);
+        newCollisionBoxShape.Insert(newCollisionBoxShape.At(1) -= centerPointDifference, 1);
+        newCollisionBoxShape.Insert(newCollisionBoxShape.At(2) -= centerPointDifference, 2);
+        newCollisionBoxShape.Insert(newCollisionBoxShape.At(3) -= centerPointDifference, 3);
     };
 
     AABB newBoxAABB {
-        v2f { newCollisionBoxShape[0].x, newCollisionBoxShape[0].y },
-        v2f { newCollisionBoxShape[2].x, newCollisionBoxShape[2].y }
+        v2f { newCollisionBoxShape.At(0).x, newCollisionBoxShape.At(0).y },
+        v2f { newCollisionBoxShape.At(2).x, newCollisionBoxShape.At(2).y }
     };
 
     if (playerBoxCenterPoint.x > newBoxAABB.minCorner.x && playerBoxCenterPoint.x < newBoxAABB.maxCorner.x && playerBoxCenterPoint.y > newBoxAABB.minCorner.y && playerBoxCenterPoint.y < newBoxAABB.maxCorner.y)
