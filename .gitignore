@@ -1,3 +1,4 @@
 build/
 *.sgi
 *.ctm
+.vs/
