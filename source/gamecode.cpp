@@ -16,6 +16,8 @@
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
 
+#include "atomic_types.h"
+#include "dynamic_array.h"
 #include "gamecode.h"
 #include "math.h"
 #include "shared.h"
@@ -31,8 +33,9 @@ global_variable f32 viewportHeight;
 
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
+#include "collisions.cpp"
+
 // Third Party
-#include "dynamic_array.h"
 #include "spine.cpp"
 #include <boagz/error_context.cpp>
 
@@ -234,24 +237,6 @@ local_func auto ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> s
     return skelData;
 };
 
-auto CheckForFighterCollisions(AABB fighter1Box, AABB fighter2Box) -> b
-{
-    // Exit returning NO intersection between bounding boxes
-    if (fighter1Box.maxCorner.x < fighter2Box.minCorner.x || fighter1Box.minCorner.x > fighter2Box.maxCorner.x)
-    {
-        return false;
-    }
-
-    // Exit returning NO intersection between bounding boxes
-    if (fighter1Box.maxCorner.y < fighter2Box.minCorner.y || fighter1Box.minCorner.y > fighter2Box.maxCorner.y)
-    {
-        return false;
-    }
-
-    // Else intersection and thus collision has occured!
-    return true;
-};
-
 inline b KeyPressed(Button_State KeyState)
 {
     if (KeyState.Pressed && KeyState.NumTransitionsPerFrame)
@@ -300,84 +285,6 @@ inline b KeyReleased(Button_State KeyState)
     };
 
     return false;
-};
-
-auto ForceParallelogram(f32* shapeVerts) -> f32*
-{
-    v2f shapeVectors[4] = {
-        v2f { shapeVerts[0], shapeVerts[1] },
-        v2f { shapeVerts[2], shapeVerts[3] },
-        v2f { shapeVerts[4], shapeVerts[5] },
-        v2f { shapeVerts[6], shapeVerts[7] },
-    };
-
-    { //Turn into parallelogram if quadrilateral isn't already. This is for easier minkowski collision detection
-        v2f diffVecAB = shapeVectors[0] - shapeVectors[1];
-        v2f diffVecDC = shapeVectors[3] - shapeVectors[2];
-        v2f diffVecBC = shapeVectors[1] - shapeVectors[2];
-        v2f diffVecAD = shapeVectors[0] - shapeVectors[3];
-
-        if (diffVecAB != diffVecDC)
-        {
-            shapeVectors[3] = shapeVectors[2] + diffVecAB;
-            shapeVerts[6] = shapeVectors[3].x;
-            shapeVerts[7] = shapeVectors[3].y;
-        };
-
-        if (diffVecBC != diffVecAD)
-        {
-            shapeVectors[0] = shapeVectors[3] + diffVecBC;
-            shapeVerts[0] = shapeVectors[0].x;
-            shapeVerts[1] = shapeVectors[0].y;
-        };
-    };
-
-    return shapeVerts;
-};
-
-local_func v2f FindCenterOfRectangle(AABB rectangle)
-{
-    v2f centerPoint {};
-
-    centerPoint.x = ((rectangle.minCorner.x + rectangle.maxCorner.x) / 2);
-    centerPoint.y = ((rectangle.maxCorner.y + rectangle.maxCorner.y) / 2);
-
-    return centerPoint;
-};
-
-b CheckIfVertsInClockwiseOrder(const Dynam_Array<v2f>* vertsToCheck)
-{
-    f32 area {};
-    for (i32 vecIndex { 0 }; vecIndex < vertsToCheck->size; ++vecIndex)
-    {
-        i32 nextVector = (vecIndex + 1) % vertsToCheck->size;
-        area += vertsToCheck->At(vecIndex).x * vertsToCheck->At(nextVector).y;
-        area -= vertsToCheck->At(nextVector).x * vertsToCheck->At(vecIndex).y;
-    }
-
-    if (area < 0)
-    {
-        //clockwise
-        return true;
-    }
-
-    return false;
-};
-
-local_func Collision_Box CreateNewHurtBoxShapeToTestAgainst(Collision_Box hitBox, Collision_Box hurtBox)
-{
-    Collision_Box newHurtBoxForCollisionTest {};
-
-    newHurtBoxForCollisionTest.bounds.minCorner = hitBox.bounds.minCorner + hurtBox.bounds.minCorner;
-    newHurtBoxForCollisionTest.bounds.maxCorner = hitBox.bounds.maxCorner + hurtBox.bounds.maxCorner;
-
-    newHurtBoxForCollisionTest.centerPoint = FindCenterOfRectangle(newHurtBoxForCollisionTest.bounds);
-    v2f centerPointDifference = AbsoluteVal(hurtBox.centerPoint - newHurtBoxForCollisionTest.centerPoint);
-
-    newHurtBoxForCollisionTest.bounds.minCorner -= centerPointDifference;
-    newHurtBoxForCollisionTest.bounds.maxCorner -= centerPointDifference;
-
-    return newHurtBoxForCollisionTest;
 };
 
 extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -469,24 +376,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
                 ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
                 ai->skeleton->scaleY = 0.6f;
-            };
-
-            //Spine's bounding boxes (aka my collision boxes) are stateless meaning it doesn't matter which skeleton you use to get them
-            for (i32 slotIndex { 0 }; slotIndex < player->skeleton->slotsCount; ++slotIndex)
-            {
-                spSkeleton* skeleton = player->skeleton;
-
-                // If no current active attachment for slot then continue to next slot
-                if (!skeleton->slots[slotIndex]->attachment)
-                    continue;
-
-                //Force all collision boxes to be parallelograms for easier collision detection
-                if (skeleton->slots[slotIndex]->attachment->type == SP_ATTACHMENT_BOUNDING_BOX)
-                {
-                    spBoundingBoxAttachment* collisionBox = (spBoundingBoxAttachment*)skeleton->slots[slotIndex]->attachment;
-
-                    collisionBox->super.vertices = ForceParallelogram(collisionBox->super.vertices);
-                };
             };
         };
     };
