@@ -1,4 +1,3 @@
-
 local_func b CheckForFighterCollisions_AxisAligned(Collision_Box fighter1Box, Collision_Box fighter2Box)
 {
     // Exit returning NO intersection between bounding boxes
@@ -25,6 +24,20 @@ local_func v2f FindCenterOfRectangle(AABB rectangle)
     centerPoint.y = ((rectangle.maxCorner.y + rectangle.maxCorner.y) / 2);
 
     return centerPoint;
+};
+
+local_func Collision_Box SetupHurtBox(Collision_Box hurtBox, v2f referencePosition, v2f hurtBoxSize)
+{
+    hurtBox.bounds.minCorner.x = referencePosition.x - hurtBoxSize.x;
+    hurtBox.bounds.minCorner.y = referencePosition.y;
+    hurtBox.bounds.maxCorner.x = referencePosition.x + hurtBoxSize.x;
+    hurtBox.bounds.minCorner.y = referencePosition.y + hurtBoxSize.y;
+
+    hurtBox.centerPoint = FindCenterOfRectangle(hurtBox.bounds);
+
+    hurtBox.size = hurtBoxSize;
+
+    return hurtBox;
 };
 
 local_func b CheckIfVertsInClockwiseOrder(const Dynam_Array<v2f>* vertsToCheck)

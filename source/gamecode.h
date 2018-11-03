@@ -21,6 +21,7 @@ struct Collision_Box
 {
     AABB bounds;
     v2f  centerPoint;
+    v2f  size;
 };
 
 struct Fighter
@@ -29,6 +30,7 @@ struct Fighter
     spAnimationState* animationState;
     v2f               worldPos;
     v2f               prevFrameWorldPos;
+    Collision_Box     hurtBox;
 };
 
 struct StageInfo

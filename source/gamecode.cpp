@@ -65,7 +65,8 @@ local_func auto FlipImage(Image image) -> Image
     return image;
 };
 
-local_func auto MyListener(spAnimationState* state, spEventType type, spTrackEntry* entry, spEvent* event) -> void
+//Set to animationState->listener
+local_func auto SpineEventCallBack(spAnimationState* state, spEventType type, spTrackEntry* entry, spEvent* event) -> void
 {
     switch (type)
     {
@@ -359,24 +360,32 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             stage->commonAnimationData = spAnimationStateData_create(stage->commonSkeletonData);
             spSkeletonJson_dispose(skelJson);
 
-            { // Setup fighters
-                player->skeleton = spSkeleton_create(stage->commonSkeletonData);
-                player->animationState = spAnimationState_create(stage->commonAnimationData);
-                spAnimationState_setAnimationByName(player->animationState, 0, "Idle", 1);
+            player->skeleton = spSkeleton_create(stage->commonSkeletonData);
+            player->animationState = spAnimationState_create(stage->commonAnimationData);
+            spAnimationState_setAnimationByName(player->animationState, 0, "Idle", 1);
 
-                player->worldPos = { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-                player->animationState->listener = MyListener;
-                player->skeleton->scaleX = 0.6f;
-                player->skeleton->scaleY = 0.6f;
+            ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
+            ai->animationState = spAnimationState_create(stage->commonAnimationData);
+            spAnimationState_setAnimationByName(ai->animationState, 0, "Idle", 1);
+        };
 
-                ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
-                ai->animationState = spAnimationState_create(stage->commonAnimationData);
-                spAnimationState_setAnimationByName(ai->animationState, 0, "Idle", 1);
+        { // Setup fighters
+            player->worldPos = { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
+            player->skeleton->x = player->worldPos.x;
+            player->skeleton->y = player->worldPos.y;
+            player->animationState->listener = SpineEventCallBack;
+            player->skeleton->scaleX = 0.6f;
+            player->skeleton->scaleY = 0.6f;
 
-                ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-                ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
-                ai->skeleton->scaleY = 0.6f;
-            };
+            player->hurtBox = SetupHurtBox(player->hurtBox, player->worldPos, v2f { 100.0f, 300.0f });
+
+            ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
+            ai->skeleton->x = ai->worldPos.x;
+            ai->skeleton->y = ai->worldPos.y;
+            ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
+            ai->skeleton->scaleY = 0.6f;
+
+            ai->hurtBox = SetupHurtBox(ai->hurtBox, ai->worldPos, v2f { 100.0f, 300.0f });
         };
     };
 
@@ -389,7 +398,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             SP_EMPTY_ANIMATION = gameState->emptyAnim;
             globalPlatformServices->DLLJustReloaded = false;
             *stage->commonSkeletonData = ReloadAllSpineTimelineFunctionPtrs(*stage->commonSkeletonData);
-            player->animationState->listener = MyListener;
+            player->animationState->listener = SpineEventCallBack;
         };
     };
 
@@ -422,19 +431,22 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_apply(ai->animationState, ai->skeleton);
     spSkeleton_updateWorldTransform(ai->skeleton);
 
-    /*
-    newCollisionBoxShape = CreateNewHurtBoxShapeToTestAgainst(&playerCollisionBoxVecs, &aiCollisionBoxVecs);
+    { //Update hurtBox pos
+        player->hurtBox.bounds.minCorner.x = player->worldPos.x - player->hurtBox.size.x;
+        player->hurtBox.bounds.minCorner.y = player->worldPos.y;
+        player->hurtBox.bounds.maxCorner.x = player->worldPos.x + player->hurtBox.size.x;
+        player->hurtBox.bounds.maxCorner.y = player->worldPos.y + player->hurtBox.size.y;
 
-    AABB newBoxAABB {
-        v2f { newCollisionBoxShape.At(0).x, newCollisionBoxShape.At(0).y },
-        v2f { newCollisionBoxShape.At(2).x, newCollisionBoxShape.At(2).y }
+        ai->hurtBox.bounds.minCorner.x = ai->worldPos.x - ai->hurtBox.size.x;
+        ai->hurtBox.bounds.minCorner.y = ai->worldPos.y;
+        ai->hurtBox.bounds.maxCorner.x = ai->worldPos.x + ai->hurtBox.size.x;
+        ai->hurtBox.bounds.maxCorner.y = ai->worldPos.y + ai->hurtBox.size.y;
     };
 
-    if (playerBoxCenterPoint.x > newBoxAABB.minCorner.x && playerBoxCenterPoint.x < newBoxAABB.maxCorner.x && playerBoxCenterPoint.y > newBoxAABB.minCorner.y && playerBoxCenterPoint.y < newBoxAABB.maxCorner.y)
+    if (CheckForFighterCollisions_AxisAligned(player->hurtBox, ai->hurtBox))
     {
-        BGZ_CONSOLE("Collision!!!");
-    };
-    */
+        BGZ_CONSOLE("Collision!\n");
+    }
 
     { // Render
         renderCmds.Init();
