@@ -472,56 +472,71 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f });
         };
 
-        Fighter* fighters[2] = { player, ai };
-        for (i32 FighterIndex { 0 }; FighterIndex < ArrayCount(fighters); ++FighterIndex)
-        {
-            for (i32 SlotIndex { 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
+        { //Draw fighters
+            Fighter* fighters[2] = { player, ai };
+            for (i32 FighterIndex { 0 }; FighterIndex < ArrayCount(fighters); ++FighterIndex)
             {
-                float               verts[8] = { 0 };
-                Texture*            texture {};
-                spRegionAttachment* regionAttachment {};
-                spSkeleton*         skeleton = fighters[FighterIndex]->skeleton;
-
-                // If no current active attachment for slot then continue to next slot
-                if (!skeleton->slots[SlotIndex]->attachment)
-                    continue;
-
-                if (skeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
+                for (i32 SlotIndex { 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
                 {
-                    regionAttachment = (spRegionAttachment*)skeleton->slots[SlotIndex]->attachment;
-                    texture = (Texture*)((spAtlasRegion*)regionAttachment->rendererObject)->page->rendererObject;
+                    float               verts[8] = { 0 };
+                    Texture*            texture {};
+                    spRegionAttachment* regionAttachment {};
+                    spSkeleton*         skeleton = fighters[FighterIndex]->skeleton;
 
-                    spRegionAttachment_computeWorldVertices(regionAttachment, skeleton->slots[SlotIndex]->bone, verts, 0, 2);
+                    // If no current active attachment for slot then continue to next slot
+                    if (!skeleton->slots[SlotIndex]->attachment)
+                        continue;
 
-                    Drawable_Rect spineImage {
-                        v2f { verts[0], verts[1] },
-                        v2f { verts[2], verts[3] },
-                        v2f { verts[4], verts[5] },
-                        v2f { verts[6], verts[7] }
-                    };
+                    if (skeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
+                    {
+                        regionAttachment = (spRegionAttachment*)skeleton->slots[SlotIndex]->attachment;
+                        texture = (Texture*)((spAtlasRegion*)regionAttachment->rendererObject)->page->rendererObject;
 
-                    v2f UVArray[4] = {
-                        v2f { regionAttachment->uvs[0], regionAttachment->uvs[1] },
-                        v2f { regionAttachment->uvs[2], regionAttachment->uvs[3] },
-                        v2f { regionAttachment->uvs[4], regionAttachment->uvs[5] },
-                        v2f { regionAttachment->uvs[6], regionAttachment->uvs[7] }
-                    };
+                        spRegionAttachment_computeWorldVertices(regionAttachment, skeleton->slots[SlotIndex]->bone, verts, 0, 2);
 
-                    { // Transform to Camera Space
-                        v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-
-                        for (ui32 VertIndex { 0 }; VertIndex < ArrayCount(spineImage.Corners);
-                             ++VertIndex)
-                        {
-                            spineImage.Corners[VertIndex] += translationToCameraSpace;
+                        Drawable_Rect spineImage {
+                            v2f { verts[0], verts[1] },
+                            v2f { verts[2], verts[3] },
+                            v2f { verts[4], verts[5] },
+                            v2f { verts[6], verts[7] }
                         };
+
+                        v2f UVArray[4] = {
+                            v2f { regionAttachment->uvs[0], regionAttachment->uvs[1] },
+                            v2f { regionAttachment->uvs[2], regionAttachment->uvs[3] },
+                            v2f { regionAttachment->uvs[4], regionAttachment->uvs[5] },
+                            v2f { regionAttachment->uvs[6], regionAttachment->uvs[7] }
+                        };
+
+                        { // Transform to Camera Space
+                            v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
+
+                            for (ui32 VertIndex { 0 }; VertIndex < ArrayCount(spineImage.Corners);
+                                 ++VertIndex)
+                            {
+                                spineImage.Corners[VertIndex] += translationToCameraSpace;
+                            };
+                        };
+
+                        spineImage = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, spineImage);
+
+                        renderCmds.DrawTexture(texture->ID, spineImage, UVArray);
                     };
-
-                    spineImage = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, spineImage);
-
-                    renderCmds.DrawTexture(texture->ID, spineImage, UVArray);
                 };
             };
+        }; //Draw Fighters
+
+        { //Draw collision boxes
+            v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
+
+            player->hurtBox.bounds.minCorner += translationToCameraSpace;
+            player->hurtBox.bounds.maxCorner += translationToCameraSpace;
+
+            ai->hurtBox.bounds.minCorner += translationToCameraSpace;
+            ai->hurtBox.bounds.maxCorner += translationToCameraSpace;
+
+            renderCmds.DrawRect(player->hurtBox.bounds.minCorner, player->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
+            renderCmds.DrawRect(ai->hurtBox.bounds.minCorner, ai->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
         };
     };
 };

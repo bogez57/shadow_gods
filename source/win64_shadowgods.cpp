@@ -681,6 +681,7 @@ namespace GL
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBindTexture(GL_TEXTURE_2D, 0);
+        glDisable(GL_TEXTURE_2D);
 
         return ResultingTexture;
     }
@@ -712,17 +713,23 @@ namespace GL
     }
 
     local_func auto
-    DrawRect(v2f MinPoint, v2f MaxPoint) -> void
+    DrawRect(v2f MinPoint, v2f MaxPoint, v4f color) -> void
     {
         glBegin(GL_QUADS);
 
-        glVertex2f(MinPoint.x, MinPoint.y);
-        glVertex2f(MaxPoint.x, MinPoint.y);
+        glColor4f(color.r, color.g, color.b, color.a);
         glVertex2f(MaxPoint.x, MaxPoint.y);
+        glColor4f(color.r, color.g, color.b, color.a);
         glVertex2f(MinPoint.x, MaxPoint.y);
+        glColor4f(color.r, color.g, color.b, color.a);
+        glVertex2f(MinPoint.x, MinPoint.y);
+        glColor4f(color.r, color.g, color.b, color.a);
+        glVertex2f(MaxPoint.x, MinPoint.y);
 
         glEnd();
         glFlush();
+
+        glColor3f(1.0f, 1.0f, 1.0f); //Need to set back to white to avoid unwanted texture coloring. For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
     }
 
     local_func auto

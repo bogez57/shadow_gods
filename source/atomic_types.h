@@ -180,6 +180,33 @@ v3f::v3f(f32 x, f32 y, f32 z)
     , z(z)
 {}
 
+struct v4f
+{
+    v4f() = default;
+    v4f(f32 x, f32 y, f32 z, f32 w);
+
+    union
+    {
+        f32 Elem[4];
+        struct
+        {
+            f32 x, y, z, w;
+        };
+
+        struct
+        {
+            f32 r, g, b, a;
+        };
+    };
+};
+
+v4f::v4f(f32 x, f32 y, f32 z, f32 w)
+    : x(x)
+    , y(y)
+    , z(z)
+    , w(w)
+{}
+
 struct v2i
 {
     v2i() = default;
