@@ -50,15 +50,13 @@ typedef struct spAnimation
     int timelinesCount;
     spTimeline** timelines;
 
-    v2f hitBoxCenter;
 #ifdef __cplusplus
     spAnimation()
         : name(0)
         , duration(0)
         , timelinesCount(0)
         , timelines(0)
-    {
-    }
+    {}
 #endif
 } spAnimation;
 

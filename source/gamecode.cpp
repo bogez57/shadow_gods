@@ -30,6 +30,7 @@ global_variable Memory_Handler* globalMemHandler;
 global_variable f32 deltaT;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
+global_variable Collision_Box punchHitBox;
 
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
@@ -329,10 +330,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         stage->info.displayImage = FlipImage(stage->info.displayImage);
         stage->info.currentTexture = renderCmds.LoadTexture(stage->info.displayImage); // TODO: Move out to renderer
 
-        // For dll reloading/live code editing purposes
-        gameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
-        gameState->emptyAnim = SP_EMPTY_ANIMATION;
-
         stage->info.size.width = (f32)stage->info.displayImage.size.width;
         stage->info.size.height = (f32)stage->info.displayImage.size.height;
         stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
@@ -359,9 +356,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->animationState = spAnimationState_create(stage->commonAnimationData);
             spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
 
-            gameState->punchAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch");
-            gameState->punchAnim->hitBoxCenter = { 208.0f, 410.0f };
-
             ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
             ai->animationState = spAnimationState_create(stage->commonAnimationData);
             spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
@@ -378,8 +372,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->hurtBox.size = { 100.0f, 300.0f };
             player->hurtBox.UpdatePosition(player->worldPos);
 
-            gameState->punchHitBox.size = { 80.0f, 50.0f };
-
             ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
             ai->skeleton->x = ai->worldPos.x;
             ai->skeleton->y = ai->worldPos.y;
@@ -389,6 +381,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             ai->hurtBox.size = { 100.0f, 300.0f };
             ai->hurtBox.UpdatePosition(ai->worldPos);
         };
+
+        // For dll reloading/live code editing purposes
+        gameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
+        gameState->emptyAnim = SP_EMPTY_ANIMATION;
     };
 
     if (globalPlatformServices->DLLJustReloaded || gameState->SpineFuncPtrTest != _spAttachmentTimeline_apply)
@@ -409,12 +405,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     if (KeyPressed(keyboard->MoveUp))
     {
-        spAnimationState_setAnimation(stage->player.animationState, 0, gameState->punchAnim, 0);
+        spAnimationState_addAnimationByName(stage->player.animationState, 0, "kick", 0, 0.0f);
     };
 
     if (KeyReleased(keyboard->MoveUp))
     {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "idle", 0);
     };
 
     if (KeyHeld(keyboard->MoveRight))
@@ -444,11 +439,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         ai->hurtBox.bounds.maxCorner.x = ai->worldPos.x + ai->hurtBox.size.x;
         ai->hurtBox.bounds.maxCorner.y = ai->worldPos.y + ai->hurtBox.size.y;
     };
-
-    { //Get World pos of punch animation's hit box
-        v2f hitBoxWorldCenter = gameState->punchAnim->hitBoxCenter + player->worldPos;
-        gameState->punchHitBox.UpdatePosition(hitBoxWorldCenter);
-    }
 
     if (CheckForFighterCollisions_AxisAligned(player->hurtBox, ai->hurtBox))
     {
@@ -539,13 +529,13 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->hurtBox.bounds.minCorner += translationToCameraSpace;
             player->hurtBox.bounds.maxCorner += translationToCameraSpace;
 
-            gameState->punchHitBox.bounds.minCorner += translationToCameraSpace;
-            gameState->punchHitBox.bounds.maxCorner += translationToCameraSpace;
+            punchHitBox.bounds.minCorner += translationToCameraSpace;
+            punchHitBox.bounds.maxCorner += translationToCameraSpace;
 
             ai->hurtBox.bounds.minCorner += translationToCameraSpace;
             ai->hurtBox.bounds.maxCorner += translationToCameraSpace;
 
-            renderCmds.DrawRect(gameState->punchHitBox.bounds.minCorner, gameState->punchHitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.3f });
+            renderCmds.DrawRect(punchHitBox.bounds.minCorner, punchHitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.3f });
             renderCmds.DrawRect(player->hurtBox.bounds.minCorner, player->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
             renderCmds.DrawRect(ai->hurtBox.bounds.minCorner, ai->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
         };
