@@ -314,11 +314,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
-        // Make sure everything is initialized
-        gameState->stage = {};
-        gameState->memHandler = {};
-        gameState->emptyAnim = {};
-
         // Split game memory into more specific memory regions
         {
             auto [updatedGameMemory, dynamicMemRegion] = CreateRegionFromGameMem(*gameMemory, Megabytes(10));
