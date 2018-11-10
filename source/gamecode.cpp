@@ -362,11 +362,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
             player->skeleton = spSkeleton_create(stage->commonSkeletonData);
             player->animationState = spAnimationState_create(stage->commonAnimationData);
-            spAnimationState_setAnimationByName(player->animationState, 0, "Idle", 1);
+            spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
 
             ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
             ai->animationState = spAnimationState_create(stage->commonAnimationData);
-            spAnimationState_setAnimationByName(ai->animationState, 0, "Idle", 1);
+            spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
         };
 
         { // Setup fighters
@@ -407,12 +407,12 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     if (KeyPressed(keyboard->MoveUp))
     {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Punch", 0);
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "punch", 0);
     };
 
     if (KeyReleased(keyboard->MoveUp))
     {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "Idle", 0);
+        spAnimationState_setAnimationByName(stage->player.animationState, 0, "idle", 0);
     };
 
     if (KeyHeld(keyboard->MoveRight))

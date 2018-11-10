@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "aqGoYCMd1ywgZVMmTEDoj86TTpU", "spine": "3.7.42-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "ICYhKJFHmpYugAE5wfAF4hyFqfY", "spine": "3.7.51-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -13.25, "y": 489.02 },
@@ -41,19 +41,10 @@
 	{ "name": "right-bicep", "bone": "right-bicep", "color": "ffffff56", "attachment": "right-bicep" },
 	{ "name": "right-shoulder", "bone": "right-shoulder", "attachment": "right-shoulder" },
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
-	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
-	{ "name": "damage-boxes", "bone": "right-hand" },
-	{ "name": "collision-box", "bone": "torso", "attachment": "test-box" }
+	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" }
 ],
 "skins": {
 	"default": {
-		"collision-box": {
-			"test-box": {
-				"type": "boundingbox",
-				"vertexCount": 4,
-				"vertices": [ 289.54, 150.73, 279.02, -151.82, -72.26, -144.58, -51.65, 161.35 ]
-			}
-		},
 		"head": {
 			"head": { "x": 32.18, "y": -10.89, "rotation": -79.56, "width": 123, "height": 126 }
 		},
@@ -122,8 +113,13 @@
 	}
 },
 "animations": {
-	"Idle": {
+	"idle": {
 		"bones": {
+			"Pelvis": {
+				"translate": [
+					{ "time": 0, "x": 0, "y": -52.28 }
+				]
+			},
 			"head": {
 				"rotate": [
 					{ "time": 0, "angle": -6.04 }
@@ -201,15 +197,10 @@
 				"rotate": [
 					{ "time": 0, "angle": 88.26 }
 				]
-			},
-			"root": {
-				"translate": [
-					{ "time": 0, "x": -2.07, "y": -51.8 }
-				]
 			}
 		}
 	},
-	"Kick": {
+	"kick": {
 		"bones": {
 			"left-shin": {
 				"rotate": [
@@ -290,6 +281,11 @@
 					{ "time": 0, "angle": 0 },
 					{ "time": 0.2, "angle": 11.28 },
 					{ "time": 0.4333, "angle": 0 }
+				],
+				"translate": [
+					{ "time": 0, "x": 0, "y": -52.29 },
+					{ "time": 0.2, "x": 0, "y": 0 },
+					{ "time": 0.4333, "x": 0, "y": -52.29 }
 				]
 			},
 			"torso": {
@@ -335,14 +331,14 @@
 			},
 			"root": {
 				"translate": [
-					{ "time": 0, "x": -2.07, "y": -51.8 },
+					{ "time": 0, "x": 0, "y": 0 },
 					{ "time": 0.2, "x": 2.25, "y": 1.64 },
-					{ "time": 0.4333, "x": -2.07, "y": -51.8 }
+					{ "time": 0.4333, "x": 0, "y": 0 }
 				]
 			}
 		}
 	},
-	"Punch": {
+	"punch": {
 		"bones": {
 			"left-forearm": {
 				"rotate": [
@@ -405,6 +401,13 @@
 					{ "time": 0.2667, "x": 0, "y": 0 }
 				]
 			},
+			"Pelvis": {
+				"translate": [
+					{ "time": 0, "x": 0, "y": -52.29 },
+					{ "time": 0.1333, "x": 0, "y": -52.29 },
+					{ "time": 0.2667, "x": 0, "y": -52.29 }
+				]
+			},
 			"torso": {
 				"translate": [
 					{ "time": 0, "x": 0, "y": 0 },
@@ -457,15 +460,10 @@
 				"rotate": [
 					{ "time": 0, "angle": -4.06 }
 				]
-			},
-			"root": {
-				"translate": [
-					{ "time": 0, "x": -2.07, "y": -51.8 }
-				]
 			}
 		}
 	},
-	"Punch Flurry": {
+	"punch_flurry": {
 		"bones": {
 			"right-forearm": {
 				"rotate": [
@@ -477,6 +475,11 @@
 					{ "time": 0, "x": 0, "y": 0 },
 					{ "time": 0.1, "x": 18.3, "y": -0.21 },
 					{ "time": 0.2, "x": 0, "y": 0 }
+				]
+			},
+			"Pelvis": {
+				"translate": [
+					{ "time": 0, "x": 0, "y": -52.29 }
 				]
 			},
 			"head": {
@@ -586,11 +589,6 @@
 			"right-foot": {
 				"rotate": [
 					{ "time": 0, "angle": 24.71 }
-				]
-			},
-			"root": {
-				"translate": [
-					{ "time": 0, "x": -2.07, "y": -51.8 }
 				]
 			}
 		}
