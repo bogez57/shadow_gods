@@ -22,6 +22,19 @@ struct Collision_Box
     AABB bounds;
     v2f centerPoint;
     v2f size;
+
+    void UpdatePosition(v2f centerPosition)
+    {
+        this->bounds.minCorner.x = centerPosition.x - this->size.x;
+        this->bounds.minCorner.y = centerPosition.y;
+        this->bounds.maxCorner.x = centerPosition.x + this->size.x;
+        this->bounds.maxCorner.y = centerPosition.y + this->size.y;
+
+        { //Calculate center
+            this->centerPoint.x = ((this->bounds.minCorner.x + this->bounds.maxCorner.x) / 2);
+            this->centerPoint.y = ((this->bounds.maxCorner.y + this->bounds.maxCorner.y) / 2);
+        };
+    };
 };
 
 struct Fighter

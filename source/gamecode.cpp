@@ -360,7 +360,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
 
             gameState->punchAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch");
-            gameState->punchAnim->hitBoxCenter = { 298.0f, 390.0f };
+            gameState->punchAnim->hitBoxCenter = { 208.0f, 410.0f };
 
             ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
             ai->animationState = spAnimationState_create(stage->commonAnimationData);
@@ -375,7 +375,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->skeleton->scaleX = 0.6f;
             player->skeleton->scaleY = 0.6f;
 
-            player->hurtBox = SetupCollisionBox(player->hurtBox, player->worldPos, v2f { 100.0f, 300.0f });
+            player->hurtBox.size = { 100.0f, 300.0f };
+            player->hurtBox.UpdatePosition(player->worldPos);
+
+            gameState->punchHitBox.size = { 80.0f, 50.0f };
 
             ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
             ai->skeleton->x = ai->worldPos.x;
@@ -383,7 +386,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
             ai->skeleton->scaleY = 0.6f;
 
-            ai->hurtBox = SetupCollisionBox(ai->hurtBox, ai->worldPos, v2f { 100.0f, 300.0f });
+            ai->hurtBox.size = { 100.0f, 300.0f };
+            ai->hurtBox.UpdatePosition(ai->worldPos);
         };
     };
 
@@ -443,7 +447,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     { //Get World pos of punch animation's hit box
         v2f hitBoxWorldCenter = gameState->punchAnim->hitBoxCenter + player->worldPos;
-        gameState->punchHitBox = SetupCollisionBox(gameState->punchHitBox, hitBoxWorldCenter, { 80.0f, 50.0f });
+        gameState->punchHitBox.UpdatePosition(hitBoxWorldCenter);
     }
 
     if (CheckForFighterCollisions_AxisAligned(player->hurtBox, ai->hurtBox))

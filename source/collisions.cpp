@@ -26,20 +26,6 @@ local_func v2f FindCenterOfRectangle(AABB rectangle)
     return centerPoint;
 };
 
-local_func Collision_Box SetupCollisionBox(Collision_Box CollisionBox, v2f referencePosition, v2f BoxSize)
-{
-    CollisionBox.bounds.minCorner.x = referencePosition.x - BoxSize.x;
-    CollisionBox.bounds.minCorner.y = referencePosition.y;
-    CollisionBox.bounds.maxCorner.x = referencePosition.x + BoxSize.x;
-    CollisionBox.bounds.maxCorner.y = referencePosition.y + BoxSize.y;
-
-    CollisionBox.centerPoint = FindCenterOfRectangle(CollisionBox.bounds);
-
-    CollisionBox.size = BoxSize;
-
-    return CollisionBox;
-};
-
 local_func b CheckIfVertsInClockwiseOrder(const Dynam_Array<v2f>* vertsToCheck)
 {
     f32 area {};
