@@ -1,5 +1,5 @@
 Language: Cpp  
-AlignConsecutiveDeclarations: true
+AlignConsecutiveDeclarations: false
 BasedOnStyle: Webkit
 BreakBeforeBraces: Custom
 BraceWrapping:

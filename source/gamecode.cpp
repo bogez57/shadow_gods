@@ -41,11 +41,11 @@ global_variable f32 viewportHeight;
 
 local_func auto FlipImage(Image image) -> Image
 {
-    i32  widthInBytes = image.size.width * 4;
+    i32 widthInBytes = image.size.width * 4;
     ui8* p_topRowOfTexels = nullptr;
     ui8* p_bottomRowOfTexels = nullptr;
-    ui8  temp = 0;
-    i32  halfHeight = image.size.height / 2;
+    ui8 temp = 0;
+    i32 halfHeight = image.size.height / 2;
 
     for (i32 row = 0; row < halfHeight; ++row)
     {
@@ -300,8 +300,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     globalRenderCmds = renderCmds;
 
     Stage_Data* stage = &gameState->stage;
-    Fighter*    player = &stage->player;
-    Fighter*    ai = &stage->ai;
+    Fighter* player = &stage->player;
+    Fighter* ai = &stage->ai;
 
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
@@ -354,7 +354,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { // Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
-            spAtlas*        atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
+            spAtlas* atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
             spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
             stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/yellow_god.json");
             stage->commonAnimationData = spAnimationStateData_create(stage->commonSkeletonData);
@@ -363,6 +363,9 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->skeleton = spSkeleton_create(stage->commonSkeletonData);
             player->animationState = spAnimationState_create(stage->commonAnimationData);
             spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
+
+            gameState->punchAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch");
+            gameState->punchAnim->hitBoxCenter = { 298.0f, 390.0f };
 
             ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
             ai->animationState = spAnimationState_create(stage->commonAnimationData);
@@ -377,7 +380,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->skeleton->scaleX = 0.6f;
             player->skeleton->scaleY = 0.6f;
 
-            player->hurtBox = SetupHurtBox(player->hurtBox, player->worldPos, v2f { 100.0f, 300.0f });
+            player->hurtBox = SetupCollisionBox(player->hurtBox, player->worldPos, v2f { 100.0f, 300.0f });
 
             ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
             ai->skeleton->x = ai->worldPos.x;
@@ -385,7 +388,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
             ai->skeleton->scaleY = 0.6f;
 
-            ai->hurtBox = SetupHurtBox(ai->hurtBox, ai->worldPos, v2f { 100.0f, 300.0f });
+            ai->hurtBox = SetupCollisionBox(ai->hurtBox, ai->worldPos, v2f { 100.0f, 300.0f });
         };
     };
 
@@ -407,7 +410,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     if (KeyPressed(keyboard->MoveUp))
     {
-        spAnimationState_setAnimationByName(stage->player.animationState, 0, "punch", 0);
+        spAnimationState_setAnimation(stage->player.animationState, 0, gameState->punchAnim, 0);
     };
 
     if (KeyReleased(keyboard->MoveUp))
@@ -443,6 +446,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         ai->hurtBox.bounds.maxCorner.y = ai->worldPos.y + ai->hurtBox.size.y;
     };
 
+    { //Get World pos of punch animation's hit box
+        v2f hitBoxWorldCenter = gameState->punchAnim->hitBoxCenter + player->worldPos;
+        gameState->punchHitBox = SetupCollisionBox(gameState->punchHitBox, hitBoxWorldCenter, { 80.0f, 50.0f });
+    }
+
     if (CheckForFighterCollisions_AxisAligned(player->hurtBox, ai->hurtBox))
     {
         BGZ_CONSOLE("Collision!\n");
@@ -456,7 +464,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { // Draw Level Background
             Coordinate_System backgroundWorldSpace {};
             Coordinate_System backgroundCameraSpace {};
-            Drawable_Rect     backgroundCanvas {};
+            Drawable_Rect backgroundCanvas {};
 
             backgroundWorldSpace.Origin = { 0.0f, 0.0f };
 
@@ -478,10 +486,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             {
                 for (i32 SlotIndex { 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
                 {
-                    float               verts[8] = { 0 };
-                    Texture*            texture {};
+                    float verts[8] = { 0 };
+                    Texture* texture {};
                     spRegionAttachment* regionAttachment {};
-                    spSkeleton*         skeleton = fighters[FighterIndex]->skeleton;
+                    spSkeleton* skeleton = fighters[FighterIndex]->skeleton;
 
                     // If no current active attachment for slot then continue to next slot
                     if (!skeleton->slots[SlotIndex]->attachment)
@@ -532,9 +540,13 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->hurtBox.bounds.minCorner += translationToCameraSpace;
             player->hurtBox.bounds.maxCorner += translationToCameraSpace;
 
+            gameState->punchHitBox.bounds.minCorner += translationToCameraSpace;
+            gameState->punchHitBox.bounds.maxCorner += translationToCameraSpace;
+
             ai->hurtBox.bounds.minCorner += translationToCameraSpace;
             ai->hurtBox.bounds.maxCorner += translationToCameraSpace;
 
+            renderCmds.DrawRect(gameState->punchHitBox.bounds.minCorner, gameState->punchHitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.3f });
             renderCmds.DrawRect(player->hurtBox.bounds.minCorner, player->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
             renderCmds.DrawRect(ai->hurtBox.bounds.minCorner, ai->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
         };

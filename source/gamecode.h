@@ -20,24 +20,24 @@ struct AABB
 struct Collision_Box
 {
     AABB bounds;
-    v2f  centerPoint;
-    v2f  size;
+    v2f centerPoint;
+    v2f size;
 };
 
 struct Fighter
 {
-    spSkeleton*       skeleton;
+    spSkeleton* skeleton;
     spAnimationState* animationState;
-    v2f               worldPos;
-    v2f               prevFrameWorldPos;
-    Collision_Box     hurtBox;
+    v2f worldPos;
+    v2f prevFrameWorldPos;
+    Collision_Box hurtBox;
 };
 
 struct StageInfo
 {
-    v2f     size;
-    v2f     centerPoint;
-    Image   displayImage;
+    v2f size;
+    v2f centerPoint;
+    Image displayImage;
     Texture currentTexture;
 };
 
@@ -53,18 +53,20 @@ struct Game_Camera
 
 struct Stage_Data
 {
-    StageInfo             info {};
-    spSkeletonData*       commonSkeletonData { nullptr };
+    StageInfo info {};
+    spSkeletonData* commonSkeletonData { nullptr };
     spAnimationStateData* commonAnimationData { nullptr };
-    Fighter               player {};
-    Fighter               ai {};
-    Game_Camera           camera;
+    Fighter player {};
+    Fighter ai {};
+    Game_Camera camera;
 };
 
 struct Game_State
 {
     Stage_Data stage {};
     void (*SpineFuncPtrTest)(const spTimeline* timeline, spSkeleton* skeleton, float lastTime, float time, spEvent** firedEvents, int* eventsCount, float alpha, spMixBlend blend, spMixDirection direction);
-    spAnimation*   emptyAnim;
+    spAnimation* emptyAnim;
+    spAnimation* punchAnim;
+    Collision_Box punchHitBox;
     Memory_Handler memHandler;
 };
