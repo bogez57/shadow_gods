@@ -39,8 +39,8 @@ auto CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
 
     dynamAllocator.AmountOfBlocks = 0;
 
-    ui16          BlockSize = 8;
-    ui16          TotalSize = sizeof(Memory_Block) + BlockSize;
+    ui16 BlockSize = 8;
+    ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
     Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&globalMemHandler->memRegions[DYNAMIC], TotalSize);
 
     InitialBlock->Size = BlockSize;
@@ -120,7 +120,7 @@ GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Mem
 local_func auto
 AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Memory_Block*
 {
-    ui64          TotalSize = sizeof(Memory_Block) + Size;
+    ui64 TotalSize = sizeof(Memory_Block) + Size;
     Memory_Block* NewBlock = (Memory_Block*)AllocSize(&globalMemHandler->memRegions[DYNAMIC], TotalSize);
 
     NewBlock->Size = Size;
@@ -170,8 +170,6 @@ FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block
                 BlockToFree->prevBlock = BlockToFree->nextBlock;
             else
                 BlockToFree->prevBlock = nullptr;
-
-            BlockToFree->Size = 0;
 
             --DynamAllocator->AmountOfBlocks;
 
