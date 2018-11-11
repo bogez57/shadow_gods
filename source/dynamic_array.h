@@ -35,6 +35,8 @@
 #pragma once
 
 #include <stdlib.h>
+#include "shared.h"
+#include "memory_handling.h"
 
 #define Roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
 
@@ -106,8 +108,8 @@ public:
     };
 
     size_t size {}, capacity {};
-    b      hasArrayBeenDestroyed { false };
-    Type*  elements { nullptr };
+    b hasArrayBeenDestroyed { false };
+    Type* elements { nullptr };
 };
 
 template <typename Type>

@@ -17,11 +17,11 @@
 #include <boagz/error_handling.h>
 
 #include "atomic_types.h"
+#include "shared.h"
+#include "memory_handling.h"
 #include "dynamic_array.h"
 #include "gamecode.h"
 #include "math.h"
-#include "shared.h"
-#include "memory_handling.h"
 #include "utilities.h"
 
 global_variable Platform_Services* globalPlatformServices;
