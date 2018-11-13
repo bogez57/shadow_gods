@@ -171,7 +171,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(OUT Dynamic_Mem_Allocator* Dynam
 };
 
 local_func auto
-AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Memory_Block*
+AppendNewBlockAndMarkInUse(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Memory_Block*
 {
     ui64 TotalSize = sizeof(Memory_Block) + Size;
     Memory_Block* NewBlock = (Memory_Block*)AllocSize(&globalMemHandler->memRegions[DYNAMIC], TotalSize);
@@ -206,7 +206,7 @@ auto _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
         //No free blocks found
         if (!MemBlock)
         {
-            MemBlock = AppendNewFilledBlock(DynamAllocator, Size);
+            MemBlock = AppendNewBlockAndMarkInUse(DynamAllocator, Size);
 
             Result = MemBlock->data;
             return Result;
@@ -281,14 +281,14 @@ auto _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 N
         }
         else
         {
-            Memory_Block* NewBlock = AppendNewFilledBlock(DynamAllocator, NewSize);
+            void* newBlockData = _MallocType(DynamAllocator, NewSize);
 
-            memcpy(NewBlock->data, BlockToRealloc->data, BlockToRealloc->Size);
+            memcpy(newBlockData, BlockToRealloc->data, BlockToRealloc->Size);
             memset(BlockToRealloc->data, 0, BlockToRealloc->Size); //TODO: Remove if speed becomes an issue;
 
             BlockToRealloc->FreeBlockAndMergeIfNecessary(DynamAllocator);
 
-            return NewBlock->data;
+            return newBlockData;
         };
     }
     else

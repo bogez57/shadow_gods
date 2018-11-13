@@ -420,8 +420,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     }
 
     // Needed for spine to correctly update bones
-    player->skeleton->x
-        = player->worldPos.x;
+    player->skeleton->x = player->worldPos.x;
     player->skeleton->y = player->worldPos.y;
     ai->skeleton->x = ai->worldPos.x;
     ai->skeleton->y = ai->worldPos.y;
