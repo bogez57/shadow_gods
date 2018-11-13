@@ -2,20 +2,24 @@
 
 /*** Dynamic Allocator ***/
 
-struct Memory_Block
-{
-    b             IsFree{ true };
-    sizet         Size{ 0 };
-    void*         data{ nullptr };
-    Memory_Block* nextBlock{ nullptr };
-    Memory_Block* prevBlock{ nullptr };
-};
+struct Memory_Block;
 
 struct Dynamic_Mem_Allocator
 {
     Memory_Block* head;
     Memory_Block* tail;
-    ui32          AmountOfBlocks;
+    ui32 AmountOfBlocks;
+};
+
+struct Memory_Block
+{
+    b IsFree { true };
+    sizet Size { 0 };
+    void* data { nullptr };
+    Memory_Block* nextBlock { nullptr };
+    Memory_Block* prevBlock { nullptr };
+
+    void FreeBlockAndMergeIfNecessary(OUT Dynamic_Mem_Allocator* DynamAllocator);
 };
 
 auto CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator;

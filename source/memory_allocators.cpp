@@ -117,6 +117,59 @@ GetFirstFreeBlockOfSize(ui64 Size, Dynamic_Mem_Allocator* DynamAllocator) -> Mem
     return nullptr;
 };
 
+void Memory_Block::FreeBlockAndMergeIfNecessary(OUT Dynamic_Mem_Allocator* DynamAllocator) //TODO: split up this function? What to do with more than 1 param that needs modified?
+{
+    this->IsFree = true;
+
+    //If not the last block
+    if (this->nextBlock)
+    {
+        { //Merge block with next and/or previous blocks
+            if (this->nextBlock->IsFree)
+            {
+                this->Size += this->nextBlock->Size;
+                this->nextBlock->Size = 0;
+
+                if (this->nextBlock->nextBlock)
+                {
+                    this->nextBlock = this->nextBlock->nextBlock;
+                }
+                else
+                {
+                    this->nextBlock = nullptr;
+                };
+
+                --DynamAllocator->AmountOfBlocks;
+            };
+
+            if (this->prevBlock->IsFree)
+            {
+                this->prevBlock->Size += this->Size;
+
+                if (this->nextBlock)
+                {
+                    this->prevBlock->nextBlock = this->nextBlock;
+                }
+                else
+                {
+                    this->prevBlock->nextBlock = nullptr;
+                };
+
+                this->Size = 0;
+
+                --DynamAllocator->AmountOfBlocks;
+            };
+        };
+    }
+    else
+    {
+        FreeSize(&globalMemHandler->memRegions[DYNAMIC], this->Size);
+        this->prevBlock->nextBlock = nullptr;
+        DynamAllocator->tail = this->prevBlock;
+        --DynamAllocator->AmountOfBlocks;
+    };
+};
+
 local_func auto
 AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Memory_Block*
 {
@@ -135,54 +188,6 @@ AppendNewFilledBlock(OUT Dynamic_Mem_Allocator* DynamAllocator, ui64 Size) -> Me
     ++DynamAllocator->AmountOfBlocks;
 
     return NewBlock;
-};
-
-local_func auto
-FreeBlockButDontZero(OUT Dynamic_Mem_Allocator* DynamAllocator, OUT Memory_Block* BlockToFree) -> void
-{
-    BlockToFree->IsFree = true;
-
-    //If not the last block
-    if (BlockToFree->nextBlock)
-    {
-        if (BlockToFree->nextBlock->IsFree)
-        {
-            BlockToFree->Size += BlockToFree->nextBlock->Size;
-            BlockToFree->nextBlock->Size = 0;
-
-            if (BlockToFree->nextBlock->nextBlock)
-            {
-                BlockToFree->nextBlock = BlockToFree->nextBlock->nextBlock;
-            }
-            else
-            {
-                BlockToFree->nextBlock = nullptr;
-            };
-
-            --DynamAllocator->AmountOfBlocks;
-        };
-
-        if (BlockToFree->prevBlock->IsFree)
-        {
-            BlockToFree->prevBlock->Size += BlockToFree->Size;
-
-            if (BlockToFree->nextBlock)
-                BlockToFree->prevBlock = BlockToFree->nextBlock;
-            else
-                BlockToFree->prevBlock = nullptr;
-
-            --DynamAllocator->AmountOfBlocks;
-
-            return;
-        }
-    }
-    else
-    {
-        FreeSize(&globalMemHandler->memRegions[DYNAMIC], BlockToFree->Size);
-        BlockToFree->prevBlock->nextBlock = nullptr;
-        DynamAllocator->tail = BlockToFree->prevBlock;
-        --DynamAllocator->AmountOfBlocks;
-    }
 };
 
 auto _MallocType(Dynamic_Mem_Allocator* DynamAllocator, sizet Size) -> void*
@@ -276,19 +281,19 @@ auto _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, ui64 N
         }
         else
         {
-            FreeBlockButDontZero(DynamAllocator, BlockToRealloc);
             Memory_Block* NewBlock = AppendNewFilledBlock(DynamAllocator, NewSize);
 
-            memcpy(NewBlock->data, BlockToRealloc->data, NewSize);
+            memcpy(NewBlock->data, BlockToRealloc->data, BlockToRealloc->Size);
             memset(BlockToRealloc->data, 0, BlockToRealloc->Size); //TODO: Remove if speed becomes an issue;
+
+            BlockToRealloc->FreeBlockAndMergeIfNecessary(DynamAllocator);
 
             return NewBlock->data;
         };
     }
     else
     {
-        BlockToRealloc = AppendNewFilledBlock(DynamAllocator, NewSize);
-        DataToRealloc = BlockToRealloc->data;
+        DataToRealloc = _MallocType(DynamAllocator, NewSize);
     };
 
     return DataToRealloc;
@@ -304,7 +309,7 @@ auto _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, ui64** MemToFree) -> void
 
         Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 
-        FreeBlockButDontZero(DynamAllocator, Block);
+        Block->FreeBlockAndMergeIfNecessary(DynamAllocator);
         memset(*MemToFree, 0, Block->Size); //TODO: Remove if speed becomes an issue;
 
         *MemToFree = nullptr;
