@@ -8,13 +8,13 @@ struct Game_Memory
 {
     bool IsInitialized { false };
 
-    ui32  SizeOfPermanentStorage {};
+    ui32 SizeOfPermanentStorage {};
     void* PermanentStorage { nullptr };
 
-    ui64  SizeOfTemporaryStorage {};
-    ui64  TemporaryStorageUsed {};
+    ui64 SizeOfTemporaryStorage {};
+    ui64 TemporaryStorageUsed {};
     void* TemporaryStorage { nullptr };
-    ui64  TotalSize {};
+    ui64 TotalSize {};
 };
 
 struct Button_State
@@ -81,7 +81,7 @@ struct Game_Sound_Output_Buffer
 struct Read_File_Result
 {
     void* FileContents { nullptr };
-    ui32  FileSize {};
+    ui32 FileSize {};
 };
 struct Platform_Services
 {
@@ -90,10 +90,11 @@ struct Platform_Services
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
     ui8* (*LoadRGBAImage)(const char*, int*, int*);
-    void* (*PlatMalloc)(sizet);
-    void* (*PlatCalloc)(sizet, sizet);
-    void (*PlatFree)(void*);
-    b   DLLJustReloaded { false };
+    void* (*Malloc)(sizet);
+    void* (*Calloc)(sizet, sizet);
+    void* (*Realloc)(void*, sizet);
+    void (*Free)(void*);
+    b DLLJustReloaded { false };
     f32 prevFrameTimeInSecs {};
 };
 
@@ -102,13 +103,13 @@ struct Platform_Services
 struct Image
 {
     ui8* Data;
-    v2i  size;
+    v2i size;
 };
 
 struct Texture
 {
     ui32 ID;
-    v2i  size;
+    v2i size;
 };
 
 struct Drawable_Rect
@@ -136,8 +137,8 @@ struct Coordinate_System
 auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
 {
     Drawable_Rect Result;
-    v2f           MinPoint;
-    v2f           MaxPoint;
+    v2f MinPoint;
+    v2f MaxPoint;
 
     MinPoint = { OriginPoint.x - (Width / 2), OriginPoint.y - (Height / 2) };
     MaxPoint = { OriginPoint.x + (Width / 2), OriginPoint.y + (Height / 2) };

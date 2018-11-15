@@ -46,7 +46,7 @@
 global_variable ui32 WindowWidth { 1280 };
 global_variable ui32 WindowHeight { 720 };
 global_variable Game_Memory GameMemory {};
-global_variable bool        GameRunning {};
+global_variable bool GameRunning {};
 
 namespace Win32::Dbg
 {
@@ -75,6 +75,16 @@ namespace Win32::Dbg
         Result = calloc(Count, Size);
 
         return Result;
+    };
+
+    local_func auto
+    Realloc(void* ptr, sizet size) -> void*
+    {
+        void* result {};
+
+        result = realloc(ptr, size);
+
+        return result;
     };
 
     local_func auto
@@ -176,8 +186,8 @@ namespace Win32::Dbg
     local_func auto
     ReadFileOfLength(ui32* length, const char* FilePath) -> char*
     {
-        char*   data;
-        FILE*   file;
+        char* data;
+        FILE* file;
         errno_t err;
 
         if ((err = fopen_s(&file, FilePath, "rb")) != 0)
@@ -199,8 +209,8 @@ namespace Win32::Dbg
     local_func auto
     LoadRGBAImage(const char* ImagePath, int* Width, int* Height) -> ui8*
     {
-        int            DesiredChannels = 4;
-        int            NumOfLoadedChannels {};
+        int DesiredChannels = 4;
+        int NumOfLoadedChannels {};
         unsigned char* ImageData = stbi_load(ImagePath, Width, Height, &NumOfLoadedChannels, DesiredChannels);
         BGZ_ASSERT(ImageData, "Invalid image data");
 
@@ -215,18 +225,18 @@ namespace Win32::Dbg
 
         // Get STDOUT handle
         HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-        int    SystemOutput = _open_osfhandle(intptr_t(ConsoleOutput), _O_TEXT);
-        FILE*  COutputHandle = _fdopen(SystemOutput, "w");
+        int SystemOutput = _open_osfhandle(intptr_t(ConsoleOutput), _O_TEXT);
+        FILE* COutputHandle = _fdopen(SystemOutput, "w");
 
         // Get STDERR handle
         HANDLE ConsoleError = GetStdHandle(STD_ERROR_HANDLE);
-        int    SystemError = _open_osfhandle(intptr_t(ConsoleError), _O_TEXT);
-        FILE*  CErrorHandle = _fdopen(SystemError, "w");
+        int SystemError = _open_osfhandle(intptr_t(ConsoleError), _O_TEXT);
+        FILE* CErrorHandle = _fdopen(SystemError, "w");
 
         // Get STDIN handle
         HANDLE ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
-        int    SystemInput = _open_osfhandle(intptr_t(ConsoleInput), _O_TEXT);
-        FILE*  CInputHandle = _fdopen(SystemInput, "r");
+        int SystemInput = _open_osfhandle(intptr_t(ConsoleInput), _O_TEXT);
+        FILE* CInputHandle = _fdopen(SystemInput, "r");
 
         // Redirect the CRT standard input, output, and error handles to the console
         freopen_s(&CInputHandle, "CONIN$", "r", stdin);
@@ -237,7 +247,7 @@ namespace Win32::Dbg
     inline auto
     GetFileTime(const char* FileName) -> FILETIME
     {
-        FILETIME                  TimeFileWasLastWrittenTo {};
+        FILETIME TimeFileWasLastWrittenTo {};
         WIN32_FILE_ATTRIBUTE_DATA FileData {};
 
         if (GetFileAttributesEx(FileName, GetFileExInfoStandard, &FileData))
@@ -251,7 +261,7 @@ namespace Win32::Dbg
     local_func auto
     LoadGameCodeDLL(const char* GameCodeDLL) -> Game_Code
     {
-        Game_Code   GameCode {};
+        Game_Code GameCode {};
         const char* GameCodeTempDLL = "build/game_temp.dll";
 
         GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
@@ -795,12 +805,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             void* BaseAddress { (void*)0 };
 #endif
 
-            Game_Input                    Input {};
-            Game_Sound_Output_Buffer      SoundBuffer {};
-            Game_Render_Cmds              RenderCmds {};
-            Platform_Services             platformServices {};
+            Game_Input Input {};
+            Game_Sound_Output_Buffer SoundBuffer {};
+            Game_Render_Cmds RenderCmds {};
+            Platform_Services platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
-            Win32::Game_Code              GameCode { Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll") };
+            Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
             { //Init Game Memory
@@ -822,9 +832,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.ReadFileOfLength = &Win32::Dbg::ReadFileOfLength;
                 platformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
                 platformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
-                platformServices.PlatMalloc = &Win32::Dbg::Malloc;
-                platformServices.PlatCalloc = &Win32::Dbg::Calloc;
-                platformServices.PlatFree = &Win32::Dbg::Free;
+                platformServices.Malloc = &Win32::Dbg::Malloc;
+                platformServices.Calloc = &Win32::Dbg::Calloc;
+                platformServices.Realloc = &Win32::Dbg::Realloc;
+                platformServices.Free = &Win32::Dbg::Free;
 
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
@@ -835,8 +846,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             }
 
             ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();
-            int  GameRefreshRate {};
-            f32  TargetSecondsPerFrame {};
+            int GameRefreshRate {};
+            f32 TargetSecondsPerFrame {};
 
             switch (MonitorRefreshRate)
             {
@@ -882,7 +893,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 {
                     struct Input_Result
                     {
-                        Game_Input                    NewInput;
+                        Game_Input NewInput;
                         Win32::Dbg::Game_Replay_State NewGameReplayState;
                     };
                     Input_Result Result {};

@@ -32,8 +32,6 @@ global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 global_variable Collision_Box punchHitBox;
 
-global_variable Dynam_Array<Fighter> fighters;
-
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
 #include "collisions.cpp"
