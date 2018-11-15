@@ -41,12 +41,11 @@
 extern "C" {
 #endif
 
-typedef struct spBoundingBoxAttachment
-{
-    spVertexAttachment super;
+typedef struct spBoundingBoxAttachment {
+	spVertexAttachment super;
 } spBoundingBoxAttachment;
 
-SP_API spBoundingBoxAttachment* spBoundingBoxAttachment_create(const char* name);
+SP_API spBoundingBoxAttachment* spBoundingBoxAttachment_create (const char* name);
 
 #ifdef SPINE_SHORT_NAMES
 typedef spBoundingBoxAttachment BoundingBoxAttachment;
