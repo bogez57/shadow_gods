@@ -432,7 +432,7 @@ namespace Win32
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->MoveRight, IsDown);
                     }
-                    else if (VKCode == 'Q')
+                    else if (VKCode == 'X')
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->ActionUp, IsDown);
                     }
@@ -440,11 +440,11 @@ namespace Win32
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->ActionDown, IsDown);
                     }
-                    else if (VKCode == 'C')
+                    else if (VKCode == 'E')
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->ActionRight, IsDown);
                     }
-                    else if (VKCode == 'X')
+                    else if (VKCode == 'Q')
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->ActionLeft, IsDown);
                     }

@@ -32,6 +32,14 @@ global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 global_variable Collision_Box punchHitBox;
 
+global_variable ui32 CurrentComboMove {};
+enum class ComboMoves
+{
+    ComboMove1,
+    ComboMove2,
+    ComboMove3
+};
+
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
 #include "collisions.cpp"
@@ -346,6 +354,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { // Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
+            gameState->currentAnimTrackEntry = CallocType(spTrackEntry, 1);
+
             spAtlas* atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
             spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
             stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/yellow_god.json");
@@ -403,18 +413,46 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);
 
-    if (KeyPressed(keyboard->MoveUp))
+    if (KeyPressed(keyboard->ActionLeft))
     {
-        spAnimationState_addAnimationByName(stage->player.animationState, 0, "kick", 0, 0.0f);
-    };
+        if (spTrackEntry_getAnimationTime(gameState->currentAnimTrackEntry) == gameState->currentAnimTrackEntry->animationEnd)
+        {
+            CurrentComboMove = (ui32)ComboMoves::ComboMove1;
+        }
 
-    if (KeyReleased(keyboard->MoveUp))
-    {
+        switch (CurrentComboMove)
+        {
+        case ComboMoves::ComboMove1:
+        {
+            gameState->currentAnimTrackEntry = spAnimationState_setAnimationByName(stage->player.animationState, 0, "low_kick", 0);
+            CurrentComboMove++;
+        }
+        break;
+
+        case ComboMoves::ComboMove2:
+        {
+            gameState->currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "left_jab", 0, 0.0f);
+            CurrentComboMove++;
+        }
+        break;
+
+        case ComboMoves::ComboMove3:
+        {
+            gameState->currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_uppercut", 0, 0.0f);
+            CurrentComboMove++;
+        }
+        break;
+        }
     };
 
     if (KeyHeld(keyboard->MoveRight))
     {
         player->worldPos.x += 2.0f;
+    }
+
+    if (KeyHeld(keyboard->MoveLeft))
+    {
+        player->worldPos.x -= 2.0f;
     }
 
     // Needed for spine to correctly update bones
