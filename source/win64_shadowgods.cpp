@@ -440,11 +440,11 @@ namespace Win32
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->ActionDown, IsDown);
                     }
-                    else if (VKCode == 'E')
+                    else if (VKCode == 'I')
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->ActionRight, IsDown);
                     }
-                    else if (VKCode == 'Q')
+                    else if (VKCode == 'U')
                     {
                         Win32::ProcessKeyboardMessage(&Keyboard->ActionLeft, IsDown);
                     }

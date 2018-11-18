@@ -32,6 +32,7 @@ global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 global_variable Collision_Box punchHitBox;
 
+spTrackEntry* ComboAnimTrackEntry;
 global_variable ui32 CurrentComboMove {};
 enum class ComboMoves
 {
@@ -257,16 +258,6 @@ inline b KeyPressed(Button_State KeyState)
     return false;
 };
 
-inline b KeyHeld(Button_State KeyState)
-{
-    if (KeyState.Pressed && (KeyState.NumTransitionsPerFrame == 0))
-    {
-        return true;
-    };
-
-    return false;
-};
-
 inline b KeyComboPressed(Button_State KeyState1, Button_State KeyState2)
 {
     if (KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
@@ -277,9 +268,19 @@ inline b KeyComboPressed(Button_State KeyState1, Button_State KeyState2)
     return false;
 };
 
+inline b KeyHeld(Button_State KeyState)
+{
+    if (KeyState.Pressed && (KeyState.NumTransitionsPerFrame == 0))
+    {
+        return true;
+    };
+
+    return false;
+};
+
 inline b KeyComboHeld(Button_State KeyState1, Button_State KeyState2)
 {
-    if (KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
+    if (KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame == 0 && KeyState2.NumTransitionsPerFrame == 0))
     {
         return true;
     };
@@ -354,7 +355,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { // Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
-            gameState->currentAnimTrackEntry = CallocType(spTrackEntry, 1);
+            ComboAnimTrackEntry = CallocType(spTrackEntry, 1);
 
             spAtlas* atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
             spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
@@ -413,9 +414,13 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);
 
-    if (KeyPressed(keyboard->ActionLeft))
+    if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
     {
-        if (spTrackEntry_getAnimationTime(gameState->currentAnimTrackEntry) == gameState->currentAnimTrackEntry->animationEnd)
+        spAnimationState_addAnimationByName(stage->player.animationState, 0, "high_kick", 0, 0.0f);
+    }
+    else if (KeyPressed(keyboard->ActionLeft))
+    {
+        if (spTrackEntry_getAnimationTime(ComboAnimTrackEntry) == ComboAnimTrackEntry->animationEnd)
         {
             CurrentComboMove = (ui32)ComboMoves::ComboMove1;
         }
@@ -424,21 +429,21 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         {
         case ComboMoves::ComboMove1:
         {
-            gameState->currentAnimTrackEntry = spAnimationState_setAnimationByName(stage->player.animationState, 0, "low_kick", 0);
+            ComboAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_cross", 0, 0.0f);
             CurrentComboMove++;
         }
         break;
 
         case ComboMoves::ComboMove2:
         {
-            gameState->currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "left_jab", 0, 0.0f);
+            ComboAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "left_jab", 0, 0.0f);
             CurrentComboMove++;
         }
         break;
 
         case ComboMoves::ComboMove3:
         {
-            gameState->currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_uppercut", 0, 0.0f);
+            ComboAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_uppercut", 0, 0.0f);
             CurrentComboMove++;
         }
         break;
