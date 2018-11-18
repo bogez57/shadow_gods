@@ -32,15 +32,6 @@ global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 global_variable Collision_Box punchHitBox;
 
-spTrackEntry* ComboAnimTrackEntry;
-global_variable ui32 CurrentComboMove {};
-enum class ComboMoves
-{
-    ComboMove1,
-    ComboMove2,
-    ComboMove3
-};
-
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
 #include "collisions.cpp"
@@ -355,8 +346,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { // Init spine stuff
             BGZ_ERRCTXT1("When Initializing Spine stuff");
 
-            ComboAnimTrackEntry = CallocType(spTrackEntry, 1);
-
             spAtlas* atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
             spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
             stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/yellow_god.json");
@@ -420,31 +409,38 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     }
     else if (KeyPressed(keyboard->ActionLeft))
     {
-        if (spTrackEntry_getAnimationTime(ComboAnimTrackEntry) == ComboAnimTrackEntry->animationEnd)
+        local_persist ui32 currentActionComboMove {};
+        local_persist spTrackEntry* currentAnimTrackEntry { CallocType(spTrackEntry, 1) };
+
+        ui32 const comboMove1 { 0 };
+        ui32 const comboMove2 { 1 };
+        ui32 const comboMove3 { 2 };
+
+        if (spTrackEntry_getAnimationTime(currentAnimTrackEntry) == currentAnimTrackEntry->animationEnd)
         {
-            CurrentComboMove = (ui32)ComboMoves::ComboMove1;
+            currentActionComboMove = comboMove1;
         }
 
-        switch (CurrentComboMove)
+        switch (currentActionComboMove)
         {
-        case ComboMoves::ComboMove1:
+        case comboMove1:
         {
-            ComboAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_cross", 0, 0.0f);
-            CurrentComboMove++;
+            currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_cross", 0, 0.0f);
+            currentActionComboMove++;
         }
         break;
 
-        case ComboMoves::ComboMove2:
+        case comboMove2:
         {
-            ComboAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "left_jab", 0, 0.0f);
-            CurrentComboMove++;
+            currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "left_jab", 0, 0.0f);
+            currentActionComboMove++;
         }
         break;
 
-        case ComboMoves::ComboMove3:
+        case comboMove3:
         {
-            ComboAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_uppercut", 0, 0.0f);
-            CurrentComboMove++;
+            currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_uppercut", 0, 0.0f);
+            currentActionComboMove++;
         }
         break;
         }
