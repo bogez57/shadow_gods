@@ -30,7 +30,10 @@ global_variable Memory_Handler* globalMemHandler;
 global_variable f32 deltaT;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
-global_variable Collision_Box punchHitBox;
+global_variable Animation rightCrossAnim;
+global_variable Animation leftJabAnim;
+global_variable Animation rightUpperCutAnim;
+global_variable Animation highKickAnim;
 
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
@@ -361,6 +364,15 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
         };
 
+        {
+            rightCrossAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
+            leftJabAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
+            rightUpperCutAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
+            highKickAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
+
+            rightCrossAnim.hitBoxCenter = { 340.11f, 753.74f };
+        };
+
         { // Setup fighters
             player->worldPos = { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
             player->skeleton->x = player->worldPos.x;
@@ -405,7 +417,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
     {
-        spAnimationState_addAnimationByName(stage->player.animationState, 0, "high_kick", 0, 0.0f);
+        spAnimationState_addAnimation(stage->player.animationState, 0, highKickAnim.baseAnimation, 0, 0.0f);
     }
     else if (KeyPressed(keyboard->ActionLeft))
     {
@@ -425,21 +437,21 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         {
         case comboMove1:
         {
-            currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_cross", 0, 0.0f);
+            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightCrossAnim.baseAnimation, 0, 0.0f);
             currentActionComboMove++;
         }
         break;
 
         case comboMove2:
         {
-            currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "left_jab", 0, 0.0f);
+            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, leftJabAnim.baseAnimation, 0, 0.0f);
             currentActionComboMove++;
         }
         break;
 
         case comboMove3:
         {
-            currentAnimTrackEntry = spAnimationState_addAnimationByName(stage->player.animationState, 0, "right_uppercut", 0, 0.0f);
+            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightUpperCutAnim.baseAnimation, 0, 0.0f);
             currentActionComboMove++;
         }
         break;
@@ -477,6 +489,13 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         ai->hurtBox.bounds.minCorner.y = ai->worldPos.y;
         ai->hurtBox.bounds.maxCorner.x = ai->worldPos.x + ai->hurtBox.size.x;
         ai->hurtBox.bounds.maxCorner.y = ai->worldPos.y + ai->hurtBox.size.y;
+    };
+
+    { //Create hitbox
+        v2f hitBoxCenterWorldCoords = rightCrossAnim.hitBoxCenter + player->worldPos;
+        hitBoxCenterWorldCoords.y -= 200.0f;
+        player->hitBox.size = { 80.0f, 40.0f };
+        player->hitBox.UpdatePosition(hitBoxCenterWorldCoords);
     };
 
     if (CheckForFighterCollisions_AxisAligned(player->hurtBox, ai->hurtBox))
@@ -568,13 +587,13 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->hurtBox.bounds.minCorner += translationToCameraSpace;
             player->hurtBox.bounds.maxCorner += translationToCameraSpace;
 
-            punchHitBox.bounds.minCorner += translationToCameraSpace;
-            punchHitBox.bounds.maxCorner += translationToCameraSpace;
+            player->hitBox.bounds.minCorner += translationToCameraSpace;
+            player->hitBox.bounds.maxCorner += translationToCameraSpace;
 
             ai->hurtBox.bounds.minCorner += translationToCameraSpace;
             ai->hurtBox.bounds.maxCorner += translationToCameraSpace;
 
-            renderCmds.DrawRect(punchHitBox.bounds.minCorner, punchHitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.3f });
+            renderCmds.DrawRect(player->hitBox.bounds.minCorner, player->hitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.3f });
             renderCmds.DrawRect(player->hurtBox.bounds.minCorner, player->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
             renderCmds.DrawRect(ai->hurtBox.bounds.minCorner, ai->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
         };

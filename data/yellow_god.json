@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "BRQnEyKs6cvByeEpRtBtjqQvND4", "spine": "3.7.51-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "SwbN2iP1iXg7YKx/ysV5L8rhkdI", "spine": "3.7.51-beta", "width": 235.24, "height": 985, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -13.25, "y": 489.02 },
@@ -41,12 +41,17 @@
 	{ "name": "right-bicep", "bone": "right-bicep", "color": "ffffff56", "attachment": "right-bicep" },
 	{ "name": "right-shoulder", "bone": "right-shoulder", "attachment": "right-shoulder" },
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
-	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" }
+	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
+	{ "name": "hitbox_center_point", "bone": "Pelvis", "attachment": "right_cross_hitbox" }
 ],
 "skins": {
 	"default": {
 		"head": {
 			"head": { "x": 32.18, "y": -10.89, "rotation": -79.56, "width": 123, "height": 126 }
+		},
+		"hitbox_center_point": {
+			"low_kick_hitbox": { "type": "point", "x": -172.76, "y": -434.7 },
+			"right_cross_hitbox": { "type": "point", "x": 375.63, "y": -290.28 }
 		},
 		"left-bicep": {
 			"left-bicep": {
@@ -483,6 +488,13 @@
 		}
 	},
 	"low_kick": {
+		"slots": {
+			"hitbox_center_point": {
+				"attachment": [
+					{ "time": 0, "name": "low_kick_hitbox" }
+				]
+			}
+		},
 		"bones": {
 			"left-bicep": {
 				"rotate": [

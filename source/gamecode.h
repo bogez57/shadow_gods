@@ -37,6 +37,12 @@ struct Collision_Box
     };
 };
 
+struct Animation
+{
+    spAnimation* baseAnimation;
+    v2f hitBoxCenter;
+};
+
 struct Fighter
 {
     spSkeleton* skeleton;
@@ -44,6 +50,7 @@ struct Fighter
     v2f worldPos;
     v2f prevFrameWorldPos;
     Collision_Box hurtBox;
+    Collision_Box hitBox;
 };
 
 struct StageInfo
