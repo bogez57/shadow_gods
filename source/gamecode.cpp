@@ -446,21 +446,21 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         player->worldPos.x -= 2.0f;
     }
 
-    player->UpdateSkeleton();
-    player->TransformSkeletonToWorldSpace();
-    ai->UpdateSkeleton();
-    ai->TransformSkeletonToWorldSpace();
+    ApplyAnimationStateToSkeleton_2(player->skeleton, player->animationState, player->worldPos);
+    ApplyAnimationStateToSkeleton_2(ai->skeleton, ai->animationState, ai->worldPos);
+    TransformSkeletonToWorldSpace_1(player->skeleton);
+    TransformSkeletonToWorldSpace_1(ai->skeleton);
 
     { //Update hurtBox pos
-        player->hurtBox.UpdatePosition(player->worldPos);
-        ai->hurtBox.UpdatePosition(ai->worldPos);
+        player->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(player->hurtBox, player->worldPos);
+        ai->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(ai->hurtBox, ai->worldPos);
     };
 
     { //Create hitbox
         v2f hitBoxCenterWorldCoords = rightCrossAnim.hitBoxCenter + player->worldPos;
         hitBoxCenterWorldCoords.y -= 200.0f;
         player->hitBox.size = { 80.0f, 40.0f };
-        player->hitBox.UpdatePosition(hitBoxCenterWorldCoords);
+        player->hitBox = UpdateCollisionBoxBasedOnCenterPoint(player->hitBox, hitBoxCenterWorldCoords);
     };
 
     if (CheckForFighterCollisions_AxisAligned(player->hurtBox, ai->hurtBox))

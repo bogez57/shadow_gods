@@ -22,20 +22,24 @@ struct Collision_Box
     AABB bounds;
     v2f centerPoint;
     v2f size;
-
-    void UpdatePosition(v2f centerPosition)
-    {
-        this->bounds.minCorner.x = centerPosition.x - this->size.x;
-        this->bounds.minCorner.y = centerPosition.y;
-        this->bounds.maxCorner.x = centerPosition.x + this->size.x;
-        this->bounds.maxCorner.y = centerPosition.y + this->size.y;
-
-        { //Calculate center
-            this->centerPoint.x = ((this->bounds.minCorner.x + this->bounds.maxCorner.x) / 2);
-            this->centerPoint.y = ((this->bounds.maxCorner.y + this->bounds.maxCorner.y) / 2);
-        };
-    };
 };
+
+Collision_Box UpdateCollisionBoxBasedOnCenterPoint(Collision_Box oldCollisionBox, v2f newCenterPosition)
+{
+    Collision_Box newCollisionBox {};
+
+    newCollisionBox.bounds.minCorner.x = newCenterPosition.x - oldCollisionBox.size.x;
+    newCollisionBox.bounds.minCorner.y = newCenterPosition.y;
+    newCollisionBox.bounds.maxCorner.x = newCenterPosition.x + oldCollisionBox.size.x;
+    newCollisionBox.bounds.maxCorner.y = newCenterPosition.y + oldCollisionBox.size.y;
+
+    { //Calculate new center
+        newCollisionBox.centerPoint.x = ((newCollisionBox.bounds.minCorner.x + newCollisionBox.bounds.maxCorner.x) / 2);
+        newCollisionBox.centerPoint.y = ((newCollisionBox.bounds.maxCorner.y + newCollisionBox.bounds.maxCorner.y) / 2);
+    };
+
+    return newCollisionBox;
+}
 
 struct Animation
 {
@@ -64,31 +68,21 @@ struct Fighter
         this->skeleton->scaleY = scale.y;
 
         this->hurtBox.size = mainHurtBoxSize;
-        this->hurtBox.UpdatePosition(this->worldPos);
-    };
-
-    void UpdateSkeleton()
-    {
-        // Needed for spine to correctly update bones
-        this->skeleton->x = this->worldPos.x;
-        this->skeleton->y = this->worldPos.y;
-
-        spAnimationState_apply(this->animationState, this->skeleton);
-    };
-
-    void TransformSkeletonToWorldSpace()
-    {
-        spSkeleton_updateWorldTransform(this->skeleton);
+        this->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(this->hurtBox, this->worldPos);
     };
 };
 
-spSkeleton* UpdateSkeleton(spSkeleton* skeleton, spAnimationState* animState, v2f newWorldPos)
+void ApplyAnimationStateToSkeleton_2(spSkeleton* skeleton, spAnimationState* animState, v2f newWorldPos)
 {
+    // Needed for spine to correctly update bones
     skeleton->x = newWorldPos.x;
     skeleton->y = newWorldPos.y;
     spAnimationState_apply(animState, skeleton);
+};
 
-    return skeleton;
+void TransformSkeletonToWorldSpace_1(spSkeleton* skeleton)
+{
+    spSkeleton_updateWorldTransform(skeleton);
 };
 
 struct StageInfo
