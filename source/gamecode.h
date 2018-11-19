@@ -51,6 +51,44 @@ struct Fighter
     v2f prevFrameWorldPos;
     Collision_Box hurtBox;
     Collision_Box hitBox;
+
+    void Init(v2f worldPos, spSkeleton* spineSkeleton, spAnimationState* spineAnimState, v2f scale, v2f mainHurtBoxSize)
+    {
+        this->skeleton = spineSkeleton;
+        this->animationState = spineAnimState;
+
+        this->worldPos = worldPos;
+        this->skeleton->x = this->worldPos.x;
+        this->skeleton->y = this->worldPos.y;
+        this->skeleton->scaleX = scale.x;
+        this->skeleton->scaleY = scale.y;
+
+        this->hurtBox.size = mainHurtBoxSize;
+        this->hurtBox.UpdatePosition(this->worldPos);
+    };
+
+    void UpdateSkeleton()
+    {
+        // Needed for spine to correctly update bones
+        this->skeleton->x = this->worldPos.x;
+        this->skeleton->y = this->worldPos.y;
+
+        spAnimationState_apply(this->animationState, this->skeleton);
+    };
+
+    void TransformSkeletonToWorldSpace()
+    {
+        spSkeleton_updateWorldTransform(this->skeleton);
+    };
+};
+
+spSkeleton* UpdateSkeleton(spSkeleton* skeleton, spAnimationState* animState, v2f newWorldPos)
+{
+    skeleton->x = newWorldPos.x;
+    skeleton->y = newWorldPos.y;
+    spAnimationState_apply(animState, skeleton);
+
+    return skeleton;
 };
 
 struct StageInfo

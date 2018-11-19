@@ -318,8 +318,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
-        // Split game memory into more specific memory regions
-        {
+        { // Split game memory into more specific memory regions
             auto [updatedGameMemory, dynamicMemRegion] = CreateRegionFromGameMem(*gameMemory, Megabytes(10));
             *gameMemory = updatedGameMemory;
             gameState->memHandler.memRegions[DYNAMIC] = dynamicMemRegion;
@@ -354,44 +353,23 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/yellow_god.json");
             stage->commonAnimationData = spAnimationStateData_create(stage->commonSkeletonData);
             spSkeletonJson_dispose(skelJson);
+        };
 
-            player->skeleton = spSkeleton_create(stage->commonSkeletonData);
-            player->animationState = spAnimationState_create(stage->commonAnimationData);
+        { // Setup fighters
+            player->Init(v2f { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { .6f, .6f }, v2f { 100.0f, 300.0f });
+            ai->Init(v2f { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { -.6f, .6f }, v2f { 100.0f, 300.0f });
+
             spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
-
-            ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
-            ai->animationState = spAnimationState_create(stage->commonAnimationData);
             spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
         };
 
-        {
+        { //Setup animation stuff
             rightCrossAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
             leftJabAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
             rightUpperCutAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
             highKickAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
 
             rightCrossAnim.hitBoxCenter = { 340.11f, 753.74f };
-        };
-
-        { // Setup fighters
-            player->worldPos = { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-            player->skeleton->x = player->worldPos.x;
-            player->skeleton->y = player->worldPos.y;
-            player->animationState->listener = SpineEventCallBack;
-            player->skeleton->scaleX = 0.6f;
-            player->skeleton->scaleY = 0.6f;
-
-            player->hurtBox.size = { 100.0f, 300.0f };
-            player->hurtBox.UpdatePosition(player->worldPos);
-
-            ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-            ai->skeleton->x = ai->worldPos.x;
-            ai->skeleton->y = ai->worldPos.y;
-            ai->skeleton->scaleX = -0.6f; // Flip ai fighter to start
-            ai->skeleton->scaleY = 0.6f;
-
-            ai->hurtBox.size = { 100.0f, 300.0f };
-            ai->hurtBox.UpdatePosition(ai->worldPos);
         };
 
         // For dll reloading/live code editing purposes
@@ -468,27 +446,14 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         player->worldPos.x -= 2.0f;
     }
 
-    // Needed for spine to correctly update bones
-    player->skeleton->x = player->worldPos.x;
-    player->skeleton->y = player->worldPos.y;
-    ai->skeleton->x = ai->worldPos.x;
-    ai->skeleton->y = ai->worldPos.y;
-
-    spAnimationState_apply(player->animationState, player->skeleton);
-    spSkeleton_updateWorldTransform(player->skeleton);
-    spAnimationState_apply(ai->animationState, ai->skeleton);
-    spSkeleton_updateWorldTransform(ai->skeleton);
+    player->UpdateSkeleton();
+    player->TransformSkeletonToWorldSpace();
+    ai->UpdateSkeleton();
+    ai->TransformSkeletonToWorldSpace();
 
     { //Update hurtBox pos
-        player->hurtBox.bounds.minCorner.x = player->worldPos.x - player->hurtBox.size.x;
-        player->hurtBox.bounds.minCorner.y = player->worldPos.y;
-        player->hurtBox.bounds.maxCorner.x = player->worldPos.x + player->hurtBox.size.x;
-        player->hurtBox.bounds.maxCorner.y = player->worldPos.y + player->hurtBox.size.y;
-
-        ai->hurtBox.bounds.minCorner.x = ai->worldPos.x - ai->hurtBox.size.x;
-        ai->hurtBox.bounds.minCorner.y = ai->worldPos.y;
-        ai->hurtBox.bounds.maxCorner.x = ai->worldPos.x + ai->hurtBox.size.x;
-        ai->hurtBox.bounds.maxCorner.y = ai->worldPos.y + ai->hurtBox.size.y;
+        player->hurtBox.UpdatePosition(player->worldPos);
+        ai->hurtBox.UpdatePosition(ai->worldPos);
     };
 
     { //Create hitbox
