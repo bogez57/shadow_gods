@@ -55,21 +55,21 @@ struct Fighter
     v2f prevFrameWorldPos;
     Collision_Box hurtBox;
     Collision_Box hitBox;
+};
 
-    void Init(v2f worldPos, spSkeleton* spineSkeleton, spAnimationState* spineAnimState, v2f scale, v2f mainHurtBoxSize)
-    {
-        this->skeleton = spineSkeleton;
-        this->animationState = spineAnimState;
+void InitFighter_1(Fighter* fighter, v2f worldPos, spSkeleton* spineSkeleton, spAnimationState* spineAnimState, v2f scale, v2f mainHurtBoxSize)
+{
+    fighter->skeleton = spineSkeleton;
+    fighter->animationState = spineAnimState;
 
-        this->worldPos = worldPos;
-        this->skeleton->x = this->worldPos.x;
-        this->skeleton->y = this->worldPos.y;
-        this->skeleton->scaleX = scale.x;
-        this->skeleton->scaleY = scale.y;
+    fighter->worldPos = worldPos;
+    fighter->skeleton->x = fighter->worldPos.x;
+    fighter->skeleton->y = fighter->worldPos.y;
+    fighter->skeleton->scaleX = scale.x;
+    fighter->skeleton->scaleY = scale.y;
 
-        this->hurtBox.size = mainHurtBoxSize;
-        this->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(this->hurtBox, this->worldPos);
-    };
+    fighter->hurtBox.size = mainHurtBoxSize;
+    fighter->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(fighter->hurtBox, fighter->worldPos);
 };
 
 void ApplyAnimationStateToSkeleton_2(spSkeleton* skeleton, spAnimationState* animState, v2f newWorldPos)

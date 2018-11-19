@@ -319,11 +319,9 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         viewportHeight = 720.0f;
 
         { // Split game memory into more specific memory regions
-            auto [updatedGameMemory, dynamicMemRegion] = CreateRegionFromGameMem(*gameMemory, Megabytes(10));
-            *gameMemory = updatedGameMemory;
-            gameState->memHandler.memRegions[DYNAMIC] = dynamicMemRegion;
+            gameState->memHandler.memRegions[DYNAMIC] = CreateRegionFromGameMem_1(gameMemory, Megabytes(10));
 
-            gameState->memHandler.dynamAllocator = CreateAndInitDynamAllocator();
+            InitDynamAllocator_1(&gameState->memHandler.dynamAllocator);
         };
 
         stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
@@ -356,8 +354,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         };
 
         { // Setup fighters
-            player->Init(v2f { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { .6f, .6f }, v2f { 100.0f, 300.0f });
-            ai->Init(v2f { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { -.6f, .6f }, v2f { 100.0f, 300.0f });
+            InitFighter_1(player, v2f { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { .6f, .6f }, v2f { 100.0f, 300.0f });
+            InitFighter_1(ai, v2f { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { -.6f, .6f }, v2f { 100.0f, 300.0f });
 
             spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
             spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);

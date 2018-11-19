@@ -2,22 +2,17 @@
 #include <string.h>
 #include "memory_handling.h"
 
-auto CreateRegionFromGameMem(Game_Memory GameMemory, ui64 Size)
+Memory_Region CreateRegionFromGameMem_1(Game_Memory* GameMemory, ui64 Size)
 {
     Memory_Region newRegion {};
 
-    newRegion.BaseAddress = (ui64*)((ui8*)GameMemory.TemporaryStorage) + GameMemory.TemporaryStorageUsed;
+    newRegion.BaseAddress = (ui64*)((ui8*)GameMemory->TemporaryStorage) + GameMemory->TemporaryStorageUsed;
     newRegion.EndAddress = (ui64*)((ui8*)newRegion.BaseAddress) + (Size - 1);
     newRegion.Size = Size;
     newRegion.UsedAmount = 0;
-    GameMemory.TemporaryStorageUsed += Size;
+    GameMemory->TemporaryStorageUsed += Size;
 
-    struct MultipleValues
-    {
-        Game_Memory   mem;
-        Memory_Region region;
-    };
-    return MultipleValues { GameMemory, newRegion };
+    return newRegion;
 };
 
 auto _AllocType(Memory_Region* MemRegion, ui64 size, sizet Count) -> void*

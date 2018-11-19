@@ -22,7 +22,7 @@ struct Memory_Block
     void FreeBlockAndMergeIfNecessary(OUT Dynamic_Mem_Allocator* DynamAllocator);
 };
 
-auto CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator;
+void InitDynamAllocator_1(Dynamic_Mem_Allocator* dynamAllocator);
 
 #define MallocType(Type, Count) (Type*)_MallocType(&globalMemHandler->dynamAllocator, ((sizeof(Type)) * (Count)))
 #define MallocSize(Size) _MallocType(&globalMemHandler->dynamicAllocator, (Size))

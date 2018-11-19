@@ -31,13 +31,11 @@ GetDataFromBlock(Memory_Block* Header) -> void*
     return BlockData;
 };
 
-auto CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
+local_func void InitDynamAllocator_1(Dynamic_Mem_Allocator* dynamAllocator)
 {
     BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
 
-    Dynamic_Mem_Allocator dynamAllocator {};
-
-    dynamAllocator.AmountOfBlocks = 0;
+    dynamAllocator->AmountOfBlocks = 0;
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
@@ -49,10 +47,8 @@ auto CreateAndInitDynamAllocator() -> Dynamic_Mem_Allocator
     InitialBlock->nextBlock = nullptr;
     InitialBlock->prevBlock = nullptr;
 
-    dynamAllocator.head = InitialBlock;
-    dynamAllocator.tail = InitialBlock;
-
-    return dynamAllocator;
+    dynamAllocator->head = InitialBlock;
+    dynamAllocator->tail = InitialBlock;
 };
 
 local_func auto
