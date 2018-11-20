@@ -315,24 +315,26 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
         gameMemory->IsInitialized = true;
+
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
         { // Split game memory into more specific memory regions
             gameState->memHandler.memRegions[DYNAMIC] = CreateRegionFromGameMem_1(gameMemory, Megabytes(10));
-
             InitDynamAllocator_1(&gameState->memHandler.dynamAllocator);
         };
 
-        stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
+        { //Init stage info
+            stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
 
-        // Since opengl will read-in image upside down
-        stage->info.displayImage = FlipImage(stage->info.displayImage);
-        stage->info.currentTexture = renderCmds.LoadTexture(stage->info.displayImage); // TODO: Move out to renderer
+            // Since opengl will read-in image upside down
+            stage->info.displayImage = FlipImage(stage->info.displayImage);
+            stage->info.currentTexture = renderCmds.LoadTexture(stage->info.displayImage); // TODO: Move out to renderer
 
-        stage->info.size.width = (f32)stage->info.displayImage.size.width;
-        stage->info.size.height = (f32)stage->info.displayImage.size.height;
-        stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
+            stage->info.size.width = (f32)stage->info.displayImage.size.width;
+            stage->info.size.height = (f32)stage->info.displayImage.size.height;
+            stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
+        };
 
         { // Set stage camera
             stage->camera.viewWidth = viewportWidth;
@@ -356,12 +358,12 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { // Setup fighters
             InitFighter_1(player, v2f { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { .6f, .6f }, v2f { 100.0f, 300.0f });
             InitFighter_1(ai, v2f { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { -.6f, .6f }, v2f { 100.0f, 300.0f });
-
-            spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
-            spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
         };
 
         { //Setup animation stuff
+            spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
+            spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
+
             rightCrossAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
             leftJabAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
             rightUpperCutAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
@@ -385,6 +387,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             globalPlatformServices->DLLJustReloaded = false;
             *stage->commonSkeletonData = ReloadAllSpineTimelineFunctionPtrs(*stage->commonSkeletonData);
             player->animationState->listener = SpineEventCallBack;
+            rightCrossAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
+            leftJabAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
+            rightUpperCutAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
+            highKickAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
+            rightCrossAnim.hitBoxCenter = { 340.11f, 753.74f };
         };
     };
 
@@ -398,16 +405,19 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     else if (KeyPressed(keyboard->ActionLeft))
     {
         local_persist ui32 currentActionComboMove {};
-        local_persist spTrackEntry* currentAnimTrackEntry { CallocType(spTrackEntry, 1) };
+        local_persist spTrackEntry* currentAnimTrackEntry;
 
         ui32 const comboMove1 { 0 };
         ui32 const comboMove2 { 1 };
         ui32 const comboMove3 { 2 };
 
-        if (spTrackEntry_getAnimationTime(currentAnimTrackEntry) == currentAnimTrackEntry->animationEnd)
+        if (currentAnimTrackEntry)
         {
-            currentActionComboMove = comboMove1;
-        }
+            if (spTrackEntry_getAnimationTime(currentAnimTrackEntry) == currentAnimTrackEntry->animationEnd)
+            {
+                currentActionComboMove = comboMove1;
+            }
+        };
 
         switch (currentActionComboMove)
         {
