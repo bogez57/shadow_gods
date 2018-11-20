@@ -26,7 +26,7 @@ struct Collision_Box
 
 Collision_Box UpdateCollisionBoxBasedOnCenterPoint(Collision_Box oldCollisionBox, v2f newCenterPosition)
 {
-    Collision_Box newCollisionBox {};
+    Collision_Box newCollisionBox { oldCollisionBox };
 
     newCollisionBox.bounds.minCorner.x = newCenterPosition.x - oldCollisionBox.size.x;
     newCollisionBox.bounds.minCorner.y = newCenterPosition.y;
