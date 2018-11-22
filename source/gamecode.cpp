@@ -30,10 +30,10 @@ global_variable Memory_Handler* globalMemHandler;
 global_variable f32 deltaT;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
-global_variable Animation rightCrossAnim;
-global_variable Animation leftJabAnim;
-global_variable Animation rightUpperCutAnim;
-global_variable Animation highKickAnim;
+global_variable Animation* rightCrossAnim;
+global_variable Animation* leftJabAnim;
+global_variable Animation* rightUpperCutAnim;
+global_variable Animation* highKickAnim;
 
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
@@ -42,6 +42,8 @@ global_variable Animation highKickAnim;
 // Third Party
 #include "spine.cpp"
 #include <boagz/error_context.cpp>
+
+global_variable spTrackEntry* currentAnimTrackEntry;
 
 local_func auto FlipImage(Image image) -> Image
 {
@@ -356,20 +358,25 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         };
 
         { // Setup fighters
-            InitFighter_1(player, v2f { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { .6f, .6f }, v2f { 100.0f, 300.0f });
-            InitFighter_1(ai, v2f { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { -.6f, .6f }, v2f { 100.0f, 300.0f });
+            InitFighter_1(player, v2f { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { .6f, .6f });
+            InitFighter_1(ai, v2f { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f }, spSkeleton_create(stage->commonSkeletonData), spAnimationState_create(stage->commonAnimationData), v2f { -.6f, .6f });
         };
 
         { //Setup animation stuff
             spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
             spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
 
-            rightCrossAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
-            leftJabAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
-            rightUpperCutAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
-            highKickAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
+            rightCrossAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
+            leftJabAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
+            rightUpperCutAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
+            highKickAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
 
-            rightCrossAnim.hitBoxCenter = { 340.11f, 753.74f };
+            { //Setup animation collision boxes
+                v2f hitBoxCenter { 1800.0f, 600.0f }, hitBoxSize { 80.0f, 40.0f };
+                InitCollisionBox_1(&rightCrossAnim->hitBox, hitBoxCenter, hitBoxSize);
+                v2f hurtBoxCenter { 1620.0f, 200.0f }, hurtBoxSize { 100.0f, 500.0f };
+                InitCollisionBox_1(&rightCrossAnim->hurtBox, hurtBoxCenter, hurtBoxSize);
+            };
         };
 
         // For dll reloading/live code editing purposes
@@ -387,25 +394,25 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             globalPlatformServices->DLLJustReloaded = false;
             *stage->commonSkeletonData = ReloadAllSpineTimelineFunctionPtrs(*stage->commonSkeletonData);
             player->animationState->listener = SpineEventCallBack;
-            rightCrossAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
-            leftJabAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
-            rightUpperCutAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
-            highKickAnim.baseAnimation = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
-            rightCrossAnim.hitBoxCenter = { 340.11f, 753.74f };
+            rightCrossAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
+            leftJabAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
+            rightUpperCutAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
+            highKickAnim = (Animation*)spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
         };
     };
+
+    player->prevFrameWorldPos = player->worldPos;
 
     spAnimationState_update(player->animationState, deltaT);
     spAnimationState_update(ai->animationState, deltaT);
 
     if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
     {
-        spAnimationState_addAnimation(stage->player.animationState, 0, highKickAnim.baseAnimation, 0, 0.0f);
+        spAnimationState_addAnimation(stage->player.animationState, 0, highKickAnim, 0, 0.0f);
     }
     else if (KeyPressed(keyboard->ActionLeft))
     {
         local_persist ui32 currentActionComboMove {};
-        local_persist spTrackEntry* currentAnimTrackEntry;
 
         ui32 const comboMove1 { 0 };
         ui32 const comboMove2 { 1 };
@@ -423,21 +430,21 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         {
         case comboMove1:
         {
-            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightCrossAnim.baseAnimation, 0, 0.0f);
+            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightCrossAnim, 0, 0.0f);
             currentActionComboMove++;
         }
         break;
 
         case comboMove2:
         {
-            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, leftJabAnim.baseAnimation, 0, 0.0f);
+            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, leftJabAnim, 0, 0.0f);
             currentActionComboMove++;
         }
         break;
 
         case comboMove3:
         {
-            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightUpperCutAnim.baseAnimation, 0, 0.0f);
+            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightUpperCutAnim, 0, 0.0f);
             currentActionComboMove++;
         }
         break;
@@ -460,21 +467,21 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     TransformSkeletonToWorldSpace_1(ai->skeleton);
 
     { //Update hurtBox pos
-        player->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(player->hurtBox, player->worldPos);
-        ai->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(ai->hurtBox, ai->worldPos);
+        rightCrossAnim->hurtBox.centerPoint += player->worldPos - player->prevFrameWorldPos;
+        rightCrossAnim->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(rightCrossAnim->hurtBox, rightCrossAnim->hurtBox.centerPoint);
     };
 
     { //Create hitbox
-        v2f hitBoxCenterWorldCoords = rightCrossAnim.hitBoxCenter + player->worldPos;
-        hitBoxCenterWorldCoords.y -= 200.0f;
-        player->hitBox.size = { 80.0f, 40.0f };
-        player->hitBox = UpdateCollisionBoxBasedOnCenterPoint(player->hitBox, hitBoxCenterWorldCoords);
+        rightCrossAnim->hitBox.centerPoint += player->worldPos - player->prevFrameWorldPos;
+        rightCrossAnim->hitBox = UpdateCollisionBoxBasedOnCenterPoint(rightCrossAnim->hitBox, rightCrossAnim->hitBox.centerPoint);
     };
 
+#if 0
     if (CheckForFighterCollisions_AxisAligned(player->hurtBox, ai->hurtBox))
     {
         BGZ_CONSOLE("Collision!\n");
     }
+#endif
 
     { // Render
         renderCmds.Init();
@@ -557,18 +564,18 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { //Draw collision boxes
             v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
 
-            player->hurtBox.bounds.minCorner += translationToCameraSpace;
-            player->hurtBox.bounds.maxCorner += translationToCameraSpace;
+            if (currentAnimTrackEntry)
+            {
+                Animation* currentAnim = (Animation*)currentAnimTrackEntry->animation;
+                currentAnim->hurtBox.bounds.minCorner += translationToCameraSpace;
+                currentAnim->hurtBox.bounds.maxCorner += translationToCameraSpace;
 
-            player->hitBox.bounds.minCorner += translationToCameraSpace;
-            player->hitBox.bounds.maxCorner += translationToCameraSpace;
+                currentAnim->hitBox.bounds.minCorner += translationToCameraSpace;
+                currentAnim->hitBox.bounds.maxCorner += translationToCameraSpace;
 
-            ai->hurtBox.bounds.minCorner += translationToCameraSpace;
-            ai->hurtBox.bounds.maxCorner += translationToCameraSpace;
-
-            renderCmds.DrawRect(player->hitBox.bounds.minCorner, player->hitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.3f });
-            renderCmds.DrawRect(player->hurtBox.bounds.minCorner, player->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
-            renderCmds.DrawRect(ai->hurtBox.bounds.minCorner, ai->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
+                renderCmds.DrawRect(currentAnim->hitBox.bounds.minCorner, currentAnim->hitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.6f });
+                renderCmds.DrawRect(currentAnim->hurtBox.bounds.minCorner, currentAnim->hurtBox.bounds.maxCorner, v4f { 0.0f, .9f, 0.0f, 0.3f });
+            };
         };
     };
 };

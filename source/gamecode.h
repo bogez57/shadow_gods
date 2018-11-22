@@ -33,18 +33,22 @@ Collision_Box UpdateCollisionBoxBasedOnCenterPoint(Collision_Box oldCollisionBox
     newCollisionBox.bounds.maxCorner.x = newCenterPosition.x + oldCollisionBox.size.x;
     newCollisionBox.bounds.maxCorner.y = newCenterPosition.y + oldCollisionBox.size.y;
 
-    { //Calculate new center
-        newCollisionBox.centerPoint.x = ((newCollisionBox.bounds.minCorner.x + newCollisionBox.bounds.maxCorner.x) / 2);
-        newCollisionBox.centerPoint.y = ((newCollisionBox.bounds.maxCorner.y + newCollisionBox.bounds.maxCorner.y) / 2);
-    };
+    newCollisionBox.centerPoint = newCenterPosition;
 
     return newCollisionBox;
 }
 
-struct Animation
+void InitCollisionBox_1(Collision_Box* collisionBox, v2f centerPoint, v2f size)
 {
-    spAnimation* baseAnimation;
-    v2f hitBoxCenter;
+    collisionBox->size = size;
+
+    *collisionBox = UpdateCollisionBoxBasedOnCenterPoint(*collisionBox, centerPoint);
+};
+
+struct Animation : public spAnimation
+{
+    Collision_Box hurtBox;
+    Collision_Box hitBox;
 };
 
 struct Fighter
@@ -53,11 +57,9 @@ struct Fighter
     spAnimationState* animationState;
     v2f worldPos;
     v2f prevFrameWorldPos;
-    Collision_Box hurtBox;
-    Collision_Box hitBox;
 };
 
-void InitFighter_1(Fighter* fighter, v2f worldPos, spSkeleton* spineSkeleton, spAnimationState* spineAnimState, v2f scale, v2f mainHurtBoxSize)
+void InitFighter_1(Fighter* fighter, v2f worldPos, spSkeleton* spineSkeleton, spAnimationState* spineAnimState, v2f scale)
 {
     fighter->skeleton = spineSkeleton;
     fighter->animationState = spineAnimState;
@@ -67,9 +69,6 @@ void InitFighter_1(Fighter* fighter, v2f worldPos, spSkeleton* spineSkeleton, sp
     fighter->skeleton->y = fighter->worldPos.y;
     fighter->skeleton->scaleX = scale.x;
     fighter->skeleton->scaleY = scale.y;
-
-    fighter->hurtBox.size = mainHurtBoxSize;
-    fighter->hurtBox = UpdateCollisionBoxBasedOnCenterPoint(fighter->hurtBox, fighter->worldPos);
 };
 
 void ApplyAnimationStateToSkeleton_2(spSkeleton* skeleton, spAnimationState* animState, v2f newWorldPos)
