@@ -115,7 +115,6 @@ public:
 template <typename Type>
 Type Dynam_Array<Type>::operator[](i32 Index) const
 {
-    BGZ_ASSERT(Index < this->size, "Trying to access index out of current array bounds! Is it because array has been manually destroyed: %s", hasArrayBeenDestroyed ? "Yes" : "No");
     return this->elements[Index];
 };
 

@@ -875,6 +875,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             GameRunning = true;
 
+            platformServices.targetFrameTimeInSecs = TargetSecondsPerFrame;
+
             bgz::Timer FramePerformanceTimer {};
             FramePerformanceTimer.Init();
 
@@ -1011,7 +1013,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 SwapBuffers(WindowContext);
 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
+
                 platformServices.prevFrameTimeInSecs = FramePerformanceTimer.SecondsElapsed();
+                platformServices.realLifeTimeInSecs += platformServices.prevFrameTimeInSecs;
 
                 FramePerformanceTimer.UpdateTimeCount();
 

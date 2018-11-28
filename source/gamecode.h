@@ -45,12 +45,6 @@ void InitCollisionBox_1(Collision_Box* collisionBox, v2f centerPoint, v2f size)
     *collisionBox = UpdateCollisionBoxBasedOnCenterPoint(*collisionBox, centerPoint);
 };
 
-struct Animation : public spAnimation
-{
-    Collision_Box hurtBox;
-    Collision_Box hitBox;
-};
-
 struct Fighter
 {
     spSkeleton* skeleton;

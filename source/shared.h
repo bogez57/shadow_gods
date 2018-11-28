@@ -96,6 +96,8 @@ struct Platform_Services
     void (*Free)(void*);
     b DLLJustReloaded { false };
     f32 prevFrameTimeInSecs {};
+    f32 targetFrameTimeInSecs {};
+    f32 realLifeTimeInSecs {};
 };
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
