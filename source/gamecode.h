@@ -51,6 +51,9 @@ struct Fighter
     spAnimationState* animationState;
     v2f worldPos;
     v2f prevFrameWorldPos;
+    spTrackEntry* currentAnimTrackEntry; //consider pulling three variables here into separate struct
+    ui32 currentActionComboMove {};
+    Single_List<spTrackEntry*> trackEntries; //not compiling currently. Prob because of no initialization happening here while using stl
 };
 
 void InitFighter_1(Fighter* fighter, v2f worldPos, spSkeleton* spineSkeleton, spAnimationState* spineAnimState, v2f scale)

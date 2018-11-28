@@ -37,6 +37,8 @@ global_variable spAnimation* rightCrossAnim;
 global_variable spAnimation* leftJabAnim;
 global_variable spAnimation* rightUpperCutAnim;
 global_variable spAnimation* highKickAnim;
+global_variable spAnimation* lowKickAnim;
+global_variable spAnimation* punchFlurryAnim;
 
 #include "memory_handling.cpp"
 #include "memory_allocators.cpp"
@@ -45,11 +47,6 @@ global_variable spAnimation* highKickAnim;
 // Third Party
 #include "spine.cpp"
 #include <boagz/error_context.cpp>
-
-global_variable spTrackEntry* currentAnimTrackEntry;
-
-global_variable ui32 trackEntryIndex {};
-global_variable Single_List<spTrackEntry*> trackEntries;
 
 local_func auto FlipImage(Image image) -> Image
 {
@@ -300,6 +297,48 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
+void DoComboMoveWith(Fighter* fighter, spAnimation* comboAnim1, spAnimation* comboAnim2, spAnimation* comboAnim3)
+{
+    ui32 const comboMove1 { 0 };
+    ui32 const comboMove2 { 1 };
+    ui32 const comboMove3 { 2 };
+
+    if (fighter->currentAnimTrackEntry)
+    {
+        if (spTrackEntry_getAnimationTime(fighter->currentAnimTrackEntry) == fighter->currentAnimTrackEntry->animationEnd)
+        {
+            fighter->currentActionComboMove = comboMove1;
+        }
+    };
+
+    switch (fighter->currentActionComboMove)
+    {
+    case comboMove1:
+    {
+        fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim1, 0, 0.0f);
+        fighter->trackEntries.AddLast(fighter->currentAnimTrackEntry);
+        fighter->currentActionComboMove++;
+    }
+    break;
+
+    case comboMove2:
+    {
+        fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim2, 0, 0.0f);
+        fighter->trackEntries.AddLast(fighter->currentAnimTrackEntry);
+        fighter->currentActionComboMove++;
+    }
+    break;
+
+    case comboMove3:
+    {
+        fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim3, 0, 0.0f);
+        fighter->trackEntries.AddLast(fighter->currentAnimTrackEntry);
+        fighter->currentActionComboMove++;
+    }
+    break;
+    }
+};
+
 extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -388,6 +427,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             leftJabAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
             rightUpperCutAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
             highKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
+            lowKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "low_kick");
+            punchFlurryAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch_flurry");
 
             { //Setup animation collision boxes which are unique to each animation
                 rightCrossAnim->hitBoxCenterOffset = { 300.0f, 400.0f };
@@ -397,6 +438,18 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 leftJabAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
                 leftJabAnim->hitBoxSize = { 60.0f, 40.0f };
                 leftJabAnim->hitBoxDuration = .1f;
+
+                rightUpperCutAnim->hitBoxCenterOffset = { 100.0f, 400.0f };
+                rightUpperCutAnim->hitBoxSize = { 30.0f, 100.0f };
+                rightUpperCutAnim->hitBoxDuration = .1f;
+
+                lowKickAnim->hitBoxCenterOffset = { 200.0f, 210.0f };
+                lowKickAnim->hitBoxSize = { 30.0f, 130.0f };
+                lowKickAnim->hitBoxDuration = .15f;
+
+                punchFlurryAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
+                punchFlurryAnim->hitBoxSize = { 80.0f, 80.0f };
+                punchFlurryAnim->hitBoxDuration = .15f;
             };
         };
 
@@ -419,6 +472,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             leftJabAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
             rightUpperCutAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
             highKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
+            lowKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "low_kick");
+            punchFlurryAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch_flurry");
         };
     };
 
@@ -428,51 +483,18 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
     {
         spTrackEntry* entry = spAnimationState_addAnimation(stage->player.animationState, 0, highKickAnim, 0, 0.0f);
-        trackEntries.AddLast(entry);
+        player->trackEntries.AddLast(entry);
     }
+
     else if (KeyPressed(keyboard->ActionLeft))
     {
-        local_persist ui32 currentActionComboMove {};
-
-        ui32 const comboMove1 { 0 };
-        ui32 const comboMove2 { 1 };
-        ui32 const comboMove3 { 2 };
-
-        if (currentAnimTrackEntry)
-        {
-            if (spTrackEntry_getAnimationTime(currentAnimTrackEntry) == currentAnimTrackEntry->animationEnd)
-            {
-                currentActionComboMove = comboMove1;
-            }
-        };
-
-        switch (currentActionComboMove)
-        {
-        case comboMove1:
-        {
-            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightCrossAnim, 0, 0.0f);
-            trackEntries.AddLast(currentAnimTrackEntry);
-            currentActionComboMove++;
-        }
-        break;
-
-        case comboMove2:
-        {
-            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, leftJabAnim, 0, 0.0f);
-            trackEntries.AddLast(currentAnimTrackEntry);
-            currentActionComboMove++;
-        }
-        break;
-
-        case comboMove3:
-        {
-            currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightUpperCutAnim, 0, 0.0f);
-            trackEntries.AddLast(currentAnimTrackEntry);
-            currentActionComboMove++;
-        }
-        break;
-        }
+        DoComboMoveWith(player, rightCrossAnim, leftJabAnim, rightUpperCutAnim);
     };
+
+    if (KeyPressed(keyboard->ActionRight))
+    {
+        DoComboMoveWith(player, lowKickAnim, rightCrossAnim, punchFlurryAnim);
+    }
 
     if (KeyHeld(keyboard->MoveRight))
     {
@@ -491,11 +513,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     Collision_Box hitBox {};
 
-    if (trackEntries.Size() > 0)
+    if (player->trackEntries.Size() > 0)
     {
         local_persist f32 hitBoxDuration {};
 
-        spTrackEntry* entry = trackEntries.First();
+        spTrackEntry* entry = player->trackEntries.First();
 
         if (spTrackEntry_getAnimationTime(entry) > 0.0f)
         {
@@ -509,8 +531,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
             if (platformServices->realLifeTimeInSecs <= entry->animation->hitBoxEndTime)
             {
-                v2f hitBoxCenterOffset = trackEntries.First()->animation->hitBoxCenterOffset;
-                v2f hitBoxSize = trackEntries.First()->animation->hitBoxSize;
+                v2f hitBoxCenterOffset = player->trackEntries.First()->animation->hitBoxCenterOffset;
+                v2f hitBoxSize = player->trackEntries.First()->animation->hitBoxSize;
 
                 v2f hitBoxCenterWorldPos = hitBoxCenterOffset + player->worldPos;
                 InitCollisionBox_1(&hitBox, hitBoxCenterWorldPos, hitBoxSize);
@@ -518,7 +540,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             else
             {
                 entry->animation->hitBoxTimerStarted = false;
-                trackEntries.PopFirst();
+                player->trackEntries.PopFirst();
             }
         };
     };
