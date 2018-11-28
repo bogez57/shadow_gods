@@ -11,7 +11,8 @@
         "cstdio": "cpp",
         "*.rh": "cpp",
         "xiosbase": "cpp",
-        "boundingboxattachment.c": "cpp"
+        "boundingboxattachment.c": "cpp",
+        "list": "cpp"
     },
     /********************
         Vim Settings

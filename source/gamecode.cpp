@@ -20,6 +20,7 @@
 #include "shared.h"
 #include "memory_handling.h"
 #include "dynamic_array.h"
+#include "linked_list.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -44,12 +45,11 @@ global_variable spAnimation* highKickAnim;
 // Third Party
 #include "spine.cpp"
 #include <boagz/error_context.cpp>
-#include <list>
 
 global_variable spTrackEntry* currentAnimTrackEntry;
 
 global_variable ui32 trackEntryIndex {};
-global_variable std::list<spTrackEntry*> trackEntries;
+global_variable Single_List<spTrackEntry*> trackEntries;
 
 local_func auto FlipImage(Image image) -> Image
 {
@@ -428,7 +428,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
     {
         spTrackEntry* entry = spAnimationState_addAnimation(stage->player.animationState, 0, highKickAnim, 0, 0.0f);
-        trackEntries.push_back(entry);
+        trackEntries.AddLast(entry);
     }
     else if (KeyPressed(keyboard->ActionLeft))
     {
@@ -451,7 +451,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         case comboMove1:
         {
             currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightCrossAnim, 0, 0.0f);
-            trackEntries.push_back(currentAnimTrackEntry);
+            trackEntries.AddLast(currentAnimTrackEntry);
             currentActionComboMove++;
         }
         break;
@@ -459,7 +459,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         case comboMove2:
         {
             currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, leftJabAnim, 0, 0.0f);
-            trackEntries.push_back(currentAnimTrackEntry);
+            trackEntries.AddLast(currentAnimTrackEntry);
             currentActionComboMove++;
         }
         break;
@@ -467,7 +467,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         case comboMove3:
         {
             currentAnimTrackEntry = spAnimationState_addAnimation(stage->player.animationState, 0, rightUpperCutAnim, 0, 0.0f);
-            trackEntries.push_back(currentAnimTrackEntry);
+            trackEntries.AddLast(currentAnimTrackEntry);
             currentActionComboMove++;
         }
         break;
@@ -491,11 +491,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
     Collision_Box hitBox {};
 
-    if (trackEntries.size() > 0)
+    if (trackEntries.Size() > 0)
     {
         local_persist f32 hitBoxDuration {};
 
-        spTrackEntry* entry = trackEntries.front();
+        spTrackEntry* entry = trackEntries.First();
 
         if (spTrackEntry_getAnimationTime(entry) > 0.0f)
         {
@@ -509,8 +509,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
             if (platformServices->realLifeTimeInSecs <= entry->animation->hitBoxEndTime)
             {
-                v2f hitBoxCenterOffset = trackEntries.front()->animation->hitBoxCenterOffset;
-                v2f hitBoxSize = trackEntries.front()->animation->hitBoxSize;
+                v2f hitBoxCenterOffset = trackEntries.First()->animation->hitBoxCenterOffset;
+                v2f hitBoxSize = trackEntries.First()->animation->hitBoxSize;
 
                 v2f hitBoxCenterWorldPos = hitBoxCenterOffset + player->worldPos;
                 InitCollisionBox_1(&hitBox, hitBoxCenterWorldPos, hitBoxSize);
@@ -518,7 +518,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             else
             {
                 entry->animation->hitBoxTimerStarted = false;
-                trackEntries.pop_front();
+                trackEntries.PopFirst();
             }
         };
     };
