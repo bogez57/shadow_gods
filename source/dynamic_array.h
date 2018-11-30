@@ -54,28 +54,34 @@ class Dynam_Array
 public:
     Dynam_Array() = default;
 
-    Dynam_Array(size_t initialSize)
+    Dynam_Array(i64 initialSize)
         : capacity(initialSize)
     {
-        *this = ResizeArray<Type>(*this, capacity);
+        *this = ResizeArray<Type>(*this, initialSize);
         memset(this->elements, 0, initialSize);
     };
 
     Type operator[](i32 i) const;
 
-    void Insert(Type& element, ui32 AtIndex)
+    void Init(i64 initialSize)
     {
-        ((this->capacity <= (size_t)(AtIndex) ? (this->capacity = this->size = (AtIndex) + 1,
-                                                    Roundup32(this->capacity),
-                                                    this->elements = (Type*)ReAlloc(this->elements, Type, this->capacity),
-                                                    0)
-                                              : this->size <= (size_t)(AtIndex) ? this->size = (AtIndex) + 1 : 0),
+        *this = ResizeArray<Type>(*this, initialSize);
+        memset(this->elements, 0, initialSize);
+    };
+
+    void Insert(Type element, ui32 AtIndex)
+    {
+        ((this->capacity <= (i64)(AtIndex) ? (this->capacity = this->size = (AtIndex) + 1,
+                                                 Roundup32(this->capacity),
+                                                 this->elements = (Type*)ReAlloc(this->elements, Type, this->capacity),
+                                                 0)
+                                           : this->size <= (i64)(AtIndex) ? this->size = (AtIndex) + 1 : 0),
             this->elements[(AtIndex)])
             = element;
     };
 
     //Resize array if appending over bounds
-    void PushBack(Type& element)
+    void PushBack(Type element)
     {
         if (this->size == this->capacity)
         {
@@ -87,8 +93,8 @@ public:
 
     void PopBack()
     {
-        this->elements[size - 1].x = 0;
-        this->elements[size - 1].y = 0;
+        BGZ_ASSERT(this->size > 0, "Cannot pop off an empty dynamic array!");
+        this->elements[this->size - 1] = {};
         this->elements[--this->size];
     };
 
@@ -107,7 +113,7 @@ public:
         hasArrayBeenDestroyed = true;
     };
 
-    size_t size {}, capacity {};
+    i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
 };
@@ -119,7 +125,7 @@ Type Dynam_Array<Type>::operator[](i32 Index) const
 };
 
 template <typename Type>
-Dynam_Array<Type> ResizeArray(Dynam_Array<Type> arrayToResize, size_t size)
+Dynam_Array<Type> ResizeArray(Dynam_Array<Type> arrayToResize, i64 size)
 {
     (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)ReAlloc(arrayToResize.elements, Type, arrayToResize.capacity));
 
