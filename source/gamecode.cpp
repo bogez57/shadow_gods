@@ -21,6 +21,7 @@
 #include "memory_handling.h"
 #include "dynamic_array.h"
 #include "linked_list.h"
+#include "ring_buffer.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -316,7 +317,7 @@ void DoComboMoveWith(Fighter* fighter, spAnimation* comboAnim1, spAnimation* com
     case comboMove1:
     {
         fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim1, 0, 0.0f);
-        fighter->trackEntries.AddLast(fighter->currentAnimTrackEntry);
+        fighter->trackEntries.PushBack(fighter->currentAnimTrackEntry);
         fighter->currentActionComboMove++;
     }
     break;
@@ -324,7 +325,7 @@ void DoComboMoveWith(Fighter* fighter, spAnimation* comboAnim1, spAnimation* com
     case comboMove2:
     {
         fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim2, 0, 0.0f);
-        fighter->trackEntries.AddLast(fighter->currentAnimTrackEntry);
+        fighter->trackEntries.PushBack(fighter->currentAnimTrackEntry);
         fighter->currentActionComboMove++;
     }
     break;
@@ -332,7 +333,7 @@ void DoComboMoveWith(Fighter* fighter, spAnimation* comboAnim1, spAnimation* com
     case comboMove3:
     {
         fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim3, 0, 0.0f);
-        fighter->trackEntries.AddLast(fighter->currentAnimTrackEntry);
+        fighter->trackEntries.PushBack(fighter->currentAnimTrackEntry);
         fighter->currentActionComboMove++;
     }
     break;
@@ -450,6 +451,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 punchFlurryAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
                 punchFlurryAnim->hitBoxSize = { 80.0f, 80.0f };
                 punchFlurryAnim->hitBoxDuration = .15f;
+
+                player->trackEntries.Init(10);
             };
         };
 
@@ -483,7 +486,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
     {
         spTrackEntry* entry = spAnimationState_addAnimation(stage->player.animationState, 0, highKickAnim, 0, 0.0f);
-        player->trackEntries.AddLast(entry);
+        player->trackEntries.PushBack(entry);
     }
 
     else if (KeyPressed(keyboard->ActionLeft))
@@ -517,10 +520,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     {
         local_persist f32 hitBoxDuration {};
 
-        spTrackEntry* entry = player->trackEntries.First();
-
-        if (spTrackEntry_getAnimationTime(entry) > 0.0f)
+        if (spTrackEntry_getAnimationTime(player->trackEntries.GetFirstElem()) > 0.0f)
         {
+            spTrackEntry* entry = player->trackEntries.GetFirstElem();
+
             if (NOT entry->animation->hitBoxTimerStarted)
             {
                 entry->animation->hitBoxTimerStarted = true;
@@ -531,8 +534,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
             if (platformServices->realLifeTimeInSecs <= entry->animation->hitBoxEndTime)
             {
-                v2f hitBoxCenterOffset = player->trackEntries.First()->animation->hitBoxCenterOffset;
-                v2f hitBoxSize = player->trackEntries.First()->animation->hitBoxSize;
+                v2f hitBoxCenterOffset = entry->animation->hitBoxCenterOffset;
+                v2f hitBoxSize = entry->animation->hitBoxSize;
 
                 v2f hitBoxCenterWorldPos = hitBoxCenterOffset + player->worldPos;
                 InitCollisionBox_1(&hitBox, hitBoxCenterWorldPos, hitBoxSize);
@@ -540,7 +543,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             else
             {
                 entry->animation->hitBoxTimerStarted = false;
-                player->trackEntries.PopFirst();
+                player->trackEntries.RemoveElem();
             }
         };
     };
