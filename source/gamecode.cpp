@@ -34,6 +34,7 @@ global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
+global_variable spAnimation* idle;
 global_variable spAnimation* rightCrossAnim;
 global_variable spAnimation* leftJabAnim;
 global_variable spAnimation* rightUpperCutAnim;
@@ -424,6 +425,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
             spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
 
+            idle = spSkeletonData_findAnimation(stage->commonSkeletonData, "idle");
             rightCrossAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
             leftJabAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
             rightUpperCutAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
@@ -432,25 +434,47 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             punchFlurryAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch_flurry");
 
             { //Setup animation collision boxes which are unique to each animation
-                rightCrossAnim->hitBoxCenterOffset = { 300.0f, 400.0f };
-                rightCrossAnim->hitBoxSize = { 80.0f, 40.0f };
-                rightCrossAnim->hitBoxDuration = .1f;
+                { //Setup hit boxes
+                    rightCrossAnim->hitBoxCenterOffset = { 300.0f, 400.0f };
+                    rightCrossAnim->hitBoxSize = { 80.0f, 40.0f };
+                    rightCrossAnim->hitBoxDuration = .1f;
 
-                leftJabAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
-                leftJabAnim->hitBoxSize = { 60.0f, 40.0f };
-                leftJabAnim->hitBoxDuration = .1f;
+                    leftJabAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
+                    leftJabAnim->hitBoxSize = { 60.0f, 40.0f };
+                    leftJabAnim->hitBoxDuration = .1f;
 
-                rightUpperCutAnim->hitBoxCenterOffset = { 100.0f, 400.0f };
-                rightUpperCutAnim->hitBoxSize = { 30.0f, 100.0f };
-                rightUpperCutAnim->hitBoxDuration = .1f;
+                    rightUpperCutAnim->hitBoxCenterOffset = { 100.0f, 400.0f };
+                    rightUpperCutAnim->hitBoxSize = { 30.0f, 100.0f };
+                    rightUpperCutAnim->hitBoxDuration = .1f;
 
-                lowKickAnim->hitBoxCenterOffset = { 200.0f, 210.0f };
-                lowKickAnim->hitBoxSize = { 30.0f, 130.0f };
-                lowKickAnim->hitBoxDuration = .15f;
+                    lowKickAnim->hitBoxCenterOffset = { 200.0f, 210.0f };
+                    lowKickAnim->hitBoxSize = { 30.0f, 130.0f };
+                    lowKickAnim->hitBoxDuration = .15f;
 
-                punchFlurryAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
-                punchFlurryAnim->hitBoxSize = { 80.0f, 80.0f };
-                punchFlurryAnim->hitBoxDuration = .15f;
+                    punchFlurryAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
+                    punchFlurryAnim->hitBoxSize = { 80.0f, 80.0f };
+                    punchFlurryAnim->hitBoxDuration = .15f;
+                };
+
+                { //Setup hurt boxes
+                    idle->hurtBoxCenterOffset = { 0.0f, 0.0f };
+                    idle->hurtBoxSize = { 100.0f, 500.0f };
+
+                    rightCrossAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
+                    rightCrossAnim->hurtBoxSize = { 100.0f, 500.0f };
+
+                    leftJabAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
+                    leftJabAnim->hurtBoxSize = { 100.0f, 500.0f };
+
+                    rightUpperCutAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
+                    rightUpperCutAnim->hurtBoxSize = { 100.0f, 500.0f };
+
+                    lowKickAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
+                    lowKickAnim->hurtBoxSize = { 100.0f, 500.0f };
+
+                    punchFlurryAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
+                    punchFlurryAnim->hurtBoxSize = { 100.0f, 500.0f };
+                };
 
                 player->trackEntries.Init(10);
             };
@@ -514,9 +538,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     TransformSkeletonToWorldSpace_1(player->skeleton);
     TransformSkeletonToWorldSpace_1(ai->skeleton);
 
-    { //Create hit boxes
+    { //Create hit boxes if need be
         if (player->trackEntries.Size() > 0)
         {
+            //If animation has started
             if (spTrackEntry_getAnimationTime(player->trackEntries.GetFirstElem()) > 0.0f)
             {
                 spTrackEntry* entry = player->trackEntries.GetFirstElem();
@@ -530,11 +555,8 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                 //Have collision detection based on realtime instad of tying to animations for more consistency
                 if (platformServices->realLifeTimeInSecs <= entry->animation->hitBoxEndTime)
                 {
-                    v2f hitBoxCenterOffset = entry->animation->hitBoxCenterOffset;
-                    v2f hitBoxSize = entry->animation->hitBoxSize;
-
-                    v2f hitBoxCenterWorldPos = hitBoxCenterOffset + player->worldPos;
-                    InitCollisionBox_1(&player->hitBox, hitBoxCenterWorldPos, hitBoxSize);
+                    v2f hitBoxCenterWorldPos = entry->animation->hitBoxCenterOffset + player->worldPos;
+                    InitCollisionBox_1(&player->hitBox, hitBoxCenterWorldPos, entry->animation->hitBoxSize);
                 }
                 else
                 {
@@ -542,6 +564,16 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
                     player->trackEntries.RemoveElem();
                 }
             };
+        };
+    };
+
+    { //Create hurt boxes
+        if (player->trackEntries.Size() > 0)
+        {
+            spTrackEntry* entry = player->trackEntries.GetFirstElem();
+
+            v2f hurtBoxCenterWorldPos = entry->animation->hurtBoxCenterOffset + player->worldPos;
+            InitCollisionBox_1(&player->hurtBox, hurtBoxCenterWorldPos, entry->animation->hurtBoxSize);
         };
     };
 
@@ -629,7 +661,11 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             player->hitBox.bounds.minCorner += translationToCameraSpace;
             player->hitBox.bounds.maxCorner += translationToCameraSpace;
 
+            player->hurtBox.bounds.minCorner += translationToCameraSpace;
+            player->hurtBox.bounds.maxCorner += translationToCameraSpace;
+
             renderCmds.DrawRect(player->hitBox.bounds.minCorner, player->hitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.6f });
+            renderCmds.DrawRect(player->hurtBox.bounds.minCorner, player->hurtBox.bounds.maxCorner, v4f { 0.0f, 0.9f, 0.0f, 0.6f });
         };
     };
 };

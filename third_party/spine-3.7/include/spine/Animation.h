@@ -57,6 +57,9 @@ typedef struct spAnimation
     f32 hitBoxEndTime;
     b hitBoxTimerStarted;
 
+    v2f hurtBoxCenterOffset;
+    v2f hurtBoxSize;
+
 #ifdef __cplusplus
     spAnimation()
         : name(0)

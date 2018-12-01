@@ -55,6 +55,7 @@ struct Fighter
     ui32 currentActionComboMove {};
     Ring_Buffer<spTrackEntry*> trackEntries;
     Collision_Box hitBox;
+    Collision_Box hurtBox;
 };
 
 void ApplyAnimationStateToSkeleton_2(spSkeleton* skeleton, spAnimationState* animState, v2f newWorldPos)
