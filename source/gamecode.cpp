@@ -514,37 +514,34 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     TransformSkeletonToWorldSpace_1(player->skeleton);
     TransformSkeletonToWorldSpace_1(ai->skeleton);
 
-    Collision_Box hitBox {};
-
-    if (player->trackEntries.Size() > 0)
-    {
-        local_persist f32 hitBoxDuration {};
-
-        if (spTrackEntry_getAnimationTime(player->trackEntries.GetFirstElem()) > 0.0f)
+    { //Create hit boxes
+        if (player->trackEntries.Size() > 0)
         {
-            spTrackEntry* entry = player->trackEntries.GetFirstElem();
-
-            if (NOT entry->animation->hitBoxTimerStarted)
+            if (spTrackEntry_getAnimationTime(player->trackEntries.GetFirstElem()) > 0.0f)
             {
-                entry->animation->hitBoxTimerStarted = true;
-                hitBoxDuration = entry->animation->hitBoxDuration;
-                entry->animation->hitBoxStartTime = platformServices->realLifeTimeInSecs;
-                entry->animation->hitBoxEndTime = entry->animation->hitBoxStartTime + hitBoxDuration;
-            }
+                spTrackEntry* entry = player->trackEntries.GetFirstElem();
 
-            if (platformServices->realLifeTimeInSecs <= entry->animation->hitBoxEndTime)
-            {
-                v2f hitBoxCenterOffset = entry->animation->hitBoxCenterOffset;
-                v2f hitBoxSize = entry->animation->hitBoxSize;
+                if (NOT entry->animation->hitBoxTimerStarted)
+                {
+                    entry->animation->hitBoxTimerStarted = true;
+                    entry->animation->hitBoxEndTime = platformServices->realLifeTimeInSecs + entry->animation->hitBoxDuration;
+                }
 
-                v2f hitBoxCenterWorldPos = hitBoxCenterOffset + player->worldPos;
-                InitCollisionBox_1(&hitBox, hitBoxCenterWorldPos, hitBoxSize);
-            }
-            else
-            {
-                entry->animation->hitBoxTimerStarted = false;
-                player->trackEntries.RemoveElem();
-            }
+                //Have collision detection based on realtime instad of tying to animations for more consistency
+                if (platformServices->realLifeTimeInSecs <= entry->animation->hitBoxEndTime)
+                {
+                    v2f hitBoxCenterOffset = entry->animation->hitBoxCenterOffset;
+                    v2f hitBoxSize = entry->animation->hitBoxSize;
+
+                    v2f hitBoxCenterWorldPos = hitBoxCenterOffset + player->worldPos;
+                    InitCollisionBox_1(&player->hitBox, hitBoxCenterWorldPos, hitBoxSize);
+                }
+                else
+                {
+                    entry->animation->hitBoxTimerStarted = false;
+                    player->trackEntries.RemoveElem();
+                }
+            };
         };
     };
 
@@ -629,10 +626,10 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
         { //Draw collision boxes
             v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
 
-            hitBox.bounds.minCorner += translationToCameraSpace;
-            hitBox.bounds.maxCorner += translationToCameraSpace;
+            player->hitBox.bounds.minCorner += translationToCameraSpace;
+            player->hitBox.bounds.maxCorner += translationToCameraSpace;
 
-            renderCmds.DrawRect(hitBox.bounds.minCorner, hitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.6f });
+            renderCmds.DrawRect(player->hitBox.bounds.minCorner, player->hitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.6f });
         };
     };
 };

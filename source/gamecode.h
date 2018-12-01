@@ -51,21 +51,10 @@ struct Fighter
     spAnimationState* animationState;
     v2f worldPos;
     v2f prevFrameWorldPos;
-    spTrackEntry* currentAnimTrackEntry; //consider pulling three variables here into separate struct
+    spTrackEntry* currentAnimTrackEntry;
     ui32 currentActionComboMove {};
     Ring_Buffer<spTrackEntry*> trackEntries;
-};
-
-void InitFighter_1(Fighter* fighter, v2f worldPos, spSkeleton* spineSkeleton, spAnimationState* spineAnimState, v2f scale)
-{
-    fighter->skeleton = spineSkeleton;
-    fighter->animationState = spineAnimState;
-
-    fighter->worldPos = worldPos;
-    fighter->skeleton->x = fighter->worldPos.x;
-    fighter->skeleton->y = fighter->worldPos.y;
-    fighter->skeleton->scaleX = scale.x;
-    fighter->skeleton->scaleY = scale.y;
+    Collision_Box hitBox;
 };
 
 void ApplyAnimationStateToSkeleton_2(spSkeleton* skeleton, spAnimationState* animState, v2f newWorldPos)
