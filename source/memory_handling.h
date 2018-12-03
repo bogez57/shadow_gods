@@ -11,10 +11,10 @@ enum Mem_Region_Type
 
 struct Memory_Region
 {
-    ui64* BaseAddress;
-    ui64* EndAddress;
-    ui64 UsedAmount;
-    ui64 Size;
+    i64* BaseAddress;
+    i64* EndAddress;
+    i64 UsedAmount;
+    i64 Size;
 };
 
 struct Memory_Handler
@@ -23,7 +23,7 @@ struct Memory_Handler
     Dynamic_Mem_Allocator dynamAllocator;
 };
 
-Memory_Region CreateRegionFromGameMem_1(Game_Memory* GameMemory, ui64 Size);
+Memory_Region CreateRegionFromGameMem_1(Game_Memory* GameMemory, i64 Size);
 
 #define AllocType(MemRegion, Type, Count) (Type*)_AllocType(MemRegion, sizeof(Type), Count)
 #define AllocSize(MemRegion, Size) _AllocSize(MemRegion, Size)

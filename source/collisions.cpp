@@ -25,22 +25,3 @@ local_func v2f FindCenterOfRectangle(AABB rectangle)
 
     return centerPoint;
 };
-
-local_func b CheckIfVertsInClockwiseOrder(const Dynam_Array<v2f>* vertsToCheck)
-{
-    f32 area {};
-    for (i32 vecIndex { 0 }; vecIndex < vertsToCheck->size; ++vecIndex)
-    {
-        i32 nextVector = (vecIndex + 1) % vertsToCheck->size;
-        area += vertsToCheck->At(vecIndex).x * vertsToCheck->At(nextVector).y;
-        area -= vertsToCheck->At(nextVector).x * vertsToCheck->At(vecIndex).y;
-    }
-
-    if (area < 0)
-    {
-        //clockwise
-        return true;
-    }
-
-    return false;
-};

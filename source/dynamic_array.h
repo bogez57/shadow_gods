@@ -61,7 +61,17 @@ public:
         memset(this->elements, 0, initialSize);
     };
 
-    Type operator[](i32 i) const;
+    inline Type& operator[](i64 index)
+    {
+        BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array index: %i", index, capacity - 1);
+        return *(this->elements + Index);
+    };
+
+    inline Type& At(ui32 index)
+    {
+        BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array index: %i", index, capacity - 1);
+        return *(this->elements + index);
+    };
 
     void Init(i64 initialSize)
     {
@@ -98,13 +108,6 @@ public:
         this->elements[--this->size];
     };
 
-    Type At(ui32 Index) const
-    {
-        BGZ_ASSERT(Index < this->size, "Trying to access index out of current array bounds! Is it because array has been manually destroyed: %s", hasArrayBeenDestroyed ? "Yes" : "No");
-        Type result = this->elements[Index];
-        return result;
-    };
-
     void Destroy()
     {
         DeAlloc(this->elements);
@@ -116,12 +119,6 @@ public:
     i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
-};
-
-template <typename Type>
-Type Dynam_Array<Type>::operator[](i32 Index) const
-{
-    return this->elements[Index];
 };
 
 template <typename Type>

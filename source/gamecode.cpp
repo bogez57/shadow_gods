@@ -19,6 +19,7 @@
 #include "atomic_types.h"
 #include "shared.h"
 #include "memory_handling.h"
+#include "array.h"
 #include "dynamic_array.h"
 #include "linked_list.h"
 #include "ring_buffer.h"

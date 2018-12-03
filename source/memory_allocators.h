@@ -14,7 +14,7 @@ struct Dynamic_Mem_Allocator
 struct Memory_Block
 {
     b IsFree { true };
-    sizet Size { 0 };
+    i64 Size { 0 };
     void* data { nullptr };
     Memory_Block* nextBlock { nullptr };
     Memory_Block* prevBlock { nullptr };
@@ -29,7 +29,7 @@ void InitDynamAllocator_1(Dynamic_Mem_Allocator* dynamAllocator);
 #define CallocType(Type, Count) (Type*)_CallocType(&globalMemHandler->dynamAllocator, ((sizeof(Type)) * (Count)))
 #define CallocSize(Type, Count) _CallocType(&globalMemHandler->dynamAllocator, (Size))
 #define ReAlloc(Ptr, Type, Count) (Type*)_ReAlloc(&globalMemHandler->dynamAllocator, Ptr, sizeof(Type) * Count)
-#define DeAlloc(PtrToMemory) _DeAlloc(&globalMemHandler->dynamAllocator, (ui64**)&PtrToMemory)
+#define DeAlloc(PtrToMemory) _DeAlloc(&globalMemHandler->dynamAllocator, (i64**)&PtrToMemory)
 
 /*** Linear Allocator ***/
 
