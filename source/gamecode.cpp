@@ -167,15 +167,14 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             stage->camera.zoomFactor = 1.0f;
         };
 
-        i32* thing = MallocType(i32, 23);
         i32* thing2 = MallocType(i32, 1);
-        i32* thing3 = MallocType(i32, 1);
+        i16* thing3 = MallocType(i16, 1);
 
-        thing[1] = 23;
-        *thing2 = 23;
-        *thing3 = 23323;
+        *thing2 = 1024;
+        *thing3 = 4044;
 
-        BGZ_CONSOLE("%i", thing[0]);
+        BGZ_CONSOLE("%i", *thing2);
+        BGZ_CONSOLE("%i", *thing3);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
