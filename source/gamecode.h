@@ -75,5 +75,4 @@ struct Stage_Data
 struct Game_State
 {
     Stage_Data stage;
-    Memory_Handler memHandler;
 };

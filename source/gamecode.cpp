@@ -19,8 +19,8 @@
 #include "atomic_types.h"
 #include "shared.h"
 #include "memory_handling.h"
+#include "memory_allocators.h"
 #include "array.h"
-#include "dynamic_array.h"
 #include "linked_list.h"
 #include "ring_buffer.h"
 #include "gamecode.h"
@@ -29,13 +29,12 @@
 
 global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmds globalRenderCmds;
-global_variable Memory_Handler* globalMemHandler;
+global_variable Dynamic_Mem_Allocator dynamicAllocator;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
-#include "memory_handling.cpp"
 #include "memory_allocators.cpp"
 #include "collisions.cpp"
 
@@ -125,7 +124,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
     Game_State* gameState = (Game_State*)gameMemory->PermanentStorage;
     deltaT = platformServices->prevFrameTimeInSecs;
 
-    globalMemHandler = &gameState->memHandler;
     globalPlatformServices = platformServices;
     globalRenderCmds = renderCmds;
 
@@ -142,15 +140,14 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
         gameMemory->IsInitialized = true;
 
+        CreateRegionFromGameMem_1(gameMemory, Megabytes(10));
+
+        InitDynamAllocator_1(&dynamicAllocator);
+
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
         deltaTFixed = platformServices->targetFrameTimeInSecs;
-
-        { // Split game memory into more specific memory regions
-            gameState->memHandler.memRegions[DYNAMIC] = CreateRegionFromGameMem_1(gameMemory, Megabytes(10));
-            InitDynamAllocator_1(&gameState->memHandler.dynamAllocator);
-        };
 
         { //Init stage info
             stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
@@ -169,6 +166,15 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
+
+        i32* thing = MallocType(i32, 23);
+        i32* thing2 = MallocType(i32, 1);
+        i32* thing3 = MallocType(i32, 1);
+
+        thing[1] = 23;
+        *thing2 = 23;
+
+        BGZ_CONSOLE("%i", thing[0]);
     };
 
     if (globalPlatformServices->DLLJustReloaded)

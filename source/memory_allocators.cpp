@@ -39,7 +39,7 @@ local_func void InitDynamAllocator_1(Dynamic_Mem_Allocator* dynamAllocator)
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
-    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(&globalMemHandler->memRegions[DYNAMIC], TotalSize);
+    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(TotalSize);
 
     InitialBlock->Size = BlockSize;
     InitialBlock->IsFree = false;
@@ -159,7 +159,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(OUT Dynamic_Mem_Allocator* Dynam
     }
     else
     {
-        FreeSize(&globalMemHandler->memRegions[DYNAMIC], this->Size);
+        FreeSize(this->Size);
         this->prevBlock->nextBlock = nullptr;
         DynamAllocator->tail = this->prevBlock;
         --DynamAllocator->AmountOfBlocks;
@@ -170,7 +170,7 @@ local_func auto
 AppendNewBlockAndMarkInUse(OUT Dynamic_Mem_Allocator* DynamAllocator, i64 Size) -> Memory_Block*
 {
     i64 TotalSize = sizeof(Memory_Block) + Size;
-    Memory_Block* NewBlock = (Memory_Block*)AllocSize(&globalMemHandler->memRegions[DYNAMIC], TotalSize);
+    Memory_Block* NewBlock = (Memory_Block*)AllocSize(TotalSize);
 
     NewBlock->Size = Size;
     NewBlock->IsFree = false;
@@ -191,7 +191,7 @@ auto _MallocType(Dynamic_Mem_Allocator* DynamAllocator, i64 Size) -> void*
     BGZ_ERRCTXT1("When trying to allocate in dymamic memory");
 
     BGZ_ASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
-    BGZ_ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    //BGZ_ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* Result { nullptr };
 
@@ -234,7 +234,7 @@ auto _CallocType(Dynamic_Mem_Allocator* DynamAllocator, i64 Size) -> void*
     BGZ_ERRCTXT1("When trying to allocate and initialize memory in dymamic memory");
 
     BGZ_ASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
-    BGZ_ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    //BGZ_ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* MemBlockData = _MallocType(DynamAllocator, Size);
 
@@ -254,7 +254,7 @@ auto _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, i64 Ne
     BGZ_ERRCTXT1("When trying to reallocate memory in dymamic memory");
 
     BGZ_ASSERT(DynamAllocator->head, "Dynamic allocator not initialized!");
-    BGZ_ASSERT((globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount) > NewSize, "Not enough room left in memory region!");
+    //BGZ_ASSERT((globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount) > NewSize, "Not enough room left in memory region!");
 
     Memory_Block* BlockToRealloc;
     if (DataToRealloc)
@@ -301,7 +301,7 @@ auto _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, i64** MemToFree) -> void
 
     if (*MemToFree)
     {
-        BGZ_ASSERT(*MemToFree > globalMemHandler->memRegions[DYNAMIC].BaseAddress && *MemToFree < globalMemHandler->memRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
+        //BGZ_ASSERT(*MemToFree > globalMemHandler->memRegions[DYNAMIC].BaseAddress && *MemToFree < globalMemHandler->memRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
 
         Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 
@@ -310,27 +310,4 @@ auto _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, i64** MemToFree) -> void
 
         *MemToFree = nullptr;
     };
-};
-
-/******************************************************* 
-   Linear Allocator 
-********************************************************/
-
-auto _PushType(Linear_Mem_Allocator* LinearAllocator, i64 size) -> void*
-{
-    Memory_Region* MemRegion = &globalMemHandler->memRegions[LINEAR];
-    BGZ_ASSERT((MemRegion->UsedAmount + size) <= MemRegion->Size, "Memory bytes requested, %x, greater than total memory region size, %x", (MemRegion->UsedAmount + size), MemRegion->Size);
-
-    void* Result = MemRegion->BaseAddress + MemRegion->UsedAmount;
-    MemRegion->UsedAmount += (size);
-
-    return Result;
-};
-
-auto _PopSize(Linear_Mem_Allocator* linearAllocator, i64 sizeToFree) -> void
-{
-    Memory_Region* MemRegion = &globalMemHandler->memRegions[LINEAR];
-    BGZ_ASSERT(sizeToFree < MemRegion->Size || sizeToFree < MemRegion->UsedAmount, "Trying to free more bytes then available!");
-
-    MemRegion->UsedAmount -= sizeToFree;
 };
