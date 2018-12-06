@@ -37,10 +37,10 @@ i64* PointerAddition(i64* baseAddress, i64 amountToAdvancePointer)
     i64 padding {};
     if (amountToAdvancePointer > 8)
         padding = amountToAdvancePointer % 8;
-    else if (amountToAdvancePointer < 8)
-        padding = 8 - amountToAdvancePointer;
     else if (amountToAdvancePointer == 0)
         padding = 0;
+    else if (amountToAdvancePointer < 8)
+        padding = 8 - amountToAdvancePointer;
 
     newAddress = (i64*)((((i8*)baseAddress) + amountToAdvancePointer) + padding);
 

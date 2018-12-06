@@ -166,15 +166,6 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
             stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
-
-        i32* thing2 = MallocType(i32, 1);
-        i16* thing3 = MallocType(i16, 1);
-
-        *thing2 = 1024;
-        *thing3 = 4044;
-
-        BGZ_CONSOLE("%i", *thing2);
-        BGZ_CONSOLE("%i", *thing3);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
