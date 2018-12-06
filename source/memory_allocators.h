@@ -9,6 +9,7 @@ struct Dynamic_Mem_Allocator
     Memory_Block* head;
     Memory_Block* tail;
     ui32 AmountOfBlocks;
+    i32 memoryRegionIdentifier;
 };
 
 struct Memory_Block

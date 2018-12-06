@@ -140,7 +140,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
         gameMemory->IsInitialized = true;
 
-        CreateRegionFromGameMem_1(gameMemory, Megabytes(10));
+        CreateRegionFromGameMem_1(gameMemory, Megabytes(100));
 
         InitDynamAllocator_1(&dynamicAllocator);
 
@@ -173,6 +173,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
         thing[1] = 23;
         *thing2 = 23;
+        *thing3 = 23323;
 
         BGZ_CONSOLE("%i", thing[0]);
     };

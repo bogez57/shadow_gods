@@ -35,11 +35,13 @@ local_func void InitDynamAllocator_1(Dynamic_Mem_Allocator* dynamAllocator)
 {
     BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
 
+    dynamAllocator->memoryRegionIdentifier = CreateSubRegion(Megabytes(10));
+
     dynamAllocator->AmountOfBlocks = 0;
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
-    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(TotalSize);
+    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(dynamAllocator->memoryRegionIdentifier, TotalSize);
 
     InitialBlock->Size = BlockSize;
     InitialBlock->IsFree = false;
@@ -159,7 +161,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(OUT Dynamic_Mem_Allocator* Dynam
     }
     else
     {
-        FreeSize(this->Size);
+        FreeSize(DynamAllocator->memoryRegionIdentifier, this->Size);
         this->prevBlock->nextBlock = nullptr;
         DynamAllocator->tail = this->prevBlock;
         --DynamAllocator->AmountOfBlocks;
@@ -170,7 +172,7 @@ local_func auto
 AppendNewBlockAndMarkInUse(OUT Dynamic_Mem_Allocator* DynamAllocator, i64 Size) -> Memory_Block*
 {
     i64 TotalSize = sizeof(Memory_Block) + Size;
-    Memory_Block* NewBlock = (Memory_Block*)AllocSize(TotalSize);
+    Memory_Block* NewBlock = (Memory_Block*)AllocSize(DynamAllocator->memoryRegionIdentifier, TotalSize);
 
     NewBlock->Size = Size;
     NewBlock->IsFree = false;
