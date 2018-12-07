@@ -30,4 +30,4 @@ void InitDynamAllocator_1(Dynamic_Mem_Allocator* dynamAllocator);
 #define CallocType(Type, Count) (Type*)_CallocType(&dynamicAllocator, ((sizeof(Type)) * (Count)))
 #define CallocSize(Type, Count) _CallocType(&dynamicAllocator, (Size))
 #define ReAlloc(Ptr, Type, Count) (Type*)_ReAlloc(&dynamicAllocator, Ptr, sizeof(Type) * Count)
-#define DeAlloc(PtrToMemory) _DeAlloc(&dynamicAllocator, (i64**)&PtrToMemory)
+#define DeAlloc(PtrToMemory) _DeAlloc(&dynamicAllocator, (void**)&PtrToMemory)

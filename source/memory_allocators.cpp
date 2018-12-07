@@ -297,7 +297,7 @@ auto _ReAlloc(Dynamic_Mem_Allocator* DynamAllocator, void* DataToRealloc, i64 Ne
     return DataToRealloc;
 };
 
-auto _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, i64** MemToFree) -> void
+auto _DeAlloc(Dynamic_Mem_Allocator* DynamAllocator, void** MemToFree) -> void
 {
     BGZ_ERRCTXT1("When trying to free some memory in dynamic memory");
 
