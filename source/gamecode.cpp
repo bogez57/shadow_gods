@@ -19,7 +19,6 @@
 #include "atomic_types.h"
 #include "shared.h"
 #include "memory_handling.h"
-#include "memory_allocators.h"
 #include "array.h"
 #include "linked_list.h"
 #include "ring_buffer.h"
@@ -29,13 +28,11 @@
 
 global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmds globalRenderCmds;
-global_variable Dynamic_Mem_Allocator dynamicAllocator;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
-#include "memory_allocators.cpp"
 #include "collisions.cpp"
 
 // Third Party
