@@ -5,3 +5,6 @@
 #include "source/shared.h"
 #include "source/atomic_types.h"
 #include "source/memory_handling.h"
+
+#include "test1.cpp"
+#include "test2.cpp"
