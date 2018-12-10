@@ -1,4 +1,5 @@
 #include "catch.hpp"
+#include "source/memory_handling.h"
 
 unsigned int Factorial(unsigned int number)
 {

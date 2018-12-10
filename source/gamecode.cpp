@@ -33,6 +33,7 @@ global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
+#include "memory_handling.cpp"
 #include "collisions.cpp"
 
 // Third Party
@@ -139,7 +140,7 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
         CreateRegionFromGameMem_1(gameMemory, Megabytes(100));
 
-        InitDynamAllocator_1(&dynamicAllocator);
+        InitDynamAllocator();
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
