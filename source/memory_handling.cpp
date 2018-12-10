@@ -1,6 +1,10 @@
 #pragma once
 
+#include "memory_handling.h"
+#include <assert.h>
 #include <cstring>
+
+#define ASSERT(x) assert(x)
 
 #define MAX_SUB_REGIONS 10
 
@@ -22,7 +26,7 @@ struct Memory_Region
     i32 numberOfSubRegions;
 };
 
-global_variable Memory_Region mainMemoryRegion;
+Memory_Region mainMemoryRegion;
 
 #define AllocType(subRegionIdentifier, Type, Count) (Type*)_AllocType(sizeof(Type), Count)
 #define AllocSize(subRegionIdentifier, Size) _AllocSize(subRegionIdentifier, Size)
@@ -37,14 +41,14 @@ void* PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
     return newAddress;
 };
 
-void CreateRegionFromMemory(void* GameMemory, i64 size)
+void CreateRegionFromMemory(Application_Memory* Memory, i64 size)
 {
-    mainMemoryRegion.BaseAddress = PointerAddition(GameMemory->TemporaryStorage, GameMemory->TemporaryStorageUsed);
+    mainMemoryRegion.BaseAddress = PointerAddition(Memory->TemporaryStorage, Memory->TemporaryStorageUsed);
     mainMemoryRegion.EndAddress = PointerAddition(mainMemoryRegion.BaseAddress, (size - 1));
     mainMemoryRegion.Size = size;
     mainMemoryRegion.UsedAmount = 0;
 
-    GameMemory->TemporaryStorageUsed += size;
+    Memory->TemporaryStorageUsed += size;
 };
 
 //TODO: add error checks so don't create too many or too large sub regions
@@ -69,7 +73,7 @@ i32 CreateSubRegion(i64 size)
 
 auto _AllocType(i32 subRegionIdentifier, i64 size, i64 Count) -> void*
 {
-    BGZ_ASSERT((mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size) <= mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size, "Memory requested, %x bytes, greater than maximum region size of %x bytes!", (mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size), mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
+    ASSERT((mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size) <= mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
     void* Result = PointerAddition(mainMemoryRegion.memorySubRegions[subRegionIdentifier].BaseAddress, mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount);
     mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount += (size * Count);
 
@@ -78,7 +82,7 @@ auto _AllocType(i32 subRegionIdentifier, i64 size, i64 Count) -> void*
 
 auto _AllocSize(i32 subRegionIdentifier, i64 size) -> void*
 {
-    BGZ_ASSERT((mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size) <= mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size, "Memory requested, %x bytes, greater than maximum region size of %x bytes!", (mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size), mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
+    ASSERT((mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size) <= mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
     void* Result = PointerAddition(mainMemoryRegion.memorySubRegions[subRegionIdentifier].BaseAddress, mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount);
     mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount += (size);
 
@@ -87,8 +91,8 @@ auto _AllocSize(i32 subRegionIdentifier, i64 size) -> void*
 
 auto _FreeSize(i32 subRegionIdentifier, i64 sizeToFree) -> void
 {
-    BGZ_ASSERT(sizeToFree < mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size, "Trying to free more bytes then memory region holds!");
-    BGZ_ASSERT(sizeToFree < mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount, "Trying to free %x bytes with only %x bytes used!", sizeToFree, mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount);
+    ASSERT(sizeToFree < mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
+    ASSERT(sizeToFree < mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount);
 
     mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount -= sizeToFree;
 };
@@ -124,10 +128,9 @@ struct Memory_Block
     void FreeBlockAndMergeIfNecessary();
 };
 
-global_variable Dynamic_Mem_Allocator dynamAllocator;
+Dynamic_Mem_Allocator dynamAllocator;
 
-local_func auto
-ConvertDataToMemoryBlock(void* Ptr) -> Memory_Block*
+Memory_Block* ConvertDataToMemoryBlock(void* Ptr)
 {
     Memory_Block* BlockHeader {};
     BlockHeader = (Memory_Block*)(((ui8*)Ptr) - (sizeof(Memory_Block)));
@@ -136,21 +139,18 @@ ConvertDataToMemoryBlock(void* Ptr) -> Memory_Block*
     return BlockHeader;
 };
 
-local_func auto
-GetDataFromBlock(Memory_Block* Header) -> void*
+void* GetDataFromBlock(Memory_Block* Header)
 {
-    BGZ_ASSERT(Header->Size != 0, "Cannot get data from non-existent memory header!");
+    ASSERT(Header->Size != 0);
 
     void* BlockData = (void*)(Header + 1);
 
     return BlockData;
 };
 
-local_func void InitDynamAllocator()
+void InitDynamAllocator(i64 numberOfBytesForAllocator)
 {
-    BGZ_ERRCTXT1("When Initializing Dynamic Allocator");
-
-    dynamAllocator.memoryRegionIdentifier = CreateSubRegion(Megabytes(10));
+    dynamAllocator.memoryRegionIdentifier = CreateSubRegion(numberOfBytesForAllocator);
 
     dynamAllocator.AmountOfBlocks = 0;
 
@@ -168,13 +168,10 @@ local_func void InitDynamAllocator()
     dynamAllocator.tail = InitialBlock;
 };
 
-local_func auto
-SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock) -> Memory_Block*
+Memory_Block* SplitBlock(Memory_Block* BlockToSplit, sizet SizeOfNewBlock)
 {
-    BGZ_ERRCTXT1("When trying to split a memory block into two");
-
-    BGZ_ASSERT(BlockToSplit->data, "Memory block data does not exist!");
-    BGZ_ASSERT(SizeOfNewBlock > sizeof(Memory_Block), "Cannot fit new requested block size into block!");
+    ASSERT(BlockToSplit->data);
+    ASSERT(SizeOfNewBlock > sizeof(Memory_Block));
 
     Memory_Block* NewBlock = (Memory_Block*)((ui8*)(BlockToSplit) + (BlockToSplit->Size - 1) + (sizeof(Memory_Block)));
 
@@ -189,8 +186,7 @@ SplitBlock(OUT Memory_Block* BlockToSplit, sizet SizeOfNewBlock) -> Memory_Block
     return NewBlock;
 };
 
-local_func auto
-ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet NewSize) -> sizet
+sizet ReSizeAndMarkAsInUse(Memory_Block* BlockToResize, sizet NewSize)
 {
     sizet SizeDiff = BlockToResize->Size - NewSize;
     BlockToResize->Size = NewSize;
@@ -199,12 +195,9 @@ ReSizeAndMarkAsInUse(OUT Memory_Block* BlockToResize, sizet NewSize) -> sizet
     return SizeDiff;
 };
 
-local_func auto
-GetFirstFreeBlockOfSize(i64 Size) -> Memory_Block*
+Memory_Block* GetFirstFreeBlockOfSize(i64 Size)
 {
-    BGZ_ERRCTXT1("When trying to find first free memory block for dynamic memory");
-
-    BGZ_ASSERT(dynamAllocator.head, "No head for dynamic memory list!");
+    ASSERT(dynamAllocator.head);
 
     Memory_Block* Result {};
     Memory_Block* MemBlock = dynamAllocator.head;
@@ -283,8 +276,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary() //TODO: split up this function
     };
 };
 
-local_func auto
-AppendNewBlockAndMarkInUse(i64 Size) -> Memory_Block*
+Memory_Block* AppendNewBlockAndMarkInUse(i64 Size)
 {
     i64 TotalSize = sizeof(Memory_Block) + Size;
     Memory_Block* NewBlock = (Memory_Block*)AllocSize(dynamAllocator.memoryRegionIdentifier, TotalSize);
@@ -303,12 +295,10 @@ AppendNewBlockAndMarkInUse(i64 Size) -> Memory_Block*
     return NewBlock;
 };
 
-auto _MallocType(i64 Size) -> void*
+void* _MallocType(i64 Size)
 {
-    BGZ_ERRCTXT1("When trying to allocate in dymamic memory");
-
-    BGZ_ASSERT(dynamAllocator.head, "Dynamic allocator not initialized!");
-    //BGZ_ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    ASSERT(dynamAllocator.head);
+    //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* Result { nullptr };
 
@@ -346,19 +336,17 @@ auto _MallocType(i64 Size) -> void*
     return Result;
 };
 
-auto _CallocType(i64 Size) -> void*
+void* _CallocType(i64 Size)
 {
-    BGZ_ERRCTXT1("When trying to allocate and initialize memory in dymamic memory");
-
-    BGZ_ASSERT(dynamAllocator.head, "Dynamic allocator not initialized!");
-    //BGZ_ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    ASSERT(dynamAllocator.head);
+    //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* MemBlockData = _MallocType(Size);
 
     if (MemBlockData)
     {
         Memory_Block* Block = ConvertDataToMemoryBlock(MemBlockData);
-        BGZ_ASSERT(Block->data, "Data retrieved invalid!");
+        ASSERT(Block->data);
 
         memset(MemBlockData, 0, Block->Size);
     };
@@ -366,12 +354,10 @@ auto _CallocType(i64 Size) -> void*
     return MemBlockData;
 };
 
-auto _ReAlloc(void* DataToRealloc, i64 NewSize) -> void*
+void* _ReAlloc(void* DataToRealloc, i64 NewSize)
 {
-    BGZ_ERRCTXT1("When trying to reallocate memory in dymamic memory");
-
-    BGZ_ASSERT(dynamAllocator.head, "Dynamic allocator not initialized!");
-    //BGZ_ASSERT((globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount) > NewSize, "Not enough room left in memory region!");
+    ASSERT(dynamAllocator.head);
+    //ASSERT((globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount) > NewSize, "Not enough room left in memory region!");
 
     Memory_Block* BlockToRealloc;
     if (DataToRealloc)
@@ -412,13 +398,11 @@ auto _ReAlloc(void* DataToRealloc, i64 NewSize) -> void*
     return DataToRealloc;
 };
 
-auto _DeAlloc(void** MemToFree) -> void
+void _DeAlloc(void** MemToFree)
 {
-    BGZ_ERRCTXT1("When trying to free some memory in dynamic memory");
-
     if (*MemToFree)
     {
-        //BGZ_ASSERT(*MemToFree > globalMemHandler->memRegions[DYNAMIC].BaseAddress && *MemToFree < globalMemHandler->memRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
+        //ASSERT(*MemToFree > globalMemHandler->memRegions[DYNAMIC].BaseAddress && *MemToFree < globalMemHandler->memRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
 
         Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 

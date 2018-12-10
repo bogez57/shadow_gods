@@ -115,7 +115,7 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
@@ -138,9 +138,9 @@ extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformS
 
         gameMemory->IsInitialized = true;
 
-        CreateRegionFromGameMem_1(gameMemory, Megabytes(100));
+        CreateRegionFromMemory(gameMemory, Megabytes(100));
 
-        InitDynamAllocator();
+        InitDynamAllocator(Megabytes(10));
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;

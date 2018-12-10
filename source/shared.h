@@ -3,19 +3,7 @@
 #include "atomic_types.h"
 #include "math.h"
 #include "utilities.h"
-
-struct Game_Memory
-{
-    bool IsInitialized { false };
-
-    ui32 SizeOfPermanentStorage {};
-    void* PermanentStorage { nullptr };
-
-    ui64 SizeOfTemporaryStorage {};
-    ui64 TemporaryStorageUsed {};
-    void* TemporaryStorage { nullptr };
-    ui64 TotalSize {};
-};
+#include "memory_handling.h"
 
 struct Button_State
 {

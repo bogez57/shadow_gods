@@ -45,7 +45,7 @@
 
 global_variable ui32 WindowWidth { 1280 };
 global_variable ui32 WindowHeight { 720 };
-global_variable Game_Memory GameMemory {};
+global_variable Application_Memory GameMemory {};
 global_variable bool GameRunning {};
 
 namespace Win32::Dbg
