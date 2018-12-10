@@ -6,31 +6,19 @@
 
 #define ASSERT(x) assert(x)
 
-#define MAX_SUB_REGIONS 10
-
-struct Memory_Sub_Region
-{
-    void* BaseAddress;
-    void* EndAddress;
-    i64 UsedAmount;
-    i64 Size;
-};
-
 struct Memory_Region
 {
     void* BaseAddress;
     void* EndAddress;
     i64 UsedAmount;
     i64 Size;
-    Memory_Sub_Region memorySubRegions[MAX_SUB_REGIONS];
-    i32 numberOfSubRegions;
 };
 
 Memory_Region mainMemoryRegion;
 
-#define AllocType(subRegionIdentifier, Type, Count) (Type*)_AllocType(sizeof(Type), Count)
-#define AllocSize(subRegionIdentifier, Size) _AllocSize(subRegionIdentifier, Size)
-#define FreeSize(subRegionIdentifier, Size) _FreeSize(subRegionIdentifier, Size)
+#define AllocType(Type, Count) (Type*)_AllocType(sizeof(Type), Count)
+#define AllocSize(Size) _AllocSize(Size)
+#define FreeSize(Size) _FreeSize(Size)
 
 void* PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
 {
@@ -41,6 +29,18 @@ void* PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
     return newAddress;
 };
 
+void InitApplicationMemory(Application_Memory* appMemory, ui64 sizeOfMemory, void* memoryStartAddress)
+{
+    ui32 sizeOfPermanentStorage = 6000000;
+    appMemory->SizeOfPermanentStorage = sizeOfPermanentStorage;
+    appMemory->SizeOfTemporaryStorage = sizeOfMemory - (ui64)sizeOfPermanentStorage;
+    appMemory->TotalSize = sizeOfMemory;
+    appMemory->PermanentStorage = memoryStartAddress;
+    appMemory->TemporaryStorage = ((ui8*)appMemory->PermanentStorage + appMemory->SizeOfPermanentStorage);
+};
+
+void InitDynamAllocator();
+
 void CreateRegionFromMemory(Application_Memory* Memory, i64 size)
 {
     mainMemoryRegion.BaseAddress = PointerAddition(Memory->TemporaryStorage, Memory->TemporaryStorageUsed);
@@ -49,52 +49,34 @@ void CreateRegionFromMemory(Application_Memory* Memory, i64 size)
     mainMemoryRegion.UsedAmount = 0;
 
     Memory->TemporaryStorageUsed += size;
+
+    InitDynamAllocator();
 };
 
-//TODO: add error checks so don't create too many or too large sub regions
-i32 CreateSubRegion(i64 size)
+auto _AllocType(i64 size, i64 Count) -> void*
 {
-    if (mainMemoryRegion.numberOfSubRegions < MAX_SUB_REGIONS)
-    {
-        Memory_Sub_Region* newSubRegion = &mainMemoryRegion.memorySubRegions[mainMemoryRegion.numberOfSubRegions];
-
-        newSubRegion->BaseAddress = PointerAddition(mainMemoryRegion.BaseAddress, mainMemoryRegion.UsedAmount);
-        newSubRegion->EndAddress = PointerAddition(mainMemoryRegion.BaseAddress, (size - 1));
-        newSubRegion->Size = size;
-        newSubRegion->UsedAmount = 0;
-
-        mainMemoryRegion.UsedAmount += size;
-
-        return mainMemoryRegion.numberOfSubRegions++;
-    }
-
-    return -1; //error
-};
-
-auto _AllocType(i32 subRegionIdentifier, i64 size, i64 Count) -> void*
-{
-    ASSERT((mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size) <= mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
-    void* Result = PointerAddition(mainMemoryRegion.memorySubRegions[subRegionIdentifier].BaseAddress, mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount);
-    mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount += (size * Count);
+    ASSERT((mainMemoryRegion.UsedAmount + size) <= mainMemoryRegion.Size);
+    void* Result = PointerAddition(mainMemoryRegion.BaseAddress, mainMemoryRegion.UsedAmount);
+    mainMemoryRegion.UsedAmount += (size * Count);
 
     return Result;
 };
 
-auto _AllocSize(i32 subRegionIdentifier, i64 size) -> void*
+auto _AllocSize(i64 size) -> void*
 {
-    ASSERT((mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount + size) <= mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
-    void* Result = PointerAddition(mainMemoryRegion.memorySubRegions[subRegionIdentifier].BaseAddress, mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount);
-    mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount += (size);
+    ASSERT((mainMemoryRegion.UsedAmount + size) <= mainMemoryRegion.Size);
+    void* Result = PointerAddition(mainMemoryRegion.BaseAddress, mainMemoryRegion.UsedAmount);
+    mainMemoryRegion.UsedAmount += (size);
 
     return Result;
 };
 
-auto _FreeSize(i32 subRegionIdentifier, i64 sizeToFree) -> void
+auto _FreeSize(i64 sizeToFree) -> void
 {
-    ASSERT(sizeToFree < mainMemoryRegion.memorySubRegions[subRegionIdentifier].Size);
-    ASSERT(sizeToFree < mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount);
+    ASSERT(sizeToFree < mainMemoryRegion.Size);
+    ASSERT(sizeToFree < mainMemoryRegion.UsedAmount);
 
-    mainMemoryRegion.memorySubRegions[subRegionIdentifier].UsedAmount -= sizeToFree;
+    mainMemoryRegion.UsedAmount -= sizeToFree;
 };
 
 /******************************************************* 
@@ -107,16 +89,6 @@ auto _FreeSize(i32 subRegionIdentifier, i64 sizeToFree) -> void
     2.) Alignment?
 */
 
-struct Memory_Block;
-
-struct Dynamic_Mem_Allocator
-{
-    Memory_Block* head;
-    Memory_Block* tail;
-    ui32 AmountOfBlocks;
-    i32 memoryRegionIdentifier;
-};
-
 struct Memory_Block
 {
     b IsFree { true };
@@ -128,7 +100,23 @@ struct Memory_Block
     void FreeBlockAndMergeIfNecessary();
 };
 
-Dynamic_Mem_Allocator dynamAllocator;
+void* GetDataFromBlock(Memory_Block* Header)
+{
+    ASSERT(Header->Size != 0);
+
+    void* BlockData = (void*)(Header + 1);
+
+    return BlockData;
+};
+
+struct Dynamic_Mem_Allocator
+{
+    Memory_Block* head;
+    Memory_Block* tail;
+    ui32 AmountOfBlocks;
+};
+
+static Dynamic_Mem_Allocator dynamAllocator;
 
 Memory_Block* ConvertDataToMemoryBlock(void* Ptr)
 {
@@ -139,24 +127,13 @@ Memory_Block* ConvertDataToMemoryBlock(void* Ptr)
     return BlockHeader;
 };
 
-void* GetDataFromBlock(Memory_Block* Header)
+void InitDynamAllocator()
 {
-    ASSERT(Header->Size != 0);
-
-    void* BlockData = (void*)(Header + 1);
-
-    return BlockData;
-};
-
-void InitDynamAllocator(i64 numberOfBytesForAllocator)
-{
-    dynamAllocator.memoryRegionIdentifier = CreateSubRegion(numberOfBytesForAllocator);
-
     dynamAllocator.AmountOfBlocks = 0;
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(Memory_Block) + BlockSize;
-    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(dynamAllocator.memoryRegionIdentifier, TotalSize);
+    Memory_Block* InitialBlock = (Memory_Block*)AllocSize(TotalSize);
 
     InitialBlock->Size = BlockSize;
     InitialBlock->IsFree = false;
@@ -269,7 +246,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary() //TODO: split up this function
     }
     else
     {
-        FreeSize(dynamAllocator.memoryRegionIdentifier, this->Size);
+        FreeSize(this->Size);
         this->prevBlock->nextBlock = nullptr;
         dynamAllocator.tail = this->prevBlock;
         --dynamAllocator.AmountOfBlocks;
@@ -279,7 +256,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary() //TODO: split up this function
 Memory_Block* AppendNewBlockAndMarkInUse(i64 Size)
 {
     i64 TotalSize = sizeof(Memory_Block) + Size;
-    Memory_Block* NewBlock = (Memory_Block*)AllocSize(dynamAllocator.memoryRegionIdentifier, TotalSize);
+    Memory_Block* NewBlock = (Memory_Block*)AllocSize(TotalSize);
 
     NewBlock->Size = Size;
     NewBlock->IsFree = false;

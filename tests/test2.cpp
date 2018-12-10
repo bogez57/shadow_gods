@@ -16,8 +16,6 @@ SCENARIO("vectors can be sized and resized", "[vector]")
 
     CreateRegionFromMemory(&Memory, 10000000);
 
-    InitDynamAllocator(3000000);
-
     GIVEN("A vector with some items")
     {
         std::vector<int> v(5);

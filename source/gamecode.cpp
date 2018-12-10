@@ -140,8 +140,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         CreateRegionFromMemory(gameMemory, Megabytes(100));
 
-        InitDynamAllocator(Megabytes(10));
-
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
@@ -164,6 +162,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
+
+        i32* myType = MallocType(i32, 1);
+        *myType = 32;
+
+        BGZ_CONSOLE("%i", *myType);
     };
 
     if (globalPlatformServices->DLLJustReloaded)

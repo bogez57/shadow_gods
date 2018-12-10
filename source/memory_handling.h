@@ -38,7 +38,7 @@ void* _CallocType(i64);
 void* _ReAlloc(void*, i64);
 void _DeAlloc(void**);
 
-void InitDynamAllocator(i64 numberOfBytesForAllocator);
+void InitApplicationMemory(Application_Memory* appMemory, ui64 sizeOfMemory, void* memoryStartAddress);
 void CreateRegionFromMemory(Application_Memory* Memory, i64 size);
 
 #define MallocType(Type, Count) (Type*)_MallocType(((sizeof(Type)) * (Count)))
