@@ -136,8 +136,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
-        gameMemory->IsInitialized = true;
-
         CreateRegionFromMemory(gameMemory, Megabytes(100));
 
         viewportWidth = 1280.0f;

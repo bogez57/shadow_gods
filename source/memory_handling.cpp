@@ -43,6 +43,8 @@ void InitDynamAllocator();
 
 void CreateRegionFromMemory(Application_Memory* Memory, i64 size)
 {
+    Memory->IsInitialized = true;
+
     mainMemoryRegion.BaseAddress = PointerAddition(Memory->TemporaryStorage, Memory->TemporaryStorageUsed);
     mainMemoryRegion.EndAddress = PointerAddition(mainMemoryRegion.BaseAddress, (size - 1));
     mainMemoryRegion.Size = size;
