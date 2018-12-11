@@ -47,7 +47,7 @@
 
 global_variable ui32 WindowWidth { 1280 };
 global_variable ui32 WindowHeight { 720 };
-global_variable Application_Memory* GameMemory;
+global_variable Application_Memory GameMemory;
 global_variable bool GameRunning {};
 
 namespace Win32::Dbg
@@ -327,7 +327,7 @@ namespace Win32::Dbg
         GameReplayState->InputRecording = true;
         GameReplayState->TotalInputStructsRecorded = 0;
         GameReplayState->InputCount = 0;
-        memcpy(GameReplayState->OriginalRecordedGameState, GameMemory->PermanentStorage, GameMemory->TotalSize);
+        memcpy(GameReplayState->OriginalRecordedGameState, GameMemory.PermanentStorage, GameMemory.TotalSize);
     };
 
     local_func auto
@@ -344,7 +344,7 @@ namespace Win32::Dbg
         GameReplayState->InputPlayBack = true;
         GameReplayState->InputCount = 0;
         //Set game state back to when it was first recorded for proper looping playback
-        memcpy(GameMemory->PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory->TotalSize);
+        memcpy(GameMemory.PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory.TotalSize);
     }
 
     local_func auto
@@ -371,7 +371,7 @@ namespace Win32::Dbg
         else
         {
             GameReplayState->InputCount = 0;
-            memcpy(GameMemory->PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory->TotalSize);
+            memcpy(GameMemory.PermanentStorage, GameReplayState->OriginalRecordedGameState, GameMemory.TotalSize);
         }
     }
 } // namespace Win32::Dbg
@@ -816,12 +816,13 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
             { //Init Game Memory
-                GameMemory = InitApplicationMemory(Gigabytes(1), Megabytes(64), VirtualAlloc(BaseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
+                SupplyMemoryStructAddress(&GameMemory);
+                InitApplicationMemory(Gigabytes(1), Megabytes(64), VirtualAlloc(BaseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
             }
 
             { //Init input recording and replay services
                 GameReplayState.RecordedInputs = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input) * Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-                GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, GameMemory->TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+                GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             }
 
             { //Init game services
@@ -991,7 +992,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput(&UpdatedInput, &UpdatedReplayState);
                 }
 
-                GameCode.UpdateFunc(GameMemory, &platformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &platformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState;

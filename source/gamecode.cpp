@@ -136,7 +136,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
+        SupplyMemoryStructAddress(gameMemory);
         i32 DEFAULT = CreateRegionFromMemory(gameMemory, Megabytes(100));
+        i32 REGION1 = CreateRegionFromMemory(gameMemory, Megabytes(100));
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
@@ -161,7 +163,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.zoomFactor = 1.0f;
         };
 
-        i32* myType = MallocType(0, i32, 1);
+        i32* myType = MallocType(DEFAULT, i32, 1);
+        i32* myType2 = MallocType(REGION1, i32, 1);
         *myType = 32;
 
         BGZ_CONSOLE("%i", *myType);

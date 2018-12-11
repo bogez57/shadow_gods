@@ -6,49 +6,6 @@
 
 #define ASSERT(x) assert(x)
 
-struct Memory_Block
-{
-    b IsFree { true };
-    i64 Size { 0 };
-    void* data { nullptr };
-    Memory_Block* nextBlock { nullptr };
-    Memory_Block* prevBlock { nullptr };
-
-    void FreeBlockAndMergeIfNecessary(i32 memRegionIdentifier);
-};
-
-struct Dynamic_Mem_Allocator
-{
-    Memory_Block* head;
-    Memory_Block* tail;
-    ui32 AmountOfBlocks;
-};
-
-struct Memory_Region
-{
-    void* BaseAddress;
-    void* EndAddress;
-    i64 UsedAmount;
-    i64 Size;
-    Dynamic_Mem_Allocator dynamAllocator;
-};
-
-struct Application_Memory
-{
-    bool IsInitialized { false };
-
-    void* PermanentStorage { nullptr };
-    void* TemporaryStorage { nullptr };
-
-    ui32 SizeOfPermanentStorage {};
-    ui64 SizeOfTemporaryStorage {};
-
-    ui64 TemporaryStorageUsed {};
-    ui64 TotalSize {};
-    Memory_Region regions[10];
-    i32 regionCount {};
-};
-
 #define AllocType(MemRegionIdentifier, Type, Count) (Type*)_AllocType(MemRegionIdentifier, sizeof(Type), Count)
 #define AllocSize(MemRegionIdentifier, Size) _AllocSize(MemRegionIdentifier, Size)
 #define FreeSize(MemRegionIdentifier, Size) _FreeSize(MemRegionIdentifier, Size)
@@ -62,19 +19,22 @@ void* PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
     return newAddress;
 };
 
-static Application_Memory appMemory {};
+static Application_Memory* appMemory {};
 
-Application_Memory* InitApplicationMemory(ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress)
+void SupplyMemoryStructAddress(Application_Memory* userDefinedAppMemoryStruct)
+{
+    appMemory = userDefinedAppMemoryStruct;
+};
+
+void InitApplicationMemory(ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress)
 {
     ui32 sizeOfPermanentStorage = sizeOfPermanentStore;
-    appMemory.SizeOfPermanentStorage = sizeOfPermanentStorage;
-    appMemory.SizeOfTemporaryStorage = sizeOfMemory - (ui64)sizeOfPermanentStorage;
-    appMemory.TotalSize = sizeOfMemory;
-    appMemory.PermanentStorage = memoryStartAddress;
-    appMemory.TemporaryStorage = ((ui8*)appMemory.PermanentStorage + appMemory.SizeOfPermanentStorage);
-    appMemory.regionCount = 0;
-
-    return &appMemory;
+    appMemory->SizeOfPermanentStorage = sizeOfPermanentStorage;
+    appMemory->SizeOfTemporaryStorage = sizeOfMemory - (ui64)sizeOfPermanentStorage;
+    appMemory->TotalSize = sizeOfMemory;
+    appMemory->PermanentStorage = memoryStartAddress;
+    appMemory->TemporaryStorage = ((ui8*)appMemory->PermanentStorage + appMemory->SizeOfPermanentStorage);
+    appMemory->regionCount = 0;
 };
 
 Dynamic_Mem_Allocator InitDynamAllocator(i32 memRegionIdentifier);
@@ -97,28 +57,28 @@ i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
 
 auto _AllocType(i32 MemRegionIdentifier, i64 size, i64 Count) -> void*
 {
-    ASSERT((appMemory.regions[MemRegionIdentifier].UsedAmount + size) <= appMemory.regions[MemRegionIdentifier].Size);
-    void* Result = PointerAddition(appMemory.regions[MemRegionIdentifier].BaseAddress, appMemory.regions[MemRegionIdentifier].UsedAmount);
-    appMemory.regions[MemRegionIdentifier].UsedAmount += (size * Count);
+    ASSERT((appMemory->regions[MemRegionIdentifier].UsedAmount + size) <= appMemory->regions[MemRegionIdentifier].Size);
+    void* Result = PointerAddition(appMemory->regions[MemRegionIdentifier].BaseAddress, appMemory->regions[MemRegionIdentifier].UsedAmount);
+    appMemory->regions[MemRegionIdentifier].UsedAmount += (size * Count);
 
     return Result;
 };
 
 auto _AllocSize(i32 MemRegionIdentifier, i64 size) -> void*
 {
-    ASSERT((appMemory.regions[MemRegionIdentifier].UsedAmount + size) <= appMemory.regions[MemRegionIdentifier].Size);
-    void* Result = PointerAddition(appMemory.regions[MemRegionIdentifier].BaseAddress, appMemory.regions[MemRegionIdentifier].UsedAmount);
-    appMemory.regions[MemRegionIdentifier].UsedAmount += (size);
+    ASSERT((appMemory->regions[MemRegionIdentifier].UsedAmount + size) <= appMemory->regions[MemRegionIdentifier].Size);
+    void* Result = PointerAddition(appMemory->regions[MemRegionIdentifier].BaseAddress, appMemory->regions[MemRegionIdentifier].UsedAmount);
+    appMemory->regions[MemRegionIdentifier].UsedAmount += (size);
 
     return Result;
 };
 
 auto _FreeSize(i32 MemRegionIdentifier, i64 sizeToFree) -> void
 {
-    ASSERT(sizeToFree < appMemory.regions[MemRegionIdentifier].Size);
-    ASSERT(sizeToFree < appMemory.regions[MemRegionIdentifier].UsedAmount);
+    ASSERT(sizeToFree < appMemory->regions[MemRegionIdentifier].Size);
+    ASSERT(sizeToFree < appMemory->regions[MemRegionIdentifier].UsedAmount);
 
-    appMemory.regions[MemRegionIdentifier].UsedAmount -= sizeToFree;
+    appMemory->regions[MemRegionIdentifier].UsedAmount -= sizeToFree;
 };
 
 /******************************************************* 
@@ -184,7 +144,7 @@ Memory_Block* SplitBlock(i32 memRegionIdentifier, Memory_Block* BlockToSplit, si
     NewBlock->nextBlock = BlockToSplit->nextBlock;
     BlockToSplit->nextBlock = NewBlock;
 
-    ++appMemory.regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
+    ++appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
 
     return NewBlock;
 };
@@ -200,15 +160,15 @@ sizet ReSizeAndMarkAsInUse(Memory_Block* BlockToResize, sizet NewSize)
 
 Memory_Block* GetFirstFreeBlockOfSize(i32 memRegionIdentifier, i64 Size)
 {
-    ASSERT(appMemory.regions[memRegionIdentifier].dynamAllocator.head);
+    ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
 
     Memory_Block* Result {};
-    Memory_Block* MemBlock = appMemory.regions[memRegionIdentifier].dynamAllocator.head;
+    Memory_Block* MemBlock = appMemory->regions[memRegionIdentifier].dynamAllocator.head;
 
     //Not first or last block
     if (MemBlock->nextBlock != nullptr)
     {
-        for (ui32 BlockIndex { 0 }; BlockIndex < appMemory.regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks; ++BlockIndex)
+        for (ui32 BlockIndex { 0 }; BlockIndex < appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks; ++BlockIndex)
         {
             if (MemBlock->IsFree && MemBlock->Size > Size)
             {
@@ -248,7 +208,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(i32 memRegionIdentifier) //TODO:
                     this->nextBlock = nullptr;
                 };
 
-                --appMemory.regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
+                --appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
             };
 
             if (this->prevBlock->IsFree)
@@ -266,7 +226,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(i32 memRegionIdentifier) //TODO:
 
                 this->Size = 0;
 
-                --appMemory.regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
+                --appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
             };
         };
     }
@@ -274,8 +234,8 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(i32 memRegionIdentifier) //TODO:
     {
         FreeSize(memRegionIdentifier, this->Size);
         this->prevBlock->nextBlock = nullptr;
-        appMemory.regions[memRegionIdentifier].dynamAllocator.tail = this->prevBlock;
-        --appMemory.regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
+        appMemory->regions[memRegionIdentifier].dynamAllocator.tail = this->prevBlock;
+        --appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
     };
 };
 
@@ -288,19 +248,19 @@ Memory_Block* AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
     NewBlock->IsFree = false;
     NewBlock->data = GetDataFromBlock(NewBlock);
 
-    NewBlock->prevBlock = appMemory.regions[memRegionIdentifier].dynamAllocator.tail;
+    NewBlock->prevBlock = appMemory->regions[memRegionIdentifier].dynamAllocator.tail;
     NewBlock->nextBlock = nullptr;
-    appMemory.regions[memRegionIdentifier].dynamAllocator.tail->nextBlock = NewBlock;
-    appMemory.regions[memRegionIdentifier].dynamAllocator.tail = NewBlock;
+    appMemory->regions[memRegionIdentifier].dynamAllocator.tail->nextBlock = NewBlock;
+    appMemory->regions[memRegionIdentifier].dynamAllocator.tail = NewBlock;
 
-    ++appMemory.regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
+    ++appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
 
     return NewBlock;
 };
 
 void* _MallocType(i32 memRegionIdentifier, i64 Size)
 {
-    ASSERT(appMemory.regions[memRegionIdentifier].dynamAllocator.head);
+    ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
     //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* Result { nullptr };
@@ -341,7 +301,7 @@ void* _MallocType(i32 memRegionIdentifier, i64 Size)
 
 void* _CallocType(i32 memRegionIdentifier, i64 Size)
 {
-    ASSERT(appMemory.regions[memRegionIdentifier].dynamAllocator.head);
+    ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
     //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
     void* MemBlockData = _MallocType(memRegionIdentifier, Size);
@@ -359,7 +319,7 @@ void* _CallocType(i32 memRegionIdentifier, i64 Size)
 
 void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
 {
-    ASSERT(appMemory.regions[memRegionIdentifier].dynamAllocator.head);
+    ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
     //ASSERT((globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount) > NewSize, "Not enough room left in memory region!");
 
     Memory_Block* BlockToRealloc;

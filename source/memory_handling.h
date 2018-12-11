@@ -24,9 +24,51 @@ void* _CallocType(i32, i64);
 void* _ReAlloc(i32, void*, i64);
 void _DeAlloc(i32, void**);
 
-struct Application_Memory;
+struct Memory_Block
+{
+    b IsFree { true };
+    i64 Size { 0 };
+    void* data { nullptr };
+    Memory_Block* nextBlock { nullptr };
+    Memory_Block* prevBlock { nullptr };
 
-Application_Memory* InitApplicationMemory(ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress);
+    void FreeBlockAndMergeIfNecessary(i32 memRegionIdentifier);
+};
+
+struct Dynamic_Mem_Allocator
+{
+    Memory_Block* head;
+    Memory_Block* tail;
+    ui32 AmountOfBlocks;
+};
+
+struct Memory_Region
+{
+    void* BaseAddress;
+    void* EndAddress;
+    i64 UsedAmount;
+    i64 Size;
+    Dynamic_Mem_Allocator dynamAllocator;
+};
+
+struct Application_Memory
+{
+    bool IsInitialized { false };
+
+    void* PermanentStorage { nullptr };
+    void* TemporaryStorage { nullptr };
+
+    ui32 SizeOfPermanentStorage {};
+    ui64 SizeOfTemporaryStorage {};
+
+    ui64 TemporaryStorageUsed {};
+    ui64 TotalSize {};
+    Memory_Region regions[10];
+    i32 regionCount {};
+};
+
+void SupplyMemoryStructAddress(Application_Memory* userDefinedAppMemoryStruct);
+void InitApplicationMemory(ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress);
 i32 CreateRegionFromMemory(Application_Memory* Memory, i64 size);
 
 #define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocType(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
