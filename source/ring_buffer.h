@@ -9,7 +9,7 @@ public:
     void Init(i64 size)
     {
         this->maxSize = size;
-        this->buffer = MallocType(Type, size);
+        this->buffer = MallocType(0, Type, size);
     };
 
     void PushBack(Type elem)

@@ -19,31 +19,19 @@ typedef size_t sizet;
 typedef float f32;
 typedef double f64;
 
-struct Application_Memory
-{
-    bool IsInitialized { false };
+void* _MallocType(i32, i64);
+void* _CallocType(i32, i64);
+void* _ReAlloc(i32, void*, i64);
+void _DeAlloc(i32, void**);
 
-    void* PermanentStorage { nullptr };
-    void* TemporaryStorage { nullptr };
+struct Application_Memory;
 
-    ui32 SizeOfPermanentStorage {};
-    ui64 SizeOfTemporaryStorage {};
+Application_Memory* InitApplicationMemory(ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress);
+i32 CreateRegionFromMemory(Application_Memory* Memory, i64 size);
 
-    ui64 TemporaryStorageUsed {};
-    ui64 TotalSize {};
-};
-
-void* _MallocType(i64);
-void* _CallocType(i64);
-void* _ReAlloc(void*, i64);
-void _DeAlloc(void**);
-
-void InitApplicationMemory(Application_Memory* appMemory, ui64 sizeOfMemory, void* memoryStartAddress);
-void CreateRegionFromMemory(Application_Memory* Memory, i64 size);
-
-#define MallocType(Type, Count) (Type*)_MallocType(((sizeof(Type)) * (Count)))
-#define MallocSize(Size) _MallocType((Size))
-#define CallocType(Type, Count) (Type*)_CallocType(((sizeof(Type)) * (Count)))
-#define CallocSize(Type, Count) _CallocType((Size))
-#define ReAlloc(Ptr, Type, Count) (Type*)_ReAlloc(Ptr, sizeof(Type) * Count)
-#define DeAlloc(PtrToMemory) _DeAlloc((void**)&PtrToMemory)
+#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocType(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define MallocSize(MemRegionIdentifier, Size) _MallocType(MemRegionIdentifier, (Size))
+#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocType(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define CallocSize(MemRegionIdentifier, Type, Count) _CallocType(MemRegionIdentifier, (Size))
+#define ReAlloc(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
+#define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)
