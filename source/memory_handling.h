@@ -53,7 +53,7 @@ struct Memory_Region
 
 struct Application_Memory
 {
-    bool IsInitialized { false };
+    bool Initialized { false };
 
     void* PermanentStorage { nullptr };
     void* TemporaryStorage { nullptr };
@@ -67,8 +67,9 @@ struct Application_Memory
     i32 regionCount {};
 };
 
-void SupplyMemoryStructAddress(Application_Memory* userDefinedAppMemoryStruct);
-void InitApplicationMemory(ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress);
+void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct);
+void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress);
+
 i32 CreateRegionFromMemory(Application_Memory* Memory, i64 size);
 
 #define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocType(MemRegionIdentifier, ((sizeof(Type)) * (Count)))

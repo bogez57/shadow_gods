@@ -21,13 +21,15 @@ void* PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
 
 static Application_Memory* appMemory {};
 
-void SupplyMemoryStructAddress(Application_Memory* userDefinedAppMemoryStruct)
+void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct)
 {
     appMemory = userDefinedAppMemoryStruct;
 };
 
-void InitApplicationMemory(ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress)
+void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress)
 {
+    appMemory = userDefinedAppMemoryStruct;
+
     ui32 sizeOfPermanentStorage = sizeOfPermanentStore;
     appMemory->SizeOfPermanentStorage = sizeOfPermanentStorage;
     appMemory->SizeOfTemporaryStorage = sizeOfMemory - (ui64)sizeOfPermanentStorage;
@@ -41,7 +43,7 @@ Dynamic_Mem_Allocator InitDynamAllocator(i32 memRegionIdentifier);
 
 i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
 {
-    appMemory->IsInitialized = true;
+    appMemory->Initialized = true;
 
     Memory_Region* memRegion = &appMemory->regions[appMemory->regionCount];
     memRegion->BaseAddress = PointerAddition(appMemory->TemporaryStorage, appMemory->TemporaryStorageUsed);

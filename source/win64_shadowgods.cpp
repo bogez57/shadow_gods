@@ -816,8 +816,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
             { //Init Game Memory
-                SupplyMemoryStructAddress(&GameMemory);
-                InitApplicationMemory(Gigabytes(1), Megabytes(64), VirtualAlloc(BaseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
+                InitApplicationMemory(&GameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(BaseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
             }
 
             { //Init input recording and replay services

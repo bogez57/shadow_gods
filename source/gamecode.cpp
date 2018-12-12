@@ -132,11 +132,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
 
-    if (!gameMemory->IsInitialized)
+    if (NOT gameMemory->Initialized)
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
-        SupplyMemoryStructAddress(gameMemory);
+        InitApplicationMemory(gameMemory);
+
         i32 DEFAULT = CreateRegionFromMemory(gameMemory, Megabytes(100));
         i32 REGION1 = CreateRegionFromMemory(gameMemory, Megabytes(100));
 

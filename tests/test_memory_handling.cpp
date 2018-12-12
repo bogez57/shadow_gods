@@ -8,11 +8,9 @@ SCENARIO("Memory regions can be created")
     {
         Application_Memory appMemory;
 
-        SupplyMemoryStructAddress(&appMemory);
-
         ui64 memorySize = Megabytes(100);
         i32 permanentMemorySize = Megabytes(5);
-        InitApplicationMemory(memorySize, permanentMemorySize, malloc(memorySize));
+        InitApplicationMemory(&appMemory, memorySize, permanentMemorySize, malloc(memorySize));
 
         REQUIRE(appMemory.TotalSize == memorySize);
         REQUIRE(appMemory.PermanentStorage);
@@ -23,7 +21,7 @@ SCENARIO("Memory regions can be created")
         {
             i32 Region1ID = CreateRegionFromMemory(&appMemory, Megabytes(7));
 
-            REQUIRE(appMemory.IsInitialized);
+            REQUIRE(appMemory.Initialized);
             REQUIRE(appMemory.regions[Region1ID].BaseAddress);
 
             THEN("We can allocate memory onto region")
