@@ -166,8 +166,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         i32* myType = MallocType(DEFAULT, i32, 1);
         i32* myType2 = MallocType(REGION1, i32, 1);
         *myType = 32;
-
-        BGZ_CONSOLE("%i", *myType);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
