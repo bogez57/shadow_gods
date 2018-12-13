@@ -76,5 +76,6 @@ i32 CreateRegionFromMemory(Application_Memory* Memory, i64 size);
 #define MallocSize(MemRegionIdentifier, Size) _MallocType(MemRegionIdentifier, (Size))
 #define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocType(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
 #define CallocSize(MemRegionIdentifier, Type, Count) _CallocType(MemRegionIdentifier, (Size))
-#define ReAlloc(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
+#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
+#define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size)
 #define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)

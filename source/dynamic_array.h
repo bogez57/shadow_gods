@@ -36,6 +36,7 @@
 
 #include <stdlib.h>
 #include "shared.h"
+#include "allocator.h"
 #include "memory_handling.h"
 
 #define Roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
@@ -54,8 +55,10 @@ class Dynam_Array
 public:
     Dynam_Array() = default;
 
-    Dynam_Array(i64 initialSize)
+    Dynam_Array(i64 initialSize, Allocator* allocator)
         : capacity(initialSize)
+        , allocator(allocator)
+
     {
         *this = ResizeArray<Type>(*this, initialSize);
         memset(this->elements, 0, initialSize);
@@ -73,8 +76,9 @@ public:
         return *(this->elements + index);
     };
 
-    void Init(i64 initialSize)
+    void Init(i64 initialSize, Allocator* allocator)
     {
+        this->allocator = allocator;
         *this = ResizeArray<Type>(*this, initialSize);
         memset(this->elements, 0, initialSize);
     };
@@ -83,7 +87,7 @@ public:
     {
         ((this->capacity <= (i64)(AtIndex) ? (this->capacity = this->size = (AtIndex) + 1,
                                                  Roundup32(this->capacity),
-                                                 this->elements = (Type*)ReAlloc(this->elements, Type, this->capacity),
+                                                 this->elements = (Type*)allocator->ReAllocate(this->elements, sizeof(Type) * this->capacity),
                                                  0)
                                            : this->size <= (i64)(AtIndex) ? this->size = (AtIndex) + 1 : 0),
             this->elements[(AtIndex)])
@@ -96,7 +100,7 @@ public:
         if (this->size == this->capacity)
         {
             this->capacity = this->capacity ? this->capacity << 1 : 2;
-            this->elements = (Type*)ReAlloc(this->elements, Type, this->capacity);
+            this->elements = (Type*)allocator->ReAllocate(this->elements, sizeof(Type) * this->capacity);
         }
         this->elements[this->size++] = (element);
     };
@@ -110,7 +114,7 @@ public:
 
     void Destroy()
     {
-        DeAlloc(this->elements);
+        allocator->DeAllocate(this->elements);
         this->size = 0;
         this->capacity = 0;
         hasArrayBeenDestroyed = true;
@@ -119,12 +123,13 @@ public:
     i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
+    Allocator* allocator;
 };
 
 template <typename Type>
 Dynam_Array<Type> ResizeArray(Dynam_Array<Type> arrayToResize, i64 size)
 {
-    (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)ReAlloc(arrayToResize.elements, Type, arrayToResize.capacity));
+    (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)arrayToResize.allocator->ReAllocate(arrayToResize.elements, (sizeof(Type) * arrayToResize.capacity)));
 
     return arrayToResize;
 };
@@ -134,7 +139,7 @@ Dynam_Array<Type> CopyArray(Dynam_Array<Type> sourceArray, Dynam_Array<Type> des
 {
     if (destinationArray.capacity < sourceArray.capacity)
     {
-        ResizeArr(Type, destinationArray, sourceArray.size);
+        ResizeArray<Type>(destinationArray, sourceArray.size);
     };
 
     destinationArray.size = sourceArray.size;

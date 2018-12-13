@@ -4,7 +4,7 @@
 
 SCENARIO("Memory regions can be created")
 {
-    GIVEN("We call OS to allocate memory and initialize our memory struct")
+    GIVEN("We call OS to allocate memory and initialize our application memory struct")
     {
         Application_Memory appMemory;
 
@@ -17,7 +17,7 @@ SCENARIO("Memory regions can be created")
         REQUIRE(appMemory.TemporaryStorage);
         REQUIRE(appMemory.TemporaryStorageUsed == 0);
 
-        WHEN("we create one memory region")
+        WHEN("we create one memory region from the allocated memory block")
         {
             i32 Region1ID = CreateRegionFromMemory(&appMemory, Megabytes(7));
 

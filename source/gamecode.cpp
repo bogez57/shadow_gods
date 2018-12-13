@@ -20,6 +20,8 @@
 #include "shared.h"
 #include "memory_handling.h"
 #include "array.h"
+#include "dynamic_allocator.h"
+#include "dynamic_array.h"
 #include "linked_list.h"
 #include "ring_buffer.h"
 #include "gamecode.h"
@@ -164,9 +166,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.zoomFactor = 1.0f;
         };
 
-        i32* myType = MallocType(DEFAULT, i32, 1);
-        i32* myType2 = MallocType(REGION1, i32, 1);
-        *myType = 32;
+        Dynamic_Allocator dynamAlloc(REGION1);
+
+        Dynam_Array<i32> myArr { (i64)64, &dynamAlloc };
+
+        myArr.PushBack(230);
+        myArr.PopBack();
+
+        myArr.PushBack(320);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
