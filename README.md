@@ -1,2 +1,5 @@
-# ShadowGods
-2d Fighting Game for Windows PC
+# Test Engine 3 - Project Named ShadowGods
+
+This project has the main goal of being the 3rd experimentation ground for which to test more programming concepts I learned since the last project. In order to help push the experimentation further I also have a sub-goal of creating a 2d fighting game of sorts. This project is again being built from scratch but unlike my preivous projects this one is not currently utilizing SDL or any other low level OS handling frameworks. Instead I've being making calls to the Windows API dircectly to generate an opengl window and gather user input. While I plan to primarly develop and test this game on Windows I've still architected things in a mutli-platform way with a single main, OS layer file that is kept totally separate from the game. The idea is to keep all operating system related stuff confined to one file to make things really simple to port to other platforms. So I can just swap out the implementation file for the windows operating system and stick in one that I create for linux, leaving all the higher level game/engine code untouched. 
+
+This projects marks a big change for me in terms of how I think and develop programs. I have shyed away from more object-oriented ways of thinking and adopted a more natural programming approach to solving problems. 
