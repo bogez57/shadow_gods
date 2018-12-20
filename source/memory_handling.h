@@ -19,11 +19,6 @@ typedef size_t sizet;
 typedef float f32;
 typedef double f64;
 
-void* _MallocType(i32, i64);
-void* _CallocType(i32, i64);
-void* _ReAlloc(i32, void*, i64);
-void _DeAlloc(i32, void**);
-
 struct Memory_Block
 {
     b IsFree { true };
@@ -72,10 +67,16 @@ void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 
 
 i32 CreateRegionFromMemory(Application_Memory* Memory, i64 size);
 
-#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocType(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
-#define MallocSize(MemRegionIdentifier, Size) _MallocType(MemRegionIdentifier, (Size))
-#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocType(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
-#define CallocSize(MemRegionIdentifier, Type, Count) _CallocType(MemRegionIdentifier, (Size))
+//Prototypes so I can call below macros
+void* _MallocSize(i32, i64);
+void* _CallocSize(i32, i64);
+void* _ReAlloc(i32, void*, i64);
+void _DeAlloc(i32, void**);
+
+#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define MallocSize(MemRegionIdentifier, Size) _MallocSize(MemRegionIdentifier, (Size))
+#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define CallocSize(MemRegionIdentifier, Type, Count) _CallocSize(MemRegionIdentifier, (Size))
 #define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
 #define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size)
 #define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)

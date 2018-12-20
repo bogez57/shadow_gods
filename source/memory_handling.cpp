@@ -6,10 +6,10 @@
 
 #define ASSERT(x) assert(x)
 
-#define AllocType(MemRegionIdentifier, Type, Count) (Type*)_AllocType(MemRegionIdentifier, sizeof(Type), Count)
 #define AllocSize(MemRegionIdentifier, Size) _AllocSize(MemRegionIdentifier, Size)
 #define FreeSize(MemRegionIdentifier, Size) _FreeSize(MemRegionIdentifier, Size)
 
+//TODO: Alignment
 void* PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
 {
     void* newAddress {};
@@ -55,15 +55,6 @@ i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
     appMemory->TemporaryStorageUsed += size;
 
     return appMemory->regionCount++;
-};
-
-auto _AllocType(i32 MemRegionIdentifier, i64 size, i64 Count) -> void*
-{
-    ASSERT((appMemory->regions[MemRegionIdentifier].UsedAmount + size) <= appMemory->regions[MemRegionIdentifier].Size);
-    void* Result = PointerAddition(appMemory->regions[MemRegionIdentifier].BaseAddress, appMemory->regions[MemRegionIdentifier].UsedAmount);
-    appMemory->regions[MemRegionIdentifier].UsedAmount += (size * Count);
-
-    return Result;
 };
 
 auto _AllocSize(i32 MemRegionIdentifier, i64 size) -> void*
@@ -260,7 +251,7 @@ Memory_Block* AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
     return NewBlock;
 };
 
-void* _MallocType(i32 memRegionIdentifier, i64 Size)
+void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
     //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
@@ -301,12 +292,12 @@ void* _MallocType(i32 memRegionIdentifier, i64 Size)
     return Result;
 };
 
-void* _CallocType(i32 memRegionIdentifier, i64 Size)
+void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
     //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
 
-    void* MemBlockData = _MallocType(memRegionIdentifier, Size);
+    void* MemBlockData = _MallocSize(memRegionIdentifier, Size);
 
     if (MemBlockData)
     {
@@ -345,7 +336,7 @@ void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
         }
         else
         {
-            void* newBlockData = _MallocType(memRegionIdentifier, NewSize);
+            void* newBlockData = _MallocSize(memRegionIdentifier, NewSize);
 
             memcpy(newBlockData, BlockToRealloc->data, BlockToRealloc->Size);
             memset(BlockToRealloc->data, 0, BlockToRealloc->Size); //TODO: Remove if speed becomes an issue;
@@ -357,7 +348,7 @@ void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
     }
     else
     {
-        DataToRealloc = _MallocType(memRegionIdentifier, NewSize);
+        DataToRealloc = _MallocSize(memRegionIdentifier, NewSize);
     };
 
     return DataToRealloc;

@@ -140,8 +140,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         InitApplicationMemory(gameMemory);
 
-        i32 DEFAULT = CreateRegionFromMemory(gameMemory, Megabytes(100));
-        i32 REGION1 = CreateRegionFromMemory(gameMemory, Megabytes(100));
+        CreateRegionFromMemory(gameMemory, Megabytes(100));
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
@@ -165,22 +164,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
-
-        Dynamic_Allocator dynamAlloc(REGION1);
-        Dynamic_Allocator dynamAlloc1(DEFAULT);
-
-        Dynam_Array<i32> myArr { (i64)64, &dynamAlloc };
-
-        myArr.PushBack(230);
-        myArr.PopBack();
-
-        myArr.PushBack(320);
-
-        Ring_Buffer<i64> ringBuff { 100, &dynamAlloc1 };
-
-        ringBuff.PushBack(3);
-        ringBuff.PushBack(3);
-        ringBuff.PushBack(590098);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
