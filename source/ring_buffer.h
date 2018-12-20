@@ -1,15 +1,22 @@
 
-
 template <typename Type>
 class Ring_Buffer
 {
 public:
     Ring_Buffer() = default;
+    Ring_Buffer(i64 size, Allocator* allocator)
+        : maxSize(size)
+        , allocator(allocator)
 
-    void Init(i64 size)
     {
+        this->buffer = (Type*)this->allocator->Allocate(size);
+    };
+
+    void Init(i64 size, Allocator* allocator)
+    {
+        this->allocator = allocator;
         this->maxSize = size;
-        this->buffer = MallocType(0, Type, size);
+        this->buffer = this->allocator->Allocate(size);
     };
 
     void PushBack(Type elem)
@@ -92,7 +99,7 @@ public:
         return size;
     };
 
-private:
+    Allocator* allocator;
     i64 maxSize {};
     i64 head {};
     i64 tail {};

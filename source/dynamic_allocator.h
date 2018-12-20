@@ -14,12 +14,12 @@ public:
     Dynamic_Allocator(const Dynamic_Allocator&) = delete;
     void operator=(const Dynamic_Allocator&) = delete;
 
-    void* Allocate(ui64 size) override
+    void* Allocate(i64 size) override
     {
         return MallocSize(Allocator::memRegionID, size);
     };
 
-    void* ReAllocate(void* ptr, ui64 size) override
+    void* ReAllocate(void* ptr, i64 size) override
     {
         return ReAllocSize(Allocator::memRegionID, ptr, size);
     };

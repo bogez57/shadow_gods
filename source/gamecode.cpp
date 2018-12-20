@@ -167,6 +167,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         Dynamic_Allocator dynamAlloc(REGION1);
+        Dynamic_Allocator dynamAlloc1(DEFAULT);
 
         Dynam_Array<i32> myArr { (i64)64, &dynamAlloc };
 
@@ -174,6 +175,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         myArr.PopBack();
 
         myArr.PushBack(320);
+
+        Ring_Buffer<i64> ringBuff { 100, &dynamAlloc1 };
+
+        ringBuff.PushBack(3);
+        ringBuff.PushBack(3);
+        ringBuff.PushBack(590098);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
