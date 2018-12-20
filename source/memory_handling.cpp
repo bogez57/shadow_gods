@@ -43,6 +43,9 @@ Dynamic_Mem_Allocator InitDynamAllocator(i32 memRegionIdentifier);
 
 i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
 {
+    assert(size < appMemory->SizeOfTemporaryStorage);
+    assert((size + appMemory->TemporaryStorageUsed) < appMemory->SizeOfTemporaryStorage);
+
     appMemory->Initialized = true;
 
     Memory_Region* memRegion = &appMemory->regions[appMemory->regionCount];

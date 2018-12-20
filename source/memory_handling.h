@@ -53,11 +53,11 @@ struct Application_Memory
     void* PermanentStorage { nullptr };
     void* TemporaryStorage { nullptr };
 
-    ui32 SizeOfPermanentStorage {};
-    ui64 SizeOfTemporaryStorage {};
+    i32 SizeOfPermanentStorage {};
+    i64 SizeOfTemporaryStorage {};
 
-    ui64 TemporaryStorageUsed {};
-    ui64 TotalSize {};
+    i64 TemporaryStorageUsed {};
+    i64 TotalSize {};
     Memory_Region regions[10];
     i32 regionCount {};
 };
