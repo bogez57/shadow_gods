@@ -161,12 +161,11 @@ Memory_Block* GetFirstFreeBlockOfSize(i32 memRegionIdentifier, i64 Size)
     Memory_Block* Result {};
     Memory_Block* MemBlock = appMemory->regions[memRegionIdentifier].dynamAllocator.head;
 
-    //Not first or last block
-    if (MemBlock->nextBlock != nullptr)
+    if (MemBlock != appMemory->regions[memRegionIdentifier].dynamAllocator.tail)
     {
         for (ui32 BlockIndex { 0 }; BlockIndex < appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks; ++BlockIndex)
         {
-            if (MemBlock->IsFree && MemBlock->Size > Size)
+            if (MemBlock->IsFree && MemBlock->Size >= Size)
             {
                 Result = MemBlock;
                 return Result;
@@ -186,8 +185,7 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(i32 memRegionIdentifier) //TODO:
 {
     this->IsFree = true;
 
-    //If not the last block
-    if (this->nextBlock)
+    if (this != appMemory->regions[memRegionIdentifier].dynamAllocator.tail)
     {
         { //Merge block with next and/or previous blocks
             if (this->nextBlock->IsFree)
@@ -228,10 +226,12 @@ void Memory_Block::FreeBlockAndMergeIfNecessary(i32 memRegionIdentifier) //TODO:
     }
     else
     {
-        FreeSize(memRegionIdentifier, this->Size);
         this->prevBlock->nextBlock = nullptr;
+        i64 sizeToFree = sizeof(Memory_Block) + this->Size;
         appMemory->regions[memRegionIdentifier].dynamAllocator.tail = this->prevBlock;
         --appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
+        this->Size = 0;
+        FreeSize(memRegionIdentifier, sizeToFree);
     };
 };
 
@@ -365,9 +365,9 @@ void _DeAlloc(i32 memRegionIdentifier, void** MemToFree)
 
         Memory_Block* Block = ConvertDataToMemoryBlock(*MemToFree);
 
-        Block->FreeBlockAndMergeIfNecessary(memRegionIdentifier);
         memset(*MemToFree, 0, Block->Size); //TODO: Remove if speed becomes an issue;
-
         *MemToFree = nullptr;
+
+        Block->FreeBlockAndMergeIfNecessary(memRegionIdentifier);
     };
 };

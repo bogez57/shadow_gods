@@ -43,6 +43,18 @@ SCENARIO("Memory regions can be created")
 
                     REQUIRE(ptr == nullptr);
                 }
+
+                THEN("We deallocating and reallocating 1st element onto my heap, we will reallocate onto the same memory address")
+                {
+                    ui64 originalPtrAddress = (ui64)ptr;
+
+                    DeAlloc(Region1ID, ptr);
+                    i32* newPtr = MallocType(Region1ID, i32, 1);
+
+                    ui64 newPtrAddress = (ui64)newPtr;
+
+                    REQUIRE(originalPtrAddress == newPtrAddress);
+                }
             }
         }
 
