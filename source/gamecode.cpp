@@ -17,6 +17,8 @@
 #include <boagz/error_handling.h>
 
 #include "atomic_types.h"
+#include "atomic_types.cpp"
+
 #include "shared.h"
 #include "memory_handling.h"
 #include "array.h"
@@ -164,14 +166,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
-
-        i32* myNewPtr = MallocType(0, i32, 1);
-        ui64 newPtrAddress = (ui64)myNewPtr;
-
-        DeAlloc(0, myNewPtr);
-
-        i32* myOtherPtr = MallocType(0, i32, 1);
-        ui64 newPtrAddress1 = (ui64)myOtherPtr;
     };
 
     if (globalPlatformServices->DLLJustReloaded)

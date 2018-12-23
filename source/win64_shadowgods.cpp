@@ -35,6 +35,8 @@
 #include <stb/stb_image.h>
 
 #include "atomic_types.h"
+#include "atomic_types.cpp"
+
 #include "math.h"
 #include "utilities.h"
 #include "win64_shadowgods.h"
