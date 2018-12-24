@@ -68,10 +68,9 @@
 #pragma warning(disable : 4996)
 #endif
 
-/* All allocation uses these. */
 #define MALLOC(TYPE, COUNT) (MallocType(0, TYPE, COUNT))
-#define CALLOC(TYPE, COUNT) (CallocType(TYPE, COUNT))
-#define REALLOC(PTR, TYPE, COUNT) (ReAlloc(PTR, TYPE, COUNT))
+#define CALLOC(TYPE, COUNT) (CallocType(0, TYPE, COUNT))
+#define REALLOC(PTR, TYPE, COUNT) (ReAllocType(0, PTR, TYPE, COUNT))
 #define NEW(TYPE) CALLOC(TYPE, 1)
 
 /* Gets the direct super class. Type safe. */
@@ -90,7 +89,7 @@
 #define VTABLE(TYPE, VALUE) ((_##TYPE##Vtable*)((TYPE*)VALUE)->vtable)
 
 /* Frees memory. Can be used on const types. */
-#define FREE(VALUE) DeAlloc(VALUE)
+#define FREE(VALUE) DeAlloc(0, VALUE)
 
 /* Allocates a new char[], assigns it to TO, and copies FROM to it. Can be used on const types. */
 #define MALLOC_STR(TO, FROM) strcpy(CONST_CAST(char*, TO) = (char*)MALLOC(char, strlen(FROM) + 1), FROM)

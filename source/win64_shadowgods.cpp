@@ -34,7 +34,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-#include "atomic_types.h"
 #include "atomic_types.cpp"
 
 #include "math.h"
