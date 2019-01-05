@@ -15,11 +15,10 @@
 
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
-#include <spine/extension.h>
-#include <spine/Atlas.h>
 
 #include "atomic_types.cpp"
 
+#include "atlas.h"
 #include "shared.h"
 #include "memory_handling.h"
 #include "array.h"
@@ -40,9 +39,9 @@ global_variable f32 viewportHeight;
 
 #include "memory_handling.cpp"
 #include "collisions.cpp"
+#include "atlas.cpp"
 
 // Third Party
-#include "spine_lib.cpp"
 #include <boagz/error_context.cpp>
 
 local_func auto FlipImage(Image image) -> Image
@@ -151,7 +150,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         deltaTFixed = platformServices->targetFrameTimeInSecs;
         deltaT = platformServices->prevFrameTimeInSecs;
 
-        spAtlas* atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
+        Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
 
         { //Init stage info
             stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);

@@ -12,7 +12,12 @@
         "*.rh": "cpp",
         "xiosbase": "cpp",
         "boundingboxattachment.c": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "skeletonjson.h": "c",
+        "ctype.h": "c",
+        "atlas.h": "c",
+        "extension.h": "c",
+        "dll.h": "c"
     },
     /********************
         Vim Settings

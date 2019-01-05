@@ -137,57 +137,7 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    ReadEntireFile(const char* FileName) -> Read_File_Result
-    {
-        Read_File_Result Result {};
-
-        HANDLE FileHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-
-        if (FileHandle != INVALID_HANDLE_VALUE)
-        {
-            LARGE_INTEGER FileSize {};
-            if (GetFileSizeEx(FileHandle, &FileSize))
-            {
-                ui32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
-                Result.FileContents = VirtualAlloc(0, FileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-
-                if (Result.FileContents)
-                {
-                    DWORD BytesRead;
-                    if (ReadFile(FileHandle, Result.FileContents, FileSize32, &BytesRead, 0) && (FileSize32 == BytesRead))
-                    {
-                        //File read successfully
-                        Result.FileSize = FileSize32;
-                    }
-                    else
-                    {
-                        FreeFileMemory(Result.FileContents);
-                        Result.FileContents = 0;
-                    }
-                }
-                else
-                {
-                    Win32::Dbg::LogErr("Unable to allocate memory for read file!");
-                    InvalidCodePath;
-                }
-            }
-            else
-            {
-                Win32::Dbg::LogErr("Unable to get size of the file!");
-                InvalidCodePath;
-            }
-        }
-        else
-        {
-            Win32::Dbg::LogErr("Unable to get file handle!");
-            InvalidCodePath;
-        }
-
-        return Result;
-    };
-
-    local_func auto
-    ReadFileOfLength(ui32* length, const char* FilePath) -> char*
+    ReadEntireFile(i64* length, const char* FilePath) -> char*
     {
         char* data;
         FILE* file;
@@ -828,7 +778,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             { //Init game services
                 platformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 platformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
-                platformServices.ReadFileOfLength = &Win32::Dbg::ReadFileOfLength;
                 platformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
                 platformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
                 platformServices.Malloc = &Win32::Dbg::Malloc;

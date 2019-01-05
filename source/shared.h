@@ -66,15 +66,9 @@ struct Game_Sound_Output_Buffer
 {
 };
 
-struct Read_File_Result
-{
-    void* FileContents { nullptr };
-    ui32 FileSize {};
-};
 struct Platform_Services
 {
-    Read_File_Result (*ReadEntireFile)(const char*);
-    char* (*ReadFileOfLength)(ui32*, const char*);
+    char* (*ReadEntireFile)(i64*, const char*);
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
     ui8* (*LoadRGBAImage)(const char*, int*, int*);
