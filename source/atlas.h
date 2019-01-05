@@ -112,6 +112,8 @@ struct Atlas
 
 /* Image files referenced in the atlas file will be prefixed with the directory containing the atlas file. */
 Atlas* CreateAtlasFromFile(const char* path, void* rendererObject);
+
+Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendererObject);
 void Atlas_dispose(Atlas* atlas);
 
 /* Returns 0 if the region was not found. */

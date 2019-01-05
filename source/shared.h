@@ -68,7 +68,7 @@ struct Game_Sound_Output_Buffer
 
 struct Platform_Services
 {
-    char* (*ReadEntireFile)(i64*, const char*);
+    char* (*ReadEntireFile)(i32*, const char*);
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
     ui8* (*LoadRGBAImage)(const char*, int*, int*);

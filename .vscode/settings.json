@@ -17,7 +17,8 @@
         "ctype.h": "c",
         "atlas.h": "c",
         "extension.h": "c",
-        "dll.h": "c"
+        "dll.h": "c",
+        "locale": "cpp"
     },
     /********************
         Vim Settings

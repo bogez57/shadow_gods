@@ -137,7 +137,7 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    ReadEntireFile(i64* length, const char* FilePath) -> char*
+    ReadEntireFile(i32* length, const char* FilePath) -> char*
     {
         char* data;
         FILE* file;
