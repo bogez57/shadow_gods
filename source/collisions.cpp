@@ -1,3 +1,24 @@
+Collision_Box UpdateCollisionBoxBasedOnCenterPoint(Collision_Box oldCollisionBox, v2f newCenterPosition)
+{
+    Collision_Box newCollisionBox { oldCollisionBox };
+
+    newCollisionBox.bounds.minCorner.x = newCenterPosition.x - oldCollisionBox.size.x;
+    newCollisionBox.bounds.minCorner.y = newCenterPosition.y;
+    newCollisionBox.bounds.maxCorner.x = newCenterPosition.x + oldCollisionBox.size.x;
+    newCollisionBox.bounds.maxCorner.y = newCenterPosition.y + oldCollisionBox.size.y;
+
+    newCollisionBox.centerPoint = newCenterPosition;
+
+    return newCollisionBox;
+}
+
+void InitCollisionBox_1(Collision_Box* collisionBox, v2f centerPoint, v2f size)
+{
+    collisionBox->size = size;
+
+    *collisionBox = UpdateCollisionBoxBasedOnCenterPoint(*collisionBox, centerPoint);
+};
+
 local_func b CheckForFighterCollisions_AxisAligned(Collision_Box fighter1Box, Collision_Box fighter2Box)
 {
     // Exit returning NO intersection between bounding boxes

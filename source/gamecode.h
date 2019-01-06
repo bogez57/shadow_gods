@@ -3,47 +3,12 @@
 #include "atomic_types.h"
 #include "shared.h"
 #include "memory_handling.h"
-
-struct AABB
-{
-    v2f minCorner;
-    v2f maxCorner;
-};
-
-struct Collision_Box
-{
-    AABB bounds;
-    v2f centerPoint;
-    v2f size;
-};
-
-Collision_Box UpdateCollisionBoxBasedOnCenterPoint(Collision_Box oldCollisionBox, v2f newCenterPosition)
-{
-    Collision_Box newCollisionBox { oldCollisionBox };
-
-    newCollisionBox.bounds.minCorner.x = newCenterPosition.x - oldCollisionBox.size.x;
-    newCollisionBox.bounds.minCorner.y = newCenterPosition.y;
-    newCollisionBox.bounds.maxCorner.x = newCenterPosition.x + oldCollisionBox.size.x;
-    newCollisionBox.bounds.maxCorner.y = newCenterPosition.y + oldCollisionBox.size.y;
-
-    newCollisionBox.centerPoint = newCenterPosition;
-
-    return newCollisionBox;
-}
-
-void InitCollisionBox_1(Collision_Box* collisionBox, v2f centerPoint, v2f size)
-{
-    collisionBox->size = size;
-
-    *collisionBox = UpdateCollisionBoxBasedOnCenterPoint(*collisionBox, centerPoint);
-};
+#include "collisions.h"
+#include "skeleton.h"
 
 struct Fighter
 {
-    v2f worldPos;
-    v2f prevFrameWorldPos;
-    Collision_Box hitBox;
-    Collision_Box hurtBox;
+    Skeleton skel;
 };
 
 struct StageInfo
@@ -67,8 +32,7 @@ struct Game_Camera
 struct Stage_Data
 {
     StageInfo info;
-    Fighter player;
-    Fighter ai;
+    Fighter* player;
     Game_Camera camera;
 };
 

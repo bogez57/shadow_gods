@@ -280,17 +280,20 @@ Json* Json_create(const char* value)
 {
     Json* c;
     ep = 0;
+
     if (!value)
-        return 0; /* only place we check for NULL other than skip() */
+        InvalidCodePath;
+
     c = Json_new();
+
     if (!c)
-        return 0; /* memory fail */
+        InvalidCodePath;
 
     value = parse_value(c, skip(value));
     if (!value)
     {
         Json_dispose(c);
-        return 0;
+        InvalidCodePath;
     } /* parse failure. ep is set. */
 
     return c;

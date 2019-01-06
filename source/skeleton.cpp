@@ -24,20 +24,29 @@
 #include "skeleton.h"
 #include "json.h"
 
-Skeleton* CreateSkeleton(Atlas* atlas, const char* skeletonJson)
+Skeleton CreateSkeleton(Atlas* atlas, const char* skeletonJson)
 {
-    Json* root;
+    Skeleton newSkeleton {};
 
+    Json* root {};
     root = Json_create(skeletonJson);
 
-    Skeleton* skel {};
-    return skel;
+    Json* skeletonJsonItem {};
+    skeletonJsonItem = Json_getItem(root, "skeleton");
+
+    if (skeletonJsonItem)
+    {
+        newSkeleton.width = Json_getFloat(skeletonJsonItem, "width", 0);
+        newSkeleton.height = Json_getFloat(skeletonJsonItem, "height", 0);
+    };
+
+    return newSkeleton;
 };
 
-Skeleton* CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath)
+Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath)
 {
     i32 length;
-    Skeleton* newSkeleton;
+    Skeleton newSkeleton;
 
     const char* skeletonJson = globalPlatformServices->ReadEntireFile(&length, skeletonJsonFilePath);
 

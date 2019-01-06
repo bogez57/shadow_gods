@@ -36,9 +36,12 @@ struct Skeleton
 {
     i32 boneCount;
     Array<Bone*> bones;
-    Bone* const root;
+    Bone* root;
 
     i32 slotCount;
     Array<Slot*> slots;
     Array<Slot*> drawOrder;
+
+    f32 width, height;
+    f32 localX, localY;
 };

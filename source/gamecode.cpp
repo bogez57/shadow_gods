@@ -133,8 +133,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     globalRenderCmds = renderCmds;
 
     Stage_Data* stage = &gameState->stage;
-    Fighter* player = &stage->player;
-    Fighter* ai = &stage->ai;
+    Fighter* player = gameState->stage.player;
 
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
@@ -152,8 +151,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         deltaTFixed = platformServices->targetFrameTimeInSecs;
         deltaT = platformServices->prevFrameTimeInSecs;
 
+        stage->player = CallocType(0, Fighter, 1);
+
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-        CreateSkeletonUsingJsonFile(atlas, "data/yellow_god.json");
+        player->skel = CreateSkeletonUsingJsonFile(atlas, "data/yellow_god.json");
 
         { //Init stage info
             stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
@@ -193,12 +194,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos.x += 2.0f;
+        player->skel.localX += 2.0f;
     }
 
     if (KeyHeld(keyboard->MoveLeft))
     {
-        player->worldPos.x -= 2.0f;
+        player->skel.localX -= 2.0f;
     }
 
     { // Render
@@ -224,5 +225,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f });
         };
+
+        { // Draw player
+        }
     };
 };
