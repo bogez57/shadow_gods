@@ -374,6 +374,8 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
 
     if (fileData)
         atlas = CreateAtlas(fileData, length, dir, rendererObject);
+    else
+        InvalidCodePath;
 
     globalPlatformServices->Free((void*)fileData);
     DeAlloc(0, dir);

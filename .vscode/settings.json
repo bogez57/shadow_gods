@@ -18,7 +18,8 @@
         "atlas.h": "c",
         "extension.h": "c",
         "dll.h": "c",
-        "locale": "cpp"
+        "locale": "cpp",
+        "cmath": "c"
     },
     /********************
         Vim Settings

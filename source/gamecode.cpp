@@ -40,6 +40,8 @@ global_variable f32 viewportHeight;
 #include "memory_handling.cpp"
 #include "collisions.cpp"
 #include "atlas.cpp"
+#include "json.cpp"
+#include "skeleton.cpp"
 
 // Third Party
 #include <boagz/error_context.cpp>
@@ -151,6 +153,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         deltaT = platformServices->prevFrameTimeInSecs;
 
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
+        CreateSkeletonUsingJsonFile(atlas, "data/yellow_god.json");
 
         { //Init stage info
             stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
