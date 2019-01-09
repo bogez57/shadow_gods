@@ -31,13 +31,16 @@ Skeleton CreateSkeleton(Atlas* atlas, const char* skeletonJson)
     Json* root {};
     root = Json_create(skeletonJson);
 
-    Json* skeletonJsonItem {};
-    skeletonJsonItem = Json_getItem(root, "skeleton");
-
-    if (skeletonJsonItem)
+    Json* jsonSkeleton = Json_getItem(root, "skeleton");
+    if (jsonSkeleton)
     {
-        newSkeleton.width = Json_getFloat(skeletonJsonItem, "width", 0);
-        newSkeleton.height = Json_getFloat(skeletonJsonItem, "height", 0);
+        newSkeleton.width = Json_getFloat(jsonSkeleton, "width", 0);
+        newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0);
+    };
+
+    Json* jsonSlots = Json_getItem(root, "slots");
+    if (jsonSlots)
+    {
     };
 
     return newSkeleton;

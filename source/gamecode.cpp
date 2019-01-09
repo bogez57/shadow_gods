@@ -132,11 +132,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     globalPlatformServices = platformServices;
     globalRenderCmds = renderCmds;
 
-    Stage_Data* stage = &gameState->stage;
-    Fighter* player = gameState->stage.player;
-
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
+
+    Stage_Data* stage = &gameState->stage;
 
     if (NOT gameMemory->Initialized)
     {
@@ -154,7 +153,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->player = CallocType(0, Fighter, 1);
 
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-        player->skel = CreateSkeletonUsingJsonFile(atlas, "data/yellow_god.json");
+        stage->player->skel = CreateSkeletonUsingJsonFile(atlas, "data/yellow_god.json");
 
         { //Init stage info
             stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
@@ -174,6 +173,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.zoomFactor = 1.0f;
         };
     };
+
+    Fighter* player = gameState->stage.player;
 
     if (globalPlatformServices->DLLJustReloaded)
     {
