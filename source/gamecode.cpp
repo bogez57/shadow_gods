@@ -38,10 +38,14 @@ global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
 #include "memory_handling.cpp"
-#include "collisions.cpp"
-#include "atlas.cpp"
-#include "json.cpp"
-#include "skeleton.cpp"
+#define COLLISION_IMPL
+#include "collisions.h"
+#define ATLAS_IMPL
+#include "atlas.h"
+#define JSON_IMPL
+#include "json.h"
+#define SKELETON_IMPL
+#include "skeleton.h"
 
 // Third Party
 #include <boagz/error_context.cpp>
