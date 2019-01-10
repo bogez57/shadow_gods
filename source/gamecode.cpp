@@ -235,20 +235,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             AtlasRegion region = gameState->atlas->regions[0];
 
             v2f UVArray[4] = {
-                v2f { region.u, region.v },
-                v2f { region.u2, region.v },
                 v2f { region.u2, region.v2 },
                 v2f { region.u, region.v2 },
+                v2f { region.u, region.v },
+                v2f { region.u2, region.v },
             };
 
             Drawable_Rect spineImage {
-                v2f { 900.0f, 450.0f },
-                v2f { 980.0f, 450.0f },
-                v2f { 980.0f, 480.0f },
-                v2f { 900.0f, 480.0f },
+                v2f { 400.0f, 500.0f },
+                v2f { 480.0f, 500.0f },
+                v2f { 480.0f, 580.0f },
+                v2f { 400.0f, 580.0f },
             };
 
-            1 globalRenderCmds.DrawTexture(1, spineImage, UVArray);
+            globalRenderCmds.DrawTexture(1, spineImage, UVArray);
         }
     };
 };
