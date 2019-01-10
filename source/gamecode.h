@@ -1,6 +1,7 @@
 #pragma once
 
 #include "atomic_types.h"
+#include "atlas.h"
 #include "shared.h"
 #include "memory_handling.h"
 #include "collisions.h"
@@ -39,4 +40,5 @@ struct Stage_Data
 struct Game_State
 {
     Stage_Data stage;
+    Atlas* atlas;
 };

@@ -156,8 +156,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         stage->player = CallocType(0, Fighter, 1);
 
-        Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-        stage->player->skel = CreateSkeletonUsingJsonFile(atlas, "data/yellow_god.json");
+        gameState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
+        stage->player->skel = CreateSkeletonUsingJsonFile(gameState->atlas, "data/yellow_god.json");
 
         { //Init stage info
             stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
@@ -232,6 +232,23 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         { // Draw player
+            AtlasRegion region = gameState->atlas->regions[0];
+
+            v2f UVArray[4] = {
+                v2f { region.u, region.v },
+                v2f { region.u2, region.v },
+                v2f { region.u2, region.v2 },
+                v2f { region.u, region.v2 },
+            };
+
+            Drawable_Rect spineImage {
+                v2f { 900.0f, 450.0f },
+                v2f { 980.0f, 450.0f },
+                v2f { 980.0f, 480.0f },
+                v2f { 900.0f, 480.0f },
+            };
+
+            1 globalRenderCmds.DrawTexture(1, spineImage, UVArray);
         }
     };
 };
