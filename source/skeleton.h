@@ -29,7 +29,8 @@
 
 struct Bone
 {
-    f32 x, y, rotation, scaleX, scaleY;
+    f32 x, y, rotation, scaleX, scaleY, length;
+    Bone* parent;
 };
 
 typedef enum
@@ -60,12 +61,12 @@ struct Slot
 struct Skeleton
 {
     i32 boneCount;
-    Array<Bone*> bones;
+    Dynam_Array<Bone> bones;
     Bone* root;
 
     i32 slotCount;
-    Array<Slot*> slots;
-    Array<Slot*> drawOrder;
+    Dynam_Array<Slot*> slots;
+    Dynam_Array<Slot*> drawOrder;
 
     f32 width, height;
     f32 localX, localY;
@@ -87,6 +88,17 @@ Skeleton CreateSkeleton(Atlas* atlas, const char* skeletonJson)
     {
         newSkeleton.width = Json_getFloat(jsonSkeleton, "width", 0);
         newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0);
+    };
+
+    Json* jsonBones = Json_getItem(root, "bones");
+    if (jsonBones)
+    {
+        newSkeleton.boneCount = jsonBones->size;
+
+        i32 boneIndex {};
+        for (Json* currentJsonBone = jsonBones->child; boneIndex < newSkeleton.boneCount; currentJsonBone = jsonBones->next, ++boneIndex)
+        {
+        };
     };
 
     Json* jsonSlots = Json_getItem(root, "slots");
