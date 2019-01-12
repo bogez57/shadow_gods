@@ -17,6 +17,7 @@
 #include <boagz/error_handling.h>
 
 #include "atomic_types.h"
+#include "memory_handling.h"
 #include "array.h"
 #include "dynamic_array.h"
 #include "ring_buffer.h"
@@ -24,7 +25,6 @@
 
 #include "atlas.h"
 #include "shared.h"
-#include "memory_handling.h"
 #include "dynamic_allocator.h"
 #include "gamecode.h"
 #include "math.h"
@@ -37,7 +37,6 @@ global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 
-#include "memory_handling.cpp"
 #define COLLISION_IMPL
 #include "collisions.h"
 #define ATLAS_IMPL

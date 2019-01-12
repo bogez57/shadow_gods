@@ -35,17 +35,16 @@
 #include <stb/stb_image.h>
 
 #include "atomic_types.h"
+#include "memory_handling.h"
 #include "array.h"
 
 #include "math.h"
 #include "utilities.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
-#include "memory_handling.h"
 
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_context.cpp>
-#include "memory_handling.cpp"
 
 global_variable ui32 WindowWidth { 1280 };
 global_variable ui32 WindowHeight { 720 };

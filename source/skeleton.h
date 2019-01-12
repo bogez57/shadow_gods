@@ -72,11 +72,13 @@ struct Skeleton
     f32 localX, localY;
 };
 
+Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath);
+
 #endif
 
 #ifdef SKELETON_IMPL
 
-Skeleton CreateSkeleton(Atlas* atlas, const char* skeletonJson)
+Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
 {
     Skeleton newSkeleton {};
 
@@ -117,7 +119,7 @@ Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFileP
     const char* skeletonJson = globalPlatformServices->ReadEntireFile(&length, skeletonJsonFilePath);
 
     if (skeletonJson)
-        newSkeleton = CreateSkeleton(atlas, skeletonJson);
+        newSkeleton = _CreateSkeleton(atlas, skeletonJson);
     else
         InvalidCodePath;
 
