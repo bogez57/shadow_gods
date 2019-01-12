@@ -208,10 +208,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         player->skel.localX -= 2.0f;
     }
 
-    Array<i32, 10> arr { 0, 1, 9 };
-
-    BGZ_CONSOLE("%lli", arr.Size());
-
     { // Render
         renderCmds.Init();
 

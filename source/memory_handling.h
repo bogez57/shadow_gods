@@ -140,9 +140,6 @@ i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
     return appMemory->regionCount++;
 };
 
-#define AllocSize(MemRegionIdentifier, Size) _AllocSize(MemRegionIdentifier, Size)
-#define FreeSize(MemRegionIdentifier, Size) _FreeSize(MemRegionIdentifier, Size)
-
 auto _AllocSize(i32 MemRegionIdentifier, i64 size) -> void*
 {
     ASSERT((appMemory->regions[MemRegionIdentifier].UsedAmount + size) <= appMemory->regions[MemRegionIdentifier].Size);
@@ -196,7 +193,7 @@ _Dynamic_Mem_Allocator InitDynamAllocator(i32 memRegionIdentifier)
 
     ui16 BlockSize = 8;
     ui16 TotalSize = sizeof(_Memory_Block) + BlockSize;
-    _Memory_Block* InitialBlock = (_Memory_Block*)AllocSize(memRegionIdentifier, TotalSize);
+    _Memory_Block* InitialBlock = (_Memory_Block*)_AllocSize(memRegionIdentifier, TotalSize);
 
     InitialBlock->Size = BlockSize;
     InitialBlock->IsFree = false;
@@ -314,14 +311,14 @@ void _FreeBlockAndMergeIfNecessary(_Memory_Block* blockToFree, i32 memRegionIden
         appMemory->regions[memRegionIdentifier].dynamAllocator.tail = blockToFree->prevBlock;
         --appMemory->regions[memRegionIdentifier].dynamAllocator.AmountOfBlocks;
         blockToFree->Size = 0;
-        FreeSize(memRegionIdentifier, sizeToFree);
+        _FreeSize(memRegionIdentifier, sizeToFree);
     };
 };
 
 _Memory_Block* _AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
 {
     i64 TotalSize = sizeof(_Memory_Block) + Size;
-    _Memory_Block* NewBlock = (_Memory_Block*)AllocSize(memRegionIdentifier, TotalSize);
+    _Memory_Block* NewBlock = (_Memory_Block*)_AllocSize(memRegionIdentifier, TotalSize);
 
     NewBlock->Size = Size;
     NewBlock->IsFree = false;

@@ -30,7 +30,7 @@ public:
     inline i64 Size() const
     {
         return size;
-    }
+    };
 
     Type elements[size ? size : 1];
 };
