@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MEMHANDLING_INCLUDE_H
+#define MEMHANDLING_INCLUDE_H
 
 #include <stdint.h>
 
@@ -78,6 +79,10 @@ void _DeAlloc(i32, void**);
 #define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
 #define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size)
 #define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)
+
+#endif
+
+#ifdef MEMHANDLING_IMPL
 
 #include <assert.h>
 #include <cstring>
@@ -449,3 +454,5 @@ void _DeAlloc(i32 memRegionIdentifier, void** MemToFree)
         _FreeBlockAndMergeIfNecessary(Block, memRegionIdentifier);
     };
 };
+
+#endif // MEMHANDLING_IMPL

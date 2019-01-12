@@ -16,7 +16,9 @@
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
 
+#define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
+#define MEMHANDLING_IMPL
 #include "memory_handling.h"
 #include "array.h"
 #include "dynamic_array.h"

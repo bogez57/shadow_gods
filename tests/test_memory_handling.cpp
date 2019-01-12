@@ -1,3 +1,4 @@
+#include "source/atomic_types.h"
 #include "catch.hpp"
 #include "source/memory_handling.h"
 

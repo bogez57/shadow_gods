@@ -1,3 +1,5 @@
+#ifndef ATOMIC_TYPES_INCLUDE
+#define ATOMIC_TYPES_INCLUDE
 
 #include <stdint.h>
 
@@ -131,6 +133,10 @@ struct m2x2
 {
     f32 Elem[2][2];
 };
+
+#endif
+
+#ifdef ATOMIC_TYPES_IMPL
 
 v2f::v2f(f32 x, f32 y)
     : x(x)
@@ -356,3 +362,5 @@ v3i::v3i(int x, int y, int z)
 {}
 
 /* all v3i suff */
+
+#endif // ATOMIC_TYPES_IMPL

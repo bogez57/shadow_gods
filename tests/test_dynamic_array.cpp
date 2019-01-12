@@ -1,7 +1,9 @@
 #include "catch.hpp"
 
+#include "source/atomic_types.h"
 #include "source/allocator.h"
 #include "source/dynamic_array.h"
+#include "source/memory_handling.h"
 
 class Dynamic_Allocator : public Allocator
 {
