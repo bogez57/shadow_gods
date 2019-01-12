@@ -1,5 +1,4 @@
 #include "catch.hpp"
-#include "source/atomic_types.h"
 #include "source/memory_handling.h"
 
 SCENARIO("Memory regions can be created")

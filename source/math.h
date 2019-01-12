@@ -1,6 +1,5 @@
 #pragma once
 
-#include "atomic_types.h"
 #include <math.h> //TODO: Remove and replace with own, faster platform specific implementations
 
 #define PI 3.1415926535897932385f

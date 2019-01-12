@@ -1,7 +1,5 @@
 #pragma once
 
-#include "atomic_types.h"
-
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
 inline ui32

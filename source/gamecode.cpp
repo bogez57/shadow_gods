@@ -16,16 +16,16 @@
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
 
-#include "atomic_types.cpp"
+#include "atomic_types.h"
+#include "array.h"
+#include "dynamic_array.h"
+#include "ring_buffer.h"
+#include "linked_list.h"
 
 #include "atlas.h"
 #include "shared.h"
 #include "memory_handling.h"
-#include "array.h"
 #include "dynamic_allocator.h"
-#include "dynamic_array.h"
-#include "linked_list.h"
-#include "ring_buffer.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -206,6 +206,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         player->skel.localX -= 2.0f;
     }
+
+    Array<i32, 10> arr { 0, 1, 9 };
+
+    BGZ_CONSOLE("%lli", arr.Size());
 
     { // Render
         renderCmds.Init();

@@ -19,7 +19,18 @@
         "extension.h": "c",
         "dll.h": "c",
         "locale": "cpp",
-        "cmath": "c"
+        "cmath": "c",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "random": "cpp",
+        "regex": "cpp",
+        "stack": "cpp",
+        "type_traits": "cpp",
+        "vector": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp"
     },
     /********************
         Vim Settings

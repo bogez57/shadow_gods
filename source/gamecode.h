@@ -1,6 +1,5 @@
 #pragma once
 
-#include "atomic_types.h"
 #include "atlas.h"
 #include "shared.h"
 #include "memory_handling.h"

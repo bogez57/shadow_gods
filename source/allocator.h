@@ -1,7 +1,5 @@
 #pragma once
 
-#include "atomic_types.h"
-
 class Allocator
 {
 public:

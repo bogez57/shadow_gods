@@ -1,6 +1,5 @@
 #include "catch.hpp"
 
-#include "source/atomic_types.h"
 #include "source/allocator.h"
 #include "source/dynamic_array.h"
 

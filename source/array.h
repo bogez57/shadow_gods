@@ -1,18 +1,18 @@
 #include <boagz/error_handling.h>
 
-template <typename Type, i64 initialSize = 1>
+template <typename Type, i64 size = 1>
 class Array
 {
 public:
     Type& operator[](i64 index)
     {
-        BGZ_ASSERT(index < initialSize, "Attempting to access index %i which is out of current array bounds - current max array index: %i", index, initialSize - 1);
+        BGZ_ASSERT(index < size, "Attempting to access index %i which is out of current array bounds - current max array index: %i", index, size - 1);
         return this->elements[index];
     };
 
     inline Type& At(i64 index)
     {
-        BGZ_ASSERT(index < initialSize, "Attempting to access index %i which is out of current array bounds - current max array index: %i", index, initialSize - 1);
+        BGZ_ASSERT(index < size, "Attempting to access index %i which is out of current array bounds - current max array index: %i", index, size - 1);
         return (Type&)this->elements[index];
     };
 
@@ -24,8 +24,13 @@ public:
 
     inline b Empty() const
     {
-        return (this->initialSize == 0);
+        return (size == 0);
     };
 
-    Type elements[initialSize ? initialSize : 1];
+    inline i64 Size() const
+    {
+        return size;
+    }
+
+    Type elements[size ? size : 1];
 };
