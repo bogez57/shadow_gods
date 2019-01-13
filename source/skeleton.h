@@ -46,6 +46,7 @@ typedef enum
 
 class Attachment
 {
+public:
     const char* const name;
     const AttachmentType type;
 
