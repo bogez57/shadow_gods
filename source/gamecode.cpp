@@ -38,6 +38,7 @@ global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
+global_variable Dynamic_Allocator dynamAllocator { 0 };
 
 #define COLLISION_IMPL
 #include "collisions.h"

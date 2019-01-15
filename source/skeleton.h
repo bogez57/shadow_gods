@@ -29,8 +29,9 @@
 
 struct Bone
 {
-    f32 x, y, rotation, scaleX, scaleY, length;
+    f32 x, y, rotation, length;
     Bone* parent;
+    const char* name;
 };
 
 typedef enum
@@ -81,30 +82,33 @@ Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFileP
 
 Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
 {
-    Skeleton newSkeleton {};
-
     Json* root {};
     root = Json_create(skeletonJson);
 
     Json* jsonSkeleton = Json_getItem(root, "skeleton");
-    if (jsonSkeleton)
-    {
-        newSkeleton.width = Json_getFloat(jsonSkeleton, "width", 0);
-        newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0);
-    };
-
+    BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!");
     Json* jsonBones = Json_getItem(root, "bones");
-    if (jsonBones)
-    {
-        newSkeleton.boneCount = jsonBones->size;
+    BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!");
+    Json* jsonSlots = Json_getItem(root, "slots");
+    BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!");
 
-        i32 boneIndex {};
-        for (Json* currentJsonBone = jsonBones->child; boneIndex < newSkeleton.boneCount; currentJsonBone = jsonBones->next, ++boneIndex)
-        {
-        };
+    Skeleton newSkeleton {};
+    newSkeleton.boneCount = jsonBones->size;
+    newSkeleton.bones.Init(newSkeleton.boneCount, &dynamAllocator);
+
+    newSkeleton.width = Json_getFloat(jsonSkeleton, "width", 0);
+    newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0);
+
+    i32 boneIndex {};
+    for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.boneCount; currentJsonObject = jsonBones->next, ++boneIndex)
+    {
+        newSkeleton.bones.At(boneIndex).name = Json_getString(currentJsonObject, "name", 0);
+        newSkeleton.bones.At(boneIndex).x = Json_getFloat(currentJsonObject, "x", 0);
+        newSkeleton.bones.At(boneIndex).y = Json_getFloat(currentJsonObject, "y", 0);
+        newSkeleton.bones.At(boneIndex).rotation = Json_getFloat(currentJsonObject, "rotation", 0);
+        newSkeleton.bones.At(boneIndex).length = Json_getFloat(currentJsonObject, "length", 0);
     };
 
-    Json* jsonSlots = Json_getItem(root, "slots");
     if (jsonSlots)
     {
     };

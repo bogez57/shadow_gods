@@ -61,13 +61,13 @@ public:
         memset(this->elements, 0, initialSize);
     };
 
-    inline Type& operator[](i64 index)
+    Type& operator[](i64 index)
     {
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array index: %i", index, capacity - 1);
-        return *(this->elements + Index);
+        return *(this->elements + index);
     };
 
-    inline Type& At(ui32 index)
+    Type& At(ui32 index)
     {
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array index: %i", index, capacity - 1);
         return *(this->elements + index);
