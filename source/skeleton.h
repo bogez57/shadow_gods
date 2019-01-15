@@ -100,7 +100,7 @@ Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
     newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0);
 
     i32 boneIndex {};
-    for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.boneCount; currentJsonObject = jsonBones->next, ++boneIndex)
+    for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.boneCount; currentJsonObject = currentJsonObject->next, ++boneIndex)
     {
         newSkeleton.bones.At(boneIndex).name = Json_getString(currentJsonObject, "name", 0);
         newSkeleton.bones.At(boneIndex).x = Json_getFloat(currentJsonObject, "x", 0);
