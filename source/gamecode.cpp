@@ -145,6 +145,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (NOT gameMemory->Initialized)
     {
+        gameMemory->Initialized = true;
+
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
         InitApplicationMemory(gameMemory);
