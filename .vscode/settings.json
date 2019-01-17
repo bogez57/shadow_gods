@@ -30,7 +30,8 @@
         "xhash": "cpp",
         "xstring": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "sstream": "c"
     },
     /********************
         Vim Settings

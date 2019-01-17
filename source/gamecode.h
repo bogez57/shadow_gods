@@ -8,6 +8,7 @@
 struct Fighter
 {
     Skeleton skel;
+    v2f* position;
 };
 
 struct StageInfo
@@ -31,7 +32,7 @@ struct Game_Camera
 struct Stage_Data
 {
     StageInfo info;
-    Fighter* player;
+    Fighter player;
     Game_Camera camera;
 };
 

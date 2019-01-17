@@ -132,16 +132,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
-    Game_State* gameState = (Game_State*)gameMemory->PermanentStorage;
-    deltaT = platformServices->prevFrameTimeInSecs;
-
-    globalPlatformServices = platformServices;
-    globalRenderCmds = renderCmds;
-
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
 
+    Game_State* gameState = (Game_State*)gameMemory->PermanentStorage;
+    deltaT = platformServices->prevFrameTimeInSecs;
+    globalPlatformServices = platformServices;
+    globalRenderCmds = renderCmds;
+
     Stage_Data* stage = &gameState->stage;
+    Fighter* player = &stage->player;
 
     if (NOT gameMemory->Initialized)
     {
@@ -158,21 +158,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         deltaTFixed = platformServices->targetFrameTimeInSecs;
         deltaT = platformServices->prevFrameTimeInSecs;
 
-        stage->player = CallocType(0, Fighter, 1);
+        { //Init stage
+            *stage = {};
 
-        gameState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-        stage->player->skel = CreateSkeletonUsingJsonFile(gameState->atlas, "data/yellow_god.json");
-
-        { //Init stage info
             stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
             stage->info.displayImage = FlipImage(stage->info.displayImage); // Since opengl will read-in image upside down
             stage->info.currentTexture = renderCmds.LoadTexture(stage->info.displayImage); // TODO: Move out to renderer
             stage->info.size.width = (f32)stage->info.displayImage.size.width;
             stage->info.size.height = (f32)stage->info.displayImage.size.height;
             stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
-        };
 
-        { // Set stage camera
             stage->camera.viewWidth = viewportWidth;
             stage->camera.viewHeight = viewportHeight;
             stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f };
@@ -180,9 +175,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
-    };
 
-    Fighter* player = gameState->stage.player;
+        { //Init player
+            *player = {};
+
+            gameState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
+            player->skel = CreateSkeletonUsingJsonFile(gameState->atlas, "data/yellow_god.json");
+
+            player->skel.position = { 400.0f, 100.0f };
+            player->position = &player->skel.position;
+        };
+    };
 
     if (globalPlatformServices->DLLJustReloaded)
     {
@@ -203,12 +206,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->MoveRight))
     {
-        player->skel.localX += 2.0f;
+        player->position->x += 2.0f;
     }
 
     if (KeyHeld(keyboard->MoveLeft))
     {
-        player->skel.localX -= 2.0f;
+        player->position->x -= 2.0f;
     }
 
     { // Render
@@ -236,23 +239,28 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         { // Draw player
-            AtlasRegion region = gameState->atlas->regions[0];
+            AtlasRegion* region = gameState->atlas->regions;
 
-            v2f UVArray[4] = {
-                v2f { region.u2, region.v2 },
-                v2f { region.u, region.v2 },
-                v2f { region.u, region.v },
-                v2f { region.u2, region.v },
+            while (region)
+            {
+                v2f UVArray[4] = {
+                    v2f { region->u2, region->v2 },
+                    v2f { region->u, region->v2 },
+                    v2f { region->u, region->v },
+                    v2f { region->u2, region->v },
+                };
+
+                Drawable_Rect spineImage {
+                    v2f { 400.0f, 500.0f },
+                    v2f { 480.0f, 500.0f },
+                    v2f { 480.0f, 580.0f },
+                    v2f { 400.0f, 580.0f },
+                };
+
+                globalRenderCmds.DrawTexture(1, spineImage, UVArray);
+
+                region = region->next;
             };
-
-            Drawable_Rect spineImage {
-                v2f { 400.0f, 500.0f },
-                v2f { 480.0f, 500.0f },
-                v2f { 480.0f, 580.0f },
-                v2f { 400.0f, 580.0f },
-            };
-
-            globalRenderCmds.DrawTexture(1, spineImage, UVArray);
-        }
+        };
     };
 };

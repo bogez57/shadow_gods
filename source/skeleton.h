@@ -64,14 +64,13 @@ struct Skeleton
 {
     i32 boneCount;
     Dynam_Array<Bone> bones;
-    Bone* root;
 
     i32 slotCount;
     Dynam_Array<Slot*> slots;
     Dynam_Array<Slot*> drawOrder;
 
     f32 width, height;
-    f32 localX, localY;
+    v2f position;
 };
 
 Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath);
@@ -86,21 +85,20 @@ Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
     root = Json_create(skeletonJson);
 
     Json* jsonSkeleton = Json_getItem(root, "skeleton");
-    BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!");
     Json* jsonBones = Json_getItem(root, "bones");
-    BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!");
     Json* jsonSlots = Json_getItem(root, "slots");
+    BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!");
+    BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!");
     BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!");
 
     Skeleton newSkeleton {};
-    newSkeleton.boneCount = jsonBones->size;
-    newSkeleton.bones.Init(newSkeleton.boneCount, &dynamAllocator);
+    newSkeleton.bones.Init(jsonBones->size, &dynamAllocator);
 
     newSkeleton.width = Json_getFloat(jsonSkeleton, "width", 0);
     newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0);
 
     i32 boneIndex {};
-    for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.boneCount; currentJsonObject = currentJsonObject->next, ++boneIndex)
+    for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.bones.capacity; currentJsonObject = currentJsonObject->next, ++boneIndex)
     {
         newSkeleton.bones.At(boneIndex).name = Json_getString(currentJsonObject, "name", 0);
         newSkeleton.bones.At(boneIndex).x = Json_getFloat(currentJsonObject, "x", 0);
