@@ -251,13 +251,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 };
 
                 Drawable_Rect spineImage {
-                    v2f { 400.0f, 500.0f },
-                    v2f { 480.0f, 500.0f },
-                    v2f { 480.0f, 580.0f },
-                    v2f { 400.0f, 580.0f },
+                    v2f { 450.0f, 500.0f },
+                    v2f { 590.0f, 500.0f },
+                    v2f { 590.0f, 580.0f },
+                    v2f { 450.0f, 580.0f },
                 };
 
-                globalRenderCmds.DrawTexture(1, spineImage, UVArray);
+                globalRenderCmds.DrawTexture(2, spineImage, UVArray);
 
                 region = region->next;
             };

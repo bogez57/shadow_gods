@@ -57,6 +57,8 @@ protected:
 
 struct Slot
 {
+    char* name;
+    Bone bone;
     Attachment* const attachment;
 };
 
@@ -65,19 +67,38 @@ struct Skeleton
     i32 boneCount;
     Dynam_Array<Bone> bones;
 
-    i32 slotCount;
-    Dynam_Array<Slot*> slots;
-    Dynam_Array<Slot*> drawOrder;
+    Dynam_Array<Slot> slots;
+    Dynam_Array<Slot> drawOrder;
 
     f32 width, height;
     v2f position;
 };
 
 Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath);
+Bone GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
 
 #endif
 
 #ifdef SKELETON_IMPL
+
+Bone GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
+{
+    Bone bone {};
+
+    i32 i;
+    for (i = 0; i < skeleton.bones.size; ++i)
+    {
+        if (strcmp(skeleton.bones.At(i).name, boneName) == 0)
+        {
+            bone = skeleton.bones.At(i);
+            break;
+        };
+    };
+
+    BGZ_ASSERT(bone.name != nullptr, "Bone was not found!");
+
+    return bone;
+};
 
 Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
 {
@@ -86,10 +107,8 @@ Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
 
     Json* jsonSkeleton = Json_getItem(root, "skeleton");
     Json* jsonBones = Json_getItem(root, "bones");
-    Json* jsonSlots = Json_getItem(root, "slots");
     BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!");
     BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!");
-    BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!");
 
     Skeleton newSkeleton {};
     newSkeleton.bones.Init(jsonBones->size, &dynamAllocator);
@@ -107,8 +126,16 @@ Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
         newSkeleton.bones.At(boneIndex).length = Json_getFloat(currentJsonObject, "length", 0);
     };
 
-    if (jsonSlots)
+    Json* jsonSlots = Json_getItem(root, "slots");
+    BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!");
+
+    newSkeleton.slots.Init(jsonSlots->size, &dynamAllocator);
+
+    i32 slotIndex {};
+    for (Json* currentJsonObject = jsonSlots->child; slotIndex < newSkeleton.slots.capacity; currentJsonObject = currentJsonObject->next, ++slotIndex)
     {
+        newSkeleton.slots.At(slotIndex).name = (char*)Json_getString(currentJsonObject, "name", 0);
+        newSkeleton.slots.At(slotIndex).bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
     };
 
     return newSkeleton;
