@@ -30,7 +30,12 @@
 
 */
 
-//TODO: Need to overload brackets [] operator for class as long as array's elements are accesible
+/*
+    TODO:
+     1.) Currently, dynamic array always intializes elements to zero through constructor and Init func. If you want to 
+     give the option of more speed you will need to add a method similar to std::vector reserve(). The idea is you give 
+     the option to allocate memory (just call malloc) but don't initialize it to 0. 
+*/
 
 #pragma once
 
@@ -58,18 +63,21 @@ public:
 
     {
         *this = ResizeArray<Type>(*this, initialSize);
-        memset(this->elements, 0, initialSize);
+        memset(this->elements, 0, initialSize); //Initializes elements as well.
+        this->size = initialSize;
     };
 
     Type& operator[](i64 index)
     {
-        BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array index: %i", index, capacity - 1);
+        BGZ_ASSERT(index < this->capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array capacity: %i", index, capacity);
+        BGZ_ASSERT(index < this->size, "Attempting to access index %i which is out of current dynam array bounds - current max array size: %i", index, size);
         return *(this->elements + index);
     };
 
     Type& At(ui32 index)
     {
-        BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array index: %i", index, capacity - 1);
+        BGZ_ASSERT(index < capacity, "Attempting to access index %i which exceeds capacity - current max array capacity: %i", index, capacity - 1);
+        BGZ_ASSERT(index < this->size, "Attempting to access index %i which exceeds current array size - current max array size: %i", index, size);
         return *(this->elements + index);
     };
 
@@ -77,7 +85,8 @@ public:
     {
         this->allocator = allocator;
         *this = ResizeArray<Type>(*this, initialSize);
-        memset(this->elements, 0, initialSize);
+        memset(this->elements, 0, initialSize); //Initializes elements as well
+        this->size = initialSize;
     };
 
     void Insert(Type element, ui32 AtIndex)

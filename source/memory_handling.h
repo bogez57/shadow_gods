@@ -337,7 +337,7 @@ _Memory_Block* _AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
 void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
-    //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    ASSERT(Size <= (appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount)); //Not enough memory left for dynmaic memory allocation!
 
     void* Result { nullptr };
 
@@ -378,7 +378,7 @@ void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
-    //ASSERT(Size <= (globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount), "Not enough memory left for dynmaic memory allocation!");
+    ASSERT(Size <= (appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount));
 
     void* MemBlockData = _MallocSize(memRegionIdentifier, Size);
 
@@ -396,7 +396,7 @@ void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
 {
     ASSERT(appMemory->regions[memRegionIdentifier].dynamAllocator.head);
-    //ASSERT((globalMemHandler->memRegions[DYNAMIC].Size - globalMemHandler->memRegions[DYNAMIC].UsedAmount) > NewSize, "Not enough room left in memory region!");
+    ASSERT((appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount)); //Not enough room left in memory region!
 
     _Memory_Block* BlockToRealloc;
     if (DataToRealloc)
@@ -422,7 +422,6 @@ void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
             void* newBlockData = _MallocSize(memRegionIdentifier, NewSize);
 
             memcpy(newBlockData, BlockToRealloc->data, BlockToRealloc->Size);
-            memset(BlockToRealloc->data, 0, BlockToRealloc->Size); //TODO: Remove if speed becomes an issue;
 
             _FreeBlockAndMergeIfNecessary(BlockToRealloc, memRegionIdentifier);
 
@@ -441,7 +440,7 @@ void _DeAlloc(i32 memRegionIdentifier, void** MemToFree)
 {
     if (*MemToFree)
     {
-        //ASSERT(*MemToFree > globalMemHandler->memRegions[DYNAMIC].BaseAddress && *MemToFree < globalMemHandler->memRegions[DYNAMIC].EndAddress, "Ptr to free not within dynmaic memory region!");
+        ASSERT(*MemToFree > appMemory->regions[memRegionIdentifier].BaseAddress && *MemToFree < appMemory->regions[memRegionIdentifier].EndAddress); //Ptr to free not within dynmaic memory region!
 
         _Memory_Block* Block = _ConvertDataToMemoryBlock(*MemToFree);
 
