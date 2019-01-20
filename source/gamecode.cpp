@@ -250,13 +250,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 player->skel.bones[1].worldPos = player->skel.bones[1].worldPos + translationToCameraSpace;
             };
 
-            AtlasRegion* region = gameState->atlas->regions;
+            Slot slot = player->skel.slots[1];
 
             v2f UVArray[4] = {
-                v2f { region->u2, region->v2 },
-                v2f { region->u, region->v2 },
-                v2f { region->u, region->v },
-                v2f { region->u2, region->v },
+                v2f { slot.regionAttachment.imageInfo.u2, slot.regionAttachment.imageInfo.v2 },
+                v2f { slot.regionAttachment.imageInfo.u, slot.regionAttachment.imageInfo.v2 },
+                v2f { slot.regionAttachment.imageInfo.u, slot.regionAttachment.imageInfo.v },
+                v2f { slot.regionAttachment.imageInfo.u2, slot.regionAttachment.imageInfo.v },
             };
 
             Drawable_Rect spineImage {
@@ -266,9 +266,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 v2f { player->skel.bones[1].worldPos.x, player->skel.bones[1].worldPos.y + 100.0f },
             };
 
-            globalRenderCmds.DrawTexture(2, spineImage, UVArray);
+            Texture* texture = (Texture*)slot.regionAttachment.imageInfo.page->rendererObject;
 
-            region = region->next;
+            globalRenderCmds.DrawTexture(texture->ID, spineImage, UVArray);
         };
     };
 };
