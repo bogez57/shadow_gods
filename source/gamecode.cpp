@@ -180,7 +180,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             gameState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
 
             *player = {};
-            player->skel = CreateSkeletonUsingJsonFile(gameState->atlas, "data/yellow_god.json");
+            player->skel = CreateSkeletonUsingJsonFile(*gameState->atlas, "data/yellow_god.json");
             player->skel.worldPos = { stage->info.centerPoint.x, stage->info.centerPoint.y - 1000.0f };
             player->worldPos = &player->skel.worldPos;
         };
@@ -242,7 +242,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             player->skel.bones[0].worldPos = player->skel.worldPos;
 
             { //Update bone world positions
-                player->skel.bones[1].worldPos = player->skel.bones[0].worldPos + player->skel.bones[1].localPos;
+                player->skel.bones[1].worldPos = player->skel.bones[0].worldPos + player->skel.bones[1].parentLocalPos;
             };
 
             { //Translate to camera space position
