@@ -213,6 +213,18 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         player->worldPos->x -= 2.0f;
     }
 
+    { //Update bone world positions
+        //Update root bone first
+        player->skel.bones[0].worldPos = player->skel.worldPos;
+
+        for (i32 boneIndex { 1 }; boneIndex < player->skel.bones.size; ++boneIndex)
+        {
+            Bone* currentBone = &player->skel.bones[boneIndex];
+
+            currentBone->worldPos = currentBone->parentBone->worldPos + currentBone->parentLocalPos;
+        };
+    };
+
     { // Render
         renderCmds.Init();
 
@@ -238,37 +250,33 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         { // Draw player
-            //root bone
-            player->skel.bones[0].worldPos = player->skel.worldPos;
+            for (i32 slotIndex {}; slotIndex < player->skel.slots.size; ++slotIndex)
+            {
+                Slot* currentSlot = &player->skel.slots[slotIndex];
 
-            { //Update bone world positions
-                player->skel.bones[1].worldPos = player->skel.bones[0].worldPos + player->skel.bones[1].parentLocalPos;
+                { //Translate to camera space position
+                    v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
+                    currentSlot->bone->worldPos = currentSlot->bone->worldPos + translationToCameraSpace;
+                };
+
+                v2f UVArray[4] = {
+                    v2f { currentSlot->regionAttachment.imageInfo.u2, currentSlot->regionAttachment.imageInfo.v2 },
+                    v2f { currentSlot->regionAttachment.imageInfo.u, currentSlot->regionAttachment.imageInfo.v2 },
+                    v2f { currentSlot->regionAttachment.imageInfo.u, currentSlot->regionAttachment.imageInfo.v },
+                    v2f { currentSlot->regionAttachment.imageInfo.u2, currentSlot->regionAttachment.imageInfo.v },
+                };
+
+                Drawable_Rect spineImage {
+                    v2f { currentSlot->bone->worldPos.x, currentSlot->bone->worldPos.y },
+                    v2f { currentSlot->bone->worldPos.x + currentSlot->regionAttachment.width, currentSlot->bone->worldPos.y },
+                    v2f { currentSlot->bone->worldPos.x + currentSlot->regionAttachment.width, currentSlot->bone->worldPos.y + currentSlot->regionAttachment.height },
+                    v2f { currentSlot->bone->worldPos.x, currentSlot->bone->worldPos.y + currentSlot->regionAttachment.height },
+                };
+
+                Texture* texture = (Texture*)currentSlot->regionAttachment.imageInfo.page->rendererObject;
+
+                globalRenderCmds.DrawTexture(texture->ID, spineImage, UVArray);
             };
-
-            { //Translate to camera space position
-                v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-                player->skel.bones[1].worldPos = player->skel.bones[1].worldPos + translationToCameraSpace;
-            };
-
-            Slot slot = player->skel.slots[1];
-
-            v2f UVArray[4] = {
-                v2f { slot.regionAttachment.imageInfo.u2, slot.regionAttachment.imageInfo.v2 },
-                v2f { slot.regionAttachment.imageInfo.u, slot.regionAttachment.imageInfo.v2 },
-                v2f { slot.regionAttachment.imageInfo.u, slot.regionAttachment.imageInfo.v },
-                v2f { slot.regionAttachment.imageInfo.u2, slot.regionAttachment.imageInfo.v },
-            };
-
-            Drawable_Rect spineImage {
-                v2f { player->skel.bones[1].worldPos.x, player->skel.bones[1].worldPos.y },
-                v2f { player->skel.bones[1].worldPos.x + 100.0f, player->skel.bones[1].worldPos.y },
-                v2f { player->skel.bones[1].worldPos.x + 100.0f, player->skel.bones[1].worldPos.y + 100.0f },
-                v2f { player->skel.bones[1].worldPos.x, player->skel.bones[1].worldPos.y + 100.0f },
-            };
-
-            Texture* texture = (Texture*)slot.regionAttachment.imageInfo.page->rendererObject;
-
-            globalRenderCmds.DrawTexture(texture->ID, spineImage, UVArray);
         };
     };
 };

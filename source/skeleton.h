@@ -32,7 +32,7 @@ struct Bone
     v2f parentLocalPos;
     v2f worldPos;
     f32 rotation, length;
-    const char* parentName;
+    Bone* parentBone;
     const char* name;
 };
 
@@ -108,7 +108,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             newSkeleton.bones.At(boneIndex).rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
             newSkeleton.bones.At(boneIndex).length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
-                newSkeleton.bones.At(boneIndex).parentName = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0))->name;
+                newSkeleton.bones.At(boneIndex).parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0));
         };
     };
 
