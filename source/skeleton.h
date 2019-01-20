@@ -29,49 +29,31 @@
 
 struct Bone
 {
-    f32 x, y, rotation, length;
+    v2f localPos;
+    v2f worldPos;
+    f32 rotation, length;
     Bone* parent;
     const char* name;
 };
 
-typedef enum
+struct Region_Attachment
 {
-    ATTACHMENT_REGION,
-    ATTACHMENT_BOUNDING_BOX,
-    ATTACHMENT_MESH,
-    ATTACHMENT_LINKED_MESH,
-    ATTACHMENT_PATH,
-    ATTACHMENT_POINT,
-    ATTACHMENT_CLIPPING
-} AttachmentType;
-
-class Attachment
-{
-public:
-    const char* const name;
-    const AttachmentType type;
-
-protected:
-    Attachment() = default;
+    i32 width, height;
 };
 
 struct Slot
 {
     char* name;
     Bone bone;
-    Attachment* const attachment;
+    Region_Attachment region;
 };
 
 struct Skeleton
 {
-    i32 boneCount;
     Dynam_Array<Bone> bones;
-
     Dynam_Array<Slot> slots;
-    Dynam_Array<Slot> drawOrder;
-
     f32 width, height;
-    v2f position;
+    v2f worldPos;
 };
 
 Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath);
@@ -117,11 +99,11 @@ Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
     newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0);
 
     i32 boneIndex {};
-    for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.bones.capacity; currentJsonObject = currentJsonObject->next, ++boneIndex)
+    for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.bones.size; currentJsonObject = currentJsonObject->next, ++boneIndex)
     {
         newSkeleton.bones.At(boneIndex).name = Json_getString(currentJsonObject, "name", 0);
-        newSkeleton.bones.At(boneIndex).x = Json_getFloat(currentJsonObject, "x", 0);
-        newSkeleton.bones.At(boneIndex).y = Json_getFloat(currentJsonObject, "y", 0);
+        newSkeleton.bones.At(boneIndex).localPos.x = Json_getFloat(currentJsonObject, "x", 0);
+        newSkeleton.bones.At(boneIndex).localPos.y = Json_getFloat(currentJsonObject, "y", 0);
         newSkeleton.bones.At(boneIndex).rotation = Json_getFloat(currentJsonObject, "rotation", 0);
         newSkeleton.bones.At(boneIndex).length = Json_getFloat(currentJsonObject, "length", 0);
     };
@@ -132,10 +114,34 @@ Skeleton _CreateSkeleton(Atlas* atlas, const char* skeletonJson)
     newSkeleton.slots.Init(jsonSlots->size, &dynamAllocator);
 
     i32 slotIndex {};
-    for (Json* currentJsonObject = jsonSlots->child; slotIndex < newSkeleton.slots.capacity; currentJsonObject = currentJsonObject->next, ++slotIndex)
+    for (Json* currentJsonObject = jsonSlots->child; slotIndex < newSkeleton.slots.size; currentJsonObject = currentJsonObject->next, ++slotIndex)
     {
-        newSkeleton.slots.At(slotIndex).name = (char*)Json_getString(currentJsonObject, "name", 0);
-        newSkeleton.slots.At(slotIndex).bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
+        //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
+        Slot* slot = &newSkeleton.slots.At((newSkeleton.slots.size - 1) - slotIndex);
+        slot->name = (char*)Json_getString(currentJsonObject, "name", 0);
+        slot->bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
+        slot->region = [currentJsonObject, root]() -> Region_Attachment {
+            Region_Attachment result {};
+
+            const char* attachmentName = Json_getString(currentJsonObject, "attachment", 0);
+
+            Json* jsonSkin = Json_getItem(root, "skins");
+            Json* jsonDefaultSkin = Json_getItem(jsonSkin, "default");
+
+            i32 attachmentCounter {};
+            for (Json* currentJsonObject = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentJsonObject = currentJsonObject->next, ++attachmentCounter)
+            {
+                Json* jsonAttachment = currentJsonObject->child;
+
+                if (strcmp(jsonAttachment->name, attachmentName) == 0)
+                {
+                    result.width = Json_getInt(jsonAttachment, "width", 0);
+                    result.height = Json_getInt(jsonAttachment, "height", 0);
+                };
+            };
+
+            return result;
+        }();
     };
 
     return newSkeleton;

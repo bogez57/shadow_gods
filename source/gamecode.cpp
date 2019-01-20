@@ -177,13 +177,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         { //Init player
-            *player = {};
-
             gameState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-            player->skel = CreateSkeletonUsingJsonFile(gameState->atlas, "data/yellow_god.json");
 
-            player->skel.position = { 400.0f, 100.0f };
-            player->position = &player->skel.position;
+            *player = {};
+            player->skel = CreateSkeletonUsingJsonFile(gameState->atlas, "data/yellow_god.json");
+            player->skel.worldPos = { stage->info.centerPoint.x, stage->info.centerPoint.y - 1000.0f };
+            player->worldPos = &player->skel.worldPos;
         };
     };
 
@@ -206,12 +205,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->MoveRight))
     {
-        player->position->x += 2.0f;
+        player->worldPos->x += 2.0f;
     }
 
     if (KeyHeld(keyboard->MoveLeft))
     {
-        player->position->x -= 2.0f;
+        player->worldPos->x -= 2.0f;
     }
 
     { // Render
@@ -239,28 +238,37 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         { // Draw player
+            //root bone
+            player->skel.bones[0].worldPos = player->skel.worldPos;
+
+            { //Update bone world positions
+                player->skel.bones[1].worldPos = player->skel.bones[0].worldPos + player->skel.bones[1].localPos;
+            };
+
+            { //Translate to camera space position
+                v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
+                player->skel.bones[1].worldPos = player->skel.bones[1].worldPos + translationToCameraSpace;
+            };
+
             AtlasRegion* region = gameState->atlas->regions;
 
-            while (region)
-            {
-                v2f UVArray[4] = {
-                    v2f { region->u2, region->v2 },
-                    v2f { region->u, region->v2 },
-                    v2f { region->u, region->v },
-                    v2f { region->u2, region->v },
-                };
-
-                Drawable_Rect spineImage {
-                    v2f { 450.0f, 500.0f },
-                    v2f { 590.0f, 500.0f },
-                    v2f { 590.0f, 580.0f },
-                    v2f { 450.0f, 580.0f },
-                };
-
-                globalRenderCmds.DrawTexture(2, spineImage, UVArray);
-
-                region = region->next;
+            v2f UVArray[4] = {
+                v2f { region->u2, region->v2 },
+                v2f { region->u, region->v2 },
+                v2f { region->u, region->v },
+                v2f { region->u2, region->v },
             };
+
+            Drawable_Rect spineImage {
+                v2f { player->skel.bones[1].worldPos.x, player->skel.bones[1].worldPos.y },
+                v2f { player->skel.bones[1].worldPos.x + 100.0f, player->skel.bones[1].worldPos.y },
+                v2f { player->skel.bones[1].worldPos.x + 100.0f, player->skel.bones[1].worldPos.y + 100.0f },
+                v2f { player->skel.bones[1].worldPos.x, player->skel.bones[1].worldPos.y + 100.0f },
+            };
+
+            globalRenderCmds.DrawTexture(2, spineImage, UVArray);
+
+            region = region->next;
         };
     };
 };

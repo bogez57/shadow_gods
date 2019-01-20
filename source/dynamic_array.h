@@ -74,7 +74,7 @@ public:
         return *(this->elements + index);
     };
 
-    Type& At(ui32 index)
+    Type& At(i64 index)
     {
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which exceeds capacity - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which exceeds current array size - current max array size: %i", index, size);

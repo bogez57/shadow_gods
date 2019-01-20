@@ -8,7 +8,7 @@
 struct Fighter
 {
     Skeleton skel;
-    v2f* position;
+    v2f* worldPos;
 };
 
 struct StageInfo
