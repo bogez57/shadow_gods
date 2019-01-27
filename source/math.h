@@ -19,6 +19,14 @@ AbsoluteVal(v2f Value)
 }
 
 inline f32
+Radians(f32 angleInDegrees)
+{
+    f32 angleInRadians = angleInDegrees * (PI / 180.0f);
+
+    return angleInRadians;
+};
+
+inline f32
 Sin(f32 AngleInRadians)
 {
     f32 RealNumber = sinf(AngleInRadians);
