@@ -203,6 +203,7 @@ struct Game_Render_Cmds
     void (*DrawRect)(v2f, v2f, v4f);
     void (*DrawBackground)(ui32, Drawable_Rect, v2f, v2f);
     void (*DrawTexture)(ui32, Drawable_Rect, v2f*);
+    void (*DrawLine)(v2f, v2f);
     Texture (*LoadTexture)(Image);
     void (*Init)();
 };

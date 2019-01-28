@@ -614,6 +614,10 @@ namespace GL
     local_func auto
     Init() -> void
     {
+        //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
+        //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
+        //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         glMatrixMode(GL_PROJECTION);
@@ -694,10 +698,10 @@ namespace GL
         glEnd();
         glFlush();
 
-        glColor3f(1.0f, 1.0f, 1.0f); //Need to set back to white to avoid unwanted texture coloring. For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
+        glColor3f(1.0f, 1.0f, 1.0f);
     }
 
-    local_func auto
+    local_func void
     DrawTexture(ui32 TextureID, Drawable_Rect Destination, v2f* UVs)
     {
         glEnable(GL_TEXTURE_2D);
@@ -722,6 +726,19 @@ namespace GL
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+
+    local_func void
+    DrawLine(v2f minPoint, v2f maxPoint)
+    {
+        glLineWidth(4.0f);
+        glBegin(GL_LINES);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex2f(minPoint.x, minPoint.y);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex2f(maxPoint.x, maxPoint.y);
+        glEnd();
+        glFlush();
+    };
 
     local_func auto
     ClearScreen() -> void
@@ -792,6 +809,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 RenderCmds.DrawBackground = &GL::DrawBackground;
                 RenderCmds.LoadTexture = &GL::LoadTexture;
                 RenderCmds.DrawTexture = &GL::DrawTexture;
+                RenderCmds.DrawLine = &GL::DrawLine;
                 RenderCmds.Init = &GL::Init;
             }
 
