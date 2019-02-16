@@ -730,7 +730,7 @@ namespace GL
     local_func void
     DrawLine(v2f minPoint, v2f maxPoint)
     {
-        glLineWidth(4.0f);
+        glLineWidth(9.0f);
         glBegin(GL_LINES);
         glColor3f(0.0f, 0.0f, 1.0f);
         glVertex2f(minPoint.x, minPoint.y);

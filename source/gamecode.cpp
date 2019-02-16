@@ -181,7 +181,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             *player = {};
             player->skel = CreateSkeletonUsingJsonFile(*gameState->atlas, "data/yellow_god.json");
-            player->skel.worldPos = { stage->info.centerPoint.x, stage->info.centerPoint.y - 1000.0f };
+            player->skel.worldPos = { stage->info.centerPoint.x, stage->info.centerPoint.y - 1100.0f };
             player->worldPos = &player->skel.worldPos;
         };
     };
@@ -249,32 +249,19 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f });
         };
 
-        { // Draw player
-            Slot* currentSlot = &player->skel.slots[15];
+        { // Draw player skeleton
 
-            { //Translate to camera space position
-                v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-                currentSlot->bone->worldPos = currentSlot->bone->worldPos + translationToCameraSpace;
+            for (i32 slotIndex { 0 }; slotIndex < player->skel.slots.size; ++slotIndex)
+            {
+                Slot* currentSlot = &player->skel.slots[slotIndex];
+
+                { //Translate to camera space position
+                    v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
+                    currentSlot->bone->worldPos = currentSlot->bone->worldPos + translationToCameraSpace;
+                };
+
+                globalRenderCmds.DrawLine(currentSlot->bone->worldPos, (currentSlot->bone->worldPos + 10.0f));
             };
-
-            v2f UVArray[4] = {
-                v2f { currentSlot->regionAttachment.imageInfo.u2, currentSlot->regionAttachment.imageInfo.v2 },
-                v2f { currentSlot->regionAttachment.imageInfo.u, currentSlot->regionAttachment.imageInfo.v2 },
-                v2f { currentSlot->regionAttachment.imageInfo.u, currentSlot->regionAttachment.imageInfo.v },
-                v2f { currentSlot->regionAttachment.imageInfo.u2, currentSlot->regionAttachment.imageInfo.v },
-            };
-
-            Drawable_Rect spineImage {
-                v2f { currentSlot->bone->worldPos.x, currentSlot->bone->worldPos.y },
-                v2f { currentSlot->bone->worldPos.x + currentSlot->regionAttachment.width, currentSlot->bone->worldPos.y },
-                v2f { currentSlot->bone->worldPos.x + currentSlot->regionAttachment.width, currentSlot->bone->worldPos.y + currentSlot->regionAttachment.height },
-                v2f { currentSlot->bone->worldPos.x, currentSlot->bone->worldPos.y + currentSlot->regionAttachment.height },
-            };
-
-            Texture* texture = (Texture*)currentSlot->regionAttachment.imageInfo.page->rendererObject;
-
-            globalRenderCmds.DrawTexture(texture->ID, spineImage, UVArray);
-            globalRenderCmds.DrawLine(v2f { 400.0f, 400.0f }, v2f { 500.0f, 400.0f });
         };
     };
 };

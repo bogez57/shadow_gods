@@ -203,6 +203,17 @@ operator+(v2f A, v2f B)
     return (Result);
 }
 
+inline v2f
+operator+(v2f A, f32 B)
+{
+    v2f Result;
+
+    Result.x = A.x + B;
+    Result.y = A.y + B;
+
+    return (Result);
+}
+
 inline v2f&
 operator+=(v2f& A, v2f B)
 {
