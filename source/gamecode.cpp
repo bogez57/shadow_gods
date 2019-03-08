@@ -175,15 +175,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
             stage->camera.zoomFactor = 1.0f;
         };
-
-        { //Init player
-            gameState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-
-            *player = {};
-            player->skel = CreateSkeletonUsingJsonFile(*gameState->atlas, "data/yellow_god.json");
-            player->skel.worldPos = { stage->info.centerPoint.x, stage->info.centerPoint.y - 1100.0f };
-            player->worldPos = &player->skel.worldPos;
-        };
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -205,63 +196,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos->x += 2.0f;
     }
 
     if (KeyHeld(keyboard->MoveLeft))
     {
-        player->worldPos->x -= 2.0f;
     }
-
-    { //Update bone world positions
-        //Update root bone first
-        player->skel.bones[0].worldPos = player->skel.worldPos;
-
-        for (i32 boneIndex { 1 }; boneIndex < player->skel.bones.size; ++boneIndex)
-        {
-            Bone* currentBone = &player->skel.bones[boneIndex];
-
-            currentBone->worldPos = currentBone->parentBone->worldPos + currentBone->parentLocalPos;
-        };
-    };
 
     { // Render
         renderCmds.Init();
 
         renderCmds.ClearScreen();
 
-        { // Draw Level Background
-            Coordinate_System backgroundWorldSpace {};
-            Coordinate_System backgroundCameraSpace {};
-            Drawable_Rect backgroundCanvas {};
-
-            backgroundWorldSpace.Origin = { 0.0f, 0.0f };
-
-            { // Transform to Camera Space
-                v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-                backgroundCameraSpace.Origin = backgroundWorldSpace.Origin + translationToCameraSpace;
-            };
-
-            backgroundCanvas = ProduceRectFromBottomLeftPoint(backgroundCameraSpace.Origin, (f32)stage->info.size.width, (f32)stage->info.size.height);
-
-            backgroundCanvas = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, backgroundCanvas);
-
-            renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f });
-        };
-
-        { // Draw player skeleton
-
-            for (i32 slotIndex { 0 }; slotIndex < player->skel.slots.size; ++slotIndex)
-            {
-                Slot* currentSlot = &player->skel.slots[slotIndex];
-
-                { //Translate to camera space position
-                    v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-                    currentSlot->bone->worldPos = currentSlot->bone->worldPos + translationToCameraSpace;
-                };
-
-                globalRenderCmds.DrawLine(currentSlot->bone->worldPos, (currentSlot->bone->worldPos + 10.0f));
-            };
-        };
+        renderCmds.DrawStuff();
     };
 };

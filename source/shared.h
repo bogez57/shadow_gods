@@ -200,6 +200,7 @@ auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Drawab
 struct Game_Render_Cmds
 {
     void (*ClearScreen)();
+    void (*DrawStuff)();
     void (*DrawRect)(v2f, v2f, v4f);
     void (*DrawBackground)(ui32, Drawable_Rect, v2f, v2f);
     void (*DrawTexture)(ui32, Drawable_Rect, v2f*);

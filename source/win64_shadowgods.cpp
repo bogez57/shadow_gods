@@ -745,6 +745,12 @@ namespace GL
     {
         glClear(GL_COLOR_BUFFER_BIT);
     }
+
+    local_func void
+    DrawStuff() 
+    {
+        DrawLine(v2f{300.0f, 400.0f}, v2f{500.0f, 400.0f});
+    }
 } // namespace GL
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
@@ -804,6 +810,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.Realloc = &Win32::Dbg::Realloc;
                 platformServices.Free = &Win32::Dbg::Free;
 
+                RenderCmds.DrawStuff = &GL::DrawStuff;
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
                 RenderCmds.DrawBackground = &GL::DrawBackground;
