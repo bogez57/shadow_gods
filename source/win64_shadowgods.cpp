@@ -749,6 +749,10 @@ namespace GL
     local_func void
     DrawStuff() 
     {
+        Init();
+
+        ClearScreen();
+
         DrawLine(v2f{300.0f, 400.0f}, v2f{500.0f, 400.0f});
     }
 } // namespace GL
