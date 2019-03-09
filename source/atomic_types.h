@@ -129,6 +129,26 @@ struct v3i
     };
 };
 
+struct v4i
+{
+    v4i() = default;
+    v4i(int x, int y, int z, int w);
+
+    union
+    {
+        int Elem[4];
+        struct
+        {
+            int x, y, z, w;
+        };
+
+        struct
+        {
+            int r, g, b, a;
+        };
+    };
+};
+
 struct m2x2
 {
     f32 Elem[2][2];
@@ -373,5 +393,12 @@ v3i::v3i(int x, int y, int z)
 {}
 
 /* all v3i suff */
+
+v4i::v4i(int x, int y, int z, int w)
+    : x(x)
+    , y(y)
+    , z(z)
+    , w(w)
+{}
 
 #endif // ATOMIC_TYPES_IMPL

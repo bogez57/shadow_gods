@@ -158,10 +158,10 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, 
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
     ui8* Row = ((ui8*)Buffer->memory + roundedMinCoords.x*Buffer->bytesPerPixel + roundedMinCoords.y*Buffer->pitch);
-    for(int Y = roundedMinCoords.y; Y < roundedMaxCoords.y; ++Y)
+    for(i32 Y = roundedMinCoords.y; Y < roundedMaxCoords.y; ++Y)
     {
         ui32* Pixel = (ui32*)Row;
-        for(int X = roundedMinCoords.x; X < roundedMaxCoords.x; ++X)
+        for(i32 X = roundedMinCoords.x; X < roundedMaxCoords.x; ++X)
         {            
             *Pixel++ = Color;
         }
@@ -200,7 +200,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
-
+        i32 imageWidth{}, imageHeight{};
+        //ui8* imageData = platformServices->LoadRGBAImage("", &imageWidth, &imageHeight);
     };
 
     if (globalPlatformServices->DLLJustReloaded)

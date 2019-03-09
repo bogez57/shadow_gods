@@ -348,7 +348,7 @@ namespace Win32
     local_func void
     ResizeDIBSection(Win32::Offscreen_Buffer* buffer, int width, int height)
     {
-        // TODO(casey): Bulletproof this.
+        // TODO: Bulletproof this.
         // Maybe don't free first, free after, then free first if that fails.
 
         if(buffer->memory)
@@ -362,62 +362,51 @@ namespace Win32
         int bytesPerPixel = 4;
         buffer->bytesPerPixel = bytesPerPixel;
 
-        // NOTE(casey): When the biHeight field is negative, this is the clue to
+        // When the biHeight field is negative, this is the clue to
         // Windows to treat this bitmap as top-down, not bottom-up, meaning that
         // the first three bytes of the image are the color for the top left pixel
         // in the bitmap, not the bottom left!
         buffer->Info.bmiHeader.biSize = sizeof(buffer->Info.bmiHeader);
         buffer->Info.bmiHeader.biWidth = buffer->width;
-        buffer->Info.bmiHeader.biHeight = -buffer->height;
+        buffer->Info.bmiHeader.biHeight = buffer->height;
         buffer->Info.bmiHeader.biPlanes = 1;
         buffer->Info.bmiHeader.biBitCount = 32;
         buffer->Info.bmiHeader.biCompression = BI_RGB;
 
-        // NOTE(casey): Thank you to Chris Hecker of Spy Party fame
+        // Thank you to Chris Hecker of Spy Party fame
         // for clarifying the deal with StretchDIBits and BitBlt!
         // No more DC for us.
         int BitmapMemorySize = (buffer->width*buffer->height)*bytesPerPixel;
         buffer->memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
         buffer->pitch = width*bytesPerPixel;
 
-        // TODO(casey): Probably clear this to black
+        // TODO: Probably clear this to black
     }
 
     local_func void
-    DisplayBufferInWindow(Win32::Offscreen_Buffer *buffer, HDC deviceContext, int globalWindowWidth, int globalWindowHeight)
+    DisplayBufferInWindow(Win32::Offscreen_Buffer *gameBackBuffer, HDC deviceContext, int windowWidth, int windowHeight)
     {
-        // TODO(casey): Centering / black bars?
+        //Performs screen clear so resizing window doesn't screw up the image displayed
+        PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
+        PatBlt(deviceContext, 0, gameBackBuffer->height, windowWidth, windowHeight, BLACKNESS);
+        PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
+        PatBlt(deviceContext, gameBackBuffer->width, 0, windowWidth, windowHeight, BLACKNESS);
         
-        if((globalWindowWidth >= buffer->width*2) &&
-        (globalWindowHeight >= buffer->height*2))
-        {
-            StretchDIBits(deviceContext,
-                        0, 0, 2*buffer->width, 2*buffer->height,
-                        0, 0, buffer->width, buffer->height,
-                        buffer->memory,
-                        &buffer->Info,
-                        DIB_RGB_COLORS, SRCCOPY);
-        }
-        else
-        {
-            int OffsetX = 0;
-            int OffsetY = 0;
+        {//Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
+            v2i displayCoordsOfTopLeft{0, -37};
+            v2i displayDimensions{};
+            displayDimensions.width = gameBackBuffer->width;
+            displayDimensions.height = gameBackBuffer->height;
 
-            PatBlt(deviceContext, 0, 0, globalWindowWidth, OffsetY, BLACKNESS);
-            PatBlt(deviceContext, 0, OffsetY + buffer->height, globalWindowWidth, globalWindowHeight, BLACKNESS);
-            PatBlt(deviceContext, 0, 0, OffsetX, globalWindowHeight, BLACKNESS);
-            PatBlt(deviceContext, OffsetX + buffer->width, 0, globalWindowWidth, globalWindowHeight, BLACKNESS);
-        
-            // NOTE(casey): For prototyping purposes, we're going to always blit
-            // 1-to-1 pixels to make sure we don't introduce artifacts with
-            // stretching while we are learning to code the renderer!
+            f32 ting = (gameBackBuffer->pitch * gameBackBuffer->height) - 1.0f;
+            //Copy game's rendered back buffer to whatever display area size you want
             StretchDIBits(deviceContext,
-                        OffsetX, OffsetY, buffer->width, buffer->height,
-                        0, 0, buffer->width, buffer->height,
-                        buffer->memory,
-                        &buffer->Info,
+                        displayCoordsOfTopLeft.x, displayDimensions.height + displayCoordsOfTopLeft.y - 1, displayDimensions.width, -displayDimensions.height, //Dest - Area to draw to within window's window
+                        0, gameBackBuffer->height - 1, gameBackBuffer->width, -gameBackBuffer->height, //Source - The dimensions/coords of the back buffer the game rendered to
+                        gameBackBuffer->memory,
+                        &gameBackBuffer->Info,
                         DIB_RGB_COLORS, SRCCOPY);
-        }
+        };
     };
 
     local_func auto
