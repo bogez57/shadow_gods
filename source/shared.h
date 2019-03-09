@@ -64,6 +64,16 @@ struct Game_Sound_Output_Buffer
 {
 };
 
+struct Game_Offscreen_Buffer
+{
+    //Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
+    void *memory;
+    int width;
+    int height;
+    int pitch;
+    int bytesPerPixel;
+};
+
 struct Platform_Services
 {
     char* (*ReadEntireFile)(i32*, const char*);

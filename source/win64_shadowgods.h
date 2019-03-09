@@ -4,15 +4,32 @@
 
 namespace Win32
 {
+    struct Offscreen_Buffer 
+    {
+        //Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
+        BITMAPINFO Info;
+        void *memory;
+        int width;
+        int height;
+        int pitch;
+        int bytesPerPixel;
+    };
+
     struct Game_Code
     {
         HMODULE DLLHandle {};
-        void (*UpdateFunc)(Application_Memory*, Platform_Services*, Game_Render_Cmds, Game_Sound_Output_Buffer*, Game_Input*);
+        void (*UpdateFunc)(Application_Memory*, Game_Offscreen_Buffer*, Platform_Services*, Game_Render_Cmds, Game_Sound_Output_Buffer*, Game_Input*);
         FILETIME PreviousDLLWriteTime {};
+    };
+
+    struct Window_Dimension
+    {
+        int width;
+        int height;
     };
 } // namespace Win32
 
-using GameUpdateFuncPtr = void (*)(Application_Memory*, Platform_Services*, Game_Render_Cmds, Game_Sound_Output_Buffer*, Game_Input*);
+using GameUpdateFuncPtr = void (*)(Application_Memory*, Game_Offscreen_Buffer*, Platform_Services*, Game_Render_Cmds, Game_Sound_Output_Buffer*, Game_Input*);
 
 namespace Win32::Dbg
 {

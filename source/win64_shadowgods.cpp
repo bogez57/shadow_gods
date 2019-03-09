@@ -48,8 +48,9 @@
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_context.cpp>
 
-global_variable ui32 WindowWidth { 1280 };
-global_variable ui32 WindowHeight { 720 };
+global_variable ui32 globalWindowWidth { 1280 };
+global_variable ui32 globalWindowHeight { 720 };
+global_variable Win32::Offscreen_Buffer globalBackbuffer;
 global_variable Application_Memory GameMemory;
 global_variable bool GameRunning {};
 
@@ -108,7 +109,7 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    WriteEntireFile(const char* FileName, void* Memory, ui32 MemorySize) -> bool
+    WriteEntireFile(const char* FileName, void* memory, ui32 MemorySize) -> bool
     {
         b32 Result = false;
 
@@ -116,7 +117,7 @@ namespace Win32::Dbg
         if (FileHandle != INVALID_HANDLE_VALUE)
         {
             DWORD BytesWritten;
-            if (WriteFile(FileHandle, Memory, MemorySize, &BytesWritten, 0))
+            if (WriteFile(FileHandle, memory, MemorySize, &BytesWritten, 0))
             {
                 //File read successfully
                 Result = (BytesWritten == MemorySize);
@@ -162,11 +163,11 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    LoadRGBAImage(const char* ImagePath, int* Width, int* Height) -> ui8*
+    LoadRGBAImage(const char* ImagePath, int* width, int* height) -> ui8*
     {
         int DesiredChannels = 4;
         int NumOfLoadedChannels {};
-        unsigned char* ImageData = stbi_load(ImagePath, Width, Height, &NumOfLoadedChannels, DesiredChannels);
+        unsigned char* ImageData = stbi_load(ImagePath, width, height, &NumOfLoadedChannels, DesiredChannels);
         BGZ_ASSERT(ImageData, "Invalid image data");
 
         return (ui8*)ImageData;
@@ -331,6 +332,94 @@ namespace Win32::Dbg
 
 namespace Win32
 {
+    local_func Window_Dimension 
+    GetWindowDimension(HWND window)
+    {
+        Window_Dimension Result;
+    
+        RECT ClientRect;
+        GetClientRect(window, &ClientRect);
+        Result.width = ClientRect.right - ClientRect.left;
+        Result.height = ClientRect.bottom - ClientRect.top;
+
+        return(Result);
+    };
+
+    local_func void
+    ResizeDIBSection(Win32::Offscreen_Buffer* buffer, int width, int height)
+    {
+        // TODO(casey): Bulletproof this.
+        // Maybe don't free first, free after, then free first if that fails.
+
+        if(buffer->memory)
+        {
+            VirtualFree(buffer->memory, 0, MEM_RELEASE);
+        }
+
+        buffer->width = width;
+        buffer->height = height;
+
+        int bytesPerPixel = 4;
+        buffer->bytesPerPixel = bytesPerPixel;
+
+        // NOTE(casey): When the biHeight field is negative, this is the clue to
+        // Windows to treat this bitmap as top-down, not bottom-up, meaning that
+        // the first three bytes of the image are the color for the top left pixel
+        // in the bitmap, not the bottom left!
+        buffer->Info.bmiHeader.biSize = sizeof(buffer->Info.bmiHeader);
+        buffer->Info.bmiHeader.biWidth = buffer->width;
+        buffer->Info.bmiHeader.biHeight = -buffer->height;
+        buffer->Info.bmiHeader.biPlanes = 1;
+        buffer->Info.bmiHeader.biBitCount = 32;
+        buffer->Info.bmiHeader.biCompression = BI_RGB;
+
+        // NOTE(casey): Thank you to Chris Hecker of Spy Party fame
+        // for clarifying the deal with StretchDIBits and BitBlt!
+        // No more DC for us.
+        int BitmapMemorySize = (buffer->width*buffer->height)*bytesPerPixel;
+        buffer->memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+        buffer->pitch = width*bytesPerPixel;
+
+        // TODO(casey): Probably clear this to black
+    }
+
+    local_func void
+    DisplayBufferInWindow(Win32::Offscreen_Buffer *buffer, HDC deviceContext, int globalWindowWidth, int globalWindowHeight)
+    {
+        // TODO(casey): Centering / black bars?
+        
+        if((globalWindowWidth >= buffer->width*2) &&
+        (globalWindowHeight >= buffer->height*2))
+        {
+            StretchDIBits(deviceContext,
+                        0, 0, 2*buffer->width, 2*buffer->height,
+                        0, 0, buffer->width, buffer->height,
+                        buffer->memory,
+                        &buffer->Info,
+                        DIB_RGB_COLORS, SRCCOPY);
+        }
+        else
+        {
+            int OffsetX = 0;
+            int OffsetY = 0;
+
+            PatBlt(deviceContext, 0, 0, globalWindowWidth, OffsetY, BLACKNESS);
+            PatBlt(deviceContext, 0, OffsetY + buffer->height, globalWindowWidth, globalWindowHeight, BLACKNESS);
+            PatBlt(deviceContext, 0, 0, OffsetX, globalWindowHeight, BLACKNESS);
+            PatBlt(deviceContext, OffsetX + buffer->width, 0, globalWindowWidth, globalWindowHeight, BLACKNESS);
+        
+            // NOTE(casey): For prototyping purposes, we're going to always blit
+            // 1-to-1 pixels to make sure we don't introduce artifacts with
+            // stretching while we are learning to code the renderer!
+            StretchDIBits(deviceContext,
+                        OffsetX, OffsetY, buffer->width, buffer->height,
+                        0, 0, buffer->width, buffer->height,
+                        buffer->memory,
+                        &buffer->Info,
+                        DIB_RGB_COLORS, SRCCOPY);
+        }
+    };
+
     local_func auto
     ProcessKeyboardMessage(Button_State* NewState, b32 IsDown) -> void
     {
@@ -467,10 +556,13 @@ namespace Win32
     {
         LRESULT Result { 0 };
 
-        HDC WindowContext = GetDC(WindowHandle);
+        //For hardware rendering
+        //HDC WindowContext = GetDC(WindowHandle);
 
         switch (Message)
         {
+//Turning off hardware rendering for now
+#if 0
         case WM_CREATE:
         {
             if (WindowContext)
@@ -501,7 +593,7 @@ namespace Win32
                         {
                             if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
                             {
-                                glViewport(0, 0, WindowWidth, WindowHeight);
+                                glViewport(0, 0, globalWindowWidth, globalWindowHeight);
 
                                 //Success! We have a current openGL context. Now setup glew
                                 if (glewInit() == GLEW_OK)
@@ -553,18 +645,27 @@ namespace Win32
             }
         }
         break;
+#endif
+
+        case WM_PAINT:
+        {
+            PAINTSTRUCT Paint;
+            HDC deviceContext = BeginPaint(WindowHandle, &Paint);
+            Win32::Window_Dimension dimension = GetWindowDimension(WindowHandle);
+            Win32::DisplayBufferInWindow(&globalBackbuffer, deviceContext,
+                                       dimension.width, dimension.height);
+            EndPaint(WindowHandle, &Paint);
+        }break;
 
         case WM_DESTROY:
         {
             GameRunning = false;
-        }
-        break;
+        }break;
 
         case WM_CLOSE:
         {
             GameRunning = false;
-        }
-        break;
+        }break;
 
         case WM_ACTIVATEAPP:
         {
@@ -622,7 +723,7 @@ namespace GL
         glLoadIdentity();
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(0.0, (f32)WindowWidth, 0.0, (f32)WindowHeight, -1.0, 1.0);
+        glOrtho(0.0, (f32)globalWindowWidth, 0.0, (f32)globalWindowHeight, -1.0, 1.0);
     }
 
     local_func auto
@@ -765,6 +866,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     UINT DesiredSchedulerGranularityMS = 1;
     BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR, "Error when trying to set windows granularity!");
 
+    Win32::ResizeDIBSection(&globalBackbuffer, globalWindowWidth, globalWindowHeight);
+
     WNDCLASS WindowProperties {};
     WindowProperties.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
     WindowProperties.lpfnWndProc = Win32::ProgramWindowCallback;
@@ -773,12 +876,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
     if (RegisterClass(&WindowProperties))
     {
-        HWND Window = CreateWindowEx(0, WindowProperties.lpszClassName, "Memo", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-            CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth, WindowHeight, 0, 0, CurrentProgramInstance, 0);
+        HWND window= CreateWindowEx(0, WindowProperties.lpszClassName, "Shadow Gods", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+            CW_USEDEFAULT, CW_USEDEFAULT, globalWindowWidth, globalWindowHeight, 0, 0, CurrentProgramInstance, 0);
 
-        HDC WindowContext = GetDC(Window);
+        HDC WindowContext = GetDC(window);
 
-        if (Window && WindowContext)
+        if (window&& WindowContext)
         {
 
 #if DEVELOPMENT_BUILD
@@ -795,7 +898,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
-            { //Init Game Memory
+            { //Init Game memory
                 InitApplicationMemory(&GameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(BaseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
             }
 
@@ -814,6 +917,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.Realloc = &Win32::Dbg::Realloc;
                 platformServices.Free = &Win32::Dbg::Free;
 
+                //If using hardware rendering
                 RenderCmds.DrawStuff = &GL::DrawStuff;
                 RenderCmds.DrawRect = &GL::DrawRect;
                 RenderCmds.ClearScreen = &GL::ClearScreen;
@@ -972,7 +1076,14 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput(&UpdatedInput, &UpdatedReplayState);
                 }
 
-                GameCode.UpdateFunc(&GameMemory, &platformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
+                Game_Offscreen_Buffer gameBackBuffer{};
+                gameBackBuffer.memory = globalBackbuffer.memory;
+                gameBackBuffer.width = globalBackbuffer.width; 
+                gameBackBuffer.height = globalBackbuffer.height;
+                gameBackBuffer.pitch = globalBackbuffer.pitch;
+                gameBackBuffer.bytesPerPixel = globalBackbuffer.bytesPerPixel;
+
+                GameCode.UpdateFunc(&GameMemory, &gameBackBuffer, &platformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState;
@@ -989,7 +1100,13 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     BGZ_CONSOLE("Missed our frame rate!!!\n");
                 }
 
-                SwapBuffers(WindowContext);
+                Win32::Window_Dimension dimension = Win32::GetWindowDimension(window);
+                HDC deviceContext = GetDC(window);
+                Win32::DisplayBufferInWindow(&globalBackbuffer, deviceContext, dimension.width, dimension.height);
+                ReleaseDC(window, deviceContext);
+
+                //Hardware Rendering
+                //SwapBuffers(WindowContext);
 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
 
@@ -1001,8 +1118,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 //BGZ_CONSOLE("ms per frame: %f\n", frameTimeInMS);
             };
 
-            wglMakeCurrent(NULL, NULL);
-            ReleaseDC(Window, WindowContext);
+
+            //Hardware Rendering 
+            //wglMakeCurrent(NULL, NULL);
+            //ReleaseDC(window, WindowContext);
         }
         else
         {

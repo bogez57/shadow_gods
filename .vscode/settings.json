@@ -31,7 +31,8 @@
         "xstring": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "sstream": "c"
+        "sstream": "c",
+        "ios": "cpp"
     },
     /********************
         Vim Settings

@@ -128,7 +128,56 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+local_func void
+DrawRectangle(Game_Offscreen_Buffer* Buffer,
+              f32 RealMinX, f32 RealMinY, f32 RealMaxX, f32 RealMaxY,
+              f32 R, f32 G, f32 B)
+{    
+    i32 MinX = RoundFloat32ToInt32(RealMinX);
+    i32 MinY = RoundFloat32ToInt32(RealMinY);
+    i32 MaxX = RoundFloat32ToInt32(RealMaxX);
+    i32 MaxY = RoundFloat32ToInt32(RealMaxY);
+
+    if(MinX < 0)
+    {
+        MinX = 0;
+    }
+
+    if(MinY < 0)
+    {
+        MinY = 0;
+    }
+
+    if(MaxX > Buffer->width)
+    {
+        MaxX = Buffer->width;
+    }
+
+    if(MaxY > Buffer->height)
+    {
+        MaxY = Buffer->height;
+    }
+
+    ui32 Color = ((RoundFloat32ToUInt32(R * 255.0f) << 16) |
+                  (RoundFloat32ToUInt32(G * 255.0f) << 8) |
+                  (RoundFloat32ToUInt32(B * 255.0f) << 0));
+
+    ui8* Row = ((ui8*)Buffer->memory + MinX*Buffer->bytesPerPixel + MinY*Buffer->pitch);
+    for(int Y = MinY; Y < MaxY; ++Y)
+    {
+        ui32 *Pixel = (ui32 *)Row;
+        for(int X = MinX;
+            X < MaxX;
+            ++X)
+        {            
+            *Pixel++ = Color;
+        }
+        
+        Row += Buffer->pitch;
+    }
+}
+
+extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
@@ -188,6 +237,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     }
 
     { // Render
-        renderCmds.DrawStuff();
+        DrawRectangle(gameBackBuffer, 0.0f, 0.0f, (f32)gameBackBuffer->width, (f32)gameBackBuffer->height, 0.0f, 1.0f, 1.0f);
     };
 };
