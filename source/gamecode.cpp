@@ -129,46 +129,39 @@ inline b KeyReleased(Button_State KeyState)
 };
 
 local_func void
-DrawRectangle(Game_Offscreen_Buffer* Buffer,
-              f32 RealMinX, f32 RealMinY, f32 RealMaxX, f32 RealMaxY,
-              f32 R, f32 G, f32 B)
+DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, f32 g, f32 b)
 {    
-    i32 MinX = RoundFloat32ToInt32(RealMinX);
-    i32 MinY = RoundFloat32ToInt32(RealMinY);
-    i32 MaxX = RoundFloat32ToInt32(RealMaxX);
-    i32 MaxY = RoundFloat32ToInt32(RealMaxY);
+    v2i roundedMinCoords{};
+    v2i roundedMaxCoords{};
 
-    if(MinX < 0)
+    roundedMinCoords.x = RoundFloat32ToInt32(minCoord.x);
+    roundedMinCoords.y = RoundFloat32ToInt32(minCoord.y);
+    roundedMaxCoords.x = RoundFloat32ToInt32(maxCoord.x);
+    roundedMaxCoords.y = RoundFloat32ToInt32(maxCoord.y);
+
+    {//Make sure we don't try to draw outside current screen space
+        if(roundedMinCoords.x < 0)
+            roundedMinCoords.x = 0;
+
+        if(roundedMinCoords.y < 0)
+            roundedMinCoords.y = 0;
+
+        if(roundedMaxCoords.x > Buffer->width)
+            roundedMaxCoords.x = Buffer->width;
+
+        if(roundedMaxCoords.y > Buffer->height)
+            roundedMaxCoords.y = Buffer->height;
+    };
+
+    ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
+                  (RoundFloat32ToUInt32(g * 255.0f) << 8) |
+                  (RoundFloat32ToUInt32(b * 255.0f) << 0));
+
+    ui8* Row = ((ui8*)Buffer->memory + roundedMinCoords.x*Buffer->bytesPerPixel + roundedMinCoords.y*Buffer->pitch);
+    for(int Y = roundedMinCoords.y; Y < roundedMaxCoords.y; ++Y)
     {
-        MinX = 0;
-    }
-
-    if(MinY < 0)
-    {
-        MinY = 0;
-    }
-
-    if(MaxX > Buffer->width)
-    {
-        MaxX = Buffer->width;
-    }
-
-    if(MaxY > Buffer->height)
-    {
-        MaxY = Buffer->height;
-    }
-
-    ui32 Color = ((RoundFloat32ToUInt32(R * 255.0f) << 16) |
-                  (RoundFloat32ToUInt32(G * 255.0f) << 8) |
-                  (RoundFloat32ToUInt32(B * 255.0f) << 0));
-
-    ui8* Row = ((ui8*)Buffer->memory + MinX*Buffer->bytesPerPixel + MinY*Buffer->pitch);
-    for(int Y = MinY; Y < MaxY; ++Y)
-    {
-        ui32 *Pixel = (ui32 *)Row;
-        for(int X = MinX;
-            X < MaxX;
-            ++X)
+        ui32* Pixel = (ui32*)Row;
+        for(int X = roundedMinCoords.x; X < roundedMaxCoords.x; ++X)
         {            
             *Pixel++ = Color;
         }
@@ -237,6 +230,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     }
 
     { // Render
-        DrawRectangle(gameBackBuffer, 0.0f, 0.0f, (f32)gameBackBuffer->width, (f32)gameBackBuffer->height, 0.0f, 1.0f, 1.0f);
+        v2f minRectCoords{0.0f, 0.0f};
+        v2f maxRectCoords{(f32)gameBackBuffer->width, (f32)gameBackBuffer->height};
+        DrawRectangle(gameBackBuffer, minRectCoords, maxRectCoords, 0.0f, 1.0f, 1.0f);
     };
 };
