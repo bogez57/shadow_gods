@@ -16,7 +16,6 @@ struct StageInfo
     v2f size;
     v2f centerPoint;
     Image displayImage;
-    Texture currentTexture;
 };
 
 struct Game_Camera

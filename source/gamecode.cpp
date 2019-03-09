@@ -178,7 +178,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     const Game_Controller* gamePad = &gameInput->Controllers[1];
 
     Game_State* gameState = (Game_State*)gameMemory->PermanentStorage;
+
+    //Setup globals
     deltaT = platformServices->prevFrameTimeInSecs;
+    deltaTFixed = platformServices->targetFrameTimeInSecs;
     globalPlatformServices = platformServices;
     globalRenderCmds = renderCmds;
 
@@ -187,30 +190,23 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if (NOT gameMemory->Initialized)
     {
-        gameMemory->Initialized = true;
-
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
-        InitApplicationMemory(gameMemory);
-        CreateRegionFromMemory(gameMemory, Megabytes(500));
+        gameMemory->Initialized = true;
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
-        deltaTFixed = platformServices->targetFrameTimeInSecs;
-        deltaT = platformServices->prevFrameTimeInSecs;
+        InitApplicationMemory(gameMemory);
+        CreateRegionFromMemory(gameMemory, Megabytes(500));
 
-        { //Init stage
-        };
+
     };
 
     if (globalPlatformServices->DLLJustReloaded)
     {
         BGZ_CONSOLE("Dll reloaded!");
-
-        { //Perform necessary operations to keep spine working with live code editing/input playback
-            globalPlatformServices->DLLJustReloaded = false;
-        };
+        globalPlatformServices->DLLJustReloaded = false;
     };
 
     if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
