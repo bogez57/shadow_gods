@@ -159,21 +159,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         deltaT = platformServices->prevFrameTimeInSecs;
 
         { //Init stage
-            *stage = {};
-
-            stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
-            stage->info.displayImage = FlipImage(stage->info.displayImage); // Since opengl will read-in image upside down
-            stage->info.currentTexture = renderCmds.LoadTexture(stage->info.displayImage); // TODO: Move out to renderer
-            stage->info.size.width = (f32)stage->info.displayImage.size.width;
-            stage->info.size.height = (f32)stage->info.displayImage.size.height;
-            stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
-
-            stage->camera.viewWidth = viewportWidth;
-            stage->camera.viewHeight = viewportHeight;
-            stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f };
-            stage->camera.viewCenter = { stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f };
-            stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
-            stage->camera.zoomFactor = 1.0f;
         };
     };
 

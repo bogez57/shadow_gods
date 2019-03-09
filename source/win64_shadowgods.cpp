@@ -217,7 +217,7 @@ namespace Win32::Dbg
     LoadGameCodeDLL(const char* GameCodeDLL) -> Game_Code
     {
         Game_Code GameCode {};
-        const char* GameCodeTempDLL = "build/game_temp.dll";
+        const char* GameCodeTempDLL = "w:/shadow_gods/build/game_temp.dll";
 
         GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
 
@@ -792,7 +792,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Game_Render_Cmds RenderCmds {};
             Platform_Services platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
-            Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll") };
+            Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
             { //Init Game Memory
@@ -862,11 +862,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             while (GameRunning)
             {
                 //Hot reloading
-                FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("build/gamecode.dll");
+                FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("w:/shadow_gods/build/gamecode.dll");
                 if (CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
                 {
                     Win32::Dbg::FreeGameCodeDLL(&GameCode, &platformServices);
-                    GameCode = Win32::Dbg::LoadGameCodeDLL("build/gamecode.dll");
+                    GameCode = Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll");
                 }
 
                 //TODO: Should we poll more frequently?
