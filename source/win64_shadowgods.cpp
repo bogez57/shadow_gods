@@ -182,8 +182,8 @@ namespace Win32::Dbg
             ui8 redColor = *((ui8*)imagePixel + 0);
             ui8 greenColor = *((ui8*)imagePixel + 1);
             ui8 blueColor = *((ui8*)imagePixel + 2);
-            //Ignoring alpha
-            ui32 newSwappedPixelColor = ((redColor << 16) |
+            ui32 newSwappedPixelColor = ((0xFF << 24) | //Forced alpha
+                                         (redColor << 16) |
                                          (greenColor << 8) |
                                          (blueColor << 0));
         
