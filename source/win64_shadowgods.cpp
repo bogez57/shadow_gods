@@ -170,7 +170,8 @@ namespace Win32::Dbg
         i32 numOfLoadedChannels {};
         i32 desiredChannels{4};
         unsigned char* imageData = stbi_load(ImagePath, (int*)width, (int*)height, &numOfLoadedChannels, desiredChannels);
-        BGZ_ASSERT(imageData, "Invalid image data");
+        BGZ_ASSERT(imageData, "Invalid image data!");
+        BGZ_ASSERT(numOfLoadedChannels == 3, "Not a 3 channel image!");
 
         i32 totalPixelCountOfImg = *width * *height;
         ui32* imagePixel = (ui32*)imageData;
@@ -181,6 +182,7 @@ namespace Win32::Dbg
             ui8 redColor = *((ui8*)imagePixel + 0);
             ui8 greenColor = *((ui8*)imagePixel + 1);
             ui8 blueColor = *((ui8*)imagePixel + 2);
+            //Ignoring alpha
             ui32 newSwappedPixelColor = ((redColor << 16) |
                                          (greenColor << 8) |
                                          (blueColor << 0));
