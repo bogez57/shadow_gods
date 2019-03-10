@@ -37,6 +37,7 @@ struct Stage_Data
 
 struct Game_State
 {
-    Stage_Data stage;
-    Atlas* atlas;
+    i32 imageWidth{}, imageHeight{};
+    ui8* imageData{};
+    Stage_Data stage{};
 };

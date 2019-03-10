@@ -131,42 +131,60 @@ inline b KeyReleased(Button_State KeyState)
 local_func void
 DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, f32 g, f32 b)
 {    
-    v2i roundedMinCoords{};
-    v2i roundedMaxCoords{};
+    v2i minRectCoords{};
+    v2i maxRectCoords{};
 
-    roundedMinCoords.x = RoundFloat32ToInt32(minCoord.x);
-    roundedMinCoords.y = RoundFloat32ToInt32(minCoord.y);
-    roundedMaxCoords.x = RoundFloat32ToInt32(maxCoord.x);
-    roundedMaxCoords.y = RoundFloat32ToInt32(maxCoord.y);
+    minRectCoords.x = RoundFloat32ToInt32(minCoord.x);
+    minRectCoords.y = RoundFloat32ToInt32(minCoord.y);
+    maxRectCoords.x = RoundFloat32ToInt32(maxCoord.x);
+    maxRectCoords.y = RoundFloat32ToInt32(maxCoord.y);
 
     {//Make sure we don't try to draw outside current screen space
-        if(roundedMinCoords.x < 0)
-            roundedMinCoords.x = 0;
+        if(minRectCoords.x < 0)
+            minRectCoords.x = 0;
 
-        if(roundedMinCoords.y < 0)
-            roundedMinCoords.y = 0;
+        if(minRectCoords.y < 0)
+            minRectCoords.y = 0;
 
-        if(roundedMaxCoords.x > Buffer->width)
-            roundedMaxCoords.x = Buffer->width;
+        if(maxRectCoords.x > Buffer->width)
+            maxRectCoords.x = Buffer->width;
 
-        if(roundedMaxCoords.y > Buffer->height)
-            roundedMaxCoords.y = Buffer->height;
+        if(maxRectCoords.y > Buffer->height)
+            maxRectCoords.y = Buffer->height;
     };
 
     ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
                   (RoundFloat32ToUInt32(g * 255.0f) << 8) |
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
-    ui8* Row = ((ui8*)Buffer->memory + roundedMinCoords.x*Buffer->bytesPerPixel + roundedMinCoords.y*Buffer->pitch);
-    for(i32 Y = roundedMinCoords.y; Y < roundedMaxCoords.y; ++Y)
+    ui8* currentRow = ((ui8*)Buffer->memory + minRectCoords.x*Buffer->bytesPerPixel + minRectCoords.y*Buffer->pitch);
+    for(i32 column = minRectCoords.y; column < maxRectCoords.y; ++column)
     {
-        ui32* Pixel = (ui32*)Row;
-        for(i32 X = roundedMinCoords.x; X < roundedMaxCoords.x; ++X)
+        ui32* Pixel = (ui32*)currentRow;
+        for(i32 row = minRectCoords.x; row < maxRectCoords.x; ++row)
         {            
             *Pixel++ = Color;
         }
         
-        Row += Buffer->pitch;
+        currentRow += Buffer->pitch;
+    }
+}
+
+local_func void
+DrawImage(Game_Offscreen_Buffer* Buffer, ui8* imageData, i32 imgWidth, i32 imgHeight, v2i targetPos)
+{
+    ui32* imgData = (ui32*)imageData;
+
+    ui8* currentRow = ((ui8*)Buffer->memory + targetPos.x*Buffer->bytesPerPixel + targetPos.y*Buffer->pitch);
+    for(i32 column = targetPos.y; column < imgHeight + targetPos.y; ++column)
+    {
+        ui32* screenPixel = (ui32*)currentRow;
+        for(i32 row = targetPos.x; row < imgWidth + targetPos.x; ++row)
+        {            
+            *screenPixel++ = *imgData++;
+        }
+        
+        currentRow += Buffer->pitch;
     }
 }
 
@@ -200,8 +218,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
-        i32 imageWidth{}, imageHeight{};
-        //ui8* imageData = platformServices->LoadRGBAImage("", &imageWidth, &imageHeight);
+        gameState->imageData = platformServices->LoadRGBAImage("data/yellow_god.png", &gameState->imageWidth, &gameState->imageHeight);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -210,25 +227,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         globalPlatformServices->DLLJustReloaded = false;
     };
 
-    if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
-    {
-    }
-
-    if (KeyPressed(keyboard->ActionRight))
-    {
-    }
-
-    if (KeyHeld(keyboard->MoveRight))
-    {
-    }
-
-    if (KeyHeld(keyboard->MoveLeft))
-    {
-    }
-
     { // Render
+
+        //Draw background
         v2f minRectCoords{0.0f, 0.0f};
         v2f maxRectCoords{(f32)gameBackBuffer->width, (f32)gameBackBuffer->height};
         DrawRectangle(gameBackBuffer, minRectCoords, maxRectCoords, 0.0f, 1.0f, 1.0f);
+
+        //Origin - bottom left
+        v2i targetPos{100, 0};
+        DrawImage(gameBackBuffer, gameState->imageData, gameState->imageWidth, gameState->imageHeight, targetPos);
     };
 };

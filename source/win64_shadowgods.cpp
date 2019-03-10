@@ -165,6 +165,8 @@ namespace Win32::Dbg
     local_func auto
     LoadRGBAImage(const char* ImagePath, int* width, int* height) -> ui8*
     {
+        stbi_set_flip_vertically_on_load(true);//So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
+
         int DesiredChannels = 4;
         int NumOfLoadedChannels {};
         unsigned char* ImageData = stbi_load(ImagePath, width, height, &NumOfLoadedChannels, DesiredChannels);
@@ -393,16 +395,15 @@ namespace Win32
         PatBlt(deviceContext, gameBackBuffer->width, 0, windowWidth, windowHeight, BLACKNESS);
         
         {//Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
-            v2i displayCoordsOfTopLeft{0, -37};
-            v2i displayDimensions{};
-            displayDimensions.width = gameBackBuffer->width;
-            displayDimensions.height = gameBackBuffer->height;
+            v2i displayRect_BottomLeftCoords{0, 0};
+            v2i displayRect_Dimensions{};
+            displayRect_Dimensions.width = gameBackBuffer->width;
+            displayRect_Dimensions.height = gameBackBuffer->height;
 
-            f32 ting = (gameBackBuffer->pitch * gameBackBuffer->height) - 1.0f;
             //Copy game's rendered back buffer to whatever display area size you want
             StretchDIBits(deviceContext,
-                        displayCoordsOfTopLeft.x, displayDimensions.height + displayCoordsOfTopLeft.y - 1, displayDimensions.width, -displayDimensions.height, //Dest - Area to draw to within window's window
-                        0, gameBackBuffer->height - 1, gameBackBuffer->width, -gameBackBuffer->height, //Source - The dimensions/coords of the back buffer the game rendered to
+                        displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
+                        0, 0, gameBackBuffer->width, gameBackBuffer->height, //Source - The dimensions/coords of the back buffer the game rendered to
                         gameBackBuffer->memory,
                         &gameBackBuffer->Info,
                         DIB_RGB_COLORS, SRCCOPY);
