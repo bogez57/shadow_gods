@@ -163,16 +163,32 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    LoadRGBAImage(const char* ImagePath, int* width, int* height) -> ui8*
+    LoadBGR32bitImage(const char* ImagePath, i32* width, i32* height) -> ui8*
     {
         stbi_set_flip_vertically_on_load(true);//So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
 
-        int DesiredChannels = 4;
-        int NumOfLoadedChannels {};
-        unsigned char* ImageData = stbi_load(ImagePath, width, height, &NumOfLoadedChannels, DesiredChannels);
-        BGZ_ASSERT(ImageData, "Invalid image data");
+        i32 numOfLoadedChannels {};
+        i32 desiredChannels{4};
+        unsigned char* imageData = stbi_load(ImagePath, (int*)width, (int*)height, &numOfLoadedChannels, desiredChannels);
+        BGZ_ASSERT(imageData, "Invalid image data");
 
-        return (ui8*)ImageData;
+        i32 totalPixelCountOfImg = *width * *height;
+        ui32* imagePixel = (ui32*)imageData;
+
+        //Swap R and B channels of image
+        for(int i = 0; i < totalPixelCountOfImg; ++i)
+        {
+            ui8 redColor = *((ui8*)imagePixel + 0);
+            ui8 greenColor = *((ui8*)imagePixel + 1);
+            ui8 blueColor = *((ui8*)imagePixel + 2);
+            ui32 newSwappedPixelColor = ((redColor << 16) |
+                                         (greenColor << 8) |
+                                         (blueColor << 0));
+        
+            *imagePixel++ = newSwappedPixelColor;
+        }
+
+        return (ui8*)imageData;
     }
 
     local_func auto
@@ -901,7 +917,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 platformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
                 platformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
-                platformServices.LoadRGBAImage = &Win32::Dbg::LoadRGBAImage;
+                platformServices.LoadBGR32bitImage = &Win32::Dbg::LoadBGR32bitImage;
                 platformServices.Malloc = &Win32::Dbg::Malloc;
                 platformServices.Calloc = &Win32::Dbg::Calloc;
                 platformServices.Realloc = &Win32::Dbg::Realloc;

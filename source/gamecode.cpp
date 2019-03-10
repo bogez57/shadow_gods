@@ -218,7 +218,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
-        gameState->imageData = platformServices->LoadRGBAImage("data/yellow_god.png", &gameState->imageWidth, &gameState->imageHeight);
+        gameState->imageData = platformServices->LoadBGR32bitImage("data/test.bmp", &gameState->imageWidth, &gameState->imageHeight);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
