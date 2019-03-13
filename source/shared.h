@@ -79,7 +79,7 @@ struct Platform_Services
     char* (*ReadEntireFile)(i32*, const char*);
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
-    ui8* (*LoadBGR32bitImage)(const char*, i32*, i32*);
+    ui8* (*LoadBGRAbitImage)(const char*, i32*, i32*);
     void* (*Malloc)(sizet);
     void* (*Calloc)(sizet, sizet);
     void* (*Realloc)(void*, sizet);

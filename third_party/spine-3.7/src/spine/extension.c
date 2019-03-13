@@ -153,7 +153,7 @@ float _spMath_pow2out_apply(float a)
 void _spAtlasPage_createTexture(spAtlasPage* self, const char* path)
 {
     Image image;
-    image.Data = globalPlatformServices->LoadBGR32bitImage(path, &image.size.width, &image.size.height);
+    image.Data = globalPlatformServices->LoadBGRAbitImage(path, &image.size.width, &image.size.height);
 
     Texture texture = globalRenderCmds.LoadTexture(image);
     Texture* textureptr = MALLOC(Texture, 1);

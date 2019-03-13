@@ -173,15 +173,21 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, 
 local_func void
 DrawImage(Game_Offscreen_Buffer* Buffer, ui8* imageData, i32 imgWidth, i32 imgHeight, v2i targetPos)
 {
-    ui32* imgData = (ui32*)imageData;
+    ui32* imageToDraw = (ui32*)imageData;
 
     ui8* currentRow = ((ui8*)Buffer->memory + targetPos.x*Buffer->bytesPerPixel + targetPos.y*Buffer->pitch);
     for(i32 column = targetPos.y; column < imgHeight + targetPos.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
+
         for(i32 row = targetPos.x; row < imgWidth + targetPos.x; ++row)
         {            
-            *screenPixel++ = *imgData++;
+            ui8 alpha = *((ui8*)imageToDraw + 3);
+            if(alpha > 128)
+                *screenPixel = *imageToDraw;
+
+            ++screenPixel;
+            ++imageToDraw;
         }
         
         currentRow += Buffer->pitch;
@@ -218,7 +224,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
-        gameState->imageData = platformServices->LoadBGR32bitImage("data/test.bmp", &gameState->imageWidth, &gameState->imageHeight);
+        gameState->imageData = platformServices->LoadBGRAbitImage("data/test_head.bmp", &gameState->imageWidth, &gameState->imageHeight);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
