@@ -94,17 +94,11 @@ struct Platform_Services
 
 struct Image
 {
-    ui8* Data;
+    ui8* data;
     v2i size;
 };
 
-struct Texture
-{
-    ui32 ID;
-    v2i size;
-};
-
-struct Drawable_Rect
+struct Rect
 {
     union
     {
@@ -119,6 +113,12 @@ struct Drawable_Rect
     };
 };
 
+struct Texture
+{
+    ui32 ID;
+    v2i size;
+};
+
 struct Coordinate_System
 {
     v2f Origin;
@@ -126,9 +126,47 @@ struct Coordinate_System
     v2f YBasis;
 };
 
-auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
+enum ChannelType
 {
-    Drawable_Rect Result;
+    RGBA = 1,
+    BGRA
+};
+
+local_func auto
+GetRGBAValues(ui32 pixel, ChannelType channelType) -> auto
+{
+    struct Result {ui8 r, g, b, a;};
+    Result pixelColors{};
+
+    ui32* pixelInfo = &pixel;
+
+    switch(channelType)
+    {
+        case RGBA:
+        {
+            pixelColors.r = *((ui8*)pixelInfo + 0);
+            pixelColors.g = *((ui8*)pixelInfo + 1);
+            pixelColors.b  = *((ui8*)pixelInfo + 2);
+            pixelColors.a = *((ui8*)pixelInfo + 3);
+        }break;
+
+        case BGRA:
+        {
+            pixelColors.b = *((ui8*)pixelInfo + 0);
+            pixelColors.g = *((ui8*)pixelInfo + 1);
+            pixelColors.r  = *((ui8*)pixelInfo + 2);
+            pixelColors.a = *((ui8*)pixelInfo + 3);
+        }break;
+
+        default : break;
+    };
+
+    return pixelColors;
+};
+
+auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Rect
+{
+    Rect Result;
     v2f MinPoint;
     v2f MaxPoint;
 
@@ -145,9 +183,9 @@ auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawa
     return Result;
 };
 
-auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
+auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Rect
 {
-    Drawable_Rect Result;
+    Rect Result;
 
     Result.BottomLeft = { OriginPoint.x - (Width / 2.0f), OriginPoint.y };
     Result.BottomRight = { OriginPoint.x + (Width / 2.0f), OriginPoint.y };
@@ -157,9 +195,9 @@ auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Dr
     return Result;
 };
 
-auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
+auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Rect
 {
-    Drawable_Rect Result;
+    Rect Result;
 
     Result.BottomLeft = OriginPoint;
     Result.BottomRight.x = OriginPoint.x + Width;
@@ -182,9 +220,9 @@ auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
     return NewRotatedVector;
 };
 
-auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
+auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rect RectToDilate) -> Rect
 {
-    Drawable_Rect DilatedRect {};
+    Rect DilatedRect {};
 
     for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
     {
@@ -196,9 +234,9 @@ auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Re
     return DilatedRect;
 };
 
-auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Drawable_Rect RectToRotate) -> Drawable_Rect
+auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Rect RectToRotate) -> Rect
 {
-    Drawable_Rect RotatedRect {};
+    Rect RotatedRect {};
 
     for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToRotate.Corners); ++CornerIndex)
     {
@@ -212,8 +250,8 @@ struct Game_Render_Cmds
     void (*ClearScreen)();
     void (*DrawStuff)();
     void (*DrawRect)(v2f, v2f, v4f);
-    void (*DrawBackground)(ui32, Drawable_Rect, v2f, v2f);
-    void (*DrawTexture)(ui32, Drawable_Rect, v2f*);
+    void (*DrawBackground)(ui32, Rect, v2f, v2f);
+    void (*DrawTexture)(ui32, Rect, v2f*);
     void (*DrawLine)(v2f, v2f);
     Texture (*LoadTexture)(Image);
     void (*Init)();

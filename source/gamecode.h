@@ -38,6 +38,6 @@ struct Stage_Data
 struct Game_State
 {
     i32 imageWidth{}, imageHeight{};
-    ui8* imageData{};
+    Image image{};
     Stage_Data stage{};
 };

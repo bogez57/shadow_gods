@@ -62,8 +62,8 @@ local_func auto FlipImage(Image image) -> Image
 
     for (i32 row = 0; row < halfHeight; ++row)
     {
-        p_topRowOfTexels = image.Data + row * widthInBytes;
-        p_bottomRowOfTexels = image.Data + (image.size.height - row - 1) * widthInBytes;
+        p_topRowOfTexels = image.data + row * widthInBytes;
+        p_bottomRowOfTexels = image.data + (image.size.height - row - 1) * widthInBytes;
 
         for (i32 col = 0; col < widthInBytes; ++col)
         {
@@ -171,23 +171,39 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, 
 }
 
 local_func void
-DrawImage(Game_Offscreen_Buffer* Buffer, ui8* imageData, i32 imgWidth, i32 imgHeight, v2i targetPos)
+DrawImage(Game_Offscreen_Buffer* Buffer, Image image, v2i targetPos)
 {
-    ui32* imageToDraw = (ui32*)imageData;
+    ui32* imagePixel = (ui32*)image.data;
 
     ui8* currentRow = ((ui8*)Buffer->memory + targetPos.x*Buffer->bytesPerPixel + targetPos.y*Buffer->pitch);
-    for(i32 column = targetPos.y; column < imgHeight + targetPos.y; ++column)
+    for(i32 column = targetPos.y; column < image.size.height + targetPos.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
 
-        for(i32 row = targetPos.x; row < imgWidth + targetPos.x; ++row)
+        for(i32 row = targetPos.x; row < image.size.width + targetPos.x; ++row)
         {            
-            ui8 alpha = *((ui8*)imageToDraw + 3);
-            if(alpha > 128)
-                *screenPixel = *imageToDraw;
+            ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B; 
+
+            auto [screenPxl_R, screenPxl_G, screenPxl_B, screenPxl_A] = GetRGBAValues(*screenPixel, BGRA);
+            auto [imagePxl_R, imagePxl_G, imagePxl_B, imagePxl_A] = GetRGBAValues(*imagePixel, BGRA);
+
+            {//Linear Blend
+                f32 blendPercent = (f32)imagePxl_A / 255.0f;
+
+                blendedPixel_R = screenPxl_R + (ui8)(blendPercent * (imagePxl_R - screenPxl_R));
+                blendedPixel_G = screenPxl_G + (ui8)(blendPercent * (imagePxl_G - screenPxl_G));
+                blendedPixel_B = screenPxl_B + (ui8)(blendPercent * (imagePxl_B - screenPxl_B));
+            };
+
+            *imagePixel = ((0xFF << 24) |
+                           (blendedPixel_R << 16) |
+                           (blendedPixel_G << 8) |
+                           (blendedPixel_B << 0));
+
+            *screenPixel = *imagePixel ;
 
             ++screenPixel;
-            ++imageToDraw;
+            ++imagePixel ;
         }
         
         currentRow += Buffer->pitch;
@@ -224,7 +240,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
-        gameState->imageData = platformServices->LoadBGRAbitImage("data/test_head.bmp", &gameState->imageWidth, &gameState->imageHeight);
+        gameState->image.data = platformServices->LoadBGRAbitImage("data/test_head.bmp", &gameState->image.size.width, &gameState->image.size.height);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -242,6 +258,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         //Origin - bottom left
         v2i targetPos{100, 0};
-        DrawImage(gameBackBuffer, gameState->imageData, gameState->imageWidth, gameState->imageHeight, targetPos);
+        DrawImage(gameBackBuffer, gameState->image, targetPos);
     };
 };

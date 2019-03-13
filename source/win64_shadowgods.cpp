@@ -180,14 +180,11 @@ namespace Win32::Dbg
         //Swap R and B channels of image
         for(int i = 0; i < totalPixelCountOfImg; ++i)
         {
-            ui8 redColor = *((ui8*)imagePixel + 0);
-            ui8 greenColor = *((ui8*)imagePixel + 1);
-            ui8 blueColor = *((ui8*)imagePixel + 2);
-            ui8 alpha = *((ui8*)imagePixel + 3);
-            ui32 newSwappedPixelColor = ((alpha << 24) |
-                                         (redColor << 16) |
-                                         (greenColor << 8) |
-                                         (blueColor << 0));
+           auto [red, green, blue, alpha] = GetRGBAValues(*imagePixel, RGBA);
+           ui32 newSwappedPixelColor = ((alpha << 24) |
+                                         (red << 16) |
+                                         (green << 8) |
+                                         (blue << 0));
         
             *imagePixel++ = newSwappedPixelColor;
         }
@@ -743,7 +740,7 @@ namespace GL
         ResultingTexture.size.width = ImageToSendToGPU.size.width;
         ResultingTexture.size.height = ImageToSendToGPU.size.height;
 
-        ui8* ImageData = ImageToSendToGPU.Data;
+        ui8* ImageData = ImageToSendToGPU.data;
 
         glEnable(GL_TEXTURE_2D);
         glGenTextures(1, &ResultingTexture.ID);
@@ -767,7 +764,7 @@ namespace GL
     }
 
     local_func auto
-    DrawBackground(ui32 TextureID, Drawable_Rect BackgroundImage, v2f MinUV, v2f MaxUV) -> void
+    DrawBackground(ui32 TextureID, Rect BackgroundImage, v2f MinUV, v2f MaxUV) -> void
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
@@ -813,7 +810,7 @@ namespace GL
     }
 
     local_func void
-    DrawTexture(ui32 TextureID, Drawable_Rect Destination, v2f* UVs)
+    DrawTexture(ui32 TextureID, Rect Destination, v2f* UVs)
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
