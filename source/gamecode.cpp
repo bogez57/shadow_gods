@@ -240,7 +240,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
+        gameState->backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &gameState->backgroundImg.size.width, &gameState->backgroundImg.size.height);
         gameState->image.data = platformServices->LoadBGRAbitImage("data/test_head.bmp", &gameState->image.size.width, &gameState->image.size.height);
+        gameState->torso.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &gameState->torso.size.width, &gameState->torso.size.height);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -249,15 +251,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         globalPlatformServices->DLLJustReloaded = false;
     };
 
+    if(KeyHeld(keyboard->MoveRight))
+    {
+        gameState->targetPos3.x += 1;
+    }
+
     { // Render
-
-        //Draw background
-        v2f minRectCoords{0.0f, 0.0f};
-        v2f maxRectCoords{(f32)gameBackBuffer->width, (f32)gameBackBuffer->height};
-        DrawRectangle(gameBackBuffer, minRectCoords, maxRectCoords, 0.0f, 1.0f, 1.0f);
-
         //Origin - bottom left
-        v2i targetPos{100, 0};
-        DrawImage(gameBackBuffer, gameState->image, targetPos);
+        v2i targetPos{0, 0};
+        DrawImage(gameBackBuffer, gameState->backgroundImg, targetPos);
+        DrawImage(gameBackBuffer, gameState->torso, gameState->targetPos3);
     };
 };

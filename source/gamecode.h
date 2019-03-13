@@ -38,6 +38,9 @@ struct Stage_Data
 struct Game_State
 {
     i32 imageWidth{}, imageHeight{};
+    v2i targetPos3 = {600, 100};
     Image image{};
+    Image backgroundImg{};
+    Image torso{};
     Stage_Data stage{};
 };
