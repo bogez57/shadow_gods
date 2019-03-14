@@ -195,12 +195,10 @@ DrawImage(Game_Offscreen_Buffer* Buffer, Image image, v2i targetPos)
                 blendedPixel_B = screenPxl_B + (ui8)(blendPercent * (imagePxl_B - screenPxl_B));
             };
 
-            *imagePixel = ((0xFF << 24) |
+            *screenPixel = ((0xFF << 24) |
                            (blendedPixel_R << 16) |
                            (blendedPixel_G << 8) |
                            (blendedPixel_B << 0));
-
-            *screenPixel = *imagePixel ;
 
             ++screenPixel;
             ++imagePixel ;
@@ -261,5 +259,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         v2i targetPos{0, 0};
         DrawImage(gameBackBuffer, gameState->backgroundImg, targetPos);
         DrawImage(gameBackBuffer, gameState->torso, gameState->targetPos3);
+        DrawImage(gameBackBuffer, gameState->image, gameState->targetPos3 + v2i{100, 100});
     };
 };
