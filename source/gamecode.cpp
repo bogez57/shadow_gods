@@ -175,15 +175,31 @@ DrawImage(Game_Offscreen_Buffer* Buffer, Image image, v2i targetPos)
 {
     ui32* imagePixel = (ui32*)image.data;
 
-    ui8* currentRow = ((ui8*)Buffer->memory + targetPos.x*Buffer->bytesPerPixel + targetPos.y*Buffer->pitch);
-    for(i32 column = targetPos.y; column < image.size.height + targetPos.y; ++column)
+    v2i min = {targetPos.x, targetPos.y};
+    v2i max = {targetPos.x + image.size.width, targetPos.y + image.size.height};
+
+    {//Make sure we don't try to draw outside current screen space
+        if(min.x < 0)
+            min.x = 0;
+
+        if(min.y < 0)
+            min.y = 0;
+
+        if(max.x > Buffer->width)
+            max.x = Buffer->width;
+
+        if(max.y > Buffer->height)
+            max.y = Buffer->height;
+    };
+
+    ui8* currentRow = ((ui8*)Buffer->memory + min.x*Buffer->bytesPerPixel + min.y*Buffer->pitch);
+    for(i32 column = min.y; column < max.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
 
-        for(i32 row = targetPos.x; row < image.size.width + targetPos.x; ++row)
+        for(i32 row = min.x; row < max.x; ++row)
         {            
             ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B; 
-
             auto [screenPxl_R, screenPxl_G, screenPxl_B, screenPxl_A] = GetRGBAValues(*screenPixel, BGRA);
             auto [imagePxl_R, imagePxl_G, imagePxl_B, imagePxl_A] = GetRGBAValues(*imagePixel, BGRA);
 
@@ -241,6 +257,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         gameState->backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &gameState->backgroundImg.size.width, &gameState->backgroundImg.size.height);
         gameState->image.data = platformServices->LoadBGRAbitImage("data/test_head.bmp", &gameState->image.size.width, &gameState->image.size.height);
         gameState->torso.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &gameState->torso.size.width, &gameState->torso.size.height);
+
+        gameState->targetPos3 = {1, 0};
     };
 
     if (globalPlatformServices->DLLJustReloaded)

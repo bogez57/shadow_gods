@@ -4,6 +4,13 @@
 
 #define PI 3.1415926535897932385f
 
+inline i32
+AbsoluteVal(i32 Value)
+{
+    i32 Result = abs(Value);
+    return Result;
+}
+
 inline f32
 AbsoluteVal(f32 Value)
 {
