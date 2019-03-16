@@ -764,23 +764,23 @@ namespace GL
     }
 
     local_func auto
-    DrawBackground(ui32 TextureID, Rect BackgroundImage, v2f MinUV, v2f MaxUV) -> void
+    DrawBackground(ui32 TextureID, Rectf BackgroundImage, v2f MinUV, v2f MaxUV) -> void
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
 
         glBegin(GL_QUADS);
         glTexCoord2f(MinUV.x, MinUV.y);
-        glVertex2f(BackgroundImage.BottomLeft.x, BackgroundImage.BottomLeft.y);
+        glVertex2f(BackgroundImage.min.x, BackgroundImage.min.y);
 
         glTexCoord2f(MaxUV.x, MinUV.y);
-        glVertex2f(BackgroundImage.BottomRight.x, BackgroundImage.BottomRight.y);
+        glVertex2f(BackgroundImage.max.x, BackgroundImage.min.y);
 
         glTexCoord2f(MaxUV.x, MaxUV.y);
-        glVertex2f(BackgroundImage.TopRight.x, BackgroundImage.TopRight.y);
+        glVertex2f(BackgroundImage.max.x, BackgroundImage.max.y);
 
         glTexCoord2f(MinUV.x, MaxUV.y);
-        glVertex2f(BackgroundImage.TopLeft.x, BackgroundImage.TopLeft.y);
+        glVertex2f(BackgroundImage.min.x, BackgroundImage.max.y);
 
         glEnd();
         glFlush();
@@ -810,23 +810,23 @@ namespace GL
     }
 
     local_func void
-    DrawTexture(ui32 TextureID, Rect Destination, v2f* UVs)
+    DrawTexture(ui32 TextureID, Rectf Destination, v2f* UVs)
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TextureID);
 
         glBegin(GL_QUADS);
         glTexCoord2f(UVs[0].x, UVs[0].y);
-        glVertex2f(Destination.BottomLeft.x, Destination.BottomLeft.y);
+        glVertex2f(Destination.min.x, Destination.min.y);
 
         glTexCoord2f(UVs[1].x, UVs[1].y);
-        glVertex2f(Destination.BottomRight.x, Destination.BottomRight.y);
+        glVertex2f(Destination.max.x, Destination.min.y);
 
         glTexCoord2f(UVs[2].x, UVs[2].y);
-        glVertex2f(Destination.TopRight.x, Destination.TopRight.y);
+        glVertex2f(Destination.max.x, Destination.max.y);
 
         glTexCoord2f(UVs[3].x, UVs[3].y);
-        glVertex2f(Destination.TopLeft.x, Destination.TopLeft.y);
+        glVertex2f(Destination.min.x, Destination.max.y);
 
         glEnd();
         glFlush();

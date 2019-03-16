@@ -15,7 +15,7 @@ struct StageInfo
 {
     v2f size;
     v2f centerPoint;
-    Image displayImage;
+    Image backgroundImg;
 };
 
 struct Game_Camera
@@ -38,9 +38,7 @@ struct Stage_Data
 struct Game_State
 {
     i32 imageWidth{}, imageHeight{};
-    v2i targetPos3 {};
+    Atlas* atlas{};
     Image image{};
-    Image backgroundImg{};
-    Image torso{};
     Stage_Data stage{};
 };

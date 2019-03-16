@@ -98,19 +98,16 @@ struct Image
     v2i size;
 };
 
-struct Rect
+struct Rectf
 {
-    union
-    {
-        v2f Corners[4];
-        struct
-        {
-            v2f BottomLeft;
-            v2f BottomRight;
-            v2f TopRight;
-            v2f TopLeft;
-        };
-    };
+    v2f min;
+    v2f max;
+};
+
+struct Recti
+{
+    v2i min;
+    v2i max;
 };
 
 struct Texture
@@ -164,48 +161,32 @@ GetRGBAValues(ui32 pixel, ChannelType channelType) -> auto
     return pixelColors;
 };
 
-auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Rect
+auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
 {
-    Rect Result;
-    v2f MinPoint;
-    v2f MaxPoint;
+    Rectf Result;
 
-    MinPoint = { OriginPoint.x - (Width / 2), OriginPoint.y - (Height / 2) };
-    MaxPoint = { OriginPoint.x + (Width / 2), OriginPoint.y + (Height / 2) };
-
-    Result.BottomLeft = MinPoint;
-    Result.BottomRight.x = MinPoint.x + Width;
-    Result.BottomRight.y = MinPoint.y;
-    Result.TopRight = MaxPoint;
-    Result.TopLeft.x = MinPoint.x;
-    Result.TopLeft.y = MaxPoint.y;
+    Result.min = { OriginPoint.x - (width / 2), OriginPoint.y - (height / 2) };
+    Result.max = { OriginPoint.x + (width / 2), OriginPoint.y + (height / 2) };
 
     return Result;
 };
 
-auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Rect
+auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
 {
-    Rect Result;
+    Rectf Result;
 
-    Result.BottomLeft = { OriginPoint.x - (Width / 2.0f), OriginPoint.y };
-    Result.BottomRight = { OriginPoint.x + (Width / 2.0f), OriginPoint.y };
-    Result.TopRight = { Result.BottomRight.x, OriginPoint.y + Height };
-    Result.TopLeft = { Result.BottomLeft.x, OriginPoint.y + Height };
+    Result.min = { OriginPoint.x - (width / 2.0f), OriginPoint.y };
+    Result.max = { OriginPoint.x + (width / 2.0f), OriginPoint.y + height };
 
     return Result;
 };
 
-auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Rect
+auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
 {
-    Rect Result;
+    Rectf Result;
 
-    Result.BottomLeft = OriginPoint;
-    Result.BottomRight.x = OriginPoint.x + Width;
-    Result.BottomRight.y = OriginPoint.y;
-    Result.TopRight.x = OriginPoint.x + Width;
-    Result.TopRight.y = OriginPoint.y + Height;
-    Result.TopLeft.x = OriginPoint.x;
-    Result.TopLeft.y = OriginPoint.y + Height;
+    Result.min = OriginPoint;
+    Result.max = {OriginPoint.x + width, OriginPoint.y + height};
 
     return Result;
 };
@@ -220,27 +201,24 @@ auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
     return NewRotatedVector;
 };
 
-auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rect RectToDilate) -> Rect
+auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDilate) -> Rectf
 {
-    Rect DilatedRect {};
+    Rectf DilatedRect {};
 
-    for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
-    {
-        v2f Distance = PointOfDilation - RectToDilate.Corners[CornerIndex];
-        Distance *= ScaleFactor;
-        DilatedRect.Corners[CornerIndex] = PointOfDilation - Distance;
-    };
+    v2f Distance = PointOfDilation - RectToDilate.min;
+    Distance *= ScaleFactor;
+    DilatedRect.min = PointOfDilation - Distance;
+
+    Distance = PointOfDilation - RectToDilate.max;
+    Distance *= ScaleFactor;
+    DilatedRect.max= PointOfDilation - Distance;
 
     return DilatedRect;
 };
 
-auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Rect RectToRotate) -> Rect
+auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Rectf RectToRotate) -> Rectf
 {
-    Rect RotatedRect {};
-
-    for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToRotate.Corners); ++CornerIndex)
-    {
-    };
+    Rectf RotatedRect {};
 
     return RotatedRect;
 };
@@ -250,8 +228,8 @@ struct Game_Render_Cmds
     void (*ClearScreen)();
     void (*DrawStuff)();
     void (*DrawRect)(v2f, v2f, v4f);
-    void (*DrawBackground)(ui32, Rect, v2f, v2f);
-    void (*DrawTexture)(ui32, Rect, v2f*);
+    void (*DrawBackground)(ui32, Rectf, v2f, v2f);
+    void (*DrawTexture)(ui32, Rectf, v2f*);
     void (*DrawLine)(v2f, v2f);
     Texture (*LoadTexture)(Image);
     void (*Init)();

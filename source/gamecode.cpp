@@ -171,33 +171,30 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, 
 }
 
 local_func void
-DrawImage(Game_Offscreen_Buffer* Buffer, Image image, v2i targetPos)
+DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Recti targetRect)
 {
     ui32* imagePixel = (ui32*)image.data;
 
-    v2i min = {targetPos.x, targetPos.y};
-    v2i max = {targetPos.x + image.size.width, targetPos.y + image.size.height};
-
     {//Make sure we don't try to draw outside current screen space
-        if(min.x < 0)
-            min.x = 0;
+        if(targetRect.min.x < 0)
+            targetRect.min.x = 0;
 
-        if(min.y < 0)
-            min.y = 0;
+        if(targetRect.min.y < 0)
+            targetRect.min.y = 0;
 
-        if(max.x > Buffer->width)
-            max.x = Buffer->width;
+        if(targetRect.max.x > Buffer->width)
+            targetRect.max.x = Buffer->width;
 
-        if(max.y > Buffer->height)
-            max.y = Buffer->height;
+        if(targetRect.max.y > Buffer->height)
+            targetRect.max.y = Buffer->height;
     };
 
-    ui8* currentRow = ((ui8*)Buffer->memory + min.x*Buffer->bytesPerPixel + min.y*Buffer->pitch);
-    for(i32 column = min.y; column < max.y; ++column)
+    ui8* currentRow = ((ui8*)Buffer->memory + targetRect.min.x*Buffer->bytesPerPixel + targetRect.min.y*Buffer->pitch);
+    for(i32 column = targetRect.min.y; column < targetRect.max.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
 
-        for(i32 row = min.x; row < max.x; ++row)
+        for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
         {            
             ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B; 
             auto [screenPxl_R, screenPxl_G, screenPxl_B, screenPxl_A] = GetRGBAValues(*screenPixel, BGRA);
@@ -231,7 +228,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
 
-    Game_State* gameState = (Game_State*)gameMemory->PermanentStorage;
+    Game_State* gState = (Game_State*)gameMemory->PermanentStorage;
 
     //Setup globals
     deltaT = platformServices->prevFrameTimeInSecs;
@@ -239,7 +236,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     globalPlatformServices = platformServices;
     globalRenderCmds = renderCmds;
 
-    Stage_Data* stage = &gameState->stage;
+    Stage_Data* stage = &gState->stage;
     Fighter* player = &stage->player;
 
     if (NOT gameMemory->Initialized)
@@ -254,11 +251,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
-        gameState->backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &gameState->backgroundImg.size.width, &gameState->backgroundImg.size.height);
-        gameState->image.data = platformServices->LoadBGRAbitImage("data/test_head.bmp", &gameState->image.size.width, &gameState->image.size.height);
-        gameState->torso.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &gameState->torso.size.width, &gameState->torso.size.height);
+        stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &stage->info.backgroundImg.size.width, &stage->info.backgroundImg.size.height);
 
-        gameState->targetPos3 = {1, 0};
+        //Create player
+        gState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
+        player->skel = CreateSkeletonUsingJsonFile(*gState->atlas, "data/yellow_god.json");
+        player->skel.worldPos = {100.0f, 0.0f};
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -269,14 +267,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        gameState->targetPos3.x += 1;
     }
 
     { // Render
-        //Origin - bottom left
-        v2i targetPos{0, 0};
-        DrawImage(gameBackBuffer, gameState->backgroundImg, targetPos);
-        DrawImage(gameBackBuffer, gameState->torso, gameState->targetPos3);
-        DrawImage(gameBackBuffer, gameState->image, gameState->targetPos3 + v2i{100, 100});
+        Recti targetRect{v2i{0, 0}, v2i{1280, 720}};
+        DrawImage(gameBackBuffer, stage->info.backgroundImg, targetRect);
+        DrawRectangle(gameBackBuffer, v2f{100.0f, 100.0f}, v2f{110.0f, 110.0f}, 0.0f, 0.0f, 1.0f);
     };
 };
