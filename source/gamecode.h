@@ -7,8 +7,8 @@
 
 struct Fighter
 {
-    Skeleton skel;
-    v2f* worldPos;
+    Image image;
+    v2f worldPos;
 };
 
 struct StageInfo

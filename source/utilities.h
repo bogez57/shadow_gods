@@ -27,15 +27,23 @@ inline auto Swap(v2f* a, v2f* b) -> void
 inline i32
 RoundFloat32ToInt32(f32 float32)
 {
-    i32 Result = (i32)(float32+ 0.5f);
+    i32 Result = (i32)(float32 + 0.5f);
     return(Result);
 }
 
 inline ui32 
 RoundFloat32ToUInt32(f32 float32)
 {
-    ui32 Result = (ui32)(float32+ 0.5f);
+    ui32 Result = (ui32)(float32 + 0.5f);
     return(Result);
 }
 
+inline v2i
+RoundFloat32ToInt32(v2f floats)
+{
+    v2i Result{};
+    Result.x = (i32)(floats.x + 0.5f);
+    Result.y = (i32)(floats.y + 0.5f);
 
+    return Result;
+}

@@ -129,39 +129,36 @@ inline b KeyReleased(Button_State KeyState)
 };
 
 local_func void
-DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, f32 g, f32 b)
+DrawRectangle(Game_Offscreen_Buffer* Buffer, Rectf rect, f32 r, f32 g, f32 b)
 {    
-    v2i minRectCoords{};
-    v2i maxRectCoords{};
-
-    minRectCoords.x = RoundFloat32ToInt32(minCoord.x);
-    minRectCoords.y = RoundFloat32ToInt32(minCoord.y);
-    maxRectCoords.x = RoundFloat32ToInt32(maxCoord.x);
-    maxRectCoords.y = RoundFloat32ToInt32(maxCoord.y);
+    //Since I'm dealing with int pixels below
+    Recti rectToDraw {};
+    rectToDraw.min = RoundFloat32ToInt32(rect.min);
+    rectToDraw.max = RoundFloat32ToInt32(rect.min);
 
     {//Make sure we don't try to draw outside current screen space
-        if(minRectCoords.x < 0)
-            minRectCoords.x = 0;
+        if(rectToDraw.min.x < 0)
+            rectToDraw.min.x = 0;
 
-        if(minRectCoords.y < 0)
-            minRectCoords.y = 0;
+        if(rectToDraw.min.y < 0)
+            rectToDraw.min.y = 0;
 
-        if(maxRectCoords.x > Buffer->width)
-            maxRectCoords.x = Buffer->width;
+        if(rectToDraw.max.x > Buffer->width)
+            rectToDraw.max.x = Buffer->width;
 
-        if(maxRectCoords.y > Buffer->height)
-            maxRectCoords.y = Buffer->height;
+        if(rectToDraw.max.y > Buffer->height)
+            rectToDraw.max.y = Buffer->height;
     };
 
     ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
                   (RoundFloat32ToUInt32(g * 255.0f) << 8) |
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
-    ui8* currentRow = ((ui8*)Buffer->memory + minRectCoords.x*Buffer->bytesPerPixel + minRectCoords.y*Buffer->pitch);
-    for(i32 column = minRectCoords.y; column < maxRectCoords.y; ++column)
+    ui8* currentRow = ((ui8*)Buffer->memory + rectToDraw.min.x*Buffer->bytesPerPixel + rectToDraw.min.y*Buffer->pitch);
+    for(i32 column = rectToDraw.min.y; column < rectToDraw.max.y; ++column)
     {
         ui32* Pixel = (ui32*)currentRow;
-        for(i32 row = minRectCoords.x; row < maxRectCoords.x; ++row)
+        for(i32 row = rectToDraw.min.x; row < rectToDraw.max.x; ++row)
         {            
             *Pixel++ = Color;
         }
@@ -171,9 +168,14 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, v2f minCoord, v2f maxCoord, f32 r, 
 }
 
 local_func void
-DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Recti targetRect)
+DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Rectf rect)
 {
     ui32* imagePixel = (ui32*)image.data;
+
+    //Since I'm dealing with int pixels below
+    Recti targetRect{};
+    targetRect.min = RoundFloat32ToInt32(rect.min);
+    targetRect.max = RoundFloat32ToInt32(rect.max);
 
     {//Make sure we don't try to draw outside current screen space
         if(targetRect.min.x < 0)
@@ -252,11 +254,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &stage->info.backgroundImg.size.width, &stage->info.backgroundImg.size.height);
+        player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
 
-        //Create player
-        gState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-        player->skel = CreateSkeletonUsingJsonFile(*gState->atlas, "data/yellow_god.json");
-        player->skel.worldPos = {100.0f, 0.0f};
+        player->worldPos = {100.0f, 0.0f};
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -270,8 +270,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     }
 
     { // Render
-        Recti targetRect{v2i{0, 0}, v2i{1280, 720}};
-        DrawImage(gameBackBuffer, stage->info.backgroundImg, targetRect);
-        DrawRectangle(gameBackBuffer, v2f{100.0f, 100.0f}, v2f{110.0f, 110.0f}, 0.0f, 0.0f, 1.0f);
+        Rectf playerTargetRect = ProduceRectFromBottomLeftPoint(player->worldPos, (f32)player->image.size.width, (f32)player->image.size.height);
+
+        Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
+        DrawImage(gameBackBuffer, stage->info.backgroundImg, backgroundTargetRect);
+        DrawImage(gameBackBuffer, player->image, playerTargetRect);
     };
 };
