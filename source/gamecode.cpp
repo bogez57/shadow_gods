@@ -134,7 +134,7 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, Rectf rect, f32 r, f32 g, f32 b)
     //Since I'm dealing with int pixels below
     Recti rectToDraw {};
     rectToDraw.min = RoundFloat32ToInt32(rect.min);
-    rectToDraw.max = RoundFloat32ToInt32(rect.min);
+    rectToDraw.max = RoundFloat32ToInt32(rect.max);
 
     {//Make sure we don't try to draw outside current screen space
         if(rectToDraw.min.x < 0)
@@ -256,7 +256,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &stage->info.backgroundImg.size.width, &stage->info.backgroundImg.size.height);
         player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
 
-        player->worldPos = {100.0f, 0.0f};
+        player->worldPos = {100.0f, 100.0f};
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -270,10 +270,38 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     }
 
     { // Render
+        //Get rotation working
         Rectf playerTargetRect = ProduceRectFromBottomLeftPoint(player->worldPos, (f32)player->image.size.width, (f32)player->image.size.height);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
         DrawImage(gameBackBuffer, stage->info.backgroundImg, backgroundTargetRect);
         DrawImage(gameBackBuffer, player->image, playerTargetRect);
+
+        {//Just for debug purposes so I can see 4 corners of player target rect
+            Rectf playerCorner1 = {
+                v2f{playerTargetRect.min.x - 10.0f, playerTargetRect.min.y}, 
+                v2f{playerTargetRect.min.x, playerTargetRect.min.y + 10.0f} 
+            };
+
+            Rectf playerCorner2 = {
+                v2f{playerTargetRect.max.x, playerTargetRect.min.y}, 
+                v2f{playerTargetRect.max.x + 10.0f, playerTargetRect.min.y + 10.0f} 
+            };
+
+            Rectf playerCorner3 = {
+                v2f{playerTargetRect.max.x, playerTargetRect.max.y}, 
+                v2f{playerTargetRect.max.x + 10.0f, playerTargetRect.max.y + 10.0f} 
+            };
+
+            Rectf playerCorner4 = {
+                v2f{playerTargetRect.min.x - 10.0f, playerTargetRect.max.y}, 
+                v2f{playerTargetRect.min.x, playerTargetRect.max.y + 10.0f} 
+            };
+
+            DrawRectangle(gameBackBuffer, playerCorner1, 0.0f, 0.0f, 1.0f);
+            DrawRectangle(gameBackBuffer, playerCorner2, 0.0f, 0.0f, 1.0f);
+            DrawRectangle(gameBackBuffer, playerCorner3, 0.0f, 0.0f, 1.0f);
+            DrawRectangle(gameBackBuffer, playerCorner4, 0.0f, 0.0f, 1.0f);
+        };
     };
 };
