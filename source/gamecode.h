@@ -5,9 +5,17 @@
 #include "collisions.h"
 #include "skeleton.h"
 
+struct Coordinate_Space
+{
+    v2f origin;
+    v2f xBasis;
+    v2f yBasis;
+};
+
 struct Fighter
 {
     Image image;
+    f32 rotationAngle;
     v2f worldPos;
 };
 

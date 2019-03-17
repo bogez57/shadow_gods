@@ -253,10 +253,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
+        //Stage Init
+        stage->info.size.x = viewportWidth;
+        stage->info.size.y = viewportHeight;
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &stage->info.backgroundImg.size.width, &stage->info.backgroundImg.size.height);
-        player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
 
-        player->worldPos = {100.0f, 100.0f};
+        //Player Init
+        player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
+        player->worldPos = {300.0f, 200.0f};
+        player->rotationAngle = 0.0f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -267,35 +272,51 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
+        player->rotationAngle += 2.0f;
     }
 
     { // Render
-        //Get rotation working
-        Rectf playerTargetRect = ProduceRectFromBottomLeftPoint(player->worldPos, (f32)player->image.size.width, (f32)player->image.size.height);
+        Drawable_Rect playerTargetRect{};
+        {
+            //With world space origin at 0, 0
+            Coordinate_Space playerSpace{};
+            playerSpace.origin = player->worldPos;
+            playerSpace.xBasis = {CosInRadians(Radians(player->rotationAngle)), SinInRadians(Radians(player->rotationAngle))};
+            playerSpace.yBasis = PerpendicularOp(playerSpace.xBasis);
+
+            //Create Rect from world origin so rotation happens correctly
+            v2f worldOrigin {0.0f, 0.0f};
+            playerTargetRect = ProduceRectFromBottomLeftPoint(worldOrigin, (f32)player->image.size.width, (f32)player->image.size.height);
+
+            //This equation rotates first then moves to correct world position
+            playerTargetRect.BottomLeft = playerSpace.origin + (playerTargetRect.BottomLeft.x * playerSpace.xBasis) + (playerTargetRect.BottomLeft.y * playerSpace.yBasis);
+            playerTargetRect.BottomRight = playerSpace.origin + (playerTargetRect.BottomRight.x * playerSpace.xBasis) + (playerTargetRect.BottomRight.y * playerSpace.yBasis);
+            playerTargetRect.TopRight = playerSpace.origin + (playerTargetRect.TopRight.x * playerSpace.xBasis) + (playerTargetRect.TopRight.y * playerSpace.yBasis);
+            playerTargetRect.TopLeft = playerSpace.origin + (playerTargetRect.TopLeft.x * playerSpace.xBasis) + (playerTargetRect.TopLeft.y * playerSpace.yBasis);
+        };
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
         DrawImage(gameBackBuffer, stage->info.backgroundImg, backgroundTargetRect);
-        DrawImage(gameBackBuffer, player->image, playerTargetRect);
 
         {//Just for debug purposes so I can see 4 corners of player target rect
             Rectf playerCorner1 = {
-                v2f{playerTargetRect.min.x - 10.0f, playerTargetRect.min.y}, 
-                v2f{playerTargetRect.min.x, playerTargetRect.min.y + 10.0f} 
+                v2f{playerTargetRect.BottomLeft.x - 10.0f, playerTargetRect.BottomLeft.y}, 
+                v2f{playerTargetRect.BottomLeft.x, playerTargetRect.BottomLeft.y + 10.0f} 
             };
 
             Rectf playerCorner2 = {
-                v2f{playerTargetRect.max.x, playerTargetRect.min.y}, 
-                v2f{playerTargetRect.max.x + 10.0f, playerTargetRect.min.y + 10.0f} 
+                v2f{playerTargetRect.BottomRight.x, playerTargetRect.BottomRight.y}, 
+                v2f{playerTargetRect.BottomRight.x + 10.0f, playerTargetRect.BottomRight.y + 10.0f} 
             };
 
             Rectf playerCorner3 = {
-                v2f{playerTargetRect.max.x, playerTargetRect.max.y}, 
-                v2f{playerTargetRect.max.x + 10.0f, playerTargetRect.max.y + 10.0f} 
+                v2f{playerTargetRect.TopRight.x, playerTargetRect.TopRight.y}, 
+                v2f{playerTargetRect.TopRight.x + 10.0f, playerTargetRect.TopRight.y + 10.0f} 
             };
 
             Rectf playerCorner4 = {
-                v2f{playerTargetRect.min.x - 10.0f, playerTargetRect.max.y}, 
-                v2f{playerTargetRect.min.x, playerTargetRect.max.y + 10.0f} 
+                v2f{playerTargetRect.TopLeft.x - 10.0f, playerTargetRect.TopLeft.y}, 
+                v2f{playerTargetRect.TopLeft.x, playerTargetRect.TopLeft.y + 10.0f} 
             };
 
             DrawRectangle(gameBackBuffer, playerCorner1, 0.0f, 0.0f, 1.0f);

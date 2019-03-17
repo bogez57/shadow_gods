@@ -110,17 +110,25 @@ struct Recti
     v2i max;
 };
 
+struct Drawable_Rect
+{
+    union
+    {
+        v2f Corners[4];
+        struct
+        {
+            v2f BottomLeft;
+            v2f BottomRight;
+            v2f TopRight;
+            v2f TopLeft;
+        };
+    };
+};
+
 struct Texture
 {
     ui32 ID;
     v2i size;
-};
-
-struct Coordinate_System
-{
-    v2f Origin;
-    v2f XBasis;
-    v2f YBasis;
 };
 
 enum ChannelType
@@ -181,12 +189,14 @@ auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height) -> Re
     return Result;
 };
 
-auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
+Drawable_Rect ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 {
-    Rectf Result;
+    Drawable_Rect Result;
 
-    Result.min = OriginPoint;
-    Result.max = {OriginPoint.x + width, OriginPoint.y + height};
+    Result.BottomLeft = originPoint;
+    Result.BottomRight = { originPoint.x + width, originPoint.y };
+    Result.TopRight = { originPoint.x + width, originPoint.y + height };
+    Result.TopLeft = { originPoint.x, originPoint.y + height };
 
     return Result;
 };
@@ -194,8 +204,8 @@ auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 width, f32 height) -> R
 auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
 {
     f32 RotationInRadians = RotationInDegress * (PI / 180.0f);
-    v2f RotatedXBasis = VectorToRotate.x * v2f { Cos(RotationInRadians), Sin(RotationInRadians) };
-    v2f RotatedYBasis = VectorToRotate.y * v2f { -Sin(RotationInRadians), Cos(RotationInRadians) };
+    v2f RotatedXBasis = VectorToRotate.x * v2f { CosInRadians(RotationInRadians), SinInRadians(RotationInRadians) };
+    v2f RotatedYBasis = VectorToRotate.y * v2f { -SinInRadians(RotationInRadians), CosInRadians(RotationInRadians) };
     v2f NewRotatedVector = RotatedXBasis + RotatedYBasis;
 
     return NewRotatedVector;

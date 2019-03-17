@@ -34,14 +34,14 @@ Radians(f32 angleInDegrees)
 };
 
 inline f32
-Sin(f32 AngleInRadians)
+SinInRadians(f32 AngleInRadians)
 {
     f32 RealNumber = sinf(AngleInRadians);
     return RealNumber;
 };
 
 inline f32
-Cos(f32 AngleInRadians)
+CosInRadians(f32 AngleInRadians)
 {
     f32 RealNumber = cosf(AngleInRadians);
     return RealNumber;
@@ -79,3 +79,18 @@ RoundDown(sizet NumToRound, sizet Multiple)
 
     return NumToRound - Remainder;
 };
+
+inline v2f
+PerpendicularOp(v2f A)
+{
+    v2f Result = {-A.y, A.x};
+    return(Result);
+}
+
+inline f32 
+DotProduct(v2f A, v2f B)
+{
+    f32 Result = A.x*B.x + A.y*B.y;
+
+    return(Result);
+}
