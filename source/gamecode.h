@@ -16,6 +16,7 @@ struct Fighter
 {
     Image image;
     f32 rotationAngle;
+    f32 scale;
     v2f worldPos;
 };
 
@@ -40,6 +41,7 @@ struct Stage_Data
 {
     StageInfo info;
     Fighter player;
+    Fighter enemy;
     Game_Camera camera;
 };
 

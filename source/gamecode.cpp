@@ -168,6 +168,32 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, Rectf rect, f32 r, f32 g, f32 b)
 }
 
 local_func void
+DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f32 g, f32 b)
+{    
+    ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
+                  (RoundFloat32ToUInt32(g * 255.0f) << 8) |
+                  (RoundFloat32ToUInt32(b * 255.0f) << 0));
+
+    ui8* currentRow = (ui8*)buffer->memory; 
+    for(i32 screenY = 0; screenY < buffer->height; ++screenY)
+    {
+        ui32* Pixel = (ui32*)currentRow;
+        for(i32 screenX = 0; screenX < buffer->width; ++screenX)
+        {            
+            if(screenX >= rect.BottomLeft.x && screenX <= rect.BottomRight.x &&
+               screenY >= rect.BottomLeft.y && screenY <= rect.TopRight.y)
+            {
+                *Pixel = Color;
+            }
+
+            ++Pixel;
+        }
+        
+        currentRow += buffer->pitch;
+    }
+}
+
+local_func void
 DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Rectf rect)
 {
     ui32* imagePixel = (ui32*)image.data;
@@ -240,6 +266,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     Stage_Data* stage = &gState->stage;
     Fighter* player = &stage->player;
+    Fighter* enemy = &stage->enemy;
 
     if (NOT gameMemory->Initialized)
     {
@@ -262,6 +289,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
         player->worldPos = {300.0f, 200.0f};
         player->rotationAngle = 0.0f;
+        player->scale = 1.0f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -281,7 +309,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             //With world space origin at 0, 0
             Coordinate_Space playerSpace{};
             playerSpace.origin = player->worldPos;
-            playerSpace.xBasis = {CosInRadians(Radians(player->rotationAngle)), SinInRadians(Radians(player->rotationAngle))};
+            playerSpace.xBasis = player->scale * v2f{CosInRadians(Radians(player->rotationAngle)), SinInRadians(Radians(player->rotationAngle))};
             playerSpace.yBasis = PerpendicularOp(playerSpace.xBasis);
 
             //Create Rect from world origin so rotation happens correctly
@@ -297,23 +325,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
         DrawImage(gameBackBuffer, stage->info.backgroundImg, backgroundTargetRect);
+        DrawRectangleSlowly(gameBackBuffer, playerTargetRect, 1.0f, 0.0f, 0.0f);
 
         {//Just for debug purposes so I can see 4 corners of player target rect
             Rectf playerCorner1 = {
                 v2f{playerTargetRect.BottomLeft.x - 10.0f, playerTargetRect.BottomLeft.y}, 
                 v2f{playerTargetRect.BottomLeft.x, playerTargetRect.BottomLeft.y + 10.0f} 
             };
-
             Rectf playerCorner2 = {
                 v2f{playerTargetRect.BottomRight.x, playerTargetRect.BottomRight.y}, 
                 v2f{playerTargetRect.BottomRight.x + 10.0f, playerTargetRect.BottomRight.y + 10.0f} 
             };
-
             Rectf playerCorner3 = {
                 v2f{playerTargetRect.TopRight.x, playerTargetRect.TopRight.y}, 
                 v2f{playerTargetRect.TopRight.x + 10.0f, playerTargetRect.TopRight.y + 10.0f} 
             };
-
             Rectf playerCorner4 = {
                 v2f{playerTargetRect.TopLeft.x - 10.0f, playerTargetRect.TopLeft.y}, 
                 v2f{playerTargetRect.TopLeft.x, playerTargetRect.TopLeft.y + 10.0f} 
