@@ -280,6 +280,17 @@ operator-(v2f A, v2f B)
     return (Result);
 }
 
+inline v2f
+operator-(v2f A)
+{
+    v2f Result;
+
+    Result.x = -A.x;
+    Result.y = -A.y;
+
+    return(Result);
+}
+
 v3f::v3f(f32 x, f32 y, f32 z)
     : x(x)
     , y(y)

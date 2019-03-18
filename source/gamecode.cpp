@@ -175,13 +175,18 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f3
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
     ui8* currentRow = (ui8*)buffer->memory; 
-    for(i32 screenY = 0; screenY < buffer->height; ++screenY)
+    for(f32 screenY = 0; screenY < (f32)buffer->height; ++screenY)
     {
         ui32* Pixel = (ui32*)currentRow;
-        for(i32 screenX = 0; screenX < buffer->width; ++screenX)
+        for(f32 screenX = 0; screenX < (f32)buffer->width; ++screenX)
         {            
-            if(screenX >= rect.BottomLeft.x && screenX <= rect.BottomRight.x &&
-               screenY >= rect.BottomLeft.y && screenY <= rect.TopRight.y)
+            v2f screenPixelCoord{screenX, screenY};
+            f32 edge1 = DotProduct(screenPixelCoord - rect.BottomLeft, -rect.TopLeft);
+            f32 edge2 = DotProduct(screenPixelCoord - rect.BottomRight, rect.BottomRight);
+            f32 edge3 = DotProduct(screenPixelCoord - rect.TopRight, rect.TopLeft);
+            f32 edge4 = DotProduct(screenPixelCoord - rect.TopLeft, -rect.BottomRight);
+
+            if(edge1 < 0 && edge2 < 0 && edge3 < 0 && edge4 < 0)
             {
                 *Pixel = Color;
             }
