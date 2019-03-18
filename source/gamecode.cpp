@@ -174,19 +174,28 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f3
                   (RoundFloat32ToUInt32(g * 255.0f) << 8) |
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
+    v2f origin = rect.BottomLeft;
+    v2f xAxis = rect.BottomRight - origin;
+    v2f yAxis = rect.TopLeft - origin;
+
     ui8* currentRow = (ui8*)buffer->memory; 
     for(f32 screenY = 0; screenY < (f32)buffer->height; ++screenY)
     {
         ui32* Pixel = (ui32*)currentRow;
         for(f32 screenX = 0; screenX < (f32)buffer->width; ++screenX)
         {            
+            //In order to fill only pixels defined by our rectangle points/vecs, we are
+            //testing to see if a pixel iterated over falls into that rectangle. This is
+            //done by checking if the dot product of the screen pixel vector, subtracted from
+            //origin, and the certain 'edge' vector of the rect comes out positive. If 
+            //positive then pixel is within, if negative then it is outside. 
             v2f screenPixelCoord{screenX, screenY};
-            f32 edge1 = DotProduct(screenPixelCoord - rect.BottomLeft, -rect.TopLeft);
-            f32 edge2 = DotProduct(screenPixelCoord - rect.BottomRight, rect.BottomRight);
-            f32 edge3 = DotProduct(screenPixelCoord - rect.TopRight, rect.TopLeft);
-            f32 edge4 = DotProduct(screenPixelCoord - rect.TopLeft, -rect.BottomRight);
+            f32 edge1 = DotProduct(screenPixelCoord - origin, yAxis);
+            f32 edge2 = DotProduct(screenPixelCoord - (origin + xAxis), -xAxis);
+            f32 edge3 = DotProduct(screenPixelCoord - (origin + xAxis + yAxis), -yAxis);
+            f32 edge4 = DotProduct(screenPixelCoord - (origin + yAxis), xAxis);
 
-            if(edge1 < 0 && edge2 < 0 && edge3 < 0 && edge4 < 0)
+            if(edge1 > 0 && edge2 > 0 && edge3 > 0 && edge4 > 0)
             {
                 *Pixel = Color;
             }
@@ -292,9 +301,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
-        player->worldPos = {300.0f, 200.0f};
-        player->rotationAngle = 0.0f;
-        player->scale = 1.0f;
+        player->world.pos = {300.0f, 200.0f};
+        player->world.rotation = 0.0f;
+        player->world.scale = 1.0f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -305,27 +314,28 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->rotationAngle += 2.0f;
+        player->world.rotation += 2.0f;
     }
 
     { // Render
         Drawable_Rect playerTargetRect{};
         {
-            //With world space origin at 0, 0
-            Coordinate_Space playerSpace{};
-            playerSpace.origin = player->worldPos;
-            playerSpace.xBasis = player->scale * v2f{CosInRadians(Radians(player->rotationAngle)), SinInRadians(Radians(player->rotationAngle))};
-            playerSpace.yBasis = PerpendicularOp(playerSpace.xBasis);
+            //Essentially local player coordinates
+            playerTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
 
-            //Create Rect from world origin so rotation happens correctly
-            v2f worldOrigin {0.0f, 0.0f};
-            playerTargetRect = ProduceRectFromBottomLeftPoint(worldOrigin, (f32)player->image.size.width, (f32)player->image.size.height);
+            {//World Transform
+                //With world space origin at 0, 0
+                Coordinate_Space playerSpace{};
+                playerSpace.origin = player->world.pos;
+                playerSpace.xBasis = player->world.scale * v2f{CosInRadians(Radians(player->world.rotation)), SinInRadians(Radians(player->world.rotation))};
+                playerSpace.yBasis = PerpendicularOp(playerSpace.xBasis);
 
-            //This equation rotates first then moves to correct world position
-            playerTargetRect.BottomLeft = playerSpace.origin + (playerTargetRect.BottomLeft.x * playerSpace.xBasis) + (playerTargetRect.BottomLeft.y * playerSpace.yBasis);
-            playerTargetRect.BottomRight = playerSpace.origin + (playerTargetRect.BottomRight.x * playerSpace.xBasis) + (playerTargetRect.BottomRight.y * playerSpace.yBasis);
-            playerTargetRect.TopRight = playerSpace.origin + (playerTargetRect.TopRight.x * playerSpace.xBasis) + (playerTargetRect.TopRight.y * playerSpace.yBasis);
-            playerTargetRect.TopLeft = playerSpace.origin + (playerTargetRect.TopLeft.x * playerSpace.xBasis) + (playerTargetRect.TopLeft.y * playerSpace.yBasis);
+                //This equation rotates first then moves to correct world position
+                playerTargetRect.BottomLeft = playerSpace.origin + (playerTargetRect.BottomLeft.x * playerSpace.xBasis) + (playerTargetRect.BottomLeft.y * playerSpace.yBasis);
+                playerTargetRect.BottomRight = playerSpace.origin + (playerTargetRect.BottomRight.x * playerSpace.xBasis) + (playerTargetRect.BottomRight.y * playerSpace.yBasis);
+                playerTargetRect.TopRight = playerSpace.origin + (playerTargetRect.TopRight.x * playerSpace.xBasis) + (playerTargetRect.TopRight.y * playerSpace.yBasis);
+                playerTargetRect.TopLeft = playerSpace.origin + (playerTargetRect.TopLeft.x * playerSpace.xBasis) + (playerTargetRect.TopLeft.y * playerSpace.yBasis);
+            };
         };
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};

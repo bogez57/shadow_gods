@@ -12,12 +12,17 @@ struct Coordinate_Space
     v2f yBasis;
 };
 
+struct Transform
+{
+    f32 rotation;
+    v2f pos;
+    f32 scale;
+};
+
 struct Fighter
 {
     Image image;
-    f32 rotationAngle;
-    f32 scale;
-    v2f worldPos;
+    Transform world;
 };
 
 struct StageInfo
