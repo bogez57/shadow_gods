@@ -178,11 +178,24 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f3
     v2f xAxis = rect.BottomRight - origin;
     v2f yAxis = rect.TopLeft - origin;
 
+    Array<v2f, 4> vecs = {origin, origin + xAxis, origin + xAxis + yAxis, origin + yAxis};
+    for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
+    {
+        v2f testVec = vecs.At(vecIndex);
+        i32 flooredX = FloorF32ToI32(testVec.x);
+        i32 ceiledX = CeilF32ToI32(testVec.x);
+    };
+
+    f32 yMin = 0;
+    f32 xMin = 0;    
+    f32 yMax = (f32)buffer->height - 1;    
+    f32 xMax = (f32)buffer->width - 1;    
+
     ui8* currentRow = (ui8*)buffer->memory; 
-    for(f32 screenY = 0; screenY < (f32)buffer->height; ++screenY)
+    for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
         ui32* Pixel = (ui32*)currentRow;
-        for(f32 screenX = 0; screenX < (f32)buffer->width; ++screenX)
+        for(f32 screenX = xMin; screenX < xMax; ++screenX)
         {            
             //In order to fill only pixels defined by our rectangle points/vecs, we are
             //testing to see if a pixel iterated over falls into that rectangle. This is

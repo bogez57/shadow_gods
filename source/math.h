@@ -80,6 +80,22 @@ RoundDown(sizet NumToRound, sizet Multiple)
     return NumToRound - Remainder;
 };
 
+inline i32
+FloorF32ToI32(f32 floatToFloor)
+{
+    i32 result = (i32)floorf(floatToFloor);
+    return result;
+};
+
+inline i32
+CeilF32ToI32(f32 floatToCeil)
+{
+    i32 result = (i32)ceilf(floatToCeil);
+    return result;
+};
+
+
+
 inline v2f
 PerpendicularOp(v2f A)
 {
