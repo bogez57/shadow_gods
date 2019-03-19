@@ -178,20 +178,37 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f3
     v2f xAxis = rect.BottomRight - origin;
     v2f yAxis = rect.TopLeft - origin;
 
-    Array<v2f, 4> vecs = {origin, origin + xAxis, origin + xAxis + yAxis, origin + yAxis};
-    for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
-    {
-        v2f testVec = vecs.At(vecIndex);
-        i32 flooredX = FloorF32ToI32(testVec.x);
-        i32 ceiledX = CeilF32ToI32(testVec.x);
+    f32 widthMax = (f32)(buffer->width - 1);
+    f32 heightMax = (f32)(buffer->height - 1);
+    
+    f32 xMin = widthMax;
+    f32 xMax = 0.0f;
+    f32 yMin = heightMax;
+    f32 yMax = 0.0f;
+
+    {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
+        Array<v2f, 4> vecs = {origin, origin + xAxis, origin + xAxis + yAxis, origin + yAxis};
+        for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
+        {
+            v2f testVec = vecs.At(vecIndex);
+            i32 flooredX = FloorF32ToI32(testVec.x);
+            i32 ceiledX = CeilF32ToI32(testVec.x);
+            i32 flooredY= FloorF32ToI32(testVec.y);
+            i32 ceiledY = CeilF32ToI32(testVec.y);
+
+            if(xMin > flooredX) {xMin = (f32)flooredX;}
+            if(yMin > flooredY) {yMin = (f32)flooredY;}
+            if(xMax < ceiledX) {xMax = (f32)ceiledX;}
+            if(yMax < ceiledY) {yMax = (f32)ceiledY;}
+        }
+
+        if(xMin < 0.0f) {xMin = 0.0f;}
+        if(yMin < 0.0f) {yMin = 0.0f;}
+        if(xMax > widthMax) {xMax = widthMax;}
+        if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    f32 yMin = 0;
-    f32 xMin = 0;    
-    f32 yMax = (f32)buffer->height - 1;    
-    f32 xMax = (f32)buffer->width - 1;    
-
-    ui8* currentRow = (ui8*)buffer->memory; 
+    ui8* currentRow = (ui8*)buffer->memory + (i32)xMin * buffer->bytesPerPixel + (i32)yMin * buffer->pitch; 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
         ui32* Pixel = (ui32*)currentRow;
@@ -327,7 +344,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.rotation += 2.0f;
+        player->world.rotation += 10.0f;
     }
 
     { // Render
