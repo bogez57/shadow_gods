@@ -94,8 +94,6 @@ CeilF32ToI32(f32 floatToCeil)
     return result;
 };
 
-
-
 inline v2f
 PerpendicularOp(v2f A)
 {
@@ -104,9 +102,17 @@ PerpendicularOp(v2f A)
 }
 
 inline f32 
-DotProduct(v2f A, v2f B)
+DotProduct(v2f a, v2f b)
 {
-    f32 Result = A.x*B.x + A.y*B.y;
+    f32 result = a.x*b.x + a.y*b.y;
 
-    return(Result);
+    return(result);
+}
+
+inline f32 
+MagnitudeSqd(v2f a)
+{
+    f32 result = DotProduct(a,a);
+
+    return(result);
 }

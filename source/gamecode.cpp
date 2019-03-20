@@ -157,10 +157,10 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, Rectf rect, f32 r, f32 g, f32 b)
     ui8* currentRow = ((ui8*)Buffer->memory + rectToDraw.min.x*Buffer->bytesPerPixel + rectToDraw.min.y*Buffer->pitch);
     for(i32 column = rectToDraw.min.y; column < rectToDraw.max.y; ++column)
     {
-        ui32* Pixel = (ui32*)currentRow;
+        ui32* screenPixel = (ui32*)currentRow;
         for(i32 row = rectToDraw.min.x; row < rectToDraw.max.x; ++row)
         {            
-            *Pixel++ = Color;
+            *screenPixel++ = Color;
         }
         
         currentRow += Buffer->pitch;
@@ -168,12 +168,8 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, Rectf rect, f32 r, f32 g, f32 b)
 }
 
 local_func void
-DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f32 g, f32 b)
+DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image image)
 {    
-    ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
-                  (RoundFloat32ToUInt32(g * 255.0f) << 8) |
-                  (RoundFloat32ToUInt32(b * 255.0f) << 0));
-
     v2f origin = rect.BottomLeft;
     v2f xAxis = rect.BottomRight - origin;
     v2f yAxis = rect.TopLeft - origin;
@@ -208,10 +204,14 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f3
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
+    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(xAxis);
+    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(yAxis);
     ui8* currentRow = (ui8*)buffer->memory + (i32)xMin * buffer->bytesPerPixel + (i32)yMin * buffer->pitch; 
+    ui32* imagePixel = (ui32*)image.data;
+
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
-        ui32* Pixel = (ui32*)currentRow;
+        ui32* screenPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; ++screenX)
         {            
             //In order to fill only pixels defined by our rectangle points/vecs, we are
@@ -220,17 +220,35 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, f32 r, f3
             //origin, and the certain 'edge' vector of the rect comes out positive. If 
             //positive then pixel is within, if negative then it is outside. 
             v2f screenPixelCoord{screenX, screenY};
-            f32 edge1 = DotProduct(screenPixelCoord - origin, yAxis);
-            f32 edge2 = DotProduct(screenPixelCoord - (origin + xAxis), -xAxis);
-            f32 edge3 = DotProduct(screenPixelCoord - (origin + xAxis + yAxis), -yAxis);
-            f32 edge4 = DotProduct(screenPixelCoord - (origin + yAxis), xAxis);
+            v2f d {screenPixelCoord - origin};
+            f32 edge1 = DotProduct(d, yAxis);
+            f32 edge2 = DotProduct(d + -xAxis, -xAxis);
+            f32 edge3 = DotProduct(d + -xAxis + -yAxis, -yAxis);
+            f32 edge4 = DotProduct(d + -yAxis, xAxis);
 
             if(edge1 > 0 && edge2 > 0 && edge3 > 0 && edge4 > 0)
             {
-                *Pixel = Color;
+                //*screenPixel = Color;
+                f32 u = invertedXAxisSqd * DotProduct(d, xAxis);
+                f32 v = invertedYAxisSqd * DotProduct(d, yAxis);
+
+                f32 epsilon = 0.00001f;//TODO: Remove????
+                BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
+                BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
+
+                i32 x = (i32)((u*image.size.width - 1.0f) + .5f);
+                i32 y = (i32)((v*image.size.height - 1.0f) + .5f);
+
+                BGZ_ASSERT((x >= 0) && (x <= (i32)image.size.width), "x coord is out of range!: ");
+                BGZ_ASSERT((y >= 0) && (y <= (i32)image.size.height), "x coord is out of range!");
+
+                ui8* texelPtr = (ui8*)image.data + (ui32)(y*image.pitch) + (ui32)(x*sizeof(ui32));//size of pixel
+                ui32 texel = *(ui32*)texelPtr;
+
+                *screenPixel = texel;
             }
 
-            ++Pixel;
+            ++screenPixel;
         }
         
         currentRow += buffer->pitch;
@@ -331,6 +349,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
+        player->image.pitch = (f32)player->image.size.width * 4;//bytes per pixel
         player->world.pos = {300.0f, 200.0f};
         player->world.rotation = 0.0f;
         player->world.scale = 1.0f;
@@ -370,7 +389,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
         DrawImage(gameBackBuffer, stage->info.backgroundImg, backgroundTargetRect);
-        DrawRectangleSlowly(gameBackBuffer, playerTargetRect, 1.0f, 0.0f, 0.0f);
+        DrawRectangleSlowly(gameBackBuffer, playerTargetRect, player->image);
 
         {//Just for debug purposes so I can see 4 corners of player target rect
             Rectf playerCorner1 = {

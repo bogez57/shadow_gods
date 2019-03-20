@@ -96,6 +96,7 @@ struct Image
 {
     ui8* data;
     v2i size;
+    f32 pitch;
 };
 
 struct Rectf
