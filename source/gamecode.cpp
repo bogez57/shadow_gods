@@ -228,7 +228,6 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
 
             if(edge1 > 0 && edge2 > 0 && edge3 > 0 && edge4 > 0)
             {
-                //*screenPixel = Color;
                 f32 u = invertedXAxisSqd * DotProduct(d, xAxis);
                 f32 v = invertedYAxisSqd * DotProduct(d, yAxis);
 
