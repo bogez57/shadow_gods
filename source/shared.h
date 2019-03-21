@@ -170,6 +170,23 @@ GetRGBAValues(ui32 pixel, ChannelType channelType) -> auto
     return pixelColors;
 };
 
+auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat) 
+{
+    struct Result {ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B;};
+    Result blendedColor{};
+    
+    auto [imagePxl_R, imagePxl_G, imagePxl_B, imagePxl_A] = GetRGBAValues(foregroundColor, colorFormat);
+    auto [screenPxl_R, screenPxl_G, screenPxl_B, screenPxl_A] = GetRGBAValues(backgroundColor, colorFormat);
+
+    f32 blendPercent = (f32)imagePxl_A / 255.0f;
+
+    blendedColor.blendedPixel_R = screenPxl_R + (ui8)(blendPercent * (imagePxl_R - screenPxl_R));
+    blendedColor.blendedPixel_G = screenPxl_G + (ui8)(blendPercent * (imagePxl_G - screenPxl_G));
+    blendedColor.blendedPixel_B = screenPxl_B + (ui8)(blendPercent * (imagePxl_B - screenPxl_B));
+
+    return blendedColor;
+};
+
 auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
 {
     Rectf Result;

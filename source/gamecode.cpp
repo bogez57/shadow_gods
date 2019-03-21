@@ -244,7 +244,12 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                 ui8* texelPtr = (ui8*)image.data + (ui32)(y*image.pitch) + (ui32)(x*sizeof(ui32));//size of pixel
                 ui32 texel = *(ui32*)texelPtr;
 
-                *screenPixel = texel;
+                auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(texel, *screenPixel, BGRA);
+
+                *screenPixel = ((0xFF << 24) |
+                           (blendedPixel_R << 16) |
+                           (blendedPixel_G << 8) |
+                           (blendedPixel_B << 0));
             }
 
             ++screenPixel;
@@ -285,17 +290,7 @@ DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Rectf rect)
 
         for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
         {            
-            ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B; 
-            auto [screenPxl_R, screenPxl_G, screenPxl_B, screenPxl_A] = GetRGBAValues(*screenPixel, BGRA);
-            auto [imagePxl_R, imagePxl_G, imagePxl_B, imagePxl_A] = GetRGBAValues(*imagePixel, BGRA);
-
-            {//Linear Blend
-                f32 blendPercent = (f32)imagePxl_A / 255.0f;
-
-                blendedPixel_R = screenPxl_R + (ui8)(blendPercent * (imagePxl_R - screenPxl_R));
-                blendedPixel_G = screenPxl_G + (ui8)(blendPercent * (imagePxl_G - screenPxl_G));
-                blendedPixel_B = screenPxl_B + (ui8)(blendPercent * (imagePxl_B - screenPxl_B));
-            };
+            auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *screenPixel, BGRA);
 
             *screenPixel = ((0xFF << 24) |
                            (blendedPixel_R << 16) |
