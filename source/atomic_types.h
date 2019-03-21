@@ -93,18 +93,18 @@ struct v4f
 struct v2i
 {
     v2i() = default;
-    v2i(int x, int y);
+    v2i(i32 x, i32 y);
 
     union
     {
-        int Elem[2];
+        i32 Elem[2];
         struct
         {
-            int x, y;
+            i32 x, y;
         };
         struct
         {
-            int width, height;
+            i32 width, height;
         };
     };
 };
@@ -112,19 +112,19 @@ struct v2i
 struct v3i
 {
     v3i() = default;
-    v3i(int x, int y, int z);
+    v3i(i32 x, i32 y, i32 z);
 
     union
     {
-        int Elem[3];
+        i32 Elem[3];
         struct
         {
-            int x, y, z;
+            i32 x, y, z;
         };
 
         struct
         {
-            int r, g, b;
+            i32 r, g, b;
         };
     };
 };
@@ -132,19 +132,19 @@ struct v3i
 struct v4i
 {
     v4i() = default;
-    v4i(int x, int y, int z, int w);
+    v4i(i32 x, i32 y, i32 z, i32 w);
 
     union
     {
-        int Elem[4];
+        i32 Elem[4];
         struct
         {
-            int x, y, z, w;
+            i32 x, y, z, w;
         };
 
         struct
         {
-            int r, g, b, a;
+            i32 r, g, b, a;
         };
     };
 };
@@ -164,131 +164,131 @@ v2f::v2f(f32 x, f32 y)
 {}
 
 inline b
-operator==(v2f A, v2f B)
+operator==(v2f a, v2f B)
 {
-    b Result { false };
+    b result { false };
 
-    if (A.x == B.x && A.y == B.y)
-        Result = true;
+    if (a.x == B.x && a.y == B.y)
+        result = true;
 
-    return Result;
+    return result;
 };
 
 inline b
-operator!=(v2f A, v2f B)
+operator!=(v2f a, v2f B)
 {
-    b Result { false };
+    b result { false };
 
-    if (A.x != B.x || A.y != B.y)
-        Result = true;
+    if (a.x != B.x || a.y != B.y)
+        result = true;
 
-    return Result;
+    return result;
 };
 
 inline v2f
-operator*(f32 A, v2f B)
+operator*(f32 a, v2f B)
 {
-    v2f Result;
+    v2f result;
 
-    Result.x = A * B.x;
-    Result.y = A * B.y;
+    result.x = a * B.x;
+    result.y = a * B.y;
 
-    return (Result);
+    return (result);
 }
 
 inline v2f
-operator*(v2f B, f32 A)
+operator*(v2f B, f32 a)
 {
-    v2f Result = A * B;
+    v2f result = a * B;
 
-    return (Result);
+    return (result);
 }
 
 inline v2f&
-operator*=(v2f& B, f32 A)
+operator*=(v2f& B, f32 a)
 {
-    B = A * B;
+    B = a * B;
 
     return (B);
 }
 
 inline v2f
-operator+(v2f A, v2f B)
+operator+(v2f a, v2f B)
 {
-    v2f Result;
+    v2f result;
 
-    Result.x = A.x + B.x;
-    Result.y = A.y + B.y;
+    result.x = a.x + B.x;
+    result.y = a.y + B.y;
 
-    return (Result);
+    return (result);
 }
 
 inline v2f
-operator+(v2f A, f32 B)
+operator+(v2f a, f32 B)
 {
-    v2f Result;
+    v2f result;
 
-    Result.x = A.x + B;
-    Result.y = A.y + B;
+    result.x = a.x + B;
+    result.y = a.y + B;
 
-    return (Result);
+    return (result);
 }
 
 inline v2f&
-operator+=(v2f& A, v2f B)
+operator+=(v2f& a, v2f B)
 {
-    A = A + B;
+    a = a + B;
 
-    return (A);
+    return (a);
 }
 
 inline v2f&
-operator+=(v2f& A, f32 B)
+operator+=(v2f& a, f32 B)
 {
-    A.x = A.x + B;
-    A.y = A.y + B;
+    a.x = a.x + B;
+    a.y = a.y + B;
 
-    return (A);
+    return (a);
 }
 
 inline v2f&
-operator-=(v2f& A, f32 B)
+operator-=(v2f& a, f32 B)
 {
-    A.x = A.x - B;
-    A.y = A.y - B;
+    a.x = a.x - B;
+    a.y = a.y - B;
 
-    return (A);
+    return (a);
 }
 
 inline v2f&
-operator-=(v2f& A, v2f B)
+operator-=(v2f& a, v2f B)
 {
-    A.x = A.x - B.x;
-    A.y = A.y - B.y;
+    a.x = a.x - B.x;
+    a.y = a.y - B.y;
 
-    return (A);
+    return (a);
 }
 
 inline v2f
-operator-(v2f A, v2f B)
+operator-(v2f a, v2f B)
 {
-    v2f Result;
+    v2f result;
 
-    Result.x = A.x - B.x;
-    Result.y = A.y - B.y;
+    result.x = a.x - B.x;
+    result.y = a.y - B.y;
 
-    return (Result);
+    return (result);
 }
 
 inline v2f
-operator-(v2f A)
+operator-(v2f a)
 {
-    v2f Result;
+    v2f result;
 
-    Result.x = -A.x;
-    Result.y = -A.y;
+    result.x = -a.x;
+    result.y = -a.y;
 
-    return(Result);
+    return(result);
 }
 
 v3f::v3f(f32 x, f32 y, f32 z)
@@ -306,98 +306,146 @@ v4f::v4f(f32 x, f32 y, f32 z, f32 w)
     , w(w)
 {}
 
-/* all v4f suff */
+inline v4f
+operator*(f32 a, v4f B)
+{
+    v4f result;
 
-v2i::v2i(int x, int y)
+    result.x = a*B.x;
+    result.y = a*B.y;
+    result.z = a*B.z;
+    result.w = a*B.w;
+    
+    return(result);
+}
+
+inline v4f
+operator*(v4f B, f32 a)
+{
+    v4f result = a*B;
+
+    return(result);
+}
+
+inline v4f &
+operator*=(v4f &B, f32 a)
+{
+    B = a * B;
+
+    return(B);
+}
+
+inline v4f
+operator+(v4f a, v4f B)
+{
+    v4f result;
+
+    result.x = a.x + B.x;
+    result.y = a.y + B.y;
+    result.z = a.z + B.z;
+    result.w = a.w + B.w;
+
+    return(result);
+}
+
+inline v4f &
+operator+=(v4f &a, v4f B)
+{
+    a = a + B;
+
+    return(a);
+}
+
+v2i::v2i(i32 x, i32 y)
     : x(x)
     , y(y)
 {}
 
 inline v2i
-operator*(int A, v2i B)
+operator*(i32 a, v2i B)
 {
-    v2i Result;
+    v2i result;
 
-    Result.x = A * B.x;
-    Result.y = A * B.y;
+    result.x = a * B.x;
+    result.y = a * B.y;
 
-    return (Result);
+    return (result);
 }
 
 inline v2i
-operator*(v2i B, int A)
+operator*(v2i B, i32 a)
 {
-    v2i Result = A * B;
+    v2i result = a * B;
 
-    return (Result);
+    return (result);
 }
 
 inline v2i&
-operator*=(v2i& B, int A)
+operator*=(v2i& B, i32 a)
 {
-    B = A * B;
+    B = a * B;
 
     return (B);
 }
 
 inline v2i
-operator+(v2i A, v2i B)
+operator+(v2i a, v2i b)
 {
-    v2i Result;
+    v2i result;
 
-    Result.x = A.x + B.x;
-    Result.y = A.y + B.y;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
 
-    return (Result);
+    return (result);
 }
 
 inline v2i&
-operator+=(v2i& A, v2i B)
+operator+=(v2i& a, v2i b)
 {
-    A = A + B;
+    a = a + b;
 
-    return (A);
+    return (a);
 }
 
 inline v2i&
-operator+=(v2i& A, int B)
+operator+=(v2i& a, i32 b)
 {
-    A.x = A.x + B;
-    A.y = A.y + B;
+    a.x = a.x + b;
+    a.y = a.y + b;
 
-    return (A);
+    return (a);
 }
 
 inline v2i&
-operator-=(v2i& A, int B)
+operator-=(v2i& a, i32 b)
 {
-    A.x = A.x - B;
-    A.y = A.y - B;
+    a.x = a.x - b;
+    a.y = a.y - b;
 
-    return (A);
+    return (a);
 }
 
 inline v2i&
-operator-=(v2i& A, v2i B)
+operator-=(v2i& a, v2i b)
 {
-    A.x = A.x - B.x;
-    A.y = A.y - B.y;
+    a.x = a.x - b.x;
+    a.y = a.y - b.y;
 
-    return (A);
+    return (a);
 }
 
 inline v2i
-operator-(v2i A, v2i B)
+operator-(v2i a, v2i b)
 {
-    v2i Result;
+    v2i result;
 
-    Result.x = A.x - B.x;
-    Result.y = A.y - B.y;
+    result.x = a.x - b.x;
+    result.y = a.y - b.y;
 
-    return (Result);
+    return (result);
 }
 
-v3i::v3i(int x, int y, int z)
+v3i::v3i(i32 x, i32 y, i32 z)
     : x(x)
     , y(y)
     , z(z)
@@ -405,7 +453,7 @@ v3i::v3i(int x, int y, int z)
 
 /* all v3i suff */
 
-v4i::v4i(int x, int y, int z, int w)
+v4i::v4i(i32 x, i32 y, i32 z, i32 w)
     : x(x)
     , y(y)
     , z(z)

@@ -235,16 +235,41 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
                 BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
 
-                i32 texelX = (i32)((u*image.size.width - 1.0f) + .5f);
-                i32 texelY = (i32)((v*image.size.height - 1.0f) + .5f);
+                f32 texelX = (u*(f32)(image.size.width - 3));
+                f32 texelY = (v*(f32)(image.size.height - 3));
+
+                i32 x = (i32)texelX;
+                i32 y = (i32)texelY;
 
                 BGZ_ASSERT((texelX >= 0) && (texelX <= (i32)image.size.width), "x coord is out of range!: ");
                 BGZ_ASSERT((texelY >= 0) && (texelY <= (i32)image.size.height), "x coord is out of range!");
 
                 ui8* texelPtr = (ui8*)image.data + (ui32)(texelY*image.pitch) + (ui32)(texelX*sizeof(ui32));//size of pixel
-                ui32 texel = *(ui32*)texelPtr;
 
-                auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(texel, *screenPixel, BGRA);
+                //Grab 4 texels (in a square pattern) to blend
+                ui32 texelPtrA = *(ui32*)texelPtr;
+                ui32 texelPtrB = *(ui32*)texelPtr + sizeof(ui32);
+                ui32 texelPtrC = *(ui32*)texelPtr + (ui32)image.pitch;
+                ui32 texelPtrD = *(ui32*)texelPtr + (ui32)image.pitch + sizeof(ui32);
+
+                auto[texelA_r, texelA_g, texelA_b, texelA_a] = GetRGBAValues(texelPtrA, BGRA);
+                auto[texelB_r, texelB_g, texelB_b, texelB_a] = GetRGBAValues(texelPtrA, BGRA);
+                auto[texelC_r, texelC_g, texelC_b, texelC_a] = GetRGBAValues(texelPtrA, BGRA);
+                auto[texelD_r, texelD_g, texelD_b, texelD_a] = GetRGBAValues(texelPtrA, BGRA);
+                v4f texelA {(f32)texelA_r, (f32)texelA_g, (f32)texelA_b, (f32)texelA_a};
+                v4f texelB {(f32)texelB_r, (f32)texelB_g, (f32)texelB_b, (f32)texelB_a};
+                v4f texelC {(f32)texelC_r, (f32)texelC_g, (f32)texelC_b, (f32)texelC_a};
+                v4f texelD {(f32)texelD_r, (f32)texelD_g, (f32)texelD_b, (f32)texelD_a};
+
+                ui32 texel = (((ui8)texelA.a << 24) |
+                           ((ui8)texelA.r << 16) |
+                           ((ui8)texelA.g << 8) |
+                           ((ui8)texelA.b << 0));
+
+                f32 fX = texelX - (f32)x;
+                f32 fY = texelY - (f32)y;
+
+                auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(texelPtrA, *screenPixel, BGRA);
 
                 *screenPixel = ((0xFF << 24) |
                            (blendedPixel_R << 16) |

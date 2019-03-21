@@ -124,3 +124,11 @@ Lerp(f32 a, f32 b, f32 t)
 
     return(result);
 }
+
+inline v4f
+Lerp(v4f a, v4f b, f32 t)
+{
+    v4f result = (1.0f - t)*a + t*b;
+
+    return(result);
+}
