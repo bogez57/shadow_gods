@@ -116,3 +116,11 @@ MagnitudeSqd(v2f a)
 
     return(result);
 }
+
+inline f32
+Lerp(f32 a, f32 b, f32 t)
+{
+    f32 result = (1.0f - t)*a + t*b;
+
+    return(result);
+}

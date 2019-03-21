@@ -235,13 +235,13 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
                 BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
 
-                i32 x = (i32)((u*image.size.width - 1.0f) + .5f);
-                i32 y = (i32)((v*image.size.height - 1.0f) + .5f);
+                i32 texelX = (i32)((u*image.size.width - 1.0f) + .5f);
+                i32 texelY = (i32)((v*image.size.height - 1.0f) + .5f);
 
-                BGZ_ASSERT((x >= 0) && (x <= (i32)image.size.width), "x coord is out of range!: ");
-                BGZ_ASSERT((y >= 0) && (y <= (i32)image.size.height), "x coord is out of range!");
+                BGZ_ASSERT((texelX >= 0) && (texelX <= (i32)image.size.width), "x coord is out of range!: ");
+                BGZ_ASSERT((texelY >= 0) && (texelY <= (i32)image.size.height), "x coord is out of range!");
 
-                ui8* texelPtr = (ui8*)image.data + (ui32)(y*image.pitch) + (ui32)(x*sizeof(ui32));//size of pixel
+                ui8* texelPtr = (ui8*)image.data + (ui32)(texelY*image.pitch) + (ui32)(texelX*sizeof(ui32));//size of pixel
                 ui32 texel = *(ui32*)texelPtr;
 
                 auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(texel, *screenPixel, BGRA);
@@ -342,11 +342,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &stage->info.backgroundImg.size.width, &stage->info.backgroundImg.size.height);
 
         //Player Init
-        player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
+        player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", &player->image.size.width, &player->image.size.height);
         player->image.pitch = (f32)player->image.size.width * 4;//bytes per pixel
-        player->world.pos = {300.0f, 200.0f};
+        player->world.pos = {200.0f, -300.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 1.0f;
+        player->world.scale = 6.0f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -357,8 +357,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.rotation += 10.0f;
+        player->world.rotation += .1f;
     }
+
+    player->world.pos.x += 1.0f;
 
     { // Render
         Drawable_Rect playerTargetRect{};
@@ -371,7 +373,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                 Coordinate_Space playerSpace{};
                 playerSpace.origin = player->world.pos;
                 playerSpace.xBasis = player->world.scale * v2f{CosInRadians(Radians(player->world.rotation)), SinInRadians(Radians(player->world.rotation))};
-                playerSpace.yBasis = PerpendicularOp(playerSpace.xBasis);
+                playerSpace.yBasis = 1.1f*PerpendicularOp(playerSpace.xBasis);
 
                 //This equation rotates first then moves to correct world position
                 playerTargetRect.BottomLeft = playerSpace.origin + (playerTargetRect.BottomLeft.x * playerSpace.xBasis) + (playerTargetRect.BottomLeft.y * playerSpace.yBasis);

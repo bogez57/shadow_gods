@@ -180,9 +180,9 @@ auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFo
 
     f32 blendPercent = (f32)imagePxl_A / 255.0f;
 
-    blendedColor.blendedPixel_R = screenPxl_R + (ui8)(blendPercent * (imagePxl_R - screenPxl_R));
-    blendedColor.blendedPixel_G = screenPxl_G + (ui8)(blendPercent * (imagePxl_G - screenPxl_G));
-    blendedColor.blendedPixel_B = screenPxl_B + (ui8)(blendPercent * (imagePxl_B - screenPxl_B));
+    blendedColor.blendedPixel_R = (ui8)Lerp(screenPxl_R, imagePxl_R, blendPercent);
+    blendedColor.blendedPixel_G = (ui8)Lerp(screenPxl_G, imagePxl_G, blendPercent);
+    blendedColor.blendedPixel_B = (ui8)Lerp(screenPxl_B, imagePxl_B, blendPercent);
 
     return blendedColor;
 };
