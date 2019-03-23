@@ -230,23 +230,27 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
             {
                 f32 u = invertedXAxisSqd * DotProduct(d, xAxis);
                 f32 v = invertedYAxisSqd * DotProduct(d, yAxis);
-                i32 texelX = (i32)((u*image.size.width - 1.0f) + .5f);
-                i32 texelY = (i32)((v*image.size.height - 1.0f) + .5f);
+                i32 texelPosX = (i32)((u*image.size.width - 1.0f) + .5f);
+                i32 texelPosY = (i32)((v*image.size.height - 1.0f) + .5f);
 
                 f32 epsilon = 0.00001f;//TODO: Remove????
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
                 BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
-                BGZ_ASSERT((texelX >= 0) && (texelX <= (i32)image.size.width), "x coord is out of range!: ");
-                BGZ_ASSERT((texelY >= 0) && (texelY <= (i32)image.size.height), "x coord is out of range!");
+                BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
+                BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "x coord is out of range!");
 
-                ui32* texel = (ui32*)((ui8*)image.data + (texelY*image.pitch) + (texelX*sizeof(ui32)));//size of pixel
+                ui32* texel = (ui32*)((ui8*)image.data + (texelPosY*image.pitch) + (texelPosX*sizeof(ui32)));//size of pixel
 
-                auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(*texel, *screenPixel, BGRA);
+                v4f texelColors = GetRGBAValues(*texel, BGRA);
+                v4f screenPxlColors = GetRGBAValues(*screenPixel, BGRA);
+
+                f32 blendPercent = texelColors.a / 255.0f;
+                v4f blendedColor = Lerp(screenPxlColors, texelColors, blendPercent);
 
                 *screenPixel = ((0xFF << 24) |
-                           (blendedPixel_R << 16) |
-                           (blendedPixel_G << 8) |
-                           (blendedPixel_B << 0));
+                           ((ui8)blendedColor.r << 16) |
+                           ((ui8)blendedColor.g << 8) |
+                           ((ui8)blendedColor.b << 0));
 
 
 #if 0
@@ -270,8 +274,8 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                            ((ui8)texelA.g << 8) |
                            ((ui8)texelA.b << 0));
 
-                f32 fX = texelX - (f32)x;
-                f32 fY = texelY - (f32)y;
+                f32 fX = texelPosX - (f32)x;
+                f32 fY = texelPosY - (f32)y;
 
                 auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(texelPtrA, *screenPixel, BGRA);
 

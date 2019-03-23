@@ -180,11 +180,11 @@ namespace Win32::Dbg
         //Swap R and B channels of image
         for(int i = 0; i < totalPixelCountOfImg; ++i)
         {
-           auto [red, green, blue, alpha] = GetRGBAValues(*imagePixel, RGBA);
-           ui32 newSwappedPixelColor = ((alpha << 24) |
-                                         (red << 16) |
-                                         (green << 8) |
-                                         (blue << 0));
+           auto color = GetRGBAValues(*imagePixel, RGBA);
+           ui32 newSwappedPixelColor = (((ui8)color.a << 24) |
+                                         ((ui8)color.r << 16) |
+                                         ((ui8)color.g << 8) |
+                                         ((ui8)color.b << 0));
         
             *imagePixel++ = newSwappedPixelColor;
         }

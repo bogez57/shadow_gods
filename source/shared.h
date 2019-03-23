@@ -138,11 +138,10 @@ enum ChannelType
     BGRA
 };
 
-local_func auto
-GetRGBAValues(ui32 pixel, ChannelType channelType) -> auto
+local_func v4f
+GetRGBAValues(ui32 pixel, ChannelType channelType)
 {
-    struct Result {ui8 r, g, b, a;};
-    Result pixelColors{};
+    v4f result {};
 
     ui32* pixelInfo = &pixel;
 
@@ -150,24 +149,24 @@ GetRGBAValues(ui32 pixel, ChannelType channelType) -> auto
     {
         case RGBA:
         {
-            pixelColors.r = *((ui8*)pixelInfo + 0);
-            pixelColors.g = *((ui8*)pixelInfo + 1);
-            pixelColors.b  = *((ui8*)pixelInfo + 2);
-            pixelColors.a = *((ui8*)pixelInfo + 3);
+            result.r = (f32)*((ui8*)pixelInfo + 0);
+            result.g = (f32)*((ui8*)pixelInfo + 1);
+            result.b = (f32)*((ui8*)pixelInfo + 2);
+            result.a = (f32)*((ui8*)pixelInfo + 3);
         }break;
 
         case BGRA:
         {
-            pixelColors.b = *((ui8*)pixelInfo + 0);
-            pixelColors.g = *((ui8*)pixelInfo + 1);
-            pixelColors.r  = *((ui8*)pixelInfo + 2);
-            pixelColors.a = *((ui8*)pixelInfo + 3);
+            result.b = (f32)*((ui8*)pixelInfo + 0);
+            result.g = (f32)*((ui8*)pixelInfo + 1);
+            result.r = (f32)*((ui8*)pixelInfo + 2);
+            result.a = (f32)*((ui8*)pixelInfo + 3);
         }break;
 
         default : break;
     };
 
-    return pixelColors;
+    return result;
 };
 
 auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat) 
@@ -175,14 +174,14 @@ auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFo
     struct Result {ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B;};
     Result blendedColor{};
     
-    auto [imagePxl_R, imagePxl_G, imagePxl_B, imagePxl_A] = GetRGBAValues(foregroundColor, colorFormat);
-    auto [screenPxl_R, screenPxl_G, screenPxl_B, screenPxl_A] = GetRGBAValues(backgroundColor, colorFormat);
+    v4f foreGroundColors = GetRGBAValues(foregroundColor, colorFormat);
+    v4f backgroundColors = GetRGBAValues(backgroundColor, colorFormat);
 
-    f32 blendPercent = (f32)imagePxl_A / 255.0f;
+    f32 blendPercent = foreGroundColors.a / 255.0f;
 
-    blendedColor.blendedPixel_R = (ui8)Lerp(screenPxl_R, imagePxl_R, blendPercent);
-    blendedColor.blendedPixel_G = (ui8)Lerp(screenPxl_G, imagePxl_G, blendPercent);
-    blendedColor.blendedPixel_B = (ui8)Lerp(screenPxl_B, imagePxl_B, blendPercent);
+    blendedColor.blendedPixel_R = (ui8)Lerp(backgroundColors.r, foreGroundColors.r, blendPercent);
+    blendedColor.blendedPixel_G = (ui8)Lerp(backgroundColors.g, foreGroundColors.g, blendPercent);
+    blendedColor.blendedPixel_B = (ui8)Lerp(backgroundColors.b, foreGroundColors.b, blendPercent);
 
     return blendedColor;
 };
