@@ -230,8 +230,9 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                 //Infer texel position from normalized target rect pos (gather uv's)
                 f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
                 f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
-                i32 texelPosX = (i32)((u*image.size.width - 1.0f) + .5f);
-                i32 texelPosY = (i32)((v*image.size.height - 1.0f) + .5f);
+
+                f32 texelPosX = 1.0f + (u*(f32)(image.size.width - 3));
+                f32 texelPosY = 1.0f + (v*(f32)(image.size.height - 3)); 
 
                 f32 epsilon = 0.00001f;//TODO: Remove????
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
@@ -239,51 +240,35 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                 BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
                 BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "x coord is out of range!");
 
-                ui32* texel = (ui32*)((ui8*)image.data + (texelPosY*image.pitch) + (texelPosX*sizeof(ui32)));//size of pixel
+                ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
 
-                //Linear Blend
-                v4f texelColors = GetRGBAValues(*texel, BGRA);
-                v4f screenPxlColors = GetRGBAValues(*screenPixel, BGRA);
-                f32 blendPercent = texelColors.a / 255.0f;
-                v4f blendedColor = Lerp(screenPxlColors, texelColors, blendPercent);
-
-                *screenPixel = ((0xFF << 24) |
-                           ((ui8)blendedColor.r << 16) |
-                           ((ui8)blendedColor.g << 8) |
-                           ((ui8)blendedColor.b << 0));
-
-
-#if 0
                 //Grab 4 texels (in a square pattern) to blend
-                ui32 texelPtrA = *(ui32*)texelPtr;
-                ui32 texelPtrB = *(ui32*)texelPtr + sizeof(ui32);
-                ui32 texelPtrC = *(ui32*)texelPtr + (ui32)image.pitch;
-                ui32 texelPtrD = *(ui32*)texelPtr + (ui32)image.pitch + sizeof(ui32);
+                ui32 texelPtrA = *(ui32*)(texelPtr);
+                ui32 texelPtrB = *(ui32*)(texelPtr + sizeof(ui32));
+                ui32 texelPtrC = *(ui32*)(texelPtr + image.pitch);
+                ui32 texelPtrD = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
 
-                auto[texelA_r, texelA_g, texelA_b, texelA_a] = GetRGBAValues(texelPtrA, BGRA);
-                auto[texelB_r, texelB_g, texelB_b, texelB_a] = GetRGBAValues(texelPtrA, BGRA);
-                auto[texelC_r, texelC_g, texelC_b, texelC_a] = GetRGBAValues(texelPtrA, BGRA);
-                auto[texelD_r, texelD_g, texelD_b, texelD_a] = GetRGBAValues(texelPtrA, BGRA);
-                v4f texelA {(f32)texelA_r, (f32)texelA_g, (f32)texelA_b, (f32)texelA_a};
-                v4f texelB {(f32)texelB_r, (f32)texelB_g, (f32)texelB_b, (f32)texelB_a};
-                v4f texelC {(f32)texelC_r, (f32)texelC_g, (f32)texelC_b, (f32)texelC_a};
-                v4f texelD {(f32)texelD_r, (f32)texelD_g, (f32)texelD_b, (f32)texelD_a};
+                //Blend between all 4 pixels to produce new color for sub pixel accruacy 
+                v4f texelA = GetRGBAValues(texelPtrA, BGRA);
+                v4f texelB = GetRGBAValues(texelPtrB, BGRA);
+                v4f texelC = GetRGBAValues(texelPtrC, BGRA);
+                v4f texelD = GetRGBAValues(texelPtrD, BGRA);
+                f32 percentToLerpInX = texelPosX - Floor(texelPosX);
+                f32 percentToLerpInY = texelPosY - Floor(texelPosY);
+                v4f ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
+                v4f CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
+                v4f newBlendedTexel = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
 
-                ui32 texel = (((ui8)texelA.a << 24) |
-                           ((ui8)texelA.r << 16) |
-                           ((ui8)texelA.g << 8) |
-                           ((ui8)texelA.b << 0));
-
-                f32 fX = texelPosX - (f32)x;
-                f32 fY = texelPosY - (f32)y;
-
-                auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(texelPtrA, *screenPixel, BGRA);
+                //Linearly Blend alpha with background
+                v4f backgroundColors = GetRGBAValues(*screenPixel, BGRA);
+                f32 blendPercent = newBlendedTexel.a / 255.0f;
+                v4f finalBlendedColor = Lerp(backgroundColors , newBlendedTexel, blendPercent);
 
                 *screenPixel = ((0xFF << 24) |
-                           (blendedPixel_R << 16) |
-                           (blendedPixel_G << 8) |
-                           (blendedPixel_B << 0));
-#endif
+                           ((ui8)finalBlendedColor.r << 16) |
+                           ((ui8)finalBlendedColor.g << 8) |
+                           ((ui8)finalBlendedColor.b << 0));
+
             }
 
             ++screenPixel;
@@ -378,9 +363,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", &player->image.size.width, &player->image.size.height);
         player->image.pitch = player->image.size.width * 4;//bytes per pixel
-        player->world.pos = {200.0f, -300.0f};
+        player->world.pos = {200.0f, 0.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 6.0f;
+        player->world.scale = 2.0f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -391,10 +376,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.rotation += .1f;
+        player->world.pos += 1.1f;
     }
-
-    player->world.pos.x += 1.0f;
 
     { // Render
         Drawable_Rect playerTargetRect{};

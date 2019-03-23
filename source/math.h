@@ -80,6 +80,13 @@ RoundDown(sizet NumToRound, sizet Multiple)
     return NumToRound - Remainder;
 };
 
+inline f32
+Floor(f32 floatToFloor)
+{
+    f32 result = floorf(floatToFloor);
+    return result;
+};
+
 inline i32
 FloorF32ToI32(f32 floatToFloor)
 {
