@@ -230,22 +230,26 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
             {
                 f32 u = invertedXAxisSqd * DotProduct(d, xAxis);
                 f32 v = invertedYAxisSqd * DotProduct(d, yAxis);
+                i32 texelX = (i32)((u*image.size.width - 1.0f) + .5f);
+                i32 texelY = (i32)((v*image.size.height - 1.0f) + .5f);
 
                 f32 epsilon = 0.00001f;//TODO: Remove????
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
                 BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
-
-                f32 texelX = (u*(f32)(image.size.width - 3));
-                f32 texelY = (v*(f32)(image.size.height - 3));
-
-                i32 x = (i32)texelX;
-                i32 y = (i32)texelY;
-
                 BGZ_ASSERT((texelX >= 0) && (texelX <= (i32)image.size.width), "x coord is out of range!: ");
                 BGZ_ASSERT((texelY >= 0) && (texelY <= (i32)image.size.height), "x coord is out of range!");
 
-                ui8* texelPtr = (ui8*)image.data + (ui32)(texelY*image.pitch) + (ui32)(texelX*sizeof(ui32));//size of pixel
+                ui32* texel = (ui32*)((ui8*)image.data + (texelY*image.pitch) + (texelX*sizeof(ui32)));//size of pixel
 
+                auto[blendedPixel_R, blendedPixel_G, blendedPixel_B] = LinearBlend(*texel, *screenPixel, BGRA);
+
+                *screenPixel = ((0xFF << 24) |
+                           (blendedPixel_R << 16) |
+                           (blendedPixel_G << 8) |
+                           (blendedPixel_B << 0));
+
+
+#if 0
                 //Grab 4 texels (in a square pattern) to blend
                 ui32 texelPtrA = *(ui32*)texelPtr;
                 ui32 texelPtrB = *(ui32*)texelPtr + sizeof(ui32);
@@ -275,6 +279,7 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                            (blendedPixel_R << 16) |
                            (blendedPixel_G << 8) |
                            (blendedPixel_B << 0));
+#endif
             }
 
             ++screenPixel;
@@ -368,7 +373,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", &player->image.size.width, &player->image.size.height);
-        player->image.pitch = (f32)player->image.size.width * 4;//bytes per pixel
+        player->image.pitch = player->image.size.width * 4;//bytes per pixel
         player->world.pos = {200.0f, -300.0f};
         player->world.rotation = 0.0f;
         player->world.scale = 6.0f;
