@@ -167,8 +167,56 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, Rectf rect, f32 r, f32 g, f32 b)
     }
 }
 
+//For static images
 local_func void
-DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image image)
+DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Rectf rect)
+{
+    ui32* imagePixel = (ui32*)image.data;
+
+    //Since I'm dealing with int pixels below
+    Recti targetRect{};
+    targetRect.min = RoundFloat32ToInt32(rect.min);
+    targetRect.max = RoundFloat32ToInt32(rect.max);
+
+    {//Make sure we don't try to draw outside current screen space
+        if(targetRect.min.x < 0)
+            targetRect.min.x = 0;
+
+        if(targetRect.min.y < 0)
+            targetRect.min.y = 0;
+
+        if(targetRect.max.x > Buffer->width)
+            targetRect.max.x = Buffer->width;
+
+        if(targetRect.max.y > Buffer->height)
+            targetRect.max.y = Buffer->height;
+    };
+
+    ui8* currentRow = ((ui8*)Buffer->memory + targetRect.min.x*Buffer->bytesPerPixel + targetRect.min.y*Buffer->pitch);
+    for(i32 column = targetRect.min.y; column < targetRect.max.y; ++column)
+    {
+        ui32* screenPixel = (ui32*)currentRow;
+
+        for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
+        {            
+            auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *screenPixel, BGRA);
+
+            *screenPixel = ((0xFF << 24) |
+                           (blendedPixel_R << 16) |
+                           (blendedPixel_G << 8) |
+                           (blendedPixel_B << 0));
+
+            ++screenPixel;
+            ++imagePixel ;
+        }
+        
+        currentRow += Buffer->pitch;
+    }
+}
+
+//For images that move/rotate/scale
+local_func void
+DrawImageSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image image)
 {    
     v2f origin = rect.BottomLeft;
     v2f targetRectXAxis = rect.BottomRight - origin;
@@ -248,7 +296,7 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
                 ui32 texelPtrC = *(ui32*)(texelPtr + image.pitch);
                 ui32 texelPtrD = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
 
-                //Blend between all 4 pixels to produce new color for sub pixel accruacy 
+                //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
                 v4f texelA = GetRGBAValues(texelPtrA, BGRA);
                 v4f texelB = GetRGBAValues(texelPtrB, BGRA);
                 v4f texelC = GetRGBAValues(texelPtrC, BGRA);
@@ -278,51 +326,7 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
     }
 }
 
-local_func void
-DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Rectf rect)
-{
-    ui32* imagePixel = (ui32*)image.data;
 
-    //Since I'm dealing with int pixels below
-    Recti targetRect{};
-    targetRect.min = RoundFloat32ToInt32(rect.min);
-    targetRect.max = RoundFloat32ToInt32(rect.max);
-
-    {//Make sure we don't try to draw outside current screen space
-        if(targetRect.min.x < 0)
-            targetRect.min.x = 0;
-
-        if(targetRect.min.y < 0)
-            targetRect.min.y = 0;
-
-        if(targetRect.max.x > Buffer->width)
-            targetRect.max.x = Buffer->width;
-
-        if(targetRect.max.y > Buffer->height)
-            targetRect.max.y = Buffer->height;
-    };
-
-    ui8* currentRow = ((ui8*)Buffer->memory + targetRect.min.x*Buffer->bytesPerPixel + targetRect.min.y*Buffer->pitch);
-    for(i32 column = targetRect.min.y; column < targetRect.max.y; ++column)
-    {
-        ui32* screenPixel = (ui32*)currentRow;
-
-        for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
-        {            
-            auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *screenPixel, BGRA);
-
-            *screenPixel = ((0xFF << 24) |
-                           (blendedPixel_R << 16) |
-                           (blendedPixel_G << 8) |
-                           (blendedPixel_B << 0));
-
-            ++screenPixel;
-            ++imagePixel ;
-        }
-        
-        currentRow += Buffer->pitch;
-    }
-}
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
@@ -390,7 +394,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                 Coordinate_Space playerSpace{};
                 playerSpace.origin = player->world.pos;
                 playerSpace.xBasis = player->world.scale * v2f{CosInRadians(Radians(player->world.rotation)), SinInRadians(Radians(player->world.rotation))};
-                playerSpace.yBasis = 1.1f*PerpendicularOp(playerSpace.xBasis);
+                playerSpace.yBasis = PerpendicularOp(playerSpace.xBasis);
 
                 //This equation rotates first then moves to correct world position
                 playerTargetRect.BottomLeft = playerSpace.origin + (playerTargetRect.BottomLeft.x * playerSpace.xBasis) + (playerTargetRect.BottomLeft.y * playerSpace.yBasis);
@@ -401,9 +405,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         };
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
-        DrawImage(gameBackBuffer, stage->info.backgroundImg, backgroundTargetRect);
-        DrawRectangleSlowly(gameBackBuffer, playerTargetRect, player->image);
+        DrawRectangle(gameBackBuffer, backgroundTargetRect, .5f, .5f, 0.5f);
+        DrawImageSlowly(gameBackBuffer, playerTargetRect, player->image);
 
+#if 0
         {//Just for debug purposes so I can see 4 corners of player target rect
             Rectf playerCorner1 = {
                 v2f{playerTargetRect.BottomLeft.x - 10.0f, playerTargetRect.BottomLeft.y}, 
@@ -427,5 +432,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             DrawRectangle(gameBackBuffer, playerCorner3, 0.0f, 0.0f, 1.0f);
             DrawRectangle(gameBackBuffer, playerCorner4, 0.0f, 0.0f, 1.0f);
         };
+#endif
     };
 };
