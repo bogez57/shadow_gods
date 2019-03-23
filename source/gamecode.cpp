@@ -171,8 +171,8 @@ local_func void
 DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image image)
 {    
     v2f origin = rect.BottomLeft;
-    v2f xAxis = rect.BottomRight - origin;
-    v2f yAxis = rect.TopLeft - origin;
+    v2f targetRectXAxis = rect.BottomRight - origin;
+    v2f targetRectYAxis = rect.TopLeft - origin;
 
     f32 widthMax = (f32)(buffer->width - 1);
     f32 heightMax = (f32)(buffer->height - 1);
@@ -183,7 +183,7 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
     f32 yMax = 0.0f;
 
     {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
-        Array<v2f, 4> vecs = {origin, origin + xAxis, origin + xAxis + yAxis, origin + yAxis};
+        Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
         for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
         {
             v2f testVec = vecs.At(vecIndex);
@@ -204,10 +204,9 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(xAxis);
-    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(yAxis);
+    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
+    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
     ui8* currentRow = (ui8*)buffer->memory + (i32)xMin * buffer->bytesPerPixel + (i32)yMin * buffer->pitch; 
-    ui32* imagePixel = (ui32*)image.data;
 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
@@ -221,15 +220,16 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
             //positive then pixel is within, if negative then it is outside. 
             v2f screenPixelCoord{screenX, screenY};
             v2f d {screenPixelCoord - origin};
-            f32 edge1 = DotProduct(d, yAxis);
-            f32 edge2 = DotProduct(d + -xAxis, -xAxis);
-            f32 edge3 = DotProduct(d + -xAxis + -yAxis, -yAxis);
-            f32 edge4 = DotProduct(d + -yAxis, xAxis);
+            f32 edge1 = DotProduct(d, targetRectYAxis);
+            f32 edge2 = DotProduct(d + -targetRectXAxis, -targetRectXAxis);
+            f32 edge3 = DotProduct(d + -targetRectXAxis + -targetRectYAxis, -targetRectYAxis);
+            f32 edge4 = DotProduct(d + -targetRectYAxis, targetRectXAxis);
 
             if(edge1 > 0 && edge2 > 0 && edge3 > 0 && edge4 > 0)
             {
-                f32 u = invertedXAxisSqd * DotProduct(d, xAxis);
-                f32 v = invertedYAxisSqd * DotProduct(d, yAxis);
+                //Infer texel position from normalized target rect pos (gather uv's)
+                f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
+                f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
                 i32 texelPosX = (i32)((u*image.size.width - 1.0f) + .5f);
                 i32 texelPosY = (i32)((v*image.size.height - 1.0f) + .5f);
 
@@ -241,9 +241,9 @@ DrawRectangleSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image ima
 
                 ui32* texel = (ui32*)((ui8*)image.data + (texelPosY*image.pitch) + (texelPosX*sizeof(ui32)));//size of pixel
 
+                //Linear Blend
                 v4f texelColors = GetRGBAValues(*texel, BGRA);
                 v4f screenPxlColors = GetRGBAValues(*screenPixel, BGRA);
-
                 f32 blendPercent = texelColors.a / 255.0f;
                 v4f blendedColor = Lerp(screenPxlColors, texelColors, blendPercent);
 
