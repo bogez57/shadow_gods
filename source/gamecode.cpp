@@ -352,6 +352,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
         gameMemory->Initialized = true;
+        *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
