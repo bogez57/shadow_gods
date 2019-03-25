@@ -47,6 +47,23 @@ CosInRadians(f32 AngleInRadians)
     return RealNumber;
 };
 
+inline f32
+Clamp(f32 value, f32 min, f32 max)
+{
+    f32 result = value;
+
+    if(result < min)
+    {
+        result = min;
+    }
+    else if(result > max)
+    {
+        result = max;
+    }
+
+    return(result);
+}
+
 inline f64
 Sqrt(f64 Number)
 {

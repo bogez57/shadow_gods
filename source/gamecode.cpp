@@ -373,12 +373,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->world.pos = {200.0f, 0.0f};
         player->world.rotation = 0.0f;
         player->world.scale = 2.0f;
+        player->image.opacity = .5f;
         
-        player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
-        player->image.pitch = player->image.size.width * bytesPerPixel;
-        player->world.pos = {400.0f, 0.0f};
-        player->world.rotation = 0.0f;
-        player->world.scale = 2.0f;
+        //Enemy Init
+        enemy->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &enemy->image.size.width, &enemy->image.size.height);
+        enemy->image.pitch = enemy->image.size.width * bytesPerPixel;
+        enemy->world.pos = {300.0f, 0.0f};
+        enemy->world.rotation = 0.0f;
+        enemy->world.scale = 2.0f;
+        enemy->image.opacity = .7f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -389,35 +392,43 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.pos.x += 1.1f;
+        player->image.opacity += .1f;
     }
 
+    //Essentially local fighter coordinates
+    Drawable_Rect playerTargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height) };
+    Drawable_Rect enemyTargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height) };
+
     { // Render
-        Drawable_Rect playerTargetRect{};
-        Drawable_Rect enemyTargetRect{};
+        player->image.opacity = Clamp(player->image.opacity, 0.0f, 1.0f); 
+        enemy->image.opacity = Clamp(enemy->image.opacity, 0.0f, 1.0f); 
+
+        auto WorldTransform = [](Drawable_Rect targetRect, Fighter fighterInfo) -> Drawable_Rect 
         {
-            //Essentially local player coordinates
-            playerTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
-            enemyTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
+            Drawable_Rect transformedTargetRect{};
 
-            {//World Transform
-                //With world space origin at 0, 0
-                Coordinate_Space playerSpace{};
-                playerSpace.origin = player->world.pos;
-                playerSpace.xBasis = player->world.scale * v2f{CosInRadians(Radians(player->world.rotation)), SinInRadians(Radians(player->world.rotation))};
-                playerSpace.yBasis = PerpendicularOp(playerSpace.xBasis);
+            //With world space origin at 0, 0
+            Coordinate_Space fighterSpace{};
+            fighterSpace.origin = fighterInfo.world.pos;
+            fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosInRadians(Radians(fighterInfo.world.rotation)), SinInRadians(Radians(fighterInfo.world.rotation))};
+            fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
 
-                //This equation rotates first then moves to correct world position
-                playerTargetRect.BottomLeft = playerSpace.origin + (playerTargetRect.BottomLeft.x * playerSpace.xBasis) + (playerTargetRect.BottomLeft.y * playerSpace.yBasis);
-                playerTargetRect.BottomRight = playerSpace.origin + (playerTargetRect.BottomRight.x * playerSpace.xBasis) + (playerTargetRect.BottomRight.y * playerSpace.yBasis);
-                playerTargetRect.TopRight = playerSpace.origin + (playerTargetRect.TopRight.x * playerSpace.xBasis) + (playerTargetRect.TopRight.y * playerSpace.yBasis);
-                playerTargetRect.TopLeft = playerSpace.origin + (playerTargetRect.TopLeft.x * playerSpace.xBasis) + (playerTargetRect.TopLeft.y * playerSpace.yBasis);
-            };
+            //This equation rotates first then moves to correct world position
+            transformedTargetRect.BottomLeft = fighterSpace.origin + (targetRect.BottomLeft.x * fighterSpace.xBasis) + (targetRect.BottomLeft.y * fighterSpace.yBasis);
+            transformedTargetRect.BottomRight = fighterSpace.origin + (targetRect.BottomRight.x * fighterSpace.xBasis) + (targetRect.BottomRight.y * fighterSpace.yBasis);
+            transformedTargetRect.TopRight = fighterSpace.origin + (targetRect.TopRight.x * fighterSpace.xBasis) + (targetRect.TopRight.y * fighterSpace.yBasis);
+            transformedTargetRect.TopLeft = fighterSpace.origin + (targetRect.TopLeft.x * fighterSpace.xBasis) + (targetRect.TopLeft.y * fighterSpace.yBasis);
+
+            return transformedTargetRect;
         };
+
+        playerTargetRect = WorldTransform(playerTargetRect, *player);
+        enemyTargetRect  = WorldTransform(enemyTargetRect, *enemy);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
         DrawRectangle(gameBackBuffer, backgroundTargetRect, .5f, .5f, 0.5f);
         DrawImageSlowly(gameBackBuffer, playerTargetRect, player->image);
+        DrawImageSlowly(gameBackBuffer, enemyTargetRect, enemy->image);
 
 #if 0
         {//Just for debug purposes so I can see 4 corners of player target rect
