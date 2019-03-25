@@ -40,6 +40,8 @@ global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 global_variable Dynamic_Allocator dynamAllocator { 0 };
 
+const i32 bytesPerPixel{4};
+
 #define COLLISION_IMPL
 #include "collisions.h"
 #define ATLAS_IMPL
@@ -154,7 +156,7 @@ DrawRectangle(Game_Offscreen_Buffer* Buffer, Rectf rect, f32 r, f32 g, f32 b)
                   (RoundFloat32ToUInt32(g * 255.0f) << 8) |
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
-    ui8* currentRow = ((ui8*)Buffer->memory + rectToDraw.min.x*Buffer->bytesPerPixel + rectToDraw.min.y*Buffer->pitch);
+    ui8* currentRow = ((ui8*)Buffer->memory + rectToDraw.min.x*bytesPerPixel + rectToDraw.min.y*Buffer->pitch);
     for(i32 column = rectToDraw.min.y; column < rectToDraw.max.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
@@ -192,7 +194,7 @@ DrawImage(Game_Offscreen_Buffer* Buffer, Image image, Rectf rect)
             targetRect.max.y = Buffer->height;
     };
 
-    ui8* currentRow = ((ui8*)Buffer->memory + targetRect.min.x*Buffer->bytesPerPixel + targetRect.min.y*Buffer->pitch);
+    ui8* currentRow = ((ui8*)Buffer->memory + targetRect.min.x*bytesPerPixel + targetRect.min.y*Buffer->pitch);
     for(i32 column = targetRect.min.y; column < targetRect.max.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
@@ -254,7 +256,7 @@ DrawImageSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image image)
 
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
-    ui8* currentRow = (ui8*)buffer->memory + (i32)xMin * buffer->bytesPerPixel + (i32)yMin * buffer->pitch; 
+    ui8* currentRow = (ui8*)buffer->memory + (i32)xMin * bytesPerPixel + (i32)yMin * buffer->pitch; 
 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
@@ -309,7 +311,7 @@ DrawImageSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image image)
 
                 //Linearly Blend alpha with background
                 v4f backgroundColors = GetRGBAValues(*screenPixel, BGRA);
-                f32 blendPercent = newBlendedTexel.a / 255.0f;
+                f32 blendPercent = image.opacity * (newBlendedTexel.a / 255.0f);
                 v4f finalBlendedColor = Lerp(backgroundColors , newBlendedTexel, blendPercent);
 
                 *screenPixel = ((0xFF << 24) |
@@ -367,8 +369,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", &player->image.size.width, &player->image.size.height);
-        player->image.pitch = player->image.size.width * 4;//bytes per pixel
+        player->image.pitch = player->image.size.width * bytesPerPixel;
         player->world.pos = {200.0f, 0.0f};
+        player->world.rotation = 0.0f;
+        player->world.scale = 2.0f;
+        
+        player->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &player->image.size.width, &player->image.size.height);
+        player->image.pitch = player->image.size.width * bytesPerPixel;
+        player->world.pos = {400.0f, 0.0f};
         player->world.rotation = 0.0f;
         player->world.scale = 2.0f;
     };
@@ -381,14 +389,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.pos += 1.1f;
+        player->world.pos.x += 1.1f;
     }
 
     { // Render
         Drawable_Rect playerTargetRect{};
+        Drawable_Rect enemyTargetRect{};
         {
             //Essentially local player coordinates
             playerTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
+            enemyTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
 
             {//World Transform
                 //With world space origin at 0, 0

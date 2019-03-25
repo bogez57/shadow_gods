@@ -1088,7 +1088,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 gameBackBuffer.width = globalBackbuffer.width; 
                 gameBackBuffer.height = globalBackbuffer.height;
                 gameBackBuffer.pitch = globalBackbuffer.pitch;
-                gameBackBuffer.bytesPerPixel = globalBackbuffer.bytesPerPixel;
 
                 GameCode.UpdateFunc(&GameMemory, &gameBackBuffer, &platformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
 

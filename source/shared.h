@@ -68,10 +68,9 @@ struct Game_Offscreen_Buffer
 {
     //Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
     void *memory;
-    int width;
-    int height;
-    int pitch;
-    int bytesPerPixel;
+    i32 width;
+    i32 height;
+    i32 pitch;
 };
 
 struct Platform_Services
