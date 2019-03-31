@@ -2,6 +2,7 @@
 #define ATOMIC_TYPES_INCLUDE
 
 #include <stdint.h>
+#include <utility>
 
 typedef int8_t i8;
 typedef int16_t i16;
@@ -28,7 +29,7 @@ typedef double f64;
 #define local_persist static
 #define local_func static
 #define global_variable static
-#define OUT
+#define Out(var) std::move(var) 
 #define NOT !
 
 struct v2f

@@ -24,6 +24,7 @@
 #include "dynamic_array.h"
 #include "ring_buffer.h"
 #include "linked_list.h"
+#include <utility>
 
 #include "atlas.h"
 #include "shared.h"
@@ -334,6 +335,11 @@ void RenderToImage(Image* renderTarget, Image sourceImage)
     DrawImage(renderTarget, sourceImage, targetRect);
 };
 
+void Test(Fighter&& fighter)
+{
+    fighter.world.pos += 10.0f;
+};
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -415,8 +421,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->image.opacity += .1f;
-    }
+        Test(Out(*player));
+    };
 
     //Essentially local fighter coordinates
     Drawable_Rect playerTargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height) };
