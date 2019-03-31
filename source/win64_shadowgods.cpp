@@ -690,12 +690,12 @@ namespace Win32
     };
 
     local_func auto
-    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State* GameButtonState, DWORD XInputButtonBit)
+    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State&& GameButtonState, DWORD XInputButtonBit)
     {
-        if (GameButtonState->Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
+        if (GameButtonState.Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
         {
-            GameButtonState->Pressed = ((XInputButtonState & XInputButtonBit) == XInputButtonBit);
-            ++GameButtonState->NumTransitionsPerFrame;
+            GameButtonState.Pressed = ((XInputButtonState & XInputButtonBit) == XInputButtonBit);
+            ++GameButtonState.NumTransitionsPerFrame;
         }
     }
 
@@ -1045,18 +1045,18 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                                     MyGamePad->IsAnalog = false;
                                 }
 
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveUp, XINPUT_GAMEPAD_DPAD_UP);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveDown, XINPUT_GAMEPAD_DPAD_DOWN);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveLeft, XINPUT_GAMEPAD_DPAD_LEFT);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->MoveRight, XINPUT_GAMEPAD_DPAD_RIGHT);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->LeftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->RightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionUp, XINPUT_GAMEPAD_Y);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionDown, XINPUT_GAMEPAD_A);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionLeft, XINPUT_GAMEPAD_X);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->ActionRight, XINPUT_GAMEPAD_B);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->Start, XINPUT_GAMEPAD_START);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, &MyGamePad->Back, XINPUT_GAMEPAD_BACK);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveUp), XINPUT_GAMEPAD_DPAD_UP);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveDown), XINPUT_GAMEPAD_DPAD_DOWN);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveLeft), XINPUT_GAMEPAD_DPAD_LEFT);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveRight), XINPUT_GAMEPAD_DPAD_RIGHT);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->LeftShoulder), XINPUT_GAMEPAD_LEFT_SHOULDER);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->RightShoulder), XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionUp), XINPUT_GAMEPAD_Y);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionDown), XINPUT_GAMEPAD_A);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionLeft), XINPUT_GAMEPAD_X);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionRight), XINPUT_GAMEPAD_B);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->Start), XINPUT_GAMEPAD_START);
+                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->Back), XINPUT_GAMEPAD_BACK);
                             }
                             else
                             {
