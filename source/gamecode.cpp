@@ -311,7 +311,7 @@ DrawImageSlowly(Game_Offscreen_Buffer* buffer, Drawable_Rect rect, Image image)
 
                 //Linearly Blend alpha with background
                 v4f backgroundColors = GetRGBAValues(*screenPixel, BGRA);
-                f32 blendPercent = image.opacity * (newBlendedTexel.a / 255.0f);
+                f32 blendPercent = (newBlendedTexel.a / 255.0f);
                 v4f finalBlendedColor = Lerp(backgroundColors , newBlendedTexel, blendPercent);
 
                 *screenPixel = ((0xFF << 24) |
@@ -366,6 +366,24 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->info.size.x = viewportWidth;
         stage->info.size.y = viewportHeight;
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &stage->info.backgroundImg.size.width, &stage->info.backgroundImg.size.height);
+
+        //Create empty image
+        gState->image = [](i32 width, i32 height) -> Image
+                            {
+                                Image image{};
+
+                                image.data = (ui8*)CallocSize(0, width*height);
+                                image.size = v2i{width, height};
+                                image.pitch = width*bytesPerPixel;
+
+                                return image;
+                            }((i32)stage->info.size.x, (i32)stage->info.size.y);
+
+        //Render to Image
+        []() -> void
+        {
+
+        }();
 
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", &player->image.size.width, &player->image.size.height);
@@ -426,7 +444,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemyTargetRect  = WorldTransform(enemyTargetRect, *enemy);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{1280.0f, 720.0f}};
-        DrawRectangle(gameBackBuffer, backgroundTargetRect, .5f, .5f, 0.5f);
+        DrawImage(gameBackBuffer, stage->info.backgroundImg, backgroundTargetRect);
         DrawImageSlowly(gameBackBuffer, playerTargetRect, player->image);
         DrawImageSlowly(gameBackBuffer, enemyTargetRect, enemy->image);
 

@@ -75,7 +75,7 @@ void _DeAlloc(i32, void**);
 #define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
 #define MallocSize(MemRegionIdentifier, Size) _MallocSize(MemRegionIdentifier, (Size))
 #define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
-#define CallocSize(MemRegionIdentifier, Type, Count) _CallocSize(MemRegionIdentifier, (Size))
+#define CallocSize(MemRegionIdentifier, Size) _CallocSize(MemRegionIdentifier, (Size))
 #define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
 #define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size)
 #define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)
