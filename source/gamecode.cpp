@@ -132,7 +132,7 @@ inline b KeyReleased(Button_State KeyState)
 };
 
 local_func void
-DrawRectangle(Image* Buffer, Rectf rect, f32 r, f32 g, f32 b)
+DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
 {    
     //Since I'm dealing with int pixels below
     Recti rectToDraw {};
@@ -146,18 +146,18 @@ DrawRectangle(Image* Buffer, Rectf rect, f32 r, f32 g, f32 b)
         if(rectToDraw.min.y < 0)
             rectToDraw.min.y = 0;
 
-        if(rectToDraw.max.x > Buffer->size.width)
-            rectToDraw.max.x = Buffer->size.width;
+        if(rectToDraw.max.x > buffer.size.width)
+            rectToDraw.max.x = buffer.size.width;
 
-        if(rectToDraw.max.y > Buffer->size.height)
-            rectToDraw.max.y = Buffer->size.height;
+        if(rectToDraw.max.y > buffer.size.height)
+            rectToDraw.max.y = buffer.size.height;
     };
 
     ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
                   (RoundFloat32ToUInt32(g * 255.0f) << 8) |
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
-    ui8* currentRow = ((ui8*)Buffer->data + rectToDraw.min.x*bytesPerPixel + rectToDraw.min.y*Buffer->pitch);
+    ui8* currentRow = ((ui8*)buffer.data + rectToDraw.min.x*bytesPerPixel + rectToDraw.min.y*buffer.pitch);
     for(i32 column = rectToDraw.min.y; column < rectToDraw.max.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
@@ -166,13 +166,13 @@ DrawRectangle(Image* Buffer, Rectf rect, f32 r, f32 g, f32 b)
             *screenPixel++ = Color;
         }
         
-        currentRow += Buffer->pitch;
+        currentRow += buffer.pitch;
     }
 }
 
 //For static images
 local_func void
-DrawImage(Image* Buffer, Image image, Rectf rect)
+DrawImage(Image&& buffer, Image image, Rectf rect)
 {
     ui32* imagePixel = (ui32*)image.data;
 
@@ -188,14 +188,14 @@ DrawImage(Image* Buffer, Image image, Rectf rect)
         if(targetRect.min.y < 0)
             targetRect.min.y = 0;
 
-        if(targetRect.max.x > Buffer->size.width)
-            targetRect.max.x = Buffer->size.width;
+        if(targetRect.max.x > buffer.size.width)
+            targetRect.max.x = buffer.size.width;
 
-        if(targetRect.max.y > Buffer->size.height)
-            targetRect.max.y = Buffer->size.height;
+        if(targetRect.max.y > buffer.size.height)
+            targetRect.max.y = buffer.size.height;
     };
 
-    ui8* currentRow = ((ui8*)Buffer->data + targetRect.min.x*bytesPerPixel + targetRect.min.y*Buffer->pitch);
+    ui8* currentRow = ((ui8*)buffer.data + targetRect.min.x*bytesPerPixel + targetRect.min.y*buffer.pitch);
     for(i32 column = targetRect.min.y; column < targetRect.max.y; ++column)
     {
         ui32* screenPixel = (ui32*)currentRow;
@@ -210,23 +210,23 @@ DrawImage(Image* Buffer, Image image, Rectf rect)
                            (blendedPixel_B << 0));
 
             ++screenPixel;
-            ++imagePixel ;
+            ++imagePixel;
         }
         
-        currentRow += Buffer->pitch;
+        currentRow += buffer.pitch;
     }
 }
 
 //For images that move/rotate/scale
 local_func void
-DrawImageSlowly(Image* buffer, Drawable_Rect rect, Image image)
+DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
 {    
     v2f origin = rect.BottomLeft;
     v2f targetRectXAxis = rect.BottomRight - origin;
     v2f targetRectYAxis = rect.TopLeft - origin;
 
-    f32 widthMax = (f32)(buffer->size.width - 1);
-    f32 heightMax = (f32)(buffer->size.height - 1);
+    f32 widthMax = (f32)(buffer.size.width - 1);
+    f32 heightMax = (f32)(buffer.size.height - 1);
     
     f32 xMin = widthMax;
     f32 xMax = 0.0f;
@@ -257,7 +257,7 @@ DrawImageSlowly(Image* buffer, Drawable_Rect rect, Image image)
 
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
-    ui8* currentRow = (ui8*)buffer->data + (i32)xMin * bytesPerPixel + (i32)yMin * buffer->pitch; 
+    ui8* currentRow = (ui8*)buffer.data + (i32)xMin * bytesPerPixel + (i32)yMin * buffer.pitch; 
 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
@@ -325,19 +325,14 @@ DrawImageSlowly(Image* buffer, Drawable_Rect rect, Image image)
             ++screenPixel;
         }
         
-        currentRow += buffer->pitch;
+        currentRow += buffer.pitch;
     }
 }
 
-void RenderToImage(Image* renderTarget, Image sourceImage)
+void RenderToImage(Image&& renderTarget, Image sourceImage)
 {
     Rectf targetRect { v2f{0.0f, 0.0f}, v2f{(f32)sourceImage.size.width, (f32)sourceImage.size.height} };
-    DrawImage(renderTarget, sourceImage, targetRect);
-};
-
-void Test(Fighter&& fighter)
-{
-    fighter.world.pos += 10.0f;
+    DrawImage($(renderTarget), sourceImage, targetRect);
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -379,7 +374,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         //Stage Init
         stage->info.size.x = viewportWidth;
         stage->info.size.y = viewportHeight;
-        stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", &stage->info.backgroundImg.size.width, &stage->info.backgroundImg.size.height);
+        stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
 
         //Create empty image
         gState->savedImage = [](i32 width, i32 height) -> Image
@@ -394,10 +389,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                             }((i32)stage->info.size.x, (i32)stage->info.size.y);
 
         //Render to Image
-        RenderToImage(&gState->savedImage, stage->info.backgroundImg);
+        RenderToImage($(gState->savedImage), stage->info.backgroundImg);
 
         //Player Init
-        player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", &player->image.size.width, &player->image.size.height);
+        player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * bytesPerPixel;
         player->world.pos = {200.0f, 0.0f};
         player->world.rotation = 0.0f;
@@ -405,7 +400,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.opacity = .5f;
         
         //Enemy Init
-        enemy->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", &enemy->image.size.width, &enemy->image.size.height);
+        enemy->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", $(enemy->image.size.width), $(enemy->image.size.height));
         enemy->image.pitch = enemy->image.size.width * bytesPerPixel;
         enemy->world.pos = {300.0f, 0.0f};
         enemy->world.rotation = 0.0f;
@@ -421,7 +416,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        Test(Out(*player));
+        player->world.pos.x += 10.0f;
     };
 
     //Essentially local fighter coordinates
@@ -455,34 +450,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemyTargetRect  = WorldTransform(enemyTargetRect, *enemy);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawImage(&gState->colorBuffer, gState->savedImage, backgroundTargetRect);
-        DrawImageSlowly(&gState->colorBuffer, playerTargetRect, player->image);
-        DrawImageSlowly(&gState->colorBuffer, enemyTargetRect, enemy->image);
-
-#if 0
-        {//Just for debug purposes so I can see 4 corners of player target rect
-            Rectf playerCorner1 = {
-                v2f{playerTargetRect.BottomLeft.x - 10.0f, playerTargetRect.BottomLeft.y}, 
-                v2f{playerTargetRect.BottomLeft.x, playerTargetRect.BottomLeft.y + 10.0f} 
-            };
-            Rectf playerCorner2 = {
-                v2f{playerTargetRect.BottomRight.x, playerTargetRect.BottomRight.y}, 
-                v2f{playerTargetRect.BottomRight.x + 10.0f, playerTargetRect.BottomRight.y + 10.0f} 
-            };
-            Rectf playerCorner3 = {
-                v2f{playerTargetRect.TopRight.x, playerTargetRect.TopRight.y}, 
-                v2f{playerTargetRect.TopRight.x + 10.0f, playerTargetRect.TopRight.y + 10.0f} 
-            };
-            Rectf playerCorner4 = {
-                v2f{playerTargetRect.TopLeft.x - 10.0f, playerTargetRect.TopLeft.y}, 
-                v2f{playerTargetRect.TopLeft.x, playerTargetRect.TopLeft.y + 10.0f} 
-            };
-
-            DrawRectangle(gameBackBuffer, playerCorner1, 0.0f, 0.0f, 1.0f);
-            DrawRectangle(gameBackBuffer, playerCorner2, 0.0f, 0.0f, 1.0f);
-            DrawRectangle(gameBackBuffer, playerCorner3, 0.0f, 0.0f, 1.0f);
-            DrawRectangle(gameBackBuffer, playerCorner4, 0.0f, 0.0f, 1.0f);
-        };
-#endif
+        DrawImage($(gState->colorBuffer), gState->savedImage, backgroundTargetRect);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image);
+        DrawImageSlowly($(gState->colorBuffer), enemyTargetRect, enemy->image);
     };
 };

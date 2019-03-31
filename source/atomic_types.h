@@ -29,7 +29,7 @@ typedef double f64;
 #define local_persist static
 #define local_func static
 #define global_variable static
-#define Out(var) std::move(var) 
+#define $(var) std::move(var) //Use this for compiler enforced out parameter
 #define NOT !
 
 struct v2f

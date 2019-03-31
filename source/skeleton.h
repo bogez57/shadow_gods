@@ -178,7 +178,7 @@ Skeleton CreateSkeletonUsingJsonFile(Atlas atlas, const char* skeletonJsonFilePa
     i32 length;
     Skeleton newSkeleton;
 
-    const char* skeletonJson = globalPlatformServices->ReadEntireFile(&length, skeletonJsonFilePath);
+    const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), skeletonJsonFilePath);
 
     if (skeletonJson)
         newSkeleton = _CreateSkeleton(atlas, skeletonJson);
