@@ -54,6 +54,7 @@ struct Game_State
 {
     i32 imageWidth, imageHeight;
     Atlas* atlas;
-    Image image;
+    Image savedImage;
+    Image colorBuffer;
     Stage_Data stage;
 };
