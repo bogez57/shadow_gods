@@ -202,12 +202,15 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
 
         for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
         {            
-            auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *destPixel, BGRA);
+            v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
+            v4f foregroundColors = GetRGBAValues(*imagePixel, BGRA);
+            f32 alphaBlend = foregroundColors.a / 255.0f;
+            v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + foregroundColors;
 
             *destPixel = ((0xFF << 24) |
-                           (blendedPixel_R << 16) |
-                           (blendedPixel_G << 8) |
-                           (blendedPixel_B << 0));
+                           ((ui8)finalBlendedColor.r << 16) |
+                           ((ui8)finalBlendedColor.g << 8) |
+                           ((ui8)finalBlendedColor.b << 0));
 
             ++destPixel;
             ++imagePixel;
@@ -329,9 +332,8 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
     }
 }
 
-void RenderToImage(Image&& renderTarget, Image sourceImage)
+void RenderToImage(Image&& renderTarget, Image sourceImage, Rectf targetRect)
 {
-    Rectf targetRect { v2f{0.0f, 0.0f}, v2f{(f32)sourceImage.size.width, (f32)sourceImage.size.height} };
     DrawImage($(renderTarget), sourceImage, targetRect);
 };
 
@@ -414,15 +416,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                             };
         
         gState->background = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
-        gState->heroHead = CreateEmptyImage(player->image.size.x, player->image.size.y);
-        gState->heroBody = CreateEmptyImage(enemy->image.size.x, enemy->image.size.y);
-        gState->heroCape = CreateEmptyImage(enemy2->image.size.x, enemy2->image.size.y);
 
         //Render to Image
-        RenderToImage($(gState->background), stage->info.backgroundImg);
-        RenderToImage($(gState->heroHead), player->image);
-        RenderToImage($(gState->heroBody), enemy->image);
-        RenderToImage($(gState->heroCape), enemy2->image);
+        v2f origin{0.0f, 0.0f};
+
+        origin += 300.0f;
+        origin.x += 100.0f;
+        Rectf playerTargetRect { origin, origin + v2f{(f32)player->image.size.width, (f32)player->image.size.height} };
+        RenderToImage($(gState->background), player->image, playerTargetRect);
+
+        origin.y += 80.0f;
+        Rectf enemyTargetRect { origin, origin + v2f{(f32)enemy->image.size.width, (f32)enemy->image.size.height} };
+        RenderToImage($(gState->background), enemy->image, enemyTargetRect);
+
+        Rectf enemy2TargetRect { origin, origin + v2f{(f32)enemy2->image.size.width, (f32)enemy2->image.size.height} };
+        RenderToImage($(gState->background), enemy2->image, enemy2TargetRect);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -470,9 +478,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2TargetRect  = WorldTransform(enemy2TargetRect, *enemy2);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawImage($(gState->colorBuffer), stage->info.backgroundImg, backgroundTargetRect);
-        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image);
-        DrawImageSlowly($(gState->colorBuffer), enemyTargetRect, enemy->image);
-        DrawImageSlowly($(gState->colorBuffer), enemy2TargetRect, enemy2->image);
+        DrawImage($(gState->colorBuffer), gState->background, backgroundTargetRect);
     };
 };

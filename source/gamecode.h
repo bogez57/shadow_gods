@@ -56,9 +56,6 @@ struct Game_State
     i32 imageWidth, imageHeight;
     Atlas* atlas;
     Image background;
-    Image heroHead;
-    Image heroBody;
-    Image heroCape;
     Image colorBuffer;
     Stage_Data stage;
 };
