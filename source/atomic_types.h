@@ -86,7 +86,16 @@ struct v4f
 
         struct
         {
-            f32 r, g, b, a;
+            union
+            {
+                v3f rgb;
+                struct
+                {
+                    f32 r, g, b;
+                };
+            };
+            
+            f32 a;        
         };
     };
 };

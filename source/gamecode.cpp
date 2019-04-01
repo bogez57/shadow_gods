@@ -202,6 +202,19 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
 
         for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
         {            
+
+#if 0
+            auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *destPixel, BGRA);
+            
+
+            *destPixel = ((0xFF << 24) |
+                           (blendedPixel_R << 16) |
+                           (blendedPixel_G << 8) |
+                           (blendedPixel_B << 0));
+            ++destPixel;
+            ++imagePixel;
+#else
+
             v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
             v4f foregroundColors = GetRGBAValues(*imagePixel, BGRA);
             f32 alphaBlend = foregroundColors.a / 255.0f;
@@ -214,6 +227,7 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
 
             ++destPixel;
             ++imagePixel;
+#endif
         }
         
         currentRow += buffer.pitch;
@@ -332,9 +346,9 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
     }
 }
 
-void RenderToImage(Image&& renderTarget, Image sourceImage, Rectf targetRect)
+void RenderToImage(Image&& renderTarget, Image sourceImage, Drawable_Rect targetRect)
 {
-    DrawImage($(renderTarget), sourceImage, targetRect);
+    DrawImageSlowly($(renderTarget), targetRect, sourceImage);
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -419,17 +433,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         //Render to Image
         v2f origin{0.0f, 0.0f};
-
         origin += 300.0f;
         origin.x += 100.0f;
-        Rectf playerTargetRect { origin, origin + v2f{(f32)player->image.size.width, (f32)player->image.size.height} };
+
+        Drawable_Rect playerTargetRect { ProduceRectFromBottomLeftPoint(origin, (f32)player->image.size.width, (f32)player->image.size.height) };
         RenderToImage($(gState->background), player->image, playerTargetRect);
 
         origin.y += 80.0f;
-        Rectf enemyTargetRect { origin, origin + v2f{(f32)enemy->image.size.width, (f32)enemy->image.size.height} };
+        Drawable_Rect enemyTargetRect { ProduceRectFromBottomLeftPoint(origin, (f32)enemy->image.size.width, (f32)enemy->image.size.height) };
         RenderToImage($(gState->background), enemy->image, enemyTargetRect);
 
-        Rectf enemy2TargetRect { origin, origin + v2f{(f32)enemy2->image.size.width, (f32)enemy2->image.size.height} };
+        Drawable_Rect enemy2TargetRect { ProduceRectFromBottomLeftPoint(origin, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height) };
         RenderToImage($(gState->background), enemy2->image, enemy2TargetRect);
     };
 
