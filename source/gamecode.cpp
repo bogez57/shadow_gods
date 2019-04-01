@@ -160,10 +160,10 @@ DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
     ui8* currentRow = ((ui8*)buffer.data + rectToDraw.min.x*bytesPerPixel + rectToDraw.min.y*buffer.pitch);
     for(i32 column = rectToDraw.min.y; column < rectToDraw.max.y; ++column)
     {
-        ui32* screenPixel = (ui32*)currentRow;
+        ui32* destPixel = (ui32*)currentRow;
         for(i32 row = rectToDraw.min.x; row < rectToDraw.max.x; ++row)
         {            
-            *screenPixel++ = Color;
+            *destPixel++ = Color;
         }
         
         currentRow += buffer.pitch;
@@ -198,18 +198,18 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
     ui8* currentRow = ((ui8*)buffer.data + targetRect.min.x*bytesPerPixel + targetRect.min.y*buffer.pitch);
     for(i32 column = targetRect.min.y; column < targetRect.max.y; ++column)
     {
-        ui32* screenPixel = (ui32*)currentRow;
+        ui32* destPixel = (ui32*)currentRow;
 
         for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
         {            
-            auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *screenPixel, BGRA);
+            auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *destPixel, BGRA);
 
-            *screenPixel = ((0xFF << 24) |
+            *destPixel = ((0xFF << 24) |
                            (blendedPixel_R << 16) |
                            (blendedPixel_G << 8) |
                            (blendedPixel_B << 0));
 
-            ++screenPixel;
+            ++destPixel;
             ++imagePixel;
         }
         
@@ -261,7 +261,7 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
-        ui32* screenPixel = (ui32*)currentRow;
+        ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; ++screenX)
         {            
             //In order to fill only pixels defined by our rectangle points/vecs, we are
@@ -311,18 +311,18 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
                 v4f newBlendedTexel = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
 
                 //Linearly Blend alpha with background
-                v4f backgroundColors = GetRGBAValues(*screenPixel, BGRA);
+                v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
                 f32 blendPercent = (newBlendedTexel.a / 255.0f);
                 v4f finalBlendedColor = Lerp(backgroundColors , newBlendedTexel, blendPercent);
 
-                *screenPixel = ((0xFF << 24) |
+                *destPixel = ((0xFF << 24) |
                            ((ui8)finalBlendedColor.r << 16) |
                            ((ui8)finalBlendedColor.g << 8) |
                            ((ui8)finalBlendedColor.b << 0));
 
             }
 
-            ++screenPixel;
+            ++destPixel;
         }
         
         currentRow += buffer.pitch;
@@ -353,6 +353,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     Stage_Data* stage = &gState->stage;
     Fighter* player = &stage->player;
     Fighter* enemy = &stage->enemy;
+    Fighter* enemy2 = &stage->enemy2;
 
     gState->colorBuffer.data = (ui8*)gameBackBuffer->memory;
     gState->colorBuffer.size = v2i{gameBackBuffer->width, gameBackBuffer->height};
@@ -376,36 +377,52 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->info.size.y = viewportHeight;
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
 
+        //Player Init
+        player->image.data = platformServices->LoadBGRAbitImage("data/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
+        player->image.pitch = player->image.size.width * bytesPerPixel;
+        player->world.pos = {200.0f, -50.0f};
+        player->world.rotation = 0.0f;
+        player->world.scale = 2.3f;
+        player->image.opacity = .5f;
+        
+        //Enemy Init
+        enemy->image.data = platformServices->LoadBGRAbitImage("data/test_body_back.bmp", $(enemy->image.size.width), $(enemy->image.size.height));
+        enemy->image.pitch = enemy->image.size.width * bytesPerPixel;
+        enemy->world.pos = {200.0f, 150.0f};
+        enemy->world.rotation = 0.0f;
+        enemy->world.scale = 2.3f;
+        enemy->image.opacity = .7f;
+
+         //Enemy Init
+        enemy2->image.data = platformServices->LoadBGRAbitImage("data/test_cape_front.bmp", $(enemy2->image.size.width), $(enemy2->image.size.height));
+        enemy2->image.pitch = enemy2->image.size.width * bytesPerPixel;
+        enemy2->world.pos = {200.0f, 100.0f};
+        enemy2->world.rotation = 0.0f;
+        enemy2->world.scale = 2.3f;
+        enemy2->image.opacity = .7f;
+
         //Create empty image
-        gState->savedImage = [](i32 width, i32 height) -> Image
+        auto CreateEmptyImage = [](i32 width, i32 height) -> Image
                             {
                                 Image image{};
 
-                                image.data = (ui8*)CallocSize(0, width*height);
+                                image.data = (ui8*)CallocSize(0, width*height*bytesPerPixel);
                                 image.size = v2i{width, height};
                                 image.pitch = width*bytesPerPixel;
 
                                 return image;
-                            }((i32)stage->info.size.x, (i32)stage->info.size.y);
+                            };
+        
+        gState->background = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
+        gState->heroHead = CreateEmptyImage(player->image.size.x, player->image.size.y);
+        gState->heroBody = CreateEmptyImage(enemy->image.size.x, enemy->image.size.y);
+        gState->heroCape = CreateEmptyImage(enemy2->image.size.x, enemy2->image.size.y);
 
         //Render to Image
-        RenderToImage($(gState->savedImage), stage->info.backgroundImg);
-
-        //Player Init
-        player->image.data = platformServices->LoadBGRAbitImage("data/hhdata/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
-        player->image.pitch = player->image.size.width * bytesPerPixel;
-        player->world.pos = {200.0f, 0.0f};
-        player->world.rotation = 0.0f;
-        player->world.scale = 2.0f;
-        player->image.opacity = .5f;
-        
-        //Enemy Init
-        enemy->image.data = platformServices->LoadBGRAbitImage("data/test_body.bmp", $(enemy->image.size.width), $(enemy->image.size.height));
-        enemy->image.pitch = enemy->image.size.width * bytesPerPixel;
-        enemy->world.pos = {300.0f, 0.0f};
-        enemy->world.rotation = 0.0f;
-        enemy->world.scale = 2.0f;
-        enemy->image.opacity = .7f;
+        RenderToImage($(gState->background), stage->info.backgroundImg);
+        RenderToImage($(gState->heroHead), player->image);
+        RenderToImage($(gState->heroBody), enemy->image);
+        RenderToImage($(gState->heroCape), enemy2->image);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -417,11 +434,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     if(KeyHeld(keyboard->MoveRight))
     {
         player->world.pos.x += 10.0f;
+        enemy->world.pos.x += 5.0f;
     };
 
     //Essentially local fighter coordinates
     Drawable_Rect playerTargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height) };
     Drawable_Rect enemyTargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height) };
+    Drawable_Rect enemy2TargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height) };
 
     { // Render
         player->image.opacity = Clamp(player->image.opacity, 0.0f, 1.0f); 
@@ -448,10 +467,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         playerTargetRect = WorldTransform(playerTargetRect, *player);
         enemyTargetRect  = WorldTransform(enemyTargetRect, *enemy);
+        enemy2TargetRect  = WorldTransform(enemy2TargetRect, *enemy2);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawImage($(gState->colorBuffer), gState->savedImage, backgroundTargetRect);
+        DrawImage($(gState->colorBuffer), gState->background, backgroundTargetRect);
         DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image);
         DrawImageSlowly($(gState->colorBuffer), enemyTargetRect, enemy->image);
+        DrawImageSlowly($(gState->colorBuffer), enemy2TargetRect, enemy2->image);
     };
 };

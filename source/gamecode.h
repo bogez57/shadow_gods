@@ -47,6 +47,7 @@ struct Stage_Data
     StageInfo info;
     Fighter player;
     Fighter enemy;
+    Fighter enemy2;
     Game_Camera camera;
 };
 
@@ -54,7 +55,10 @@ struct Game_State
 {
     i32 imageWidth, imageHeight;
     Atlas* atlas;
-    Image savedImage;
+    Image background;
+    Image heroHead;
+    Image heroBody;
+    Image heroCape;
     Image colorBuffer;
     Stage_Data stage;
 };
