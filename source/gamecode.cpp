@@ -312,8 +312,8 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
 
                 //Linearly Blend alpha with background
                 v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
-                f32 blendPercent = (newBlendedTexel.a / 255.0f);
-                v4f finalBlendedColor = Lerp(backgroundColors , newBlendedTexel, blendPercent);
+                f32 alphaBlend = newBlendedTexel.a / 255.0f;
+                v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
                 *destPixel = ((0xFF << 24) |
                            ((ui8)finalBlendedColor.r << 16) |
@@ -470,7 +470,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2TargetRect  = WorldTransform(enemy2TargetRect, *enemy2);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawImage($(gState->colorBuffer), gState->background, backgroundTargetRect);
+        DrawImage($(gState->colorBuffer), stage->info.backgroundImg, backgroundTargetRect);
         DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image);
         DrawImageSlowly($(gState->colorBuffer), enemyTargetRect, enemy->image);
         DrawImageSlowly($(gState->colorBuffer), enemy2TargetRect, enemy2->image);
