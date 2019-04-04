@@ -202,7 +202,7 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
 
         for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
         {            
-
+//No pre-multiplied alpha
 #if 0
             auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *destPixel, BGRA);
             
@@ -214,7 +214,7 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
             ++destPixel;
             ++imagePixel;
 #else
-
+//Pre-multiplied alpha
             v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
             v4f foregroundColors = GetRGBAValues(*imagePixel, BGRA);
             f32 alphaBlend = foregroundColors.a / 255.0f;
@@ -234,7 +234,7 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
     }
 }
 
-//For images that move/rotate/scale
+//For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
 DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
 {    
@@ -327,7 +327,7 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
                 v4f CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
                 v4f newBlendedTexel = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
 
-                //Linearly Blend alpha with background
+                //Linearly Blend with background - Pre-multiplied alpha
                 v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;

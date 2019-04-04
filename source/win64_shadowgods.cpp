@@ -170,7 +170,7 @@ namespace Win32::Dbg
         i32 numOfLoadedChannels {};
         i32 desiredChannels{4};//Since I still draw assuming 4 byte pixels I need 4 channels
 
-        //Returns RGB
+        //Returns RGBA
         unsigned char* imageData = stbi_load(ImagePath, &width, &height, &numOfLoadedChannels, desiredChannels);
         BGZ_ASSERT(imageData, "Invalid image data!");
 
@@ -182,6 +182,7 @@ namespace Win32::Dbg
         {
             auto color = GetRGBAValues(*imagePixel, RGBA);
 
+            //Pre-multiplied alpha
             f32 alphaBlend = color.a / 255.0f;
             color.r *= alphaBlend;
             color.g *= alphaBlend;
