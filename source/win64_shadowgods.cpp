@@ -183,9 +183,7 @@ namespace Win32::Dbg
             auto color = GetRGBAValues(*imagePixel, RGBA);
 
             f32 alphaBlend = color.a / 255.0f;
-            color.r *= alphaBlend;
-            color.g *= alphaBlend;
-            color.b *= alphaBlend;
+            color.rgb *= alphaBlend;
 
             ui32 newSwappedPixelColor = (((ui8)color.a << 24) |
                                          ((ui8)color.r << 16) |
