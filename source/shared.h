@@ -186,6 +186,22 @@ auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFo
     return blendedColor;
 };
 
+Rectf RectWidth(Rect rect)
+{
+    f32 width{};
+    width = rect.min.x - rect.max.x;
+
+    return width;
+};
+
+Rectf RectHeight(Rect rect)
+{
+    f32 height{};
+    height = rect.min.y - rect.max.y;
+
+    return height;
+};
+
 auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
 {
     Rectf Result;
@@ -206,14 +222,12 @@ auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height) -> Re
     return Result;
 };
 
-Drawable_Rect ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
+Rectf ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 {
-    Drawable_Rect Result;
+    Rectf Result;
 
-    Result.BottomLeft = originPoint;
-    Result.BottomRight = { originPoint.x + width, originPoint.y };
-    Result.TopRight = { originPoint.x + width, originPoint.y + height };
-    Result.TopLeft = { originPoint.x, originPoint.y + height };
+    Result.min = originPoint;
+    Result.max = { originPoint.x + width, originPoint.y + height };
 
     return Result;
 };

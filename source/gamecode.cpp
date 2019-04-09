@@ -346,9 +346,9 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
     }
 }
 
-void RenderToImage(Image&& renderTarget, Image sourceImage, Rectf targetRect)
+void RenderToImage(Image&& renderTarget, Image sourceImage, Rectf targetArea)
 {
-    DrawImage($(renderTarget), sourceImage, targetRect);
+    DrawImage($(renderTarget), sourceImage, targetArea);
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -436,17 +436,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         origin += 300.0f;
         origin.x += 100.0f;
 
-        Drawable_Rect rectTemp { ProduceRectFromBottomLeftPoint(origin, (f32)player->image.size.width, (f32)player->image.size.height) };
-        Rectf playerTargetRect{v2f{rectTemp.BottomLeft.x, rectTemp.BottomLeft.y}, v2f{rectTemp.TopRight.x, rectTemp.TopRight.y}};
+        Rectf playerTargetRect = ProduceRectFromBottomLeftPoint(origin, (f32)player->image.size.width, (f32)player->image.size.height);
         RenderToImage($(gState->background), player->image, playerTargetRect);
 
         origin.y += 80.0f;
-        rectTemp = ProduceRectFromBottomLeftPoint(origin, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
-        Rectf enemyTargetRect{v2f{rectTemp.BottomLeft.x, rectTemp.BottomLeft.y}, v2f{rectTemp.TopRight.x, rectTemp.TopRight.y}};
+        Rectf enemyTargetRect = ProduceRectFromBottomLeftPoint(origin, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
         RenderToImage($(gState->background), enemy->image, enemyTargetRect);
 
-        rectTemp = ProduceRectFromBottomLeftPoint(origin, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
-        Rectf enemy2TargetRect{v2f{rectTemp.BottomLeft.x, rectTemp.BottomLeft.y}, v2f{rectTemp.TopRight.x, rectTemp.TopRight.y}};
+        Rectf enemy2TargetRect = ProduceRectFromBottomLeftPoint(origin, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
         RenderToImage($(gState->background), enemy2->image, enemy2TargetRect);
     };
 
@@ -463,17 +460,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     };
 
     //Essentially local fighter coordinates
-    Drawable_Rect playerTargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height) };
-    Drawable_Rect enemyTargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height) };
-    Drawable_Rect enemy2TargetRect { ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height) };
+    Rectf playerTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
+    Rectf enemyTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
+    Rectf enemy2TargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
 
     { // Render
         player->image.opacity = Clamp(player->image.opacity, 0.0f, 1.0f); 
         enemy->image.opacity = Clamp(enemy->image.opacity, 0.0f, 1.0f); 
 
-        auto WorldTransform = [](Drawable_Rect targetRect, Fighter fighterInfo) -> Drawable_Rect 
+        auto WorldTransform = [](Rect targetRect, Fighter fighterInfo) -> Drawable_Rect 
         {
-            Drawable_Rect transformedTargetRect{};
+            Rectf transformedTargetRect{};
 
             //With world space origin at 0, 0
             Coordinate_Space fighterSpace{};
@@ -482,17 +479,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
 
             //This equation rotates first then moves to correct world position
-            transformedTargetRect.BottomLeft = fighterSpace.origin + (targetRect.BottomLeft.x * fighterSpace.xBasis) + (targetRect.BottomLeft.y * fighterSpace.yBasis);
-            transformedTargetRect.BottomRight = fighterSpace.origin + (targetRect.BottomRight.x * fighterSpace.xBasis) + (targetRect.BottomRight.y * fighterSpace.yBasis);
-            transformedTargetRect.TopRight = fighterSpace.origin + (targetRect.TopRight.x * fighterSpace.xBasis) + (targetRect.TopRight.y * fighterSpace.yBasis);
-            transformedTargetRect.TopLeft = fighterSpace.origin + (targetRect.TopLeft.x * fighterSpace.xBasis) + (targetRect.TopLeft.y * fighterSpace.yBasis);
+            transformedTargetRect.min = fighterSpace.origin + (targetRect.min.x * fighterSpace.xBasis) + (targetRect.min.y * fighterSpace.yBasis);
+            transformedTargetRect.max = fighterSpace.origin + (targetRect.max.x * fighterSpace.xBasis) + (targetRect.max.y * fighterSpace.yBasis);
 
             return transformedTargetRect;
         };
 
         playerTargetRect = WorldTransform(playerTargetRect, *player);
         enemyTargetRect  = WorldTransform(enemyTargetRect, *enemy);
-        enemy2TargetRect  = WorldTransform(enemy2TargetRect, *enemy2);
+        enemy2TargetRect = WorldTransform(enemy2TargetRect, *enemy2);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
         DrawImage($(gState->colorBuffer), gState->background, backgroundTargetRect);
