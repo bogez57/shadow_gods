@@ -203,7 +203,7 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
         for(i32 row = targetRect.min.x; row < targetRect.max.x; ++row)
         {            
 
-#if 0
+#if 0 //Non-premultiplied alpha - aka post multiplied alpha (assuming premultiplication hasn't been done already)
             auto[blendedPixel_R,blendedPixel_G,blendedPixel_B] = LinearBlend(*imagePixel, *destPixel, BGRA);
             
 
@@ -346,9 +346,9 @@ DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
     }
 }
 
-void RenderToImage(Image&& renderTarget, Image sourceImage, Drawable_Rect targetRect)
+void RenderToImage(Image&& renderTarget, Image sourceImage, Rectf targetRect)
 {
-    DrawImageSlowly($(renderTarget), targetRect, sourceImage);
+    DrawImage($(renderTarget), sourceImage, targetRect);
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -436,14 +436,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         origin += 300.0f;
         origin.x += 100.0f;
 
-        Drawable_Rect playerTargetRect { ProduceRectFromBottomLeftPoint(origin, (f32)player->image.size.width, (f32)player->image.size.height) };
+        Drawable_Rect rectTemp { ProduceRectFromBottomLeftPoint(origin, (f32)player->image.size.width, (f32)player->image.size.height) };
+        Rectf playerTargetRect{v2f{rectTemp.BottomLeft.x, rectTemp.BottomLeft.y}, v2f{rectTemp.TopRight.x, rectTemp.TopRight.y}};
         RenderToImage($(gState->background), player->image, playerTargetRect);
 
         origin.y += 80.0f;
-        Drawable_Rect enemyTargetRect { ProduceRectFromBottomLeftPoint(origin, (f32)enemy->image.size.width, (f32)enemy->image.size.height) };
+        rectTemp = ProduceRectFromBottomLeftPoint(origin, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
+        Rectf enemyTargetRect{v2f{rectTemp.BottomLeft.x, rectTemp.BottomLeft.y}, v2f{rectTemp.TopRight.x, rectTemp.TopRight.y}};
         RenderToImage($(gState->background), enemy->image, enemyTargetRect);
 
-        Drawable_Rect enemy2TargetRect { ProduceRectFromBottomLeftPoint(origin, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height) };
+        rectTemp = ProduceRectFromBottomLeftPoint(origin, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
+        Rectf enemy2TargetRect{v2f{rectTemp.BottomLeft.x, rectTemp.BottomLeft.y}, v2f{rectTemp.TopRight.x, rectTemp.TopRight.y}};
         RenderToImage($(gState->background), enemy2->image, enemy2TargetRect);
     };
 
