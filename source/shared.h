@@ -186,7 +186,7 @@ auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFo
     return blendedColor;
 };
 
-Rectf RectWidth(Rect rect)
+f32 RectWidth(Rectf rect)
 {
     f32 width{};
     width = rect.min.x - rect.max.x;
@@ -194,7 +194,7 @@ Rectf RectWidth(Rect rect)
     return width;
 };
 
-Rectf RectHeight(Rect rect)
+f32 RectHeight(Rectf rect)
 {
     f32 height{};
     height = rect.min.y - rect.max.y;

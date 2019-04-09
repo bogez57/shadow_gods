@@ -236,11 +236,11 @@ DrawImage(Image&& buffer, Image image, Rectf rect)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Drawable_Rect rect, Image image)
+DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image)
 {    
-    v2f origin = rect.BottomLeft;
-    v2f targetRectXAxis = rect.BottomRight - origin;
-    v2f targetRectYAxis = rect.TopLeft - origin;
+    v2f origin = worldCoords.min;
+    v2f targetRectXAxis = v2f{worldCoords.max.x, worldCoords.min.y} - origin;
+    v2f targetRectYAxis = v2f{worldCoords.min.x, worldCoords.max.y} - origin;
 
     f32 widthMax = (f32)(buffer.size.width - 1);
     f32 heightMax = (f32)(buffer.size.height - 1);
@@ -468,7 +468,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.opacity = Clamp(player->image.opacity, 0.0f, 1.0f); 
         enemy->image.opacity = Clamp(enemy->image.opacity, 0.0f, 1.0f); 
 
-        auto WorldTransform = [](Rect targetRect, Fighter fighterInfo) -> Drawable_Rect 
+        auto WorldTransform = [](Rectf targetRect, Fighter fighterInfo) -> Rectf
         {
             Rectf transformedTargetRect{};
 
