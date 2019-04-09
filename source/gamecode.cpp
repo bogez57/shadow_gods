@@ -172,7 +172,7 @@ DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
 
 //For static images
 local_func void
-DrawImage(Image&& buffer, Image image, Rectf rect)
+DrawImage(Image&& buffer, Rectf rect, Image image)
 {
     ui32* imagePixel = (ui32*)image.data;
 
@@ -348,7 +348,7 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image)
 
 void RenderToImage(Image&& renderTarget, Image sourceImage, Rectf targetArea)
 {
-    DrawImage($(renderTarget), sourceImage, targetArea);
+    DrawImageSlowly($(renderTarget), targetArea, sourceImage);
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -398,7 +398,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.pitch = player->image.size.width * bytesPerPixel;
         player->world.pos = {200.0f, -50.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 2.3f;
+        player->world.scale = 2.0f;
         player->image.opacity = .5f;
         
         //Enemy Init
@@ -429,22 +429,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                                 return image;
                             };
         
-        gState->background = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
+        gState->composite = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
 
         //Render to Image
         v2f origin{0.0f, 0.0f};
         origin += 300.0f;
         origin.x += 100.0f;
-
-        Rectf playerTargetRect = ProduceRectFromBottomLeftPoint(origin, (f32)player->image.size.width, (f32)player->image.size.height);
-        RenderToImage($(gState->background), player->image, playerTargetRect);
-
-        origin.y += 80.0f;
-        Rectf enemyTargetRect = ProduceRectFromBottomLeftPoint(origin, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
-        RenderToImage($(gState->background), enemy->image, enemyTargetRect);
-
-        Rectf enemy2TargetRect = ProduceRectFromBottomLeftPoint(origin, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
-        RenderToImage($(gState->background), enemy2->image, enemy2TargetRect);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -468,21 +458,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.opacity = Clamp(player->image.opacity, 0.0f, 1.0f); 
         enemy->image.opacity = Clamp(enemy->image.opacity, 0.0f, 1.0f); 
 
-        auto WorldTransform = [](Rectf targetRect, Fighter fighterInfo) -> Rectf
+        auto WorldTransform = [](Rectf localCoords, Fighter fighterInfo) -> Rectf
         {
-            Rectf transformedTargetRect{};
+            Rectf transformedCoords{};
 
             //With world space origin at 0, 0
             Coordinate_Space fighterSpace{};
             fighterSpace.origin = fighterInfo.world.pos;
             fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosInRadians(Radians(fighterInfo.world.rotation)), SinInRadians(Radians(fighterInfo.world.rotation))};
-            fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
+            fighterSpace.yBasis = 2.5f* PerpendicularOp(fighterSpace.xBasis);
 
             //This equation rotates first then moves to correct world position
-            transformedTargetRect.min = fighterSpace.origin + (targetRect.min.x * fighterSpace.xBasis) + (targetRect.min.y * fighterSpace.yBasis);
-            transformedTargetRect.max = fighterSpace.origin + (targetRect.max.x * fighterSpace.xBasis) + (targetRect.max.y * fighterSpace.yBasis);
+            transformedCoords.min = fighterSpace.origin + (localCoords.min.x * fighterSpace.xBasis) + (localCoords.min.y * fighterSpace.yBasis);
+            transformedCoords.max = fighterSpace.origin + (localCoords.max.x * fighterSpace.xBasis) + (localCoords.max.y * fighterSpace.yBasis);
 
-            return transformedTargetRect;
+            return transformedCoords;
         };
 
         playerTargetRect = WorldTransform(playerTargetRect, *player);
@@ -490,6 +480,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2TargetRect = WorldTransform(enemy2TargetRect, *enemy2);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawImage($(gState->colorBuffer), gState->background, backgroundTargetRect);
+        DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .5f, .5f, .5f);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image);
     };
 };

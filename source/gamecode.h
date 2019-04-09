@@ -55,7 +55,7 @@ struct Game_State
 {
     i32 imageWidth, imageHeight;
     Atlas* atlas;
-    Image background;
+    Image composite;
     Image colorBuffer;
     Image normalMap;
     Stage_Data stage;

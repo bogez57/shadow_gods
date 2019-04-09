@@ -111,21 +111,6 @@ struct Recti
     v2i max;
 };
 
-struct Drawable_Rect
-{
-    union
-    {
-        v2f Corners[4];
-        struct
-        {
-            v2f BottomLeft;
-            v2f BottomRight;
-            v2f TopRight;
-            v2f TopLeft;
-        };
-    };
-};
-
 struct Texture
 {
     ui32 ID;
