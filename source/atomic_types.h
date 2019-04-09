@@ -307,7 +307,85 @@ v3f::v3f(f32 x, f32 y, f32 z)
     , z(z)
 {}
 
-/* all v3f suff */
+inline v3f
+operator*(f32 A, v3f B)
+{
+    v3f result;
+
+    result.x = A*B.x;
+    result.y = A*B.y;
+    result.z = A*B.z;
+    
+    return(result);
+}
+
+inline v3f
+operator*(v3f B, f32 A)
+{
+    v3f result = A*B;
+
+    return(result);
+}
+
+inline v3f &
+operator*=(v3f &B, f32 A)
+{
+    B = A * B;
+
+    return(B);
+}
+
+inline v3f
+operator-(v3f A)
+{
+    v3f result;
+
+    result.x = -A.x;
+    result.y = -A.y;
+    result.z = -A.z;
+
+    return(result);
+}
+
+inline v3f
+operator+(v3f A, v3f B)
+{
+    v3f result;
+
+    result.x = A.x + B.x;
+    result.y = A.y + B.y;
+    result.z = A.z + B.z;
+
+    return(result);
+}
+
+inline v3f &
+operator+=(v3f &A, v3f B)
+{
+    A = A + B;
+
+    return(A);
+}
+
+inline v3f
+operator-(v3f A, v3f B)
+{
+    v3f result;
+
+    result.x = A.x - B.x;
+    result.y = A.y - B.y;
+    result.z = A.z - B.z;
+
+    return(result);
+}
+
+inline v3f &
+operator-=(v3f &A, v3f B)
+{
+    A = A - B;
+
+    return(A);
+}
 
 v4f::v4f(f32 x, f32 y, f32 z, f32 w)
     : x(x)

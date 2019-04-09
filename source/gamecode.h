@@ -57,5 +57,6 @@ struct Game_State
     Atlas* atlas;
     Image background;
     Image colorBuffer;
+    Image normalMap;
     Stage_Data stage;
 };
