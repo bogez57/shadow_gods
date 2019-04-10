@@ -124,7 +124,7 @@ enum ChannelType
 };
 
 local_func v4f
-GetRGBAValues(ui32 pixel, ChannelType channelType)
+UnPackPixelValues(ui32 pixel, ChannelType channelType)
 {
     v4f result {};
 
@@ -159,8 +159,8 @@ auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFo
     struct Result {ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B;};
     Result blendedColor{};
     
-    v4f foreGroundColors = GetRGBAValues(foregroundColor, colorFormat);
-    v4f backgroundColors = GetRGBAValues(backgroundColor, colorFormat);
+    v4f foreGroundColors = UnPackPixelValues(foregroundColor, colorFormat);
+    v4f backgroundColors = UnPackPixelValues(backgroundColor, colorFormat);
 
     f32 blendPercent = foreGroundColors.a / 255.0f;
 

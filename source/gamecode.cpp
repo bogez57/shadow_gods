@@ -215,8 +215,8 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
             ++imagePixel;
 #else
 //Pre-multiplied alpha
-            v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
-            v4f foregroundColors = GetRGBAValues(*imagePixel, BGRA);
+            v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
+            v4f foregroundColors = UnPackPixelValues(*imagePixel, BGRA);
             f32 alphaBlend = foregroundColors.a / 255.0f;
             v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + foregroundColors;
 
@@ -236,7 +236,7 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image)
+DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap = {})
 {    
     v2f origin = worldCoords.min;
     v2f targetRectXAxis = v2f{worldCoords.max.x, worldCoords.min.y} - origin;
@@ -317,10 +317,10 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image)
                 ui32 texelPtrD = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
 
                 //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
-                v4f texelA = GetRGBAValues(texelPtrA, BGRA);
-                v4f texelB = GetRGBAValues(texelPtrB, BGRA);
-                v4f texelC = GetRGBAValues(texelPtrC, BGRA);
-                v4f texelD = GetRGBAValues(texelPtrD, BGRA);
+                v4f texelA = UnPackPixelValues(texelPtrA, BGRA);
+                v4f texelB = UnPackPixelValues(texelPtrB, BGRA);
+                v4f texelC = UnPackPixelValues(texelPtrC, BGRA);
+                v4f texelD = UnPackPixelValues(texelPtrD, BGRA);
                 f32 percentToLerpInX = texelPosX - Floor(texelPosX);
                 f32 percentToLerpInY = texelPosY - Floor(texelPosY);
                 v4f ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
@@ -328,7 +328,7 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image)
                 v4f newBlendedTexel = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
 
                 //Linearly Blend with background - Pre-multiplied alpha
-                v4f backgroundColors = GetRGBAValues(*destPixel, BGRA);
+                v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
@@ -336,6 +336,28 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image)
                            ((ui8)finalBlendedColor.r << 16) |
                            ((ui8)finalBlendedColor.g << 8) |
                            ((ui8)finalBlendedColor.b << 0));
+
+                if(normalMap.data)
+                {
+                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
+
+                    //Grab 4 texels (in a square pattern) to blend
+                    ui32 normalPtrA = *(ui32*)(normalPtr);
+                    ui32 normalPtrB = *(ui32*)(normalPtr + sizeof(ui32));
+                    ui32 normalPtrC = *(ui32*)(normalPtr + image.pitch);
+                    ui32 normalPtrD = *(ui32*)(normalPtr + image.pitch + sizeof(ui32));
+
+                    //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
+                    v4f normalA = UnPackPixelValues(normalPtrA, BGRA);
+                    v4f normalB = UnPackPixelValues(normalPtrB, BGRA);
+                    v4f normalC = UnPackPixelValues(normalPtrC, BGRA);
+                    v4f normalD = UnPackPixelValues(normalPtrD, BGRA);
+                    f32 percentToLerpInX = texelPosX - Floor(texelPosX);
+                    f32 percentToLerpInY = texelPosY - Floor(texelPosY);
+                    v4f ABLerp = Lerp(normalA, normalB, percentToLerpInX);
+                    v4f CDLerp = Lerp(normalC, normalD, percentToLerpInX);
+                    v4f blendedNormal = Lerp(ABLerp, CDLerp, percentToLerpInY);
+                }
 
             }
 
@@ -428,6 +450,40 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
                                 return image;
                             };
+
+        auto GenerateSphereNormalMap = [](Image sourceImage) -> void
+                            {
+                                f32 invWidth = 1.0f / (1.0f - sourceImage.size.width);
+                                f32 invHeight = 1.0f / (1.0f - sourceImage.size.height);
+                                
+                                ui8* row = (ui8*)sourceImage.data;
+                                for(i32 y = 0; y < sourceImage.size.height; ++y)
+                                {
+                                    ui32* pixel = (ui32*)row;
+
+                                    for(i32 x = 0; x < sourceImage.size.width; ++x)
+                                    {
+                                        v2f normalUV = {invWidth*(f32)x, invHeight*(f32)y};
+                                        
+                                        //Retreive normal and normalize
+                                        v3f normal = {2.0f*normalUV.x - 1.0f, 2.0f*normalUV.y - 1.0f, 0.0f};
+                                        normal = Normalize(normal);
+
+                                        //Convert to value between 0 and 255
+                                        v4f color = {255.0f*(.5f*(normal.x + 1.0f)),
+                                                     255.0f*(.5f*(normal.y + 1.0f)),
+                                                     0.0f, 
+                                                     0.0f};
+
+                                        *pixel = (((ui8)color.a << 24) |
+                                                     ((ui8)color.r << 16) |
+                                                     ((ui8)color.g << 8) |
+                                                     ((ui8)color.b << 0));
+                                    }
+                                }
+
+                                row += sourceImage.pitch;
+                            };
         
         gState->composite = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
 
@@ -481,6 +537,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
         DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .5f, .5f, .5f);
-        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->normalMap);
     };
 };

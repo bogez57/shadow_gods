@@ -65,10 +65,17 @@ Clamp(f32 value, f32 min, f32 max)
 }
 
 inline f64
-Sqrt(f64 Number)
+Sqrt(f64 number)
 {
-    Number = sqrt(Number);
-    return Number;
+    number = sqrt(number);
+    return number;
+};
+
+inline f32
+Sqrt(f32 number)
+{
+    number = sqrtf(number);
+    return number;
 };
 
 inline sizet
@@ -134,10 +141,40 @@ DotProduct(v2f a, v2f b)
 }
 
 inline f32 
+DotProduct(v3f a, v3f b)
+{
+    f32 result = a.x*b.x + a.y*b.y + a.z*b.z;
+
+    return(result);
+}
+
+inline f32 
 MagnitudeSqd(v2f a)
 {
     f32 result = DotProduct(a,a);
 
+    return(result);
+}
+
+inline f32 
+MagnitudeSqd(v3f a)
+{
+    f32 result = DotProduct(a,a);
+
+    return(result);
+}
+
+inline f32
+Magnitude(v2f a)
+{
+    f32 result = Sqrt(MagnitudeSqd(a));
+    return(result);
+}
+
+inline f32
+Magnitude(v3f a)
+{
+    f32 result = Sqrt(MagnitudeSqd(a));
     return(result);
 }
 
@@ -156,3 +193,19 @@ Lerp(v4f a, v4f b, f32 t)
 
     return(result);
 }
+
+inline v2f
+Normalize(v2f a)
+{
+    v2f result = a * (1.0f / Magnitude(a));
+
+    return result;
+};
+
+inline v3f
+Normalize(v3f a)
+{
+    v3f result = a * (1.0f / Magnitude(a));
+
+    return result;
+};

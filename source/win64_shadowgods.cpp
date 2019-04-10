@@ -180,7 +180,7 @@ namespace Win32::Dbg
         //Swap R and B channels of image
         for(int i = 0; i < totalPixelCountOfImg; ++i)
         {
-            auto color = GetRGBAValues(*imagePixel, RGBA);
+            auto color = UnPackPixelValues(*imagePixel, RGBA);
 
             //Pre-multiplied alpha
             f32 alphaBlend = color.a / 255.0f;
