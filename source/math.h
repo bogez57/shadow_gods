@@ -148,6 +148,22 @@ DotProduct(v3f a, v3f b)
     return(result);
 }
 
+inline v2f
+Hadamard(v2f a, v2f b)
+{
+    v2f result = {a.x*b.x, a.y*b.y};
+
+    return(result);
+}
+
+inline v3f
+Hadamard(v3f a, v3f b)
+{
+    v3f result = {a.x*b.x, a.y*b.y, a.z*b.z};
+
+    return(result);
+}
+
 inline f32 
 MagnitudeSqd(v2f a)
 {

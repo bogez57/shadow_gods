@@ -332,22 +332,24 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap 
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
+#if 0
                 *destPixel = ((0xFF << 24) |
                            ((ui8)finalBlendedColor.r << 16) |
                            ((ui8)finalBlendedColor.g << 8) |
                            ((ui8)finalBlendedColor.b << 0));
+#endif
 
                 if(normalMap.data)
                 {
-                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
+                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*normalMap.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
 
-                    //Grab 4 texels (in a square pattern) to blend
+                    //Grab 4 normals (in a square pattern) to blend
                     ui32 normalPtrA = *(ui32*)(normalPtr);
                     ui32 normalPtrB = *(ui32*)(normalPtr + sizeof(ui32));
-                    ui32 normalPtrC = *(ui32*)(normalPtr + image.pitch);
-                    ui32 normalPtrD = *(ui32*)(normalPtr + image.pitch + sizeof(ui32));
+                    ui32 normalPtrC = *(ui32*)(normalPtr + normalMap.pitch);
+                    ui32 normalPtrD = *(ui32*)(normalPtr + normalMap.pitch + sizeof(ui32));
 
-                    //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
+                    //Blend between 4 normals
                     v4f normalA = UnPackPixelValues(normalPtrA, BGRA);
                     v4f normalB = UnPackPixelValues(normalPtrB, BGRA);
                     v4f normalC = UnPackPixelValues(normalPtrC, BGRA);
@@ -357,8 +359,12 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap 
                     v4f ABLerp = Lerp(normalA, normalB, percentToLerpInX);
                     v4f CDLerp = Lerp(normalC, normalD, percentToLerpInX);
                     v4f blendedNormal = Lerp(ABLerp, CDLerp, percentToLerpInY);
-                }
 
+                    *destPixel = (((ui8)blendedNormal.a  << 24) |
+                           ((ui8)blendedNormal.r << 16) |
+                           ((ui8)blendedNormal.g << 8) |
+                           ((ui8)blendedNormal.b << 0));
+                }
             }
 
             ++destPixel;
@@ -393,16 +399,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     Fighter* enemy = &stage->enemy;
     Fighter* enemy2 = &stage->enemy2;
 
-    gState->colorBuffer.data = (ui8*)gameBackBuffer->memory;
-    gState->colorBuffer.size = v2i{gameBackBuffer->width, gameBackBuffer->height};
-    gState->colorBuffer.pitch = gameBackBuffer->pitch;
-
     if (NOT gameMemory->Initialized)
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
         gameMemory->Initialized = true;
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
+
+        gState->colorBuffer.data = (ui8*)gameBackBuffer->memory;
+        gState->colorBuffer.size = v2i{gameBackBuffer->width, gameBackBuffer->height};
+        gState->colorBuffer.pitch = gameBackBuffer->pitch;
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
@@ -418,9 +424,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * bytesPerPixel;
-        player->world.pos = {200.0f, -50.0f};
+        player->world.pos = {200.0f, 200.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 2.0f;
+        player->world.scale = 1.4f;
         player->image.opacity = .5f;
         
         //Enemy Init
@@ -451,10 +457,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                                 return image;
                             };
 
-        auto GenerateSphereNormalMap = [](Image sourceImage) -> void
+        auto GenerateSphereNormalMap = [](Image&& sourceImage) -> void
                             {
-                                f32 invWidth = 1.0f / (1.0f - sourceImage.size.width);
-                                f32 invHeight = 1.0f / (1.0f - sourceImage.size.height);
+                                f32 invWidth = 1.0f / (f32)(sourceImage.size.width - 1);
+                                f32 invHeight = 1.0f / (f32)(sourceImage.size.height - 1);
                                 
                                 ui8* row = (ui8*)sourceImage.data;
                                 for(i32 y = 0; y < sourceImage.size.height; ++y)
@@ -465,27 +471,39 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                                     {
                                         v2f normalUV = {invWidth*(f32)x, invHeight*(f32)y};
                                         
-                                        //Retreive normal and normalize
-                                        v3f normal = {2.0f*normalUV.x - 1.0f, 2.0f*normalUV.y - 1.0f, 0.0f};
-                                        normal = Normalize(normal);
+                                        f32 normalX = 2.0f*normalUV.x - 1.0f;
+                                        f32 normalY = 2.0f*normalUV.y - 1.0f;
+                                        
+                                        f32 rootTerm = 1.0f - normalX*normalX - normalY*normalY;
+                                        f32 normalZ = 0.0f;
+
+                                        v3f normal {0.0f, 0.0f, 1.0f};
+
+                                        if(rootTerm >= 0.0f)
+                                        {
+                                            normalZ = Sqrt(rootTerm);
+                                            normal = v3f{normalX, normalY, normalZ};
+                                        };
 
                                         //Convert to value between 0 and 255
                                         v4f color = {255.0f*(.5f*(normal.x + 1.0f)),
                                                      255.0f*(.5f*(normal.y + 1.0f)),
-                                                     0.0f, 
+                                                     255.0f*(.5f*(normal.z + 1.0f)),
                                                      0.0f};
 
-                                        *pixel = (((ui8)color.a << 24) |
-                                                     ((ui8)color.r << 16) |
-                                                     ((ui8)color.g << 8) |
-                                                     ((ui8)color.b << 0));
+                                        *pixel++ = (((ui8)(color.a + .5f) << 24) |
+                                                     ((ui8)(color.r + .5f) << 16) |
+                                                     ((ui8)(color.g + .5f) << 8) |
+                                                     ((ui8)(color.b + .5f) << 0));
                                     }
-                                }
 
-                                row += sourceImage.pitch;
+                                    row += sourceImage.pitch;
+                                }
                             };
         
         gState->composite = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
+        gState->normalMap = CreateEmptyImage(player->image.size.width, player->image.size.height);
+        GenerateSphereNormalMap($(gState->normalMap));
 
         //Render to Image
         v2f origin{0.0f, 0.0f};
@@ -522,7 +540,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             Coordinate_Space fighterSpace{};
             fighterSpace.origin = fighterInfo.world.pos;
             fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosInRadians(Radians(fighterInfo.world.rotation)), SinInRadians(Radians(fighterInfo.world.rotation))};
-            fighterSpace.yBasis = 2.5f* PerpendicularOp(fighterSpace.xBasis);
+            fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
 
             //This equation rotates first then moves to correct world position
             transformedCoords.min = fighterSpace.origin + (localCoords.min.x * fighterSpace.xBasis) + (localCoords.min.y * fighterSpace.yBasis);
