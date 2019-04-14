@@ -332,13 +332,14 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap 
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
-#if 0
+#if 1
                 *destPixel = ((0xFF << 24) |
                            ((ui8)finalBlendedColor.r << 16) |
                            ((ui8)finalBlendedColor.g << 8) |
                            ((ui8)finalBlendedColor.b << 0));
 #endif
 
+#if 0
                 if(normalMap.data)
                 {
                     ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*normalMap.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
@@ -349,22 +350,38 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap 
                     ui32 normalPtrC = *(ui32*)(normalPtr + normalMap.pitch);
                     ui32 normalPtrD = *(ui32*)(normalPtr + normalMap.pitch + sizeof(ui32));
 
-                    //Blend between 4 normals
-                    v4f normalA = UnPackPixelValues(normalPtrA, BGRA);
-                    v4f normalB = UnPackPixelValues(normalPtrB, BGRA);
-                    v4f normalC = UnPackPixelValues(normalPtrC, BGRA);
-                    v4f normalD = UnPackPixelValues(normalPtrD, BGRA);
-                    f32 percentToLerpInX = texelPosX - Floor(texelPosX);
-                    f32 percentToLerpInY = texelPosY - Floor(texelPosY);
-                    v4f ABLerp = Lerp(normalA, normalB, percentToLerpInX);
-                    v4f CDLerp = Lerp(normalC, normalD, percentToLerpInX);
-                    v4f blendedNormal = Lerp(ABLerp, CDLerp, percentToLerpInY);
+                    v4f blendedNormal{};
+                    {//Blend between 4 normals
+                        v4f normalA = UnPackPixelValues(normalPtrA, BGRA);
+                        v4f normalB = UnPackPixelValues(normalPtrB, BGRA);
+                        v4f normalC = UnPackPixelValues(normalPtrC, BGRA);
+                        v4f normalD = UnPackPixelValues(normalPtrD, BGRA);
+
+                        f32 percentToLerpInX = texelPosX - Floor(texelPosX);
+                        f32 percentToLerpInY = texelPosY - Floor(texelPosY);
+
+                        //Bilinear blend
+                        v4f ABLerp = Lerp(normalA, normalB, percentToLerpInX);
+                        v4f CDLerp = Lerp(normalC, normalD, percentToLerpInX);
+                        blendedNormal = Lerp(ABLerp, CDLerp, percentToLerpInY);
+                    };
+
+                    {//Convert normal from color value range (0 - 255) to vector range (-1 to 1)
+                        f32 inv255 = 1.0f / 255.0f;
+
+                        blendedNormal.x = -1.0f + 2.0f*(inv255*blendedNormal.x);
+                        blendedNormal.y = -1.0f + 2.0f*(inv255*blendedNormal.y);
+                        blendedNormal.z = -1.0f + 2.0f*(inv255*blendedNormal.z);
+                    }
+
+					Normalize($(blendedNormal.xyz));
 
                     *destPixel = (((ui8)blendedNormal.a  << 24) |
                            ((ui8)blendedNormal.r << 16) |
                            ((ui8)blendedNormal.g << 8) |
                            ((ui8)blendedNormal.b << 0));
                 }
+#endif
             }
 
             ++destPixel;
@@ -485,7 +502,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                                             normal = v3f{normalX, normalY, normalZ};
                                         };
 
-                                        //Convert to value between 0 and 255
+                                        //Convert from -1 to 1 range to value between 0 and 255
                                         v4f color = {255.0f*(.5f*(normal.x + 1.0f)),
                                                      255.0f*(.5f*(normal.y + 1.0f)),
                                                      255.0f*(.5f*(normal.z + 1.0f)),
@@ -519,8 +536,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.pos.x += 10.0f;
-        enemy->world.pos.x += 5.0f;
+        player->world.rotation += 1.0f;
     };
 
     //Essentially local fighter coordinates

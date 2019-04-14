@@ -81,11 +81,6 @@ struct v4f
         f32 Elem[4];
         struct
         {
-            f32 x, y, z, w;
-        };
-
-        struct
-        {
             union
             {
                 v3f rgb;
@@ -96,6 +91,20 @@ struct v4f
             };
             
             f32 a;        
+        };
+
+        struct
+        {
+            union
+            {
+                v3f xyz;
+                struct
+                {
+                    f32 x, y, z;
+                };
+            };
+            
+            f32 w;        
         };
     };
 };

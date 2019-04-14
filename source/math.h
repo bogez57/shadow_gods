@@ -210,18 +210,14 @@ Lerp(v4f a, v4f b, f32 t)
     return(result);
 }
 
-inline v2f
-Normalize(v2f a)
+inline void
+Normalize(v2f&& a)
 {
-    v2f result = a * (1.0f / Magnitude(a));
-
-    return result;
+    a *= (1.0f / Magnitude(a));
 };
 
-inline v3f
-Normalize(v3f a)
+inline void
+Normalize(v3f&& a)
 {
-    v3f result = a * (1.0f / Magnitude(a));
-
-    return result;
+    a *= (1.0f / Magnitude(a));
 };
