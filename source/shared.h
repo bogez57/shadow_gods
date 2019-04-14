@@ -111,6 +111,21 @@ struct Recti
     v2i max;
 };
 
+struct Quad
+{
+    union
+    {
+        Array<v2f, 4> vertices;
+        struct
+        {
+            v2f bottomLeft;
+            v2f bottomRight;
+            v2f topRight;
+            v2f topLeft;
+        };
+    };
+};
+
 struct Texture
 {
     ui32 ID;
@@ -216,6 +231,18 @@ Rectf ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 
     return Result;
 };
+
+Quad ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
+{
+    Quad Result;
+
+    Result.bottomLeft = originPoint;
+    Result.bottomRight = { originPoint.x + width, originPoint.y };
+    Result.topRight = { originPoint.x + width, originPoint.y + height };
+    Result.topLeft = { originPoint.x, originPoint.y + height };
+
+    return Result;
+}
 
 auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
 {

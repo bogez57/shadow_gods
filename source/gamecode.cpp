@@ -236,11 +236,11 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap = {})
+DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap = {})
 {    
-    v2f origin = worldCoords.min;
-    v2f targetRectXAxis = v2f{worldCoords.max.x, worldCoords.min.y} - origin;
-    v2f targetRectYAxis = v2f{worldCoords.min.x, worldCoords.max.y} - origin;
+    v2f origin = worldCoords.bottomLeft;
+    v2f targetRectXAxis = worldCoords.bottomRight - origin;
+    v2f targetRectYAxis = worldCoords.topLeft - origin;
 
     f32 widthMax = (f32)(buffer.size.width - 1);
     f32 heightMax = (f32)(buffer.size.height - 1);
@@ -332,14 +332,14 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap 
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
-#if 1
+#if 0
                 *destPixel = ((0xFF << 24) |
                            ((ui8)finalBlendedColor.r << 16) |
                            ((ui8)finalBlendedColor.g << 8) |
                            ((ui8)finalBlendedColor.b << 0));
 #endif
 
-#if 0
+#if 1
                 if(normalMap.data)
                 {
                     ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*normalMap.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
@@ -391,7 +391,7 @@ DrawImageSlowly(Image&& buffer, Rectf worldCoords, Image image, Image normalMap 
     }
 }
 
-void RenderToImage(Image&& renderTarget, Image sourceImage, Rectf targetArea)
+void RenderToImage(Image&& renderTarget, Image sourceImage, Quad targetArea)
 {
     DrawImageSlowly($(renderTarget), targetArea, sourceImage);
 };
@@ -536,31 +536,32 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.rotation += 1.0f;
+        player->world.rotation += 10.0f;
     };
 
     //Essentially local fighter coordinates
-    Rectf playerTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
-    Rectf enemyTargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
-    Rectf enemy2TargetRect = ProduceRectFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
+    Quad playerTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
+    Quad enemyTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
+    Quad enemy2TargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
 
     { // Render
         player->image.opacity = Clamp(player->image.opacity, 0.0f, 1.0f); 
         enemy->image.opacity = Clamp(enemy->image.opacity, 0.0f, 1.0f); 
 
-        auto WorldTransform = [](Rectf localCoords, Fighter fighterInfo) -> Rectf
+        auto WorldTransform = [](Quad localCoords, Fighter fighterInfo) -> Quad
         {
-            Rectf transformedCoords{};
-
             //With world space origin at 0, 0
             Coordinate_Space fighterSpace{};
             fighterSpace.origin = fighterInfo.world.pos;
             fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosInRadians(Radians(fighterInfo.world.rotation)), SinInRadians(Radians(fighterInfo.world.rotation))};
             fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
 
-            //This equation rotates first then moves to correct world position
-            transformedCoords.min = fighterSpace.origin + (localCoords.min.x * fighterSpace.xBasis) + (localCoords.min.y * fighterSpace.yBasis);
-            transformedCoords.max = fighterSpace.origin + (localCoords.max.x * fighterSpace.xBasis) + (localCoords.max.y * fighterSpace.yBasis);
+            Quad transformedCoords{};
+            for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
+            {
+                //This equation rotates first then moves to correct world position
+                transformedCoords.vertices.At(vertIndex) = fighterSpace.origin + (localCoords.vertices.At(vertIndex).x * fighterSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * fighterSpace.yBasis);
+            };
 
             return transformedCoords;
         };
