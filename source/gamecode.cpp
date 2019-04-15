@@ -380,6 +380,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
 
                     f32 normalAngle{};
                     f32 normalAngleDegrees{};
+                    f32 lightAngleDegrees{45.0f};
                     if(blendedNormal.x > 0.0f && blendedNormal.y > 0.0f)
                     {
                         normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
@@ -404,8 +405,11 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                         normalAngleDegrees += 270.0f;
                     }
 
-                    if(normalAngleDegrees <= 90.0f)
+                    f32 lowThreshold = lightAngleDegrees + 90.0f;
+                    f32 highThreshold = 360.0f - (AbsoluteVal(lightAngleDegrees - 90.0f));
+                    if(normalAngleDegrees > lowThreshold && normalAngleDegrees < highThreshold)
                     {
+                        //Shaded area
                         *destPixel = ((255 << 24) |
                            (0 << 16) |
                            (255 << 8) |
