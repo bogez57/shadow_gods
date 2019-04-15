@@ -376,10 +376,48 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
 
 					Normalize($(blendedNormal.xyz));
 
-                    *destPixel = (((ui8)blendedNormal.a  << 24) |
-                           ((ui8)blendedNormal.r << 16) |
-                           ((ui8)blendedNormal.g << 8) |
-                           ((ui8)blendedNormal.b << 0));
+                    v3f lightVec {0.5f, 0.5f, 0.0f};
+
+                    f32 normalAngle{};
+                    f32 normalAngleDegrees{};
+                    if(blendedNormal.x > 0.0f && blendedNormal.y > 0.0f)
+                    {
+                        normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                        normalAngleDegrees = Degrees(normalAngle);
+                    }
+                    else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
+                    {
+                        normalAngle = AbsoluteVal(InvTanR(blendedNormal.x / blendedNormal.y));
+                        normalAngleDegrees = Degrees(normalAngle);
+                        normalAngleDegrees += 90.0f;
+                    }
+                    else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
+                    {
+                        normalAngle = AbsoluteVal(InvTanR(blendedNormal.y / blendedNormal.x));
+                        normalAngleDegrees = Degrees(normalAngle);
+                        normalAngleDegrees += 180.0f;
+                    }
+                    else if(blendedNormal.x > 0.0f && blendedNormal.y < 0.0f)
+                    {
+                        normalAngle = AbsoluteVal(InvTanR(blendedNormal.x / blendedNormal.y));
+                        normalAngleDegrees = Degrees(normalAngle);
+                        normalAngleDegrees += 270.0f;
+                    }
+
+                    if(normalAngleDegrees <= 90.0f)
+                    {
+                        *destPixel = ((255 << 24) |
+                           (0 << 16) |
+                           (255 << 8) |
+                           (0 << 0));
+                    }
+                    else
+                    {
+                        *destPixel = ((255 << 24) |
+                           (244 << 16) |
+                           (0 << 8) |
+                           (0 << 0));
+                    }
                 }
 #endif
             }
@@ -553,7 +591,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             //With world space origin at 0, 0
             Coordinate_Space fighterSpace{};
             fighterSpace.origin = fighterInfo.world.pos;
-            fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosInRadians(Radians(fighterInfo.world.rotation)), SinInRadians(Radians(fighterInfo.world.rotation))};
+            fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosR(Radians(fighterInfo.world.rotation)), SinR(Radians(fighterInfo.world.rotation))};
             fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
 
             Quad transformedCoords{};

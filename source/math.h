@@ -29,22 +29,56 @@ inline f32
 Radians(f32 angleInDegrees)
 {
     f32 angleInRadians = angleInDegrees * (PI / 180.0f);
-
     return angleInRadians;
 };
 
 inline f32
-SinInRadians(f32 AngleInRadians)
+Degrees(f32 angleInRadians)
 {
-    f32 RealNumber = sinf(AngleInRadians);
-    return RealNumber;
+    f32 angleInDegrees = (180.0f / PI) * angleInRadians;
+    return angleInDegrees;
 };
 
 inline f32
-CosInRadians(f32 AngleInRadians)
+SinR(f32 angleInRadians)
 {
-    f32 RealNumber = cosf(AngleInRadians);
-    return RealNumber;
+    f32 result = sinf(angleInRadians);
+    return result;
+};
+
+inline f32
+InvSinR(f32 angleInRadians)
+{
+    f32 result = asinf(angleInRadians);
+    return result;
+};
+
+inline f32
+CosR(f32 AngleInRadians)
+{
+    f32 result = cosf(AngleInRadians);
+    return result;
+};
+
+inline f32
+InvCosR(f32 angleInRadians)
+{
+    f32 result = acosf(angleInRadians);
+    return result;
+};
+
+inline f32
+TanR(f32 AngleInRadians)
+{
+    f32 result = tanf(AngleInRadians);
+    return result;
+};
+
+inline f32
+InvTanR(f32 value)
+{
+    f32 result = atanf(value);
+    return result;
 };
 
 inline f32

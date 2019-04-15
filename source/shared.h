@@ -247,8 +247,8 @@ Quad ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
 {
     f32 RotationInRadians = RotationInDegress * (PI / 180.0f);
-    v2f RotatedXBasis = VectorToRotate.x * v2f { CosInRadians(RotationInRadians), SinInRadians(RotationInRadians) };
-    v2f RotatedYBasis = VectorToRotate.y * v2f { -SinInRadians(RotationInRadians), CosInRadians(RotationInRadians) };
+    v2f RotatedXBasis = VectorToRotate.x * v2f { CosR(RotationInRadians), SinR(RotationInRadians) };
+    v2f RotatedYBasis = VectorToRotate.y * v2f { -SinR(RotationInRadians), CosR(RotationInRadians) };
     v2f NewRotatedVector = RotatedXBasis + RotatedYBasis;
 
     return NewRotatedVector;
