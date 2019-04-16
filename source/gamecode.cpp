@@ -406,13 +406,19 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                     }
 
                     f32 lowThreshold = lightAngleDegrees + 90.0f;
-                    f32 highThreshold = 360.0f - (AbsoluteVal(lightAngleDegrees - 90.0f));
+                    f32 highThreshold = lightAngleDegrees - 90.0f;
+                    if(highThreshold < 0.0f)
+                    {
+                        highThreshold = AbsoluteVal(highThreshold);
+                        highThreshold = 360.0f - highThreshold;
+                    }
+
                     if(normalAngleDegrees > lowThreshold && normalAngleDegrees < highThreshold)
                     {
                         //Shaded area
                         *destPixel = ((255 << 24) |
                            (0 << 16) |
-                           (255 << 8) |
+                           (0 << 8) |
                            (0 << 0));
                     }
                     else
@@ -485,7 +491,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.pitch = player->image.size.width * bytesPerPixel;
         player->world.pos = {200.0f, 200.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 1.4f;
+        player->world.scale = 1.0f;
         player->image.opacity = .5f;
         
         //Enemy Init
