@@ -378,55 +378,95 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
 
                     v3f lightVec {0.5f, 0.5f, 0.0f};
 
+                    auto ConvertNegativeAngleToRadians = [](f32&& angle)
+                    {
+                        f32 circumferenceInRadians = 2*PI;
+                        angle = Mod(angle, circumferenceInRadians);
+                        if (angle < 0) angle += circumferenceInRadians;
+                        return angle;
+                    };
+
                     f32 normalAngle{};
-                    f32 normalAngleDegrees{};
-                    f32 lightAngleDegrees{45.0f};
+                    f32 lightAngle{3.0f};
                     if(blendedNormal.x > 0.0f && blendedNormal.y > 0.0f)
                     {
                         normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                        normalAngleDegrees = Degrees(normalAngle);
                     }
                     else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
                     {
-                        normalAngle = AbsoluteVal(InvTanR(blendedNormal.x / blendedNormal.y));
-                        normalAngleDegrees = Degrees(normalAngle);
-                        normalAngleDegrees += 90.0f;
+                        normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                        AbsoluteVal($(normalAngle));
+                        normalAngle += (PI / 2.0f);
+                        AbsoluteVal($(normalAngle));
                     }
                     else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
                     {
-                        normalAngle = AbsoluteVal(InvTanR(blendedNormal.y / blendedNormal.x));
-                        normalAngleDegrees = Degrees(normalAngle);
-                        normalAngleDegrees += 180.0f;
+                        normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                        normalAngle -= ((3.0f*PI) / 2.0f);
+                        AbsoluteVal($(normalAngle));
                     }
                     else if(blendedNormal.x > 0.0f && blendedNormal.y < 0.0f)
                     {
-                        normalAngle = AbsoluteVal(InvTanR(blendedNormal.x / blendedNormal.y));
-                        normalAngleDegrees = Degrees(normalAngle);
-                        normalAngleDegrees += 270.0f;
+                        normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                        ConvertNegativeAngleToRadians($(normalAngle));
                     }
 
-                    f32 lowThreshold = lightAngleDegrees + 90.0f;
-                    f32 highThreshold = lightAngleDegrees - 90.0f;
-                    if(highThreshold < 0.0f)
+                    f32 shadowThreshold = (PI / 2.0f);
+                    f32 tempAngle1 = lightAngle + shadowThreshold;
+                    f32 tempAngle2 = lightAngle - shadowThreshold;
+
+                    f32 circumferenceInRadians = 2*PI;
+                    if(tempAngle1 > circumferenceInRadians)
                     {
-                        highThreshold = AbsoluteVal(highThreshold);
-                        highThreshold = 360.0f - highThreshold;
+                        f32 circumferenceInRadians = 2*PI;
+                        tempAngle1 = Mod(tempAngle1, circumferenceInRadians);
+                    } 
+                    if(tempAngle2 < 0.0f) 
+                    {
+                        ConvertNegativeAngleToRadians($(tempAngle2));
                     }
 
-                    if(normalAngleDegrees > lowThreshold && normalAngleDegrees < highThreshold)
+                    if(lightAngle >= ((3.0f * PI) / 2.0f) || lightAngle <= (PI / 2))
                     {
-                        //Shaded area
-                        *destPixel = ((255 << 24) |
-                           (0 << 16) |
-                           (0 << 8) |
-                           (0 << 0));
+                        f32 highThresholdAngle = Max(tempAngle1, tempAngle2);
+                        f32 lowThresholdAngle = Min(tempAngle1, tempAngle2);
+
+                        if(normalAngle > lowThresholdAngle && normalAngle < highThresholdAngle)
+                        {
+                            //Shaded area
+                            *destPixel = ((255 << 24) |
+                            (0 << 16) |
+                            (0 << 8) |
+                            (0 << 0));
+                        }
+                        else
+                        {
+                            *destPixel = ((255 << 24) |
+                            (244 << 16) |
+                            (0 << 8) |
+                            (0 << 0));
+                        }
                     }
                     else
                     {
-                        *destPixel = ((255 << 24) |
-                           (244 << 16) |
-                           (0 << 8) |
-                           (0 << 0));
+                        f32 highThresholdAngle = Max(tempAngle1, tempAngle2);
+                        f32 lowThresholdAngle = Min(tempAngle1, tempAngle2);
+
+                        if(normalAngle < lowThresholdAngle || normalAngle > highThresholdAngle)
+                        {
+                            //Shaded area
+                            *destPixel = ((255 << 24) |
+                            (0 << 16) |
+                            (0 << 8) |
+                            (0 << 0));
+                        }
+                        else
+                        {
+                            *destPixel = ((255 << 24) |
+                            (244 << 16) |
+                            (0 << 8) |
+                            (0 << 0));
+                        }
                     }
                 }
 #endif

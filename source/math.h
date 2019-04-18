@@ -4,25 +4,43 @@
 
 #define PI 3.1415926535897932385f
 
-inline i32
-AbsoluteVal(i32 Value)
+inline f32
+Max(f32 x, f32 y)
 {
-    i32 Result = abs(Value);
-    return Result;
-}
+    f32 result = fmaxf(x, y);
+    return result;
+};
 
 inline f32
-AbsoluteVal(f32 Value)
+Min(f32 x, f32 y)
 {
-    f32 Result = (f32)fabs(Value);
-    return Result;
+    f32 result = fminf(x, y);
+    return result;
+};
+
+inline f32
+Mod(f32 x, f32 y)
+{
+    f32 result = fmodf(x, y);
+    return result;
+};
+
+inline void
+AbsoluteVal(i32&& Value)
+{
+    Value = abs(Value);
 }
 
-inline v2f
-AbsoluteVal(v2f Value)
+inline void
+AbsoluteVal(f32&& Value)
 {
-    v2f Result { (f32)fabs(Value.x), (f32)fabs(Value.y) };
-    return Result;
+    Value = (f32)fabs(Value);
+}
+
+inline void
+AbsoluteVal(v2f&& Value)
+{
+    Value = { (f32)fabs(Value.x), (f32)fabs(Value.y) };
 }
 
 inline f32
