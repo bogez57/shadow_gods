@@ -236,7 +236,7 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap = {})
+DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 shadeThreshold = {}, Image normalMap = {})
 {    
     v2f origin = worldCoords.bottomLeft;
     v2f targetRectXAxis = worldCoords.bottomRight - origin;
@@ -387,7 +387,6 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                     };
 
                     f32 normalAngle{};
-                    f32 lightAngle{1.2f};
                     if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
                     {
                         normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
@@ -410,9 +409,8 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                         ConvertNegativeAngleToRadians($(normalAngle));
                     }
 
-                    f32 shadowThreshold = (PI / 2.0f);
-                    f32 shadeThresholdAngle1 = lightAngle + shadowThreshold;
-                    f32 shadeThresholdAngle2 = lightAngle - shadowThreshold;
+                    f32 shadeThresholdAngle1 = lightAngle + shadeThreshold ;
+                    f32 shadeThresholdAngle2 = lightAngle - shadeThreshold ;
 
                     f32 circumferenceInRadians = 2*PI;
                     if(shadeThresholdAngle1 > circumferenceInRadians)
@@ -608,6 +606,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         gState->normalMap = CreateEmptyImage(player->image.size.width, player->image.size.height);
         GenerateSphereNormalMap($(gState->normalMap));
 
+        gState->shadeThreshold = (PI / 2);
+
         //Render to Image
         v2f origin{0.0f, 0.0f};
         origin += 300.0f;
@@ -622,7 +622,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.rotation += 10.0f;
+        gState->lightAngle += .01f;
     };
 
     //Essentially local fighter coordinates
@@ -658,6 +658,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
         DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .5f, .5f, .5f);
-        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->normalMap);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->shadeThreshold, gState->normalMap);
     };
 };
