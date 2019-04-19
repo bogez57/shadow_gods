@@ -99,21 +99,17 @@ InvTanR(f32 value)
     return result;
 };
 
-inline f32
-Clamp(f32 value, f32 min, f32 max)
+inline void
+Clamp(f32&& value, f32 min, f32 max)
 {
-    f32 result = value;
-
-    if(result < min)
+    if(value < min)
     {
-        result = min;
+        value = min;
     }
-    else if(result > max)
+    else if(value > max)
     {
-        result = max;
+        value = max;
     }
-
-    return(result);
 }
 
 inline f64

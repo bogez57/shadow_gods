@@ -376,8 +376,6 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
 
 					Normalize($(blendedNormal.xyz));
 
-                    v3f lightVec {0.5f, 0.5f, 0.0f};
-
                     auto ConvertNegativeAngleToRadians = [](f32&& angle)
                     {
                         f32 circumferenceInRadians = 2*PI;
@@ -386,7 +384,16 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                         return angle;
                     };
 
+                    auto ConvertToCorrectPositiveRadian = [](f32&& angle)
+                    {
+                        f32 unitCircleCircumferenceInRadians = 2*PI;
+                        angle = Mod(angle, unitCircleCircumferenceInRadians);
+                    };
+
                     f32 normalAngle{};
+
+                    if (lightAngle > (PI*2)) ConvertToCorrectPositiveRadian($(lightAngle));
+                    
                     if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
                     {
                         normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
@@ -415,8 +422,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     f32 circumferenceInRadians = 2*PI;
                     if(shadeThresholdAngle1 > circumferenceInRadians)
                     {
-                        f32 circumferenceInRadians = 2*PI;
-                        shadeThresholdAngle1 = Mod(shadeThresholdAngle1 , circumferenceInRadians);
+                        ConvertToCorrectPositiveRadian($(shadeThresholdAngle1));
                     } 
                     if(shadeThresholdAngle2 < 0.0f) 
                     {
@@ -606,7 +612,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         gState->normalMap = CreateEmptyImage(player->image.size.width, player->image.size.height);
         GenerateSphereNormalMap($(gState->normalMap));
 
-        gState->shadeThreshold = (PI / 2);
+        gState->shadeThreshold = 2.0f;
 
         //Render to Image
         v2f origin{0.0f, 0.0f};
@@ -622,7 +628,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        gState->lightAngle += .01f;
+        gState->lightAngle += .1f;
     };
 
     //Essentially local fighter coordinates
@@ -631,9 +637,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     Quad enemy2TargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
 
     { // Render
-        player->image.opacity = Clamp(player->image.opacity, 0.0f, 1.0f); 
-        enemy->image.opacity = Clamp(enemy->image.opacity, 0.0f, 1.0f); 
-
         auto WorldTransform = [](Quad localCoords, Fighter fighterInfo) -> Quad
         {
             //With world space origin at 0, 0
