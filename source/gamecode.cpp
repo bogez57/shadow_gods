@@ -387,8 +387,8 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                     };
 
                     f32 normalAngle{};
-                    f32 lightAngle{3.0f};
-                    if(blendedNormal.x > 0.0f && blendedNormal.y > 0.0f)
+                    f32 lightAngle{1.2f};
+                    if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
                     {
                         normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
                     }
@@ -397,7 +397,6 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                         normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
                         AbsoluteVal($(normalAngle));
                         normalAngle += (PI / 2.0f);
-                        AbsoluteVal($(normalAngle));
                     }
                     else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
                     {
@@ -405,32 +404,33 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                         normalAngle -= ((3.0f*PI) / 2.0f);
                         AbsoluteVal($(normalAngle));
                     }
-                    else if(blendedNormal.x > 0.0f && blendedNormal.y < 0.0f)
+                    else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
                     {
                         normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
                         ConvertNegativeAngleToRadians($(normalAngle));
                     }
 
                     f32 shadowThreshold = (PI / 2.0f);
-                    f32 tempAngle1 = lightAngle + shadowThreshold;
-                    f32 tempAngle2 = lightAngle - shadowThreshold;
+                    f32 shadeThresholdAngle1 = lightAngle + shadowThreshold;
+                    f32 shadeThresholdAngle2 = lightAngle - shadowThreshold;
 
                     f32 circumferenceInRadians = 2*PI;
-                    if(tempAngle1 > circumferenceInRadians)
+                    if(shadeThresholdAngle1 > circumferenceInRadians)
                     {
                         f32 circumferenceInRadians = 2*PI;
-                        tempAngle1 = Mod(tempAngle1, circumferenceInRadians);
+                        shadeThresholdAngle1 = Mod(shadeThresholdAngle1 , circumferenceInRadians);
                     } 
-                    if(tempAngle2 < 0.0f) 
+                    if(shadeThresholdAngle2 < 0.0f) 
                     {
-                        ConvertNegativeAngleToRadians($(tempAngle2));
+                        ConvertNegativeAngleToRadians($(shadeThresholdAngle2 ));
                     }
 
+                    f32 highThresholdAngle = Max(shadeThresholdAngle1 , shadeThresholdAngle2);
+                    f32 lowThresholdAngle = Min(shadeThresholdAngle1 , shadeThresholdAngle2);
+
+                    //If light angle is within quadrant's 1 and 4 of unit circle (right side)
                     if(lightAngle >= ((3.0f * PI) / 2.0f) || lightAngle <= (PI / 2))
                     {
-                        f32 highThresholdAngle = Max(tempAngle1, tempAngle2);
-                        f32 lowThresholdAngle = Min(tempAngle1, tempAngle2);
-
                         if(normalAngle > lowThresholdAngle && normalAngle < highThresholdAngle)
                         {
                             //Shaded area
@@ -448,10 +448,8 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, Image normalMap =
                         }
                     }
                     else
+                    //light angle is within quadrant's 2 and 3 of unit circle (left side)
                     {
-                        f32 highThresholdAngle = Max(tempAngle1, tempAngle2);
-                        f32 lowThresholdAngle = Min(tempAngle1, tempAngle2);
-
                         if(normalAngle < lowThresholdAngle || normalAngle > highThresholdAngle)
                         {
                             //Shaded area
