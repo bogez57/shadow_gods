@@ -238,6 +238,33 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
 local_func void
 DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {})
 {    
+    auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
+    {
+        v4ui Result{};
+
+        Result.a = *(ui32*)(pixelToSampleFrom);
+        Result.b = *(ui32*)(pixelToSampleFrom + sizeof(ui32));
+        Result.c = *(ui32*)(pixelToSampleFrom + pitch);
+        Result.d = *(ui32*)(pixelToSampleFrom + pitch + sizeof(ui32));
+
+        return Result;
+    };
+
+    auto BiLinearLerp = [](v4ui pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
+    {
+        v4f newBlendedValue {};
+        v4f pixelA = UnPackPixelValues(pixelsToLerp.a, BGRA);
+        v4f pixelB = UnPackPixelValues(pixelsToLerp.b, BGRA);
+        v4f pixelC = UnPackPixelValues(pixelsToLerp.c, BGRA);
+        v4f pixelD = UnPackPixelValues(pixelsToLerp.d, BGRA);
+
+        v4f ABLerpColor = Lerp(pixelA, pixelB, percentToLerpInX);
+        v4f CDLerpColor = Lerp(pixelC, pixelD, percentToLerpInX);
+        newBlendedValue = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
+
+        return newBlendedValue;
+    };
+
     v2f origin = worldCoords.bottomLeft;
     v2f targetRectXAxis = worldCoords.bottomRight - origin;
     v2f targetRectYAxis = worldCoords.topLeft - origin;
@@ -310,24 +337,12 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
 
                 ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
 
-                //Grab 4 texels (in a square pattern) to blend
-                ui32 texelPtrA = *(ui32*)(texelPtr);
-                ui32 texelPtrB = *(ui32*)(texelPtr + sizeof(ui32));
-                ui32 texelPtrC = *(ui32*)(texelPtr + image.pitch);
-                ui32 texelPtrD = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
+                v4ui texelSquare = Grab4NearestPixelPtrs_SquarePattern(texelPtr, image.pitch);
 
                 //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
-                v4f texelA = UnPackPixelValues(texelPtrA, BGRA);
-                v4f texelB = UnPackPixelValues(texelPtrB, BGRA);
-                v4f texelC = UnPackPixelValues(texelPtrC, BGRA);
-                v4f texelD = UnPackPixelValues(texelPtrD, BGRA);
-                f32 percentToLerpInX = texelPosX - Floor(texelPosX);
-                f32 percentToLerpInY = texelPosY - Floor(texelPosY);
-                v4f ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
-                v4f CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
-                v4f newBlendedTexel = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
+                v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPosX - Floor(texelPosX)), (texelPosY - Floor(texelPosY)));
 
-                //Linearly Blend with background - Pre-multiplied alpha
+                //Linearly Blend with background - Assuming Pre-multiplied alpha
                 v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
@@ -345,26 +360,9 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*normalMap.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
 
                     //Grab 4 normals (in a square pattern) to blend
-                    ui32 normalPtrA = *(ui32*)(normalPtr);
-                    ui32 normalPtrB = *(ui32*)(normalPtr + sizeof(ui32));
-                    ui32 normalPtrC = *(ui32*)(normalPtr + normalMap.pitch);
-                    ui32 normalPtrD = *(ui32*)(normalPtr + normalMap.pitch + sizeof(ui32));
+                    v4ui normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
 
-                    v4f blendedNormal{};
-                    {//Blend between 4 normals
-                        v4f normalA = UnPackPixelValues(normalPtrA, BGRA);
-                        v4f normalB = UnPackPixelValues(normalPtrB, BGRA);
-                        v4f normalC = UnPackPixelValues(normalPtrC, BGRA);
-                        v4f normalD = UnPackPixelValues(normalPtrD, BGRA);
-
-                        f32 percentToLerpInX = texelPosX - Floor(texelPosX);
-                        f32 percentToLerpInY = texelPosY - Floor(texelPosY);
-
-                        //Bilinear blend
-                        v4f ABLerp = Lerp(normalA, normalB, percentToLerpInX);
-                        v4f CDLerp = Lerp(normalC, normalD, percentToLerpInX);
-                        blendedNormal = Lerp(ABLerp, CDLerp, percentToLerpInY);
-                    };
+                    v4f blendedNormal = BiLinearLerp(normalSquare, (texelPosX - Floor(texelPosX)), (texelPosY - Floor(texelPosY)));
 
                     //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
                     f32 inv255 = 1.0f / 255.0f;
@@ -578,7 +576,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         gState->normalMap = CreateEmptyImage(player->image.size.width, player->image.size.height);
         GenerateSphereNormalMap($(gState->normalMap));
 
-        gState->lightThreshold = 2.0f;
+        gState->lightThreshold = 1.0f;
 
         //Render to Image
         v2f origin{0.0f, 0.0f};

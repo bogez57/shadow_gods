@@ -168,6 +168,31 @@ struct v4i
     };
 };
 
+struct v4ui
+{
+    v4ui() = default;
+    v4ui(ui32 x, ui32 y, ui32 z, ui32 w);
+
+    union
+    {
+        i32 Elem[4];
+        struct
+        {
+            ui32 x, y, z, w;
+        };
+
+        struct
+        {
+            ui32 r, g, b, a;
+        };
+
+        struct
+        {
+            ui32 a, b, c, d;
+        };
+    };
+};
+
 struct m2x2
 {
     f32 Elem[2][2];
