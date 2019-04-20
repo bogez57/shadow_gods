@@ -240,23 +240,23 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
     {
-        v4ui Result{};
+        v4ui result{};
 
-        Result.a = *(ui32*)(pixelToSampleFrom);
-        Result.b = *(ui32*)(pixelToSampleFrom + sizeof(ui32));
-        Result.c = *(ui32*)(pixelToSampleFrom + pitch);
-        Result.d = *(ui32*)(pixelToSampleFrom + pitch + sizeof(ui32));
+        result.x = *(ui32*)(pixelToSampleFrom);
+        result.y = *(ui32*)(pixelToSampleFrom + sizeof(ui32));
+        result.z = *(ui32*)(pixelToSampleFrom + pitch);
+        result.w = *(ui32*)(pixelToSampleFrom + pitch + sizeof(ui32));
 
-        return Result;
+        return result;
     };
 
     auto BiLinearLerp = [](v4ui pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
     {
         v4f newBlendedValue {};
-        v4f pixelA = UnPackPixelValues(pixelsToLerp.a, BGRA);
-        v4f pixelB = UnPackPixelValues(pixelsToLerp.b, BGRA);
-        v4f pixelC = UnPackPixelValues(pixelsToLerp.c, BGRA);
-        v4f pixelD = UnPackPixelValues(pixelsToLerp.d, BGRA);
+        v4f pixelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
+        v4f pixelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
+        v4f pixelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
+        v4f pixelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
 
         v4f ABLerpColor = Lerp(pixelA, pixelB, percentToLerpInX);
         v4f CDLerpColor = Lerp(pixelC, pixelD, percentToLerpInX);
@@ -347,14 +347,14 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
-#if 0
+#if 1
                 *destPixel = ((0xFF << 24) |
                            ((ui8)finalBlendedColor.r << 16) |
                            ((ui8)finalBlendedColor.g << 8) |
                            ((ui8)finalBlendedColor.b << 0));
 #endif
 
-#if 1
+#if 0
                 if(normalMap.data)
                 {
                     ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*normalMap.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
@@ -493,11 +493,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
 
         //Player Init
-        player->image.data = platformServices->LoadBGRAbitImage("data/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
+        player->image.data = platformServices->LoadBGRAbitImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * bytesPerPixel;
-        player->world.pos = {200.0f, 200.0f};
+        player->world.pos = {500.0f, 200.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 1.0f;
+        player->world.scale = 2.0f;
         player->image.opacity = .5f;
         
         //Enemy Init
@@ -593,6 +593,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     if(KeyHeld(keyboard->MoveRight))
     {
         gState->lightAngle += .1f;
+        player->world.rotation += 1.0f;
     };
 
     //Essentially local fighter coordinates

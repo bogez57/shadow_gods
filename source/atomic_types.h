@@ -185,11 +185,6 @@ struct v4ui
         {
             ui32 r, g, b, a;
         };
-
-        struct
-        {
-            ui32 a, b, c, d;
-        };
     };
 };
 
