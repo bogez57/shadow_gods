@@ -236,7 +236,7 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 shadeThreshold = {}, Image normalMap = {})
+DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {})
 {    
     v2f origin = worldCoords.bottomLeft;
     v2f targetRectXAxis = worldCoords.bottomRight - origin;
@@ -366,13 +366,11 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                         blendedNormal = Lerp(ABLerp, CDLerp, percentToLerpInY);
                     };
 
-                    {//Convert normal from color value range (0 - 255) to vector range (-1 to 1)
-                        f32 inv255 = 1.0f / 255.0f;
-
-                        blendedNormal.x = -1.0f + 2.0f*(inv255*blendedNormal.x);
-                        blendedNormal.y = -1.0f + 2.0f*(inv255*blendedNormal.y);
-                        blendedNormal.z = -1.0f + 2.0f*(inv255*blendedNormal.z);
-                    }
+                    //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
+                    f32 inv255 = 1.0f / 255.0f;
+                    blendedNormal.x = -1.0f + 2.0f*(inv255*blendedNormal.x);
+                    blendedNormal.y = -1.0f + 2.0f*(inv255*blendedNormal.y);
+                    blendedNormal.z = -1.0f + 2.0f*(inv255*blendedNormal.z);
 
 					Normalize($(blendedNormal.xyz));
 
@@ -390,85 +388,53 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                         angle = Mod(angle, unitCircleCircumferenceInRadians);
                     };
 
-                    f32 normalAngle{};
-
                     if (lightAngle > (PI*2)) ConvertToCorrectPositiveRadian($(lightAngle));
                     
-                    if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
-                    {
-                        normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                    }
-                    else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
-                    {
-                        normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                        AbsoluteVal($(normalAngle));
-                        normalAngle += (PI / 2.0f);
-                    }
-                    else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
-                    {
-                        normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                        normalAngle -= ((3.0f*PI) / 2.0f);
-                        AbsoluteVal($(normalAngle));
-                    }
-                    else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
-                    {
-                        normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                        ConvertNegativeAngleToRadians($(normalAngle));
-                    }
-
-                    f32 shadeThresholdAngle1 = lightAngle + shadeThreshold ;
-                    f32 shadeThresholdAngle2 = lightAngle - shadeThreshold ;
-
-                    f32 circumferenceInRadians = 2*PI;
-                    if(shadeThresholdAngle1 > circumferenceInRadians)
-                    {
-                        ConvertToCorrectPositiveRadian($(shadeThresholdAngle1));
-                    } 
-                    if(shadeThresholdAngle2 < 0.0f) 
-                    {
-                        ConvertNegativeAngleToRadians($(shadeThresholdAngle2 ));
-                    }
-
-                    f32 highThresholdAngle = Max(shadeThresholdAngle1 , shadeThresholdAngle2);
-                    f32 lowThresholdAngle = Min(shadeThresholdAngle1 , shadeThresholdAngle2);
-
-                    //If light angle is within quadrant's 1 and 4 of unit circle (right side)
-                    if(lightAngle >= ((3.0f * PI) / 2.0f) || lightAngle <= (PI / 2))
-                    {
-                        if(normalAngle > lowThresholdAngle && normalAngle < highThresholdAngle)
+                    f32 normalAngle{};
+                    {//Calculate correct raidan angle from normal
+                        if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
                         {
-                            //Shaded area
-                            *destPixel = ((255 << 24) |
-                            (0 << 16) |
-                            (0 << 8) |
-                            (0 << 0));
+                            normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
                         }
-                        else
+                        else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
                         {
-                            *destPixel = ((255 << 24) |
-                            (244 << 16) |
-                            (0 << 8) |
-                            (0 << 0));
+                            normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                            AbsoluteVal($(normalAngle));
+                            normalAngle += (PI / 2.0f);
                         }
+                        else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
+                        {
+                            normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                            normalAngle -= ((3.0f*PI) / 2.0f);
+                            AbsoluteVal($(normalAngle));
+                        }
+                        else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
+                        {
+                            normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                            ConvertNegativeAngleToRadians($(normalAngle));
+                        }
+                    };
+
+                    f32 maxAngle = Max(lightAngle, normalAngle);
+                    f32 minAngle = Min(lightAngle, normalAngle);
+                    f32 shadeThreholdDirection1 = maxAngle - minAngle;
+                    f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
+
+                    if(shadeThreholdDirection1 < lightThreshold || shadeThreholdDirection2 < lightThreshold)
+                    {
+                        //Light pixel 
+                        *destPixel = ((255 << 24) |
+                                     (244 << 16) |
+                                     (0 << 8) |
+                                     (0 << 0));    
                     }
                     else
-                    //light angle is within quadrant's 2 and 3 of unit circle (left side)
                     {
-                        if(normalAngle < lowThresholdAngle || normalAngle > highThresholdAngle)
-                        {
-                            //Shaded area
-                            *destPixel = ((255 << 24) |
-                            (0 << 16) |
-                            (0 << 8) |
-                            (0 << 0));
-                        }
-                        else
-                        {
-                            *destPixel = ((255 << 24) |
-                            (244 << 16) |
-                            (0 << 8) |
-                            (0 << 0));
-                        }
+                        //Shade pixel
+                        *destPixel = ((255 << 24) |
+                                     (0 << 16) |
+                                     (0 << 8) |
+                                     (0 << 0));
                     }
                 }
 #endif
@@ -612,7 +578,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         gState->normalMap = CreateEmptyImage(player->image.size.width, player->image.size.height);
         GenerateSphereNormalMap($(gState->normalMap));
 
-        gState->shadeThreshold = 2.0f;
+        gState->lightThreshold = 2.0f;
 
         //Render to Image
         v2f origin{0.0f, 0.0f};
@@ -661,6 +627,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
         DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .5f, .5f, .5f);
-        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->shadeThreshold, gState->normalMap);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap);
     };
 };

@@ -59,6 +59,6 @@ struct Game_State
     Image colorBuffer;
     Image normalMap;
     f32 lightAngle;
-    f32 shadeThreshold;
+    f32 lightThreshold;
     Stage_Data stage;
 };
