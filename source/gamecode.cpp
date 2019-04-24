@@ -415,7 +415,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                         shadePixel = true;
                 }
 
-                if(shadePixel && finalBlendedColor.a > 128.0f)
+                if(shadePixel && finalBlendedColor.a > 100.0f)
                 {
                         //Shade pixel
                     *destPixel = ((255 << 24) |
@@ -489,7 +489,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * bytesPerPixel;
-        player->world.pos = {500.0f, 200.0f};
+        player->world.pos = {300.0f, -100.0f};
         player->world.rotation = 0.0f;
         player->world.scale = 2.0f;
         player->image.opacity = .5f;
@@ -618,7 +618,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2TargetRect = WorldTransform(enemy2TargetRect, *enemy2);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .5f, .5f, .5f);
+        DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .0f, .5f, .5f);
         DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap);
     };
 };
