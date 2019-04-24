@@ -347,14 +347,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
                 v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
-#if 1
-                *destPixel = ((0xFF << 24) |
-                           ((ui8)finalBlendedColor.r << 16) |
-                           ((ui8)finalBlendedColor.g << 8) |
-                           ((ui8)finalBlendedColor.b << 0));
-#endif
-
-#if 0
+                b shadePixel{false};
                 if(normalMap.data)
                 {
                     ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*normalMap.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
@@ -419,23 +412,24 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
 
                     if(shadeThreholdDirection1 < lightThreshold || shadeThreholdDirection2 < lightThreshold)
-                    {
-                        //Light pixel 
-                        *destPixel = ((255 << 24) |
-                                     (244 << 16) |
-                                     (0 << 8) |
-                                     (0 << 0));    
-                    }
-                    else
-                    {
+                        shadePixel = true;
+                }
+
+                if(shadePixel && NOT finalBlendedColor.a == 0.0f)
+                {
                         //Shade pixel
                         *destPixel = ((255 << 24) |
                                      (0 << 16) |
                                      (0 << 8) |
                                      (0 << 0));
-                    }
                 }
-#endif
+                else
+                {
+                    *destPixel = ((0xFF << 24) |
+                        ((ui8)finalBlendedColor.r << 16) |
+                        ((ui8)finalBlendedColor.g << 8) |
+                        ((ui8)finalBlendedColor.b << 0));
+                }
             }
 
             ++destPixel;
@@ -593,7 +587,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     if(KeyHeld(keyboard->MoveRight))
     {
         gState->lightAngle += .1f;
-        player->world.rotation += 1.0f;
     };
 
     //Essentially local fighter coordinates
