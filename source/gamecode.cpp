@@ -415,13 +415,13 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                         shadePixel = true;
                 }
 
-                if(shadePixel && NOT finalBlendedColor.a == 0.0f)
+                if(shadePixel && finalBlendedColor.a > 128.0f)
                 {
                         //Shade pixel
-                        *destPixel = ((255 << 24) |
-                                     (0 << 16) |
-                                     (0 << 8) |
-                                     (0 << 0));
+                    *destPixel = ((255 << 24) |
+                        (0 << 16) |
+                        (0 << 8) |
+                        (0 << 0));
                 }
                 else
                 {
