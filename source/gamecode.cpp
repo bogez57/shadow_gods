@@ -365,70 +365,80 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
 
 					Normalize($(blendedNormal.xyz));
 
-                    auto ConvertNegativeAngleToRadians = [](f32&& angle)
+                    if(blendedNormal.z > 0.0f)                
                     {
-                        f32 circumferenceInRadians = 2*PI;
-                        angle = Mod(angle, circumferenceInRadians);
-                        if (angle < 0) angle += circumferenceInRadians;
-                        return angle;
-                    };
-
-                    auto ConvertToCorrectPositiveRadian = [](f32&& angle)
+                        *destPixel = ((0xFF << 24) |
+                            ((ui8)finalBlendedColor.r << 16) |
+                            ((ui8)finalBlendedColor.g << 8) |
+                            ((ui8)finalBlendedColor.b << 0));
+                    }
+                    else
                     {
-                        f32 unitCircleCircumferenceInRadians = 2*PI;
-                        angle = Mod(angle, unitCircleCircumferenceInRadians);
-                    };
-
-                    if (lightAngle > (PI*2)) ConvertToCorrectPositiveRadian($(lightAngle));
-                    
-                    f32 normalAngle{};
-                    {//Calculate correct raidan angle from normal
-                        if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
+                        auto ConvertNegativeAngleToRadians = [](f32&& angle)
                         {
-                            normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                        }
-                        else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
-                        {
-                            normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                            AbsoluteVal($(normalAngle));
-                            normalAngle += (PI / 2.0f);
-                        }
-                        else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
-                        {
-                            normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                            normalAngle -= ((3.0f*PI) / 2.0f);
-                            AbsoluteVal($(normalAngle));
-                        }
-                        else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
-                        {
-                            normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                            ConvertNegativeAngleToRadians($(normalAngle));
-                        }
-                    };
+                            f32 circumferenceInRadians = 2*PI;
+                            angle = Mod(angle, circumferenceInRadians);
+                            if (angle < 0) angle += circumferenceInRadians;
+                            return angle;
+                        };
 
-                    f32 maxAngle = Max(lightAngle, normalAngle);
-                    f32 minAngle = Min(lightAngle, normalAngle);
-                    f32 shadeThreholdDirection1 = maxAngle - minAngle;
-                    f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
+                        auto ConvertToCorrectPositiveRadian = [](f32&& angle)
+                        {
+                            f32 unitCircleCircumferenceInRadians = 2*PI;
+                            angle = Mod(angle, unitCircleCircumferenceInRadians);
+                        };
 
-                    if(shadeThreholdDirection1 > lightThreshold || shadeThreholdDirection2 < lightThreshold)
-                        shadePixel = true;
-                }
+                        if (lightAngle > (PI*2)) ConvertToCorrectPositiveRadian($(lightAngle));
+                        
+                        f32 normalAngle{};
+                        {//Calculate correct raidan angle from normal
+                            if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
+                            {
+                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                            }
+                            else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
+                            {
+                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                                AbsoluteVal($(normalAngle));
+                                normalAngle += (PI / 2.0f);
+                            }
+                            else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
+                            {
+                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                                normalAngle -= ((3.0f*PI) / 2.0f);
+                                AbsoluteVal($(normalAngle));
+                            }
+                            else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
+                            {
+                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                                ConvertNegativeAngleToRadians($(normalAngle));
+                            }
+                        };
 
-                if(shadePixel && finalBlendedColor.a > 100.0f)
-                {
-                        //Shade pixel
-                    *destPixel = ((255 << 24) |
-                        (0 << 16) |
-                        (0 << 8) |
-                        (0 << 0));
-                }
-                else
-                {
-                    *destPixel = ((0xFF << 24) |
-                        ((ui8)finalBlendedColor.r << 16) |
-                        ((ui8)finalBlendedColor.g << 8) |
-                        ((ui8)finalBlendedColor.b << 0));
+                        f32 maxAngle = Max(lightAngle, normalAngle);
+                        f32 minAngle = Min(lightAngle, normalAngle);
+                        f32 shadeThreholdDirection1 = maxAngle - minAngle;
+                        f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
+
+                        if(shadeThreholdDirection1 < lightThreshold || shadeThreholdDirection2 < lightThreshold)
+                            shadePixel = true;
+                    }
+
+                    if(shadePixel && finalBlendedColor.a > 100.0f)
+                    {
+                            //Shade pixel
+                        *destPixel = ((255 << 24) |
+                            (0 << 16) |
+                            (0 << 8) |
+                            (0 << 0));
+                    }
+                    else
+                    {
+                        *destPixel = ((0xFF << 24) |
+                            ((ui8)finalBlendedColor.r << 16) |
+                            ((ui8)finalBlendedColor.g << 8) |
+                            ((ui8)finalBlendedColor.b << 0));
+                    }
                 }
             }
 
@@ -510,7 +520,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2->world.scale = 2.3f;
         enemy2->image.opacity = .7f;
 
-        gState->normalMap.data = platformServices->LoadBGRAbitImage("data/black_test.bmp", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
+        gState->normalMap.data = platformServices->LoadBGRAbitImage("data/shade_test.bmp", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
 
         //Create empty image
         auto CreateEmptyImage = [](i32 width, i32 height) -> Image
