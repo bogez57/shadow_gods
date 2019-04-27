@@ -350,7 +350,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                 b shadePixel{false};
                 if(normalMap.data)
                 {
-                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*normalMap.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
+                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
 
                     //Grab 4 normals (in a square pattern) to blend
                     v4ui normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
@@ -411,7 +411,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     f32 shadeThreholdDirection1 = maxAngle - minAngle;
                     f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
 
-                    if(shadeThreholdDirection1 < lightThreshold || shadeThreholdDirection2 < lightThreshold)
+                    if(shadeThreholdDirection1 > lightThreshold || shadeThreholdDirection2 < lightThreshold)
                         shadePixel = true;
                 }
 
@@ -489,9 +489,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * bytesPerPixel;
-        player->world.pos = {300.0f, -100.0f};
+        player->world.pos = {300.0f, 100.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 2.0f;
+        player->world.scale = 1.0f;
         player->image.opacity = .5f;
         
         //Enemy Init
@@ -509,6 +509,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2->world.rotation = 0.0f;
         enemy2->world.scale = 2.3f;
         enemy2->image.opacity = .7f;
+
+        gState->normalMap.data = platformServices->LoadBGRAbitImage("data/black_test.bmp", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
 
         //Create empty image
         auto CreateEmptyImage = [](i32 width, i32 height) -> Image
@@ -567,10 +569,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                             };
         
         gState->composite = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
-        gState->normalMap = CreateEmptyImage(player->image.size.width, player->image.size.height);
-        GenerateSphereNormalMap($(gState->normalMap));
 
         gState->lightThreshold = 1.0f;
+        gState->lightAngle = 1.0f;
 
         //Render to Image
         v2f origin{0.0f, 0.0f};
@@ -586,7 +587,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        gState->lightAngle += .1f;
+        gState->lightAngle += .01f;
     };
 
     //Essentially local fighter coordinates
