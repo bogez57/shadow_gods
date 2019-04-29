@@ -234,9 +234,22 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
     }
 }
 
+void ConvertNegativeAngleToRadians(f32&& angle)
+{
+    f32 circumferenceInRadians = 2*PI;
+    angle = Mod(angle, circumferenceInRadians);
+    if (angle < 0) angle += circumferenceInRadians;
+};
+
+void ConvertToCorrectPositiveRadian(f32&& angle)
+{
+    f32 unitCircleCircumferenceInRadians = 2*PI;
+    angle = Mod(angle, unitCircleCircumferenceInRadians);
+};
+
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {})
+DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {})
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
     {
@@ -363,6 +376,18 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     blendedNormal.y = -1.0f + 2.0f*(inv255*blendedNormal.y);
                     blendedNormal.z = -1.0f + 2.0f*(inv255*blendedNormal.z);
 
+                    v2f normalXBasis = v2f{CosR(rotation), SinR(rotation)};
+                    v2f normalYBasis = PerpendicularOp(normalXBasis);
+
+                    v2f blendTest{};
+                    blendTest.x = blendedNormal.x;
+                    blendTest.y = blendedNormal.y;
+
+                    blendTest = (blendTest.x * normalXBasis) + (blendTest.y * normalYBasis);
+
+                    blendedNormal.x = blendTest.x;
+                    blendedNormal.y = blendTest.y;
+
 					Normalize($(blendedNormal.xyz));
 
                     if(blendedNormal.z > 0.0f)                
@@ -374,20 +399,6 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     }
                     else
                     {
-                        auto ConvertNegativeAngleToRadians = [](f32&& angle)
-                        {
-                            f32 circumferenceInRadians = 2*PI;
-                            angle = Mod(angle, circumferenceInRadians);
-                            if (angle < 0) angle += circumferenceInRadians;
-                            return angle;
-                        };
-
-                        auto ConvertToCorrectPositiveRadian = [](f32&& angle)
-                        {
-                            f32 unitCircleCircumferenceInRadians = 2*PI;
-                            angle = Mod(angle, unitCircleCircumferenceInRadians);
-                        };
-
                         if (lightAngle > (PI*2)) ConvertToCorrectPositiveRadian($(lightAngle));
                         
                         f32 normalAngle{};
@@ -451,7 +462,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
 
 void RenderToImage(Image&& renderTarget, Image sourceImage, Quad targetArea)
 {
-    DrawImageSlowly($(renderTarget), targetArea, sourceImage);
+    DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -597,7 +608,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        gState->lightAngle += .02f;
+        player->world.rotation += .01f;
     };
 
     //Essentially local fighter coordinates
@@ -605,13 +616,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     Quad enemyTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
     Quad enemy2TargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
 
+    ConvertToCorrectPositiveRadian($(player->world.rotation));
+
     { // Render
         auto WorldTransform = [](Quad localCoords, Fighter fighterInfo) -> Quad
         {
             //With world space origin at 0, 0
             Coordinate_Space fighterSpace{};
             fighterSpace.origin = fighterInfo.world.pos;
-            fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosR(Radians(fighterInfo.world.rotation)), SinR(Radians(fighterInfo.world.rotation))};
+            fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosR(fighterInfo.world.rotation), SinR(fighterInfo.world.rotation)};
             fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
 
             Quad transformedCoords{};
@@ -630,6 +643,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
         DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .0f, .5f, .5f);
-        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap, player->world.rotation);
     };
 };
