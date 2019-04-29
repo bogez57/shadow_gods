@@ -16,7 +16,7 @@ struct Transform
 {
     f32 rotation;
     v2f pos;
-    f32 scale;
+    v2f scale;
 };
 
 struct Fighter

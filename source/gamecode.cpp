@@ -505,7 +505,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.pitch = player->image.size.width * bytesPerPixel;
         player->world.pos = {300.0f, 100.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = 1.0f;
+        player->world.scale = {1.0f, 4.0f};
         player->image.opacity = .5f;
         
         //Enemy Init
@@ -513,7 +513,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy->image.pitch = enemy->image.size.width * bytesPerPixel;
         enemy->world.pos = {200.0f, 150.0f};
         enemy->world.rotation = 0.0f;
-        enemy->world.scale = 2.3f;
+        enemy->world.scale = {2.3f, 2.3f};
         enemy->image.opacity = .7f;
 
          //Enemy Init
@@ -521,7 +521,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2->image.pitch = enemy2->image.size.width * bytesPerPixel;
         enemy2->world.pos = {200.0f, 100.0f};
         enemy2->world.rotation = 0.0f;
-        enemy2->world.scale = 2.3f;
+        enemy2->world.scale = {2.3f, 2.3f};
         enemy2->image.opacity = .7f;
 
         gState->normalMap.data = platformServices->LoadBGRAbitImage("data/test.png", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
@@ -617,8 +617,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             //With world space origin at 0, 0
             Coordinate_Space fighterSpace{};
             fighterSpace.origin = fighterInfo.world.pos;
-            fighterSpace.xBasis = fighterInfo.world.scale * v2f{CosR(fighterInfo.world.rotation), SinR(fighterInfo.world.rotation)};
-            fighterSpace.yBasis = PerpendicularOp(fighterSpace.xBasis);
+            fighterSpace.xBasis = v2f{CosR(fighterInfo.world.rotation), SinR(fighterInfo.world.rotation)};
+            fighterSpace.yBasis = fighterInfo.world.scale.y * PerpendicularOp(fighterSpace.xBasis);
+            fighterSpace.xBasis *= fighterInfo.world.scale.x;
 
             Quad transformedCoords{};
             for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
