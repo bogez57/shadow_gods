@@ -92,7 +92,7 @@ struct v4f
             
             f32 a;        
         };
-
+        
         struct
         {
             union
@@ -105,6 +105,13 @@ struct v4f
             };
             
             f32 w;        
+        };
+
+        struct
+        {
+            v2f xy;
+            f32 _Ignored0;
+            f32 _Ignored1;
         };
     };
 };

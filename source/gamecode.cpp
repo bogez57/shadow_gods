@@ -379,14 +379,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     v2f normalXBasis = v2f{CosR(rotation), SinR(rotation)};
                     v2f normalYBasis = PerpendicularOp(normalXBasis);
 
-                    v2f blendTest{};
-                    blendTest.x = blendedNormal.x;
-                    blendTest.y = blendedNormal.y;
-
-                    blendTest = (blendTest.x * normalXBasis) + (blendTest.y * normalYBasis);
-
-                    blendedNormal.x = blendTest.x;
-                    blendedNormal.y = blendTest.y;
+                    blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
 
 					Normalize($(blendedNormal.xyz));
 
