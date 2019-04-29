@@ -420,7 +420,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                         f32 shadeThreholdDirection1 = maxAngle - minAngle;
                         f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
 
-                        if(shadeThreholdDirection1 < lightThreshold || shadeThreholdDirection2 < lightThreshold)
+                        if(shadeThreholdDirection1 > lightThreshold || shadeThreholdDirection2 < lightThreshold)
                             shadePixel = true;
                     }
 
@@ -497,7 +497,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
 
         //Player Init
-        player->image.data = platformServices->LoadBGRAbitImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
+        player->image.data = platformServices->LoadBGRAbitImage("data/left-bicep.png", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * bytesPerPixel;
         player->world.pos = {300.0f, 100.0f};
         player->world.rotation = 0.0f;
@@ -520,7 +520,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy2->world.scale = 2.3f;
         enemy2->image.opacity = .7f;
 
-        gState->normalMap.data = platformServices->LoadBGRAbitImage("data/shade_test.bmp", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
+        gState->normalMap.data = platformServices->LoadBGRAbitImage("data/test.png", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
 
         //Create empty image
         auto CreateEmptyImage = [](i32 width, i32 height) -> Image
@@ -597,7 +597,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        gState->lightAngle += .01f;
+        gState->lightAngle += .02f;
     };
 
     //Essentially local fighter coordinates
