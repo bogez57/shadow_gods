@@ -249,7 +249,7 @@ void ConvertToCorrectPositiveRadian(f32&& angle)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {})
+DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {}, v2f scale = {1.0f, 1.0f})
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
     {
@@ -376,10 +376,17 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     blendedNormal.y = -1.0f + 2.0f*(inv255*blendedNormal.y);
                     blendedNormal.z = -1.0f + 2.0f*(inv255*blendedNormal.z);
 
-                    v2f normalXBasis = v2f{CosR(rotation), SinR(rotation)};
-                    v2f normalYBasis = PerpendicularOp(normalXBasis);
 
-                    blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
+                    {//Rotating and scaling normals (supports non-uniform scaling of normal x and y)
+                        v2f normalXBasis = v2f{CosR(rotation), SinR(rotation)};
+                        v2f normalYBasis = scale.y * PerpendicularOp(normalXBasis);
+                        normalXBasis *= scale.x;
+
+                        normalXBasis *= (Magnitude(normalYBasis) / Magnitude(normalXBasis));
+                        normalYBasis *= (Magnitude(normalXBasis) / Magnitude(normalYBasis));
+
+                        blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
+                    };
 
 					Normalize($(blendedNormal.xyz));
 
@@ -505,7 +512,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         player->image.pitch = player->image.size.width * bytesPerPixel;
         player->world.pos = {300.0f, 100.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = {1.0f, 4.0f};
+        player->world.scale = {1.0f, 1.0f};
         player->image.opacity = .5f;
         
         //Enemy Init
@@ -637,6 +644,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
         DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .0f, .5f, .5f);
-        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap, player->world.rotation);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap, player->world.rotation, player->world.scale);
     };
 };
