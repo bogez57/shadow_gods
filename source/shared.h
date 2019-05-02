@@ -269,13 +269,6 @@ auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectT
     return DilatedRect;
 };
 
-auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Rectf RectToRotate) -> Rectf
-{
-    Rectf RotatedRect {};
-
-    return RotatedRect;
-};
-
 struct Game_Render_Cmds
 {
     void (*ClearScreen)();

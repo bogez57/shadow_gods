@@ -438,7 +438,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                     if(shadePixel && finalBlendedColor.a > 100.0f)
                     {
                             //Shade pixel
-                        *destPixel = ((255 << 24) |
+                        *destPixel = ((0xFF << 24) |
                             (0 << 16) |
                             (0 << 8) |
                             (0 << 0));
@@ -450,6 +450,13 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
                             ((ui8)finalBlendedColor.g << 8) |
                             ((ui8)finalBlendedColor.b << 0));
                     }
+                }
+                else
+                {
+                        *destPixel = ((0xFF << 24) |
+                            ((ui8)finalBlendedColor.r << 16) |
+                            ((ui8)finalBlendedColor.g << 8) |
+                            ((ui8)finalBlendedColor.b << 0));
                 }
             }
 
@@ -507,6 +514,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->info.size.y = viewportHeight;
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
 
+        //Camera Init
+
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/left-bicep.png", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * bytesPerPixel;
@@ -522,14 +531,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         enemy->world.rotation = 0.0f;
         enemy->world.scale = {2.3f, 2.3f};
         enemy->image.opacity = .7f;
-
-         //Enemy Init
-        enemy2->image.data = platformServices->LoadBGRAbitImage("data/test_cape_front.bmp", $(enemy2->image.size.width), $(enemy2->image.size.height));
-        enemy2->image.pitch = enemy2->image.size.width * bytesPerPixel;
-        enemy2->world.pos = {200.0f, 100.0f};
-        enemy2->world.rotation = 0.0f;
-        enemy2->world.scale = {2.3f, 2.3f};
-        enemy2->image.opacity = .7f;
 
         gState->normalMap.data = platformServices->LoadBGRAbitImage("data/test.png", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
 
@@ -614,7 +615,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     //Essentially local fighter coordinates
     Quad playerTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
     Quad enemyTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
-    Quad enemy2TargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy2->image.size.width, (f32)enemy2->image.size.height);
 
     ConvertToCorrectPositiveRadian($(player->world.rotation));
 
@@ -640,10 +640,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         playerTargetRect = WorldTransform(playerTargetRect, *player);
         enemyTargetRect  = WorldTransform(enemyTargetRect, *enemy);
-        enemy2TargetRect = WorldTransform(enemy2TargetRect, *enemy2);
 
         Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawRectangle($(gState->colorBuffer), backgroundTargetRect, .0f, .5f, .5f);
+        DrawImage($(gState->colorBuffer), backgroundTargetRect, gState->stage.info.backgroundImg);
         DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap, player->world.rotation, player->world.scale);
     };
 };
