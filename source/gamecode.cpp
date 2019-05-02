@@ -510,11 +510,18 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
         //Stage Init
-        stage->info.size.x = viewportWidth;
-        stage->info.size.y = viewportHeight;
         stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
+        stage->info.size.x = (f32)stage->info.backgroundImg.size.x;
+        stage->info.size.y = (f32)stage->info.backgroundImg.size.y;
+        stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
 
         //Camera Init
+        stage->camera.viewWidth = viewportWidth;
+        stage->camera.viewHeight = viewportHeight;
+        stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y };
+        stage->camera.viewCenter = { stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f };
+        stage->camera.dilatePoint = stage->camera.viewCenter;
+        stage->camera.zoomFactor = 1.0f;
 
         //Player Init
         player->image.data = platformServices->LoadBGRAbitImage("data/left-bicep.png", $(player->image.size.width), $(player->image.size.height));
@@ -609,7 +616,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.rotation += .01f;
+        stage->camera.zoomFactor += .01f;
+    };
+
+    if(KeyHeld(keyboard->MoveLeft))
+    {
     };
 
     //Essentially local fighter coordinates
@@ -638,11 +649,44 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             return transformedCoords;
         };
 
-        playerTargetRect = WorldTransform(playerTargetRect, *player);
-        enemyTargetRect  = WorldTransform(enemyTargetRect, *enemy);
+        auto CameraTransform = [](Quad worldCoords, Game_Camera camera) -> Quad
+        {
+            Quad transformedCoords{};
 
-        Rectf backgroundTargetRect{v2f{0, 0}, v2f{(f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height}};
-        DrawImage($(gState->colorBuffer), backgroundTargetRect, gState->stage.info.backgroundImg);
-        DrawImageSlowly($(gState->colorBuffer), playerTargetRect, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap, player->world.rotation, player->world.scale);
+            v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+
+            for(i32 vertIndex{}; vertIndex < 4; vertIndex++)
+            {
+                worldCoords.vertices[vertIndex] += translationToCameraSpace;
+            };
+
+            transformedCoords = DilateAboutArbitraryPoint(camera.dilatePoint, camera.zoomFactor, worldCoords);
+
+            return transformedCoords;
+        };
+
+        //Can't do overloaded lamdas :-|
+        auto CameraTransformOrigin = [](v2f origin, Game_Camera camera) -> v2f
+        {
+            v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+
+            origin += translationToCameraSpace;
+
+            return origin;
+        };
+
+        Quad playerTargetRect_world = WorldTransform(playerTargetRect, *player);
+        Quad enemyTargetRect_world = WorldTransform(enemyTargetRect, *enemy);
+
+        v2f backgroundTargetOrigin = CameraTransformOrigin(v2f{0.0f, 0.0f}, stage->camera);
+        Quad backgroundTargetRect_camera = ProduceQuadFromBottomLeftPoint(backgroundTargetOrigin, (f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height);
+
+        Quad playerTargetRect_camera = CameraTransform(playerTargetRect_world, stage->camera);
+        Quad enemyTargetRect_camera = CameraTransform(enemyTargetRect_world, stage->camera);
+
+        //DrawImageSlowly($(gState->colorBuffer), backgroundTargetRect_camera, gState->stage.info.backgroundImg);
+        Rectf tempBackground {v2f{0.0f, 0.0f}, v2f{stage->info.size.x, stage->info.size.y}};
+        DrawRectangle($(gState->colorBuffer), tempBackground, .5f, .4f, .4f);
+        DrawImageSlowly($(gState->colorBuffer), playerTargetRect_camera, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap, player->world.rotation, player->world.scale);
     };
 };

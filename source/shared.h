@@ -264,9 +264,23 @@ auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectT
 
     Distance = PointOfDilation - RectToDilate.max;
     Distance *= ScaleFactor;
-    DilatedRect.max= PointOfDilation - Distance;
+    DilatedRect.max = PointOfDilation - Distance;
 
     return DilatedRect;
+};
+
+auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quad QuadToDilate) -> Quad
+{
+    Quad DilatedQuad {};
+
+    for (i32 vertIndex = 0; vertIndex < 4; ++vertIndex)
+    {
+        v2f Distance = PointOfDilation - QuadToDilate.vertices[vertIndex];
+        Distance *= ScaleFactor;
+        DilatedQuad.vertices[vertIndex] = PointOfDilation - Distance;
+    };
+
+    return DilatedQuad;
 };
 
 struct Game_Render_Cmds
