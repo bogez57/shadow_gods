@@ -111,7 +111,7 @@ struct Recti
     v2i max;
 };
 
-struct Quad
+struct Quadf
 {
     union
     {
@@ -122,6 +122,21 @@ struct Quad
             v2f bottomRight;
             v2f topRight;
             v2f topLeft;
+        };
+    };
+};
+
+struct Quadi
+{
+    union
+    {
+        Array<v2i, 4> vertices;
+        struct
+        {
+            v2i bottomLeft;
+            v2i bottomRight;
+            v2i topRight;
+            v2i topLeft;
         };
     };
 };
@@ -232,9 +247,9 @@ Rectf ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
     return Result;
 };
 
-Quad ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
+Quadf ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 {
-    Quad Result;
+    Quadf Result;
 
     Result.bottomLeft = originPoint;
     Result.bottomRight = { originPoint.x + width, originPoint.y };
@@ -242,7 +257,7 @@ Quad ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
     Result.topLeft = { originPoint.x, originPoint.y + height };
 
     return Result;
-}
+};
 
 auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
 {
@@ -269,9 +284,9 @@ auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectT
     return DilatedRect;
 };
 
-auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quad QuadToDilate) -> Quad
+auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate) -> Quadf
 {
-    Quad DilatedQuad {};
+    Quadf DilatedQuad {};
 
     for (i32 vertIndex = 0; vertIndex < 4; ++vertIndex)
     {

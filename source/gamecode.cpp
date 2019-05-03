@@ -131,6 +131,19 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
+void ConvertNegativeAngleToRadians(f32&& angle)
+{
+    f32 circumferenceInRadians = 2*PI;
+    angle = Mod(angle, circumferenceInRadians);
+    if (angle < 0) angle += circumferenceInRadians;
+};
+
+void ConvertToCorrectPositiveRadian(f32&& angle)
+{
+    f32 unitCircleCircumferenceInRadians = 2*PI;
+    angle = Mod(angle, unitCircleCircumferenceInRadians);
+};
+
 local_func void
 DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
 {    
@@ -232,24 +245,60 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
         
         currentRow += buffer.pitch;
     }
-}
-
-void ConvertNegativeAngleToRadians(f32&& angle)
-{
-    f32 circumferenceInRadians = 2*PI;
-    angle = Mod(angle, circumferenceInRadians);
-    if (angle < 0) angle += circumferenceInRadians;
 };
 
-void ConvertToCorrectPositiveRadian(f32&& angle)
+local_func void
+DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 {
-    f32 unitCircleCircumferenceInRadians = 2*PI;
-    angle = Mod(angle, unitCircleCircumferenceInRadians);
+    ui32* imagePixel = (ui32*)image.data;
+
+    //Since I'm dealing with int pixels below
+    Quadi targetRect{};
+    targetRect.bottomLeft = RoundFloat32ToInt32(targetQuad.bottomLeft);
+    targetRect.topRight = RoundFloat32ToInt32(targetQuad.topRight);
+
+    {//Make sure we don't try to draw outside current screen space
+        if(targetRect.bottomLeft.x < 0)
+            targetRect.bottomLeft.x = 0;
+
+        if(targetRect.bottomLeft.y < 0)
+            targetRect.bottomLeft.y = 0;
+
+        if(targetRect.topRight.x > buffer.size.width)
+            targetRect.topRight.x = buffer.size.width;
+
+        if(targetRect.topRight.y > buffer.size.height)
+            targetRect.topRight.y = buffer.size.height;
+    };
+
+    ui8* currentRow = ((ui8*)buffer.data + targetRect.bottomLeft.x*bytesPerPixel + targetRect.bottomLeft.y*buffer.pitch);
+    for(i32 column = targetRect.bottomLeft.y; column < targetRect.topRight.y; ++column)
+    {
+        ui32* destPixel = (ui32*)currentRow;
+
+        for(i32 row = targetRect.bottomLeft.x; row < targetRect.topRight.x; ++row)
+        {            
+            v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
+            v4f foregroundColors = UnPackPixelValues(*imagePixel, BGRA);
+            f32 alphaBlend = foregroundColors.a / 255.0f;
+            v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + foregroundColors;
+
+            *destPixel = ((0xFF << 24) |
+                           ((ui8)finalBlendedColor.r << 16) |
+                           ((ui8)finalBlendedColor.g << 8) |
+                           ((ui8)finalBlendedColor.b << 0));
+
+            ++destPixel;
+            ++imagePixel;
+        }
+        
+        currentRow += buffer.pitch;
+    }
 };
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {}, v2f scale = {1.0f, 1.0f})
+DrawImageSlowly(Image&& buffer, Quadf worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {}, v2f scale = {1.0f, 1.0f})
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
     {
@@ -467,7 +516,7 @@ DrawImageSlowly(Image&& buffer, Quad worldCoords, Image image, f32 lightAngle = 
     }
 }
 
-void RenderToImage(Image&& renderTarget, Image sourceImage, Quad targetArea)
+void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
 {
     DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
@@ -624,13 +673,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     };
 
     //Essentially local fighter coordinates
-    Quad playerTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
-    Quad enemyTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
+    Quadf playerTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
+    Quadf enemyTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
 
     ConvertToCorrectPositiveRadian($(player->world.rotation));
 
     { // Render
-        auto WorldTransform = [](Quad localCoords, Fighter fighterInfo) -> Quad
+        auto WorldTransform = [](Quadf localCoords, Fighter fighterInfo) -> Quadf
         {
             //With world space origin at 0, 0
             Coordinate_Space fighterSpace{};
@@ -639,7 +688,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             fighterSpace.yBasis = fighterInfo.world.scale.y * PerpendicularOp(fighterSpace.xBasis);
             fighterSpace.xBasis *= fighterInfo.world.scale.x;
 
-            Quad transformedCoords{};
+            Quadf transformedCoords{};
             for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
             {
                 //This equation rotates first then moves to correct world position
@@ -649,9 +698,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             return transformedCoords;
         };
 
-        auto CameraTransform = [](Quad worldCoords, Game_Camera camera) -> Quad
+        auto CameraTransform = [](Quadf worldCoords, Game_Camera camera) -> Quadf
         {
-            Quad transformedCoords{};
+            Quadf transformedCoords{};
 
             v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
 
@@ -675,18 +724,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             return origin;
         };
 
-        Quad playerTargetRect_world = WorldTransform(playerTargetRect, *player);
-        Quad enemyTargetRect_world = WorldTransform(enemyTargetRect, *enemy);
+        Quadf playerTargetRect_world = WorldTransform(playerTargetRect, *player);
+        Quadf enemyTargetRect_world = WorldTransform(enemyTargetRect, *enemy);
 
-        v2f backgroundTargetOrigin = CameraTransformOrigin(v2f{0.0f, 0.0f}, stage->camera);
-        Quad backgroundTargetRect_camera = ProduceQuadFromBottomLeftPoint(backgroundTargetOrigin, (f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height);
+        Quadf backgroundTargetQuad_camera = ProduceQuadFromBottomLeftPoint(v2f{-1.0f, 0.0f}, (f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height);
 
-        Quad playerTargetRect_camera = CameraTransform(playerTargetRect_world, stage->camera);
-        Quad enemyTargetRect_camera = CameraTransform(enemyTargetRect_world, stage->camera);
+        Quadf playerTargetRect_camera = CameraTransform(playerTargetRect_world, stage->camera);
+        Quadf enemyTargetRect_camera = CameraTransform(enemyTargetRect_world, stage->camera);
 
-        //DrawImageSlowly($(gState->colorBuffer), backgroundTargetRect_camera, gState->stage.info.backgroundImg);
-        Rectf tempBackground {v2f{0.0f, 0.0f}, v2f{stage->info.size.x, stage->info.size.y}};
-        DrawRectangle($(gState->colorBuffer), tempBackground, .5f, .4f, .4f);
+        DrawBackground($(gState->colorBuffer), backgroundTargetQuad_camera, gState->stage.info.backgroundImg);
         DrawImageSlowly($(gState->colorBuffer), playerTargetRect_camera, player->image, gState->lightAngle, gState->lightThreshold, gState->normalMap, player->world.rotation, player->world.scale);
     };
 };
