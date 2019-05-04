@@ -363,6 +363,7 @@ namespace Win32
     
         RECT ClientRect;
         GetClientRect(window, &ClientRect);
+
         Result.width = ClientRect.right - ClientRect.left;
         Result.height = ClientRect.bottom - ClientRect.top;
 
@@ -888,12 +889,20 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
     if (RegisterClass(&WindowProperties))
     {
-        HWND window= CreateWindowEx(0, WindowProperties.lpszClassName, "Shadow Gods", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-            CW_USEDEFAULT, CW_USEDEFAULT, globalWindowWidth, globalWindowHeight, 0, 0, CurrentProgramInstance, 0);
+        //Since CreateWindowEx function expects the TOTAL window size (including pixels for title bar, borders etc.)
+        //we will specify the rect size we actually want the game to run in and then us window's AdjustWindowRectEx
+        //to properly adjust rect coordinates so no clipping of game window occurs.
+        DWORD windowStyles = WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+        RECT rect = { 0, 0, (LONG)globalWindowWidth, (LONG)globalWindowHeight };
+        BOOL success = AdjustWindowRectEx(&rect, windowStyles, false, 0);
+        if (NOT success) InvalidCodePath;
+
+        HWND window= CreateWindowEx(0, WindowProperties.lpszClassName, "Shadow Gods", WS_VISIBLE | WS_OVERLAPPEDWINDOW,
+            CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left - 2, rect.bottom - rect.top, 0, 0, CurrentProgramInstance, 0);
 
         HDC WindowContext = GetDC(window);
 
-        if (window&& WindowContext)
+        if (window && WindowContext)
         {
 
 #if DEVELOPMENT_BUILD
