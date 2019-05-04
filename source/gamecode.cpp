@@ -384,7 +384,7 @@ DrawImageSlowly(Image&& buffer, Quadf worldCoords, Image image, f32 lightAngle =
 
             if(edge1 > 0 && edge2 > 0 && edge3 > 0 && edge4 > 0)
             {
-                //Infer texel position from normalized target rect pos (gather uv's)
+                //Gather normalized coordinates (uv's) in order to find the correct texel position below
                 f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
                 f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
 
@@ -727,7 +727,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         Quadf playerTargetRect_world = WorldTransform(playerTargetRect, *player);
         Quadf enemyTargetRect_world = WorldTransform(enemyTargetRect, *enemy);
 
-        Quadf backgroundTargetQuad_camera = ProduceQuadFromBottomLeftPoint(v2f{-1.0f, 0.0f}, (f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height);
+        Quadf backgroundTargetQuad_camera = ProduceQuadFromBottomLeftPoint(v2f{-2.0f, 0.0f}, (f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height);
 
         Quadf playerTargetRect_camera = CameraTransform(playerTargetRect_world, stage->camera);
         Quadf enemyTargetRect_camera = CameraTransform(enemyTargetRect_world, stage->camera);
