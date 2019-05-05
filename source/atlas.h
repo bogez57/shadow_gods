@@ -132,7 +132,7 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name);
 void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 {
     Image image;
-    image.data = globalPlatformServices->LoadBGRAbitImage(path, $(image.size.width), $(image.size.height));
+    image.data = globalPlatformServices->LoadBGRAImage(path, $(image.size.width), $(image.size.height));
 
     Texture texture = globalRenderCmds.LoadTexture(image);
     Texture* textureptr = MallocType(0, Texture, 1);

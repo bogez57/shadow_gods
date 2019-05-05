@@ -78,7 +78,7 @@ struct Platform_Services
     char* (*ReadEntireFile)(i32&&, const char*);
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
-    ui8* (*LoadBGRAbitImage)(const char*, i32&&, i32&&);
+    ui8* (*LoadBGRAImage)(const char*, i32&&, i32&&);
     void* (*Malloc)(sizet);
     void* (*Calloc)(sizet, sizet);
     void* (*Realloc)(void*, sizet);
@@ -87,64 +87,6 @@ struct Platform_Services
     f32 prevFrameTimeInSecs {};
     f32 targetFrameTimeInSecs {};
     f32 realLifeTimeInSecs {};
-};
-
-////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
-
-struct Image
-{
-    ui8* data;
-    v2i size;
-    ui32 pitch;
-    f32 opacity {1.0f};
-};
-
-struct Rectf
-{
-    v2f min;
-    v2f max;
-};
-
-struct Recti
-{
-    v2i min;
-    v2i max;
-};
-
-struct Quadf
-{
-    union
-    {
-        Array<v2f, 4> vertices;
-        struct
-        {
-            v2f bottomLeft;
-            v2f bottomRight;
-            v2f topRight;
-            v2f topLeft;
-        };
-    };
-};
-
-struct Quadi
-{
-    union
-    {
-        Array<v2i, 4> vertices;
-        struct
-        {
-            v2i bottomLeft;
-            v2i bottomRight;
-            v2i topRight;
-            v2i topLeft;
-        };
-    };
-};
-
-struct Texture
-{
-    ui32 ID;
-    v2i size;
 };
 
 enum ChannelType
@@ -184,119 +126,9 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
     return result;
 };
 
-auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat) 
-{
-    struct Result {ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B;};
-    Result blendedColor{};
-    
-    v4f foreGroundColors = UnPackPixelValues(foregroundColor, colorFormat);
-    v4f backgroundColors = UnPackPixelValues(backgroundColor, colorFormat);
+////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
 
-    f32 blendPercent = foreGroundColors.a / 255.0f;
-
-    blendedColor.blendedPixel_R = (ui8)Lerp(backgroundColors.r, foreGroundColors.r, blendPercent);
-    blendedColor.blendedPixel_G = (ui8)Lerp(backgroundColors.g, foreGroundColors.g, blendPercent);
-    blendedColor.blendedPixel_B = (ui8)Lerp(backgroundColors.b, foreGroundColors.b, blendPercent);
-
-    return blendedColor;
-};
-
-f32 RectWidth(Rectf rect)
-{
-    f32 width{};
-    width = rect.min.x - rect.max.x;
-
-    return width;
-};
-
-f32 RectHeight(Rectf rect)
-{
-    f32 height{};
-    height = rect.min.y - rect.max.y;
-
-    return height;
-};
-
-auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
-{
-    Rectf Result;
-
-    Result.min = { OriginPoint.x - (width / 2), OriginPoint.y - (height / 2) };
-    Result.max = { OriginPoint.x + (width / 2), OriginPoint.y + (height / 2) };
-
-    return Result;
-};
-
-auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height) -> Rectf
-{
-    Rectf Result;
-
-    Result.min = { OriginPoint.x - (width / 2.0f), OriginPoint.y };
-    Result.max = { OriginPoint.x + (width / 2.0f), OriginPoint.y + height };
-
-    return Result;
-};
-
-Rectf ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
-{
-    Rectf Result;
-
-    Result.min = originPoint;
-    Result.max = { originPoint.x + width, originPoint.y + height };
-
-    return Result;
-};
-
-Quadf ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
-{
-    Quadf Result;
-
-    Result.bottomLeft = originPoint;
-    Result.bottomRight = { originPoint.x + width, originPoint.y };
-    Result.topRight = { originPoint.x + width, originPoint.y + height };
-    Result.topLeft = { originPoint.x, originPoint.y + height };
-
-    return Result;
-};
-
-auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
-{
-    f32 RotationInRadians = RotationInDegress * (PI / 180.0f);
-    v2f RotatedXBasis = VectorToRotate.x * v2f { CosR(RotationInRadians), SinR(RotationInRadians) };
-    v2f RotatedYBasis = VectorToRotate.y * v2f { -SinR(RotationInRadians), CosR(RotationInRadians) };
-    v2f NewRotatedVector = RotatedXBasis + RotatedYBasis;
-
-    return NewRotatedVector;
-};
-
-auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDilate) -> Rectf
-{
-    Rectf DilatedRect {};
-
-    v2f Distance = PointOfDilation - RectToDilate.min;
-    Distance *= ScaleFactor;
-    DilatedRect.min = PointOfDilation - Distance;
-
-    Distance = PointOfDilation - RectToDilate.max;
-    Distance *= ScaleFactor;
-    DilatedRect.max = PointOfDilation - Distance;
-
-    return DilatedRect;
-};
-
-auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate) -> Quadf
-{
-    Quadf DilatedQuad {};
-
-    for (i32 vertIndex = 0; vertIndex < 4; ++vertIndex)
-    {
-        v2f Distance = PointOfDilation - QuadToDilate.vertices[vertIndex];
-        Distance *= ScaleFactor;
-        DilatedQuad.vertices[vertIndex] = PointOfDilation - Distance;
-    };
-
-    return DilatedQuad;
-};
+#include "renderer_stuff.h"
 
 struct Game_Render_Cmds
 {

@@ -163,7 +163,7 @@ namespace Win32::Dbg
     };
 
     local_func auto
-    LoadBGRAbitImage(const char* ImagePath, i32&& width, i32&& height) -> ui8*
+    LoadBGRAImage(const char* ImagePath, i32&& width, i32&& height) -> ui8*
     {
         stbi_set_flip_vertically_on_load(true);//So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
 
@@ -932,7 +932,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 platformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
                 platformServices.FreeFileMemory = &Win32::Dbg::FreeFileMemory;
-                platformServices.LoadBGRAbitImage = &Win32::Dbg::LoadBGRAbitImage;
+                platformServices.LoadBGRAImage = &Win32::Dbg::LoadBGRAImage;
                 platformServices.Malloc = &Win32::Dbg::Malloc;
                 platformServices.Calloc = &Win32::Dbg::Calloc;
                 platformServices.Realloc = &Win32::Dbg::Realloc;
