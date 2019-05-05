@@ -247,49 +247,49 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
     }
 };
 
+//Avoids a lot of the calcuations found in DrawImageSlowly for better performance (Since background won't rotate or
+//do other fancier things. Though it will still scale)
 local_func void
 DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 {
     ui32* imagePixel = (ui32*)image.data;
 
-    //Since I'm dealing with int pixels below
-    Quadi targetRect{};
-    targetRect.bottomLeft = RoundFloat32ToInt32(targetQuad.bottomLeft);
-    targetRect.topRight = RoundFloat32ToInt32(targetQuad.topRight);
+    v2f targetQuadOrigin = targetQuad.bottomLeft;
+    v2f targetQuadXAxis = targetQuad.bottomRight - targetQuadOrigin;
+    v2f targetQuadYAxis = targetQuad.topLeft - targetQuadOrigin;
 
-    {//Make sure we don't try to draw outside current screen space
-        if(targetRect.bottomLeft.x < 0)
-            targetRect.bottomLeft.x = 0;
+    ui8* currentRow = (ui8*)buffer.data; 
+    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetQuadXAxis);
+    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetQuadYAxis);
 
-        if(targetRect.bottomLeft.y < 0)
-            targetRect.bottomLeft.y = 0;
-
-        if(targetRect.topRight.x > buffer.size.width)
-            targetRect.topRight.x = buffer.size.width;
-
-        if(targetRect.topRight.y > buffer.size.height)
-            targetRect.topRight.y = buffer.size.height;
-    };
-
-    ui8* currentRow = ((ui8*)buffer.data + targetRect.bottomLeft.x*bytesPerPixel + targetRect.bottomLeft.y*buffer.pitch);
-    for(i32 column = targetRect.bottomLeft.y; column < targetRect.topRight.y; ++column)
+    for(i32 screenPixelColumn = 0; screenPixelColumn < buffer.size.height; ++screenPixelColumn)
     {
         ui32* destPixel = (ui32*)currentRow;
 
-        for(i32 row = targetRect.bottomLeft.x; row < targetRect.topRight.x; ++row)
+        for(i32 screenPixelRow = 0; screenPixelRow < buffer.size.width; ++screenPixelRow)
         {            
-            v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
-            v4f foregroundColors = UnPackPixelValues(*imagePixel, BGRA);
-            f32 alphaBlend = foregroundColors.a / 255.0f;
-            v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + foregroundColors;
+            v2f screenPixelCoord{(f32)screenPixelRow, (f32)screenPixelColumn};
+            v2f d {screenPixelCoord - targetQuadOrigin};
+
+            f32 u = invertedXAxisSqd * DotProduct(d, targetQuadXAxis);
+            f32 v = invertedYAxisSqd * DotProduct(d, targetQuadYAxis);
+
+            f32 texelPosX = 1.0f + (u*(f32)(image.size.width));
+            f32 texelPosY = 1.0f + (v*(f32)(image.size.height)); 
+
+            BGZ_ASSERT(texelPosX <= (f32)image.size.width, "Trying to fill in pixel outside current background image width boundry!");
+            BGZ_ASSERT(texelPosY <= (f32)image.size.height, "Trying to fill in pixel outside current background image height boundry!");
+
+            ui32* backgroundTexel = (ui32*)(((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32)));//size of pixel
+
+            v4f imagePixel = UnPackPixelValues(*backgroundTexel, BGRA);
 
             *destPixel = ((0xFF << 24) |
-                           ((ui8)finalBlendedColor.r << 16) |
-                           ((ui8)finalBlendedColor.g << 8) |
-                           ((ui8)finalBlendedColor.b << 0));
+                           ((ui8)imagePixel.r << 16) |
+                           ((ui8)imagePixel.g << 8) |
+                           ((ui8)imagePixel.b << 0));
 
             ++destPixel;
-            ++imagePixel;
         }
         
         currentRow += buffer.pitch;
@@ -298,7 +298,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Quadf worldCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {}, v2f scale = {1.0f, 1.0f})
+DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {}, v2f scale = {1.0f, 1.0f})
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
     {
@@ -327,9 +327,9 @@ DrawImageSlowly(Image&& buffer, Quadf worldCoords, Image image, f32 lightAngle =
         return newBlendedValue;
     };
 
-    v2f origin = worldCoords.bottomLeft;
-    v2f targetRectXAxis = worldCoords.bottomRight - origin;
-    v2f targetRectYAxis = worldCoords.topLeft - origin;
+    v2f origin = cameraCoords.bottomLeft;
+    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
+    v2f targetRectYAxis = cameraCoords.topLeft - origin;
 
     f32 widthMax = (f32)(buffer.size.width - 1);
     f32 heightMax = (f32)(buffer.size.height - 1);
@@ -559,7 +559,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         CreateRegionFromMemory(gameMemory, Megabytes(500));
 
         //Stage Init
-        stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/mountain.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
+        stage->info.backgroundImg.data = platformServices->LoadBGRAbitImage("data/1080p.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
+        stage->info.backgroundImg.pitch = stage->info.backgroundImg.size.width * bytesPerPixel;
         stage->info.size.x = (f32)stage->info.backgroundImg.size.x;
         stage->info.size.y = (f32)stage->info.backgroundImg.size.y;
         stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
@@ -569,7 +570,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->camera.viewHeight = viewportHeight;
         stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y };
         stage->camera.viewCenter = { stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f };
-        stage->camera.dilatePoint = stage->camera.viewCenter;
+        stage->camera.dilatePoint = stage->camera.viewCenter - v2f {0.0f, 200.0f};
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
@@ -665,11 +666,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        stage->camera.zoomFactor += .01f;
+        stage->camera.lookAt += 2.0f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))
     {
+        player->world.pos += 10.0f;
+    };
+
+    if(KeyHeld(keyboard->MoveUp))
+    {
+        stage->camera.zoomFactor += .01f;
     };
 
     //Essentially local fighter coordinates
@@ -727,7 +734,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         Quadf playerTargetRect_world = WorldTransform(playerTargetRect, *player);
         Quadf enemyTargetRect_world = WorldTransform(enemyTargetRect, *enemy);
 
-        Quadf backgroundTargetQuad_camera = ProduceQuadFromBottomLeftPoint(v2f{-2.0f, 0.0f}, (f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height);
+        Quadf backgroundTargetQuad_world = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)stage->info.backgroundImg.size.width, (f32)stage->info.backgroundImg.size.height);
+        Quadf backgroundTargetQuad_camera = CameraTransform(backgroundTargetQuad_world, stage->camera);
 
         Quadf playerTargetRect_camera = CameraTransform(playerTargetRect_world, stage->camera);
         Quadf enemyTargetRect_camera = CameraTransform(enemyTargetRect_world, stage->camera);
