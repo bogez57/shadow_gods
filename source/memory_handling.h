@@ -72,14 +72,6 @@ void* _CallocSize(i32, i64);
 void* _ReAlloc(i32, void*, i64);
 void _DeAlloc(i32, void**);
 
-#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
-#define MallocSize(MemRegionIdentifier, Size) _MallocSize(MemRegionIdentifier, (Size))
-#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
-#define CallocSize(MemRegionIdentifier, Size) _CallocSize(MemRegionIdentifier, (Size))
-#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
-#define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size)
-#define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)
-
 #endif
 
 #ifdef MEMHANDLING_IMPL
@@ -88,6 +80,14 @@ void _DeAlloc(i32, void**);
 #include <cstring>
 
 #define ASSERT(x) assert(x)
+
+#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define MallocSize(MemRegionIdentifier, Size) _MallocSize(MemRegionIdentifier, (Size))
+#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define CallocSize(MemRegionIdentifier, Size) _CallocSize(MemRegionIdentifier, (Size))
+#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
+#define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size)
+#define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)
 
 //TODO: Alignment
 void* _PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
@@ -119,7 +119,7 @@ void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 
     appMemory->regionCount = 0;
 };
 
-_Dynamic_Mem_Allocator InitDynamAllocator(i32 memRegionIdentifier);
+_Dynamic_Mem_Allocator _CreateDynamAllocator(i32 memRegionIdentifier);
 
 i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
 {
@@ -133,11 +133,21 @@ i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
     memRegion->EndAddress = _PointerAddition(memRegion->BaseAddress, (size - 1));
     memRegion->Size = size;
     memRegion->UsedAmount = 0;
-    memRegion->dynamAllocator = InitDynamAllocator(appMemory->regionCount);
+    memRegion->dynamAllocator = _CreateDynamAllocator(appMemory->regionCount);
 
     appMemory->TemporaryStorageUsed += size;
 
+    //TODO: Since region count acts as region identifer, we can't currently let user allocators
+    //be randomly destroyed (E.g. user might destory allocator tied to memory region 2 in a 
+    //list of 5 regions. With current scheme we would only be able to decrement regionCount so 
+    //memory region 5 would dissapear, even though that's not the correct memory region to destroy.
     return appMemory->regionCount++;
+};
+
+i64 MemoryRegionSize(i32 memRegionID)
+{
+   Memory_Region region = appMemory->regions[memRegionID];
+   return region.size;
 };
 
 auto _AllocSize(i32 MemRegionIdentifier, i64 size) -> void*
@@ -185,7 +195,7 @@ _Memory_Block* _ConvertDataToMemoryBlock(void* Ptr)
     return BlockHeader;
 };
 
-_Dynamic_Mem_Allocator InitDynamAllocator(i32 memRegionIdentifier)
+_Dynamic_Mem_Allocator _CreateDynamAllocator(i32 memRegionIdentifier)
 {
     _Dynamic_Mem_Allocator dynamAllocator;
 

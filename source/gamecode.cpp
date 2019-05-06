@@ -39,7 +39,8 @@ global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
-global_variable Dynamic_Allocator dynamAllocator { 0 };
+global_variable Dynamic_Allocator heap;
+global_variable Dynamic_Allocator renderBuffer;
 
 const i32 bytesPerPixel{4};
 
@@ -203,7 +204,53 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         viewportHeight = 720.0f;
 
         InitApplicationMemory(gameMemory);
-        CreateRegionFromMemory(gameMemory, Megabytes(500));
+        heap.memRegionID = CreateRegionFromMemory(gameMemory, Megabytes(200));
+        renderBuffer.memRegionID = CreateRegionFromMemory(gameMemory, Megabytes(100));
+        /*
+            OTHER POSSIBLE MEMORY ALLOCATION IMPLEMENTATION:
+
+            default_id = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
+            renderBuffer_id = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), FRAME);
+            assetBuffer_id = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), STACK);
+            ...
+
+            Render_Entry_Type* thing = Alloc(renderBuffer_id, 1, renderEntry);
+            General_Type* anotherThing = Alloc(default_id, 1, i32);
+
+
+            /////Impl
+
+            enum Allocator_Types
+            {
+                DYNMAIC,
+                FRAME,
+                STACK
+            };
+
+            CreateParitionFromMemoryBlock(game_memory, bytes, allocator_type)
+            {
+                ....
+
+                switch(allocator_type)
+                {
+                    case DYNAMIC:
+                    {
+                        allocatorArray.push(Dynamica_Allocator);
+                    }
+                    case STACK:
+                    {
+                        allocatorArray.push(Stack_Allocator);
+                    }
+                }
+            };
+
+            Alloc(memregion_id, 1, sizeof(type))
+            {
+                Allocator specificAllocatorType = allocatorArray.At(memregion_id);
+                specificAllocatorType.alloc(size);
+            };
+
+        */
 
         //Stage Init
         stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/1440p.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
@@ -243,7 +290,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                             {
                                 Image image{};
 
-                                image.data = (ui8*)CallocSize(0, width*height*bytesPerPixel);
+                                image.data = (ui8*)heap.Allocate(width*height*bytesPerPixel);
                                 image.size = v2i{width, height};
                                 image.pitch = width*bytesPerPixel;
 

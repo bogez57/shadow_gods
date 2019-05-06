@@ -3,6 +3,7 @@
 class Dynamic_Allocator : public Allocator
 {
 public:
+    Dynamic_Allocator() = default;
     Dynamic_Allocator(i32 memRegionID)
     {
         Allocator::memRegionID = memRegionID;
@@ -23,7 +24,7 @@ public:
         return ReAllocSize(Allocator::memRegionID, ptr, size);
     };
 
-    void DeAllocate(void* ptr) override
+    void DeAllocate(void** ptr) override
     {
         DeAlloc(Allocator::memRegionID, ptr);
     };
