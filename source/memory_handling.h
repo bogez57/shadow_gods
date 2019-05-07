@@ -147,7 +147,7 @@ i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size)
 i64 MemoryRegionSize(i32 memRegionID)
 {
    Memory_Region region = appMemory->regions[memRegionID];
-   return region.size;
+   return region.Size;
 };
 
 auto _AllocSize(i32 MemRegionIdentifier, i64 size) -> void*

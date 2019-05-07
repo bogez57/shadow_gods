@@ -29,6 +29,7 @@
 #include "atlas.h"
 #include "shared.h"
 #include "dynamic_allocator.h"
+#include "linear_allocator.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -40,7 +41,7 @@ global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 global_variable Dynamic_Allocator heap;
-global_variable Dynamic_Allocator renderBuffer;
+global_variable Linear_Allocator renderBuffer;
 
 const i32 bytesPerPixel{4};
 
@@ -206,6 +207,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
         heap.memRegionID = CreateRegionFromMemory(gameMemory, Megabytes(200));
         renderBuffer.memRegionID = CreateRegionFromMemory(gameMemory, Megabytes(100));
+        renderBuffer.Init(Megabytes(100));
+
+        i32* thing = (i32*)renderBuffer.Allocate(sizeof(i32));
+        *thing = 34;
+
+        i32* thing2 = (i32*)renderBuffer.Allocate(sizeof(i32));
+        *thing2 = 44;
         /*
             OTHER POSSIBLE MEMORY ALLOCATION IMPLEMENTATION:
 
