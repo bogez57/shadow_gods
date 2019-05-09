@@ -215,8 +215,8 @@ _Memory_Block* _AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
 void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(dynamAllocators[memRegionIdentifier].head);
-    ASSERT(Size <= (appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount)); //Not enough memory left for dynmaic memory allocation!
-    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+    ASSERT(Size <= (appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount)); //Not enough memory left for dynmaic memory allocation!
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
 
     void* Result { nullptr };
 
@@ -257,8 +257,8 @@ void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(dynamAllocators[memRegionIdentifier].head);
-    ASSERT(Size <= (appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount));
-    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+    ASSERT(Size <= (appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount));
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
 
     void* MemBlockData = _MallocSize(memRegionIdentifier, Size);
 
@@ -276,8 +276,8 @@ void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
 {
     ASSERT(dynamAllocators[memRegionIdentifier].head);
-    ASSERT((appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount)); //Not enough room left in memory region!
-    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+    ASSERT((appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount)); //Not enough room left in memory region!
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
 
     _Memory_Block* BlockToRealloc;
     if (DataToRealloc)
@@ -319,11 +319,11 @@ void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
 
 void _DeAlloc(i32 memRegionIdentifier, void** MemToFree)
 {
-    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
 
     if (*MemToFree)
     {
-        ASSERT(*MemToFree > appMemory->regions[memRegionIdentifier].BaseAddress && *MemToFree < appMemory->regions[memRegionIdentifier].EndAddress); //Ptr to free not within dynmaic memory region! Are you trying to free from correct region?
+        ASSERT(*MemToFree > appMemory->partitions[memRegionIdentifier].BaseAddress && *MemToFree < appMemory->partitions[memRegionIdentifier].EndAddress); //Ptr to free not within dynmaic memory region! Are you trying to free from correct region?
 
         _Memory_Block* Block = _ConvertDataToMemoryBlock(*MemToFree);
 

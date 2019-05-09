@@ -207,8 +207,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         InitApplicationMemory(gameMemory);
 
-        heap = CreateRegionFromMemory(gameMemory, Megabytes(100), DYNAMIC);
-        commandBuff = CreateRegionFromMemory(gameMemory, Megabytes(100), DYNAMIC);
+        heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
+        commandBuff = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
 
         InitDynamAllocator(heap);
         InitDynamAllocator(commandBuff);

@@ -28,7 +28,7 @@ enum Allocator_Type
     DYNAMIC
 };
 
-struct Memory_Region
+struct Memory_Partition
 {
     void* BaseAddress;
     void* EndAddress;
@@ -49,14 +49,14 @@ struct Application_Memory
 
     i64 TemporaryStorageUsed {};
     i64 TotalSize {};
-    Memory_Region regions[10];
+    Memory_Partition partitions[10];
     i32 regionCount {};
 };
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct);
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress);
 
-i32 CreateRegionFromMemory(Application_Memory* Memory, i64 size, Allocator_Type allocatorType);
+i32 CreatePartitionFromMemoryBlock(Application_Memory* Memory, i64 size, Allocator_Type allocatorType);
 
 i64 MemoryRegionSize(i32 memRegionID);
 
@@ -94,14 +94,14 @@ void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 
     appMemory->regionCount = 0;
 };
 
-i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size, Allocator_Type allocatorType)
+i32 CreatePartitionFromMemoryBlock(Application_Memory* appMemory, i64 size, Allocator_Type allocatorType)
 {
     ASSERT(size < appMemory->SizeOfTemporaryStorage);
     ASSERT((size + appMemory->TemporaryStorageUsed) < appMemory->SizeOfTemporaryStorage);
 
     appMemory->Initialized = true;
 
-    Memory_Region* memRegion = &appMemory->regions[appMemory->regionCount];
+    Memory_Partition* memRegion = &appMemory->partitions[appMemory->regionCount];
     memRegion->BaseAddress = _PointerAddition(appMemory->TemporaryStorage, appMemory->TemporaryStorageUsed);
     memRegion->EndAddress = _PointerAddition(memRegion->BaseAddress, (size - 1));
     memRegion->Size = size;
@@ -112,32 +112,32 @@ i32 CreateRegionFromMemory(Application_Memory* appMemory, i64 size, Allocator_Ty
 
     //TODO: Since region count acts as region identifer, we can't currently let user allocators
     //be randomly destroyed (E.g. user might destory allocator tied to memory region 2 in a 
-    //list of 5 regions. With current scheme we would only be able to decrement regionCount so 
+    //list of 5 partitions. With current scheme we would only be able to decrement regionCount so 
     //memory region 5 would dissapear, even though that's not the correct memory region to destroy.
     return appMemory->regionCount++;
 };
 
 i64 MemoryRegionSize(i32 memRegionID)
 {
-   Memory_Region region = appMemory->regions[memRegionID];
+   Memory_Partition region = appMemory->partitions[memRegionID];
    return region.Size;
 };
 
 auto _AllocSize(i32 MemRegionIdentifier, i64 size) -> void*
 {
-    ASSERT((appMemory->regions[MemRegionIdentifier].UsedAmount + size) <= appMemory->regions[MemRegionIdentifier].Size);
-    void* Result = _PointerAddition(appMemory->regions[MemRegionIdentifier].BaseAddress, appMemory->regions[MemRegionIdentifier].UsedAmount);
-    appMemory->regions[MemRegionIdentifier].UsedAmount += (size);
+    ASSERT((appMemory->partitions[MemRegionIdentifier].UsedAmount + size) <= appMemory->partitions[MemRegionIdentifier].Size);
+    void* Result = _PointerAddition(appMemory->partitions[MemRegionIdentifier].BaseAddress, appMemory->partitions[MemRegionIdentifier].UsedAmount);
+    appMemory->partitions[MemRegionIdentifier].UsedAmount += (size);
 
     return Result;
 };
 
 auto _FreeSize(i32 MemRegionIdentifier, i64 sizeToFree) -> void
 {
-    ASSERT(sizeToFree < appMemory->regions[MemRegionIdentifier].Size);
-    ASSERT(sizeToFree < appMemory->regions[MemRegionIdentifier].UsedAmount);
+    ASSERT(sizeToFree < appMemory->partitions[MemRegionIdentifier].Size);
+    ASSERT(sizeToFree < appMemory->partitions[MemRegionIdentifier].UsedAmount);
 
-    appMemory->regions[MemRegionIdentifier].UsedAmount -= sizeToFree;
+    appMemory->partitions[MemRegionIdentifier].UsedAmount -= sizeToFree;
 };
 
 #endif //MEMORY_HANDLING_IMPL
