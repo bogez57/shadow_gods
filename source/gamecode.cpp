@@ -18,7 +18,6 @@
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
-#define MEMHANDLING_IMPL
 #include "memory_handling.h"
 #include "array.h"
 #include "dynamic_array.h"
@@ -28,8 +27,6 @@
 
 #include "atlas.h"
 #include "shared.h"
-#include "dynamic_allocator.h"
-#include "linear_allocator.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -40,11 +37,15 @@ global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
-global_variable Dynamic_Allocator heap;
-global_variable Linear_Allocator renderBuffer;
+global_variable i32 heap;
+global_variable i32 commandBuff;
 
 const i32 bytesPerPixel{4};
 
+#define MEMORY_HANDLING_IMPL
+#include "memory_handling.h"
+#define DYNAMIC_ALLOCATOR_IMPL
+#include "dynamic_allocator.h"
 #define COLLISION_IMPL
 #include "collisions.h"
 #define ATLAS_IMPL
@@ -205,15 +206,24 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         viewportHeight = 720.0f;
 
         InitApplicationMemory(gameMemory);
-        heap.memRegionID = CreateRegionFromMemory(gameMemory, Megabytes(200));
-        renderBuffer.memRegionID = CreateRegionFromMemory(gameMemory, Megabytes(100));
-        renderBuffer.Init(Megabytes(100));
 
-        i32* thing = (i32*)renderBuffer.Allocate(sizeof(i32));
-        *thing = 34;
+        heap = CreateRegionFromMemory(gameMemory, Megabytes(100), DYNAMIC);
+        commandBuff = CreateRegionFromMemory(gameMemory, Megabytes(100), DYNAMIC);
 
-        i32* thing2 = (i32*)renderBuffer.Allocate(sizeof(i32));
-        *thing2 = 44;
+        InitDynamAllocator(heap);
+        InitDynamAllocator(commandBuff);
+
+        i32* thing = MallocType(heap, i32, 1);
+        i32* thing2 = MallocType(commandBuff, i32, 1);
+        i32* thing3 = (i32*)CallocSize(commandBuff, 1023);
+
+        *thing = 23;
+        *thing2 = 46;
+        *thing3 = 66;
+
+        DeAlloc(heap, thing);
+        DeAlloc(heap, thing2);
+
         /*
             OTHER POSSIBLE MEMORY ALLOCATION IMPLEMENTATION:
 
@@ -298,7 +308,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                             {
                                 Image image{};
 
-                                image.data = (ui8*)heap.Allocate(width*height*bytesPerPixel);
+                                image.data = (ui8*)MallocSize(heap, width*height*bytesPerPixel);
                                 image.size = v2i{width, height};
                                 image.pitch = width*bytesPerPixel;
 

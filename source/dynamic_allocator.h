@@ -1,31 +1,337 @@
-#include "allocator.h"
+#ifndef DYNAMIC_ALLOCATOR_H 
+#define DYNAMIC_ALLOCATOR_H 
 
-class Dynamic_Allocator : public Allocator
+#include <assert.h>
+#include <cstring>
+
+#define ASSERT(x) assert(x)
+
+void InitDynamAllocator(i32 memRegionIdentifier);
+
+//Prototypes so I can call below macros
+void* _MallocSize(i32, i64);
+void* _CallocSize(i32, i64);
+void* _ReAlloc(i32, void*, i64);
+void _DeAlloc(i32, void**);
+#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define MallocSize(MemRegionIdentifier, Size) _MallocSize(MemRegionIdentifier, (Size))
+#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))
+#define CallocSize(MemRegionIdentifier, Size) _CallocSize(MemRegionIdentifier, (Size))
+#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, sizeof(Type) * Count)
+#define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size)
+#define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)
+
+#endif
+
+#ifdef DYNAMIC_ALLOCATOR_IMPL
+
+/*
+    TODO: 
+    1.) Maybe get rid of Blocks linked list data structure and use array instead?
+    2.) Alignment?
+*/
+
+struct _Memory_Block
 {
-public:
-    Dynamic_Allocator() = default;
-    Dynamic_Allocator(i32 memRegionID)
+    b IsFree { true };
+    i64 Size { 0 };
+    void* data { nullptr };
+    _Memory_Block* nextBlock { nullptr };
+    _Memory_Block* prevBlock { nullptr };
+};
+
+struct _Dynamic_Allocator
+{
+    _Memory_Block* head;
+    _Memory_Block* tail;
+    ui32 AmountOfBlocks;
+};
+
+_Dynamic_Allocator dynamAllocators[10] = {};
+
+void* _GetDataFromBlock(_Memory_Block* Header)
+{
+    ASSERT(Header->Size != 0);
+
+    void* BlockData = (void*)(Header + 1);
+
+    return BlockData;
+};
+
+void InitDynamAllocator(i32 memRegionIdentifier)
+{
+    dynamAllocators[memRegionIdentifier].AmountOfBlocks = 0;
+
+    ui16 BlockSize = 8;
+    ui16 TotalSize = sizeof(_Memory_Block) + BlockSize;
+    _Memory_Block* InitialBlock = (_Memory_Block*)_AllocSize(memRegionIdentifier, TotalSize);
+
+    InitialBlock->Size = BlockSize;
+    InitialBlock->IsFree = false;
+    InitialBlock->data = _GetDataFromBlock(InitialBlock);
+    InitialBlock->nextBlock = nullptr;
+    InitialBlock->prevBlock = nullptr;
+
+    dynamAllocators[memRegionIdentifier].head = InitialBlock;
+    dynamAllocators[memRegionIdentifier].tail = InitialBlock;
+};
+
+_Memory_Block* _ConvertDataToMemoryBlock(void* Ptr)
+{
+    _Memory_Block* BlockHeader {};
+    BlockHeader = (_Memory_Block*)(((ui8*)Ptr) - (sizeof(_Memory_Block)));
+    BlockHeader->data = Ptr;
+
+    return BlockHeader;
+};
+
+_Memory_Block* _SplitBlock(i32 memRegionIdentifier, _Memory_Block* BlockToSplit, sizet SizeOfNewBlock)
+{
+    ASSERT(BlockToSplit->data);
+    ASSERT(SizeOfNewBlock > sizeof(_Memory_Block));
+
+    _Memory_Block* NewBlock = (_Memory_Block*)((ui8*)(BlockToSplit) + (BlockToSplit->Size - 1) + (sizeof(_Memory_Block)));
+
+    NewBlock->Size = SizeOfNewBlock;
+    NewBlock->data = _GetDataFromBlock(NewBlock);
+    NewBlock->prevBlock = BlockToSplit;
+    NewBlock->nextBlock = BlockToSplit->nextBlock;
+    BlockToSplit->nextBlock = NewBlock;
+
+    ++dynamAllocators[memRegionIdentifier].AmountOfBlocks;
+
+    return NewBlock;
+};
+
+sizet _ReSizeAndMarkAsInUse(_Memory_Block* BlockToResize, sizet NewSize)
+{
+    sizet SizeDiff = BlockToResize->Size - NewSize;
+    BlockToResize->Size = NewSize;
+    BlockToResize->IsFree = false;
+
+    return SizeDiff;
+};
+
+_Memory_Block* _GetFirstFreeBlockOfSize(i32 memRegionIdentifier, i64 Size)
+{
+    ASSERT(dynamAllocators[memRegionIdentifier].head);
+
+    _Memory_Block* Result {};
+    _Memory_Block* MemBlock = dynamAllocators[memRegionIdentifier].head;
+
+    if (MemBlock != dynamAllocators[memRegionIdentifier].tail)
     {
-        Allocator::memRegionID = memRegionID;
+        for (ui32 BlockIndex { 0 }; BlockIndex < dynamAllocators[memRegionIdentifier].AmountOfBlocks; ++BlockIndex)
+        {
+            if (MemBlock->IsFree && MemBlock->Size >= Size)
+            {
+                Result = MemBlock;
+                return Result;
+            }
+            else
+            {
+                MemBlock = MemBlock->nextBlock;
+            }
+        };
     };
 
-    ~Dynamic_Allocator() = default;
+    //No free blocks found
+    return nullptr;
+};
 
-    Dynamic_Allocator(const Dynamic_Allocator&) = delete;
-    void operator=(const Dynamic_Allocator&) = delete;
+void _FreeBlockAndMergeIfNecessary(_Memory_Block* blockToFree, i32 memRegionIdentifier) //TODO: split up this function? What to do with more than 1 param that needs modified?
+{
+    blockToFree->IsFree = true;
 
-    void* Allocate(i64 size) override
+    if (blockToFree != dynamAllocators[memRegionIdentifier].tail)
     {
-        return MallocSize(Allocator::memRegionID, size);
-    };
+        { //Merge block with next and/or previous blocks
+            if (blockToFree->nextBlock->IsFree)
+            {
+                blockToFree->Size += blockToFree->nextBlock->Size;
+                blockToFree->nextBlock->Size = 0;
 
-    void* ReAllocate(void* ptr, i64 size) override
-    {
-        return ReAllocSize(Allocator::memRegionID, ptr, size);
-    };
+                if (blockToFree->nextBlock->nextBlock)
+                {
+                    blockToFree->nextBlock = blockToFree->nextBlock->nextBlock;
+                }
+                else
+                {
+                    blockToFree->nextBlock = nullptr;
+                };
 
-    void DeAllocate(void** ptr) override
+                --dynamAllocators[memRegionIdentifier].AmountOfBlocks;
+            };
+
+            if (blockToFree->prevBlock->IsFree)
+            {
+                blockToFree->prevBlock->Size += blockToFree->Size;
+
+                if (blockToFree->nextBlock)
+                {
+                    blockToFree->prevBlock->nextBlock = blockToFree->nextBlock;
+                }
+                else
+                {
+                    blockToFree->prevBlock->nextBlock = nullptr;
+                };
+
+                blockToFree->Size = 0;
+
+                --dynamAllocators[memRegionIdentifier].AmountOfBlocks;
+            };
+        };
+    }
+    else
     {
-        DeAlloc(Allocator::memRegionID, ptr);
+        blockToFree->prevBlock->nextBlock = nullptr;
+        i64 sizeToFree = sizeof(_Memory_Block) + blockToFree->Size;
+        dynamAllocators[memRegionIdentifier].tail = blockToFree->prevBlock;
+        --dynamAllocators[memRegionIdentifier].AmountOfBlocks;
+        blockToFree->Size = 0;
+        _FreeSize(memRegionIdentifier, sizeToFree);
     };
 };
+
+_Memory_Block* _AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
+{
+    i64 TotalSize = sizeof(_Memory_Block) + Size;
+    _Memory_Block* NewBlock = (_Memory_Block*)_AllocSize(memRegionIdentifier, TotalSize);
+
+    NewBlock->Size = Size;
+    NewBlock->IsFree = false;
+    NewBlock->data = _GetDataFromBlock(NewBlock);
+
+    NewBlock->prevBlock = dynamAllocators[memRegionIdentifier].tail;
+    NewBlock->nextBlock = nullptr;
+    dynamAllocators[memRegionIdentifier].tail->nextBlock = NewBlock;
+    dynamAllocators[memRegionIdentifier].tail = NewBlock;
+
+    ++dynamAllocators[memRegionIdentifier].AmountOfBlocks;
+
+    return NewBlock;
+};
+
+void* _MallocSize(i32 memRegionIdentifier, i64 Size)
+{
+    ASSERT(dynamAllocators[memRegionIdentifier].head);
+    ASSERT(Size <= (appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount)); //Not enough memory left for dynmaic memory allocation!
+    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+
+    void* Result { nullptr };
+
+    if (Size > 0)
+    {
+        _Memory_Block* MemBlock = _GetFirstFreeBlockOfSize(memRegionIdentifier, Size);
+
+        //No free blocks found
+        if (!MemBlock)
+        {
+            MemBlock = _AppendNewBlockAndMarkInUse(memRegionIdentifier, Size);
+
+            Result = MemBlock->data;
+            return Result;
+        }
+        else
+        {
+            sizet SizeDiff = _ReSizeAndMarkAsInUse(MemBlock, Size);
+
+            if (SizeDiff > sizeof(_Memory_Block))
+            {
+                _Memory_Block* NewBlock = _SplitBlock(memRegionIdentifier, MemBlock, SizeDiff);
+                NewBlock->IsFree = true;
+            }
+            else
+            {
+                MemBlock->Size += SizeDiff;
+            };
+
+            Result = MemBlock->data;
+            return Result;
+        };
+    };
+
+    return Result;
+};
+
+void* _CallocSize(i32 memRegionIdentifier, i64 Size)
+{
+    ASSERT(dynamAllocators[memRegionIdentifier].head);
+    ASSERT(Size <= (appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount));
+    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+
+    void* MemBlockData = _MallocSize(memRegionIdentifier, Size);
+
+    if (MemBlockData)
+    {
+        _Memory_Block* Block = _ConvertDataToMemoryBlock(MemBlockData);
+        ASSERT(Block->data);
+
+        memset(MemBlockData, 0, Block->Size);
+    };
+
+    return MemBlockData;
+};
+
+void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
+{
+    ASSERT(dynamAllocators[memRegionIdentifier].head);
+    ASSERT((appMemory->regions[memRegionIdentifier].Size - appMemory->regions[memRegionIdentifier].UsedAmount)); //Not enough room left in memory region!
+    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+
+    _Memory_Block* BlockToRealloc;
+    if (DataToRealloc)
+    {
+        BlockToRealloc = _ConvertDataToMemoryBlock(DataToRealloc);
+
+        if (NewSize < BlockToRealloc->Size)
+        {
+            sizet SizeDiff = _ReSizeAndMarkAsInUse(BlockToRealloc, NewSize);
+
+            if (SizeDiff > sizeof(_Memory_Block))
+            {
+                _Memory_Block* NewBlock = _SplitBlock(memRegionIdentifier, BlockToRealloc, SizeDiff);
+                NewBlock->IsFree = true;
+            }
+            else
+            {
+                BlockToRealloc->Size += SizeDiff;
+            };
+        }
+        else
+        {
+            void* newBlockData = _MallocSize(memRegionIdentifier, NewSize);
+
+            memcpy(newBlockData, BlockToRealloc->data, BlockToRealloc->Size);
+
+            _FreeBlockAndMergeIfNecessary(BlockToRealloc, memRegionIdentifier);
+
+            return newBlockData;
+        };
+    }
+    else
+    {
+        DataToRealloc = _MallocSize(memRegionIdentifier, NewSize);
+    };
+
+    return DataToRealloc;
+};
+
+void _DeAlloc(i32 memRegionIdentifier, void** MemToFree)
+{
+    ASSERT(appMemory->regions[memRegionIdentifier].allocatorType == DYNAMIC);
+
+    if (*MemToFree)
+    {
+        ASSERT(*MemToFree > appMemory->regions[memRegionIdentifier].BaseAddress && *MemToFree < appMemory->regions[memRegionIdentifier].EndAddress); //Ptr to free not within dynmaic memory region! Are you trying to free from correct region?
+
+        _Memory_Block* Block = _ConvertDataToMemoryBlock(*MemToFree);
+
+        memset(*MemToFree, 0, Block->Size); //TODO: Remove if speed becomes an issue;
+        *MemToFree = nullptr;
+
+        _FreeBlockAndMergeIfNecessary(Block, memRegionIdentifier);
+    };
+};
+
+#endif //DYNAMIC_ALLOCATOR_IMPL

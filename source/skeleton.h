@@ -98,7 +98,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
 
     { //Create Bones
         Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
-        newSkeleton.bones.Init(jsonBones->size, &heap);
+        newSkeleton.bones.Init(jsonBones->size, heap);
         i32 boneIndex {};
         for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.bones.size; currentJsonObject = currentJsonObject->next, ++boneIndex)
         {
@@ -114,7 +114,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
 
     { //Create Slots
         Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
-        newSkeleton.slots.Init(jsonSlots->size, &heap);
+        newSkeleton.slots.Init(jsonSlots->size, heap);
         i32 slotIndex {};
         for (Json* currentJsonObject = jsonSlots->child; slotIndex < newSkeleton.slots.size; currentJsonObject = currentJsonObject->next, ++slotIndex)
         {

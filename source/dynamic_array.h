@@ -39,7 +39,7 @@
 
 #pragma once
 
-#include "allocator.h"
+#include "dynamic_allocator.h"
 
 #define Roundup32(x) (--(x), (x) |= (x) >> 1, (x) |= (x) >> 2, (x) |= (x) >> 4, (x) |= (x) >> 8, (x) |= (x) >> 16, ++(x))
 
@@ -57,9 +57,9 @@ class Dynam_Array
 public:
     Dynam_Array() = default;
 
-    Dynam_Array(i64 initialSize, Allocator* allocator)
+    Dynam_Array(i64 initialSize, i32 memPartitionID_dynamic)
         : capacity(initialSize)
-        , allocator(allocator)
+        , memPartitionID(memPartitionID_dynamic)
 
     {
         *this = ResizeArray<Type>(*this, initialSize);
@@ -81,9 +81,9 @@ public:
         return *(this->elements + index);
     };
 
-    void Init(i64 initialSize, Allocator* allocator)
+    void Init(i64 initialSize, i32 memPartitionID_dynamic)
     {
-        this->allocator = allocator;
+        this->memPartitionID = memPartitionID_dynamic;
         *this = ResizeArray<Type>(*this, initialSize);
         memset(this->elements, 0, initialSize); //Initializes elements as well
         this->size = initialSize;
@@ -93,7 +93,7 @@ public:
     {
         ((this->capacity <= (i64)(AtIndex) ? (this->capacity = this->size = (AtIndex) + 1,
                                                  Roundup32(this->capacity),
-                                                 this->elements = (Type*)allocator->ReAllocate(this->elements, sizeof(Type) * this->capacity),
+                                                 this->elements = (Type*)ReAllocSize(this->memPartitionID, ->elements, sizeof(Type) * this->capacity),
                                                  0)
                                            : this->size <= (i64)(AtIndex) ? this->size = (AtIndex) + 1 : 0),
             this->elements[(AtIndex)])
@@ -106,7 +106,7 @@ public:
         if (this->size == this->capacity)
         {
             this->capacity = this->capacity ? this->capacity << 1 : 2;
-            this->elements = (Type*)allocator->ReAllocate(this->elements, sizeof(Type) * this->capacity);
+            this->elements = (Type*)ReAllocSize(this->memPartitionID, this->elements, sizeof(Type) * this->capacity);
         }
         this->elements[this->size++] = (element);
     };
@@ -120,7 +120,7 @@ public:
 
     void Destroy()
     {
-        allocator->DeAllocate(this->elements);
+        DeAlloc(memPartitionID, this->elements);
         this->size = 0;
         this->capacity = 0;
         hasArrayBeenDestroyed = true;
@@ -129,13 +129,13 @@ public:
     i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
-    Allocator* allocator;
+    i32 memPartitionID;
 };
 
 template <typename Type>
 Dynam_Array<Type> ResizeArray(Dynam_Array<Type> arrayToResize, i64 size)
 {
-    (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)arrayToResize.allocator->ReAllocate(arrayToResize.elements, (sizeof(Type) * arrayToResize.capacity)));
+    (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)ReAllocSize(arrayToResize.memPartitionID, arrayToResize.elements, (sizeof(Type) * arrayToResize.capacity)));
 
     return arrayToResize;
 };

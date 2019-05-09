@@ -4,19 +4,19 @@ class Ring_Buffer
 {
 public:
     Ring_Buffer() = default;
-    Ring_Buffer(i64 size, Allocator* allocator)
+    Ring_Buffer(i64 size, i32 memPartitionID_dynamic)
         : maxSize(size)
         , allocator(allocator)
 
     {
-        this->buffer = (Type*)this->allocator->Allocate(size);
+        this->buffer = (Type*)MallocSize(memPartitionID_dynamic, size);
     };
 
-    void Init(i64 size, Allocator* allocator)
+    void Init(i64 size, i32 memPartitionID_dynamic)
     {
         this->allocator = allocator;
         this->maxSize = size;
-        this->buffer = this->allocator->Allocate(size);
+        this->buffer = (Type*)MallocSize(memPartitionID_dynamic, size);
     };
 
     void PushBack(Type elem)
@@ -99,7 +99,6 @@ public:
         return size;
     };
 
-    Allocator* allocator;
     i64 maxSize {};
     i64 head {};
     i64 tail {};

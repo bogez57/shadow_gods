@@ -36,7 +36,7 @@
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
-#define MEMHANDLING_IMPL
+#define MEMORY_HANDLING_IMPL
 #include "memory_handling.h"
 #include "array.h"
 
