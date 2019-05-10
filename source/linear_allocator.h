@@ -1,48 +1,52 @@
+#ifndef LINEAR_ALLOCATOR_H 
+#define LINEAR_ALLOCATOR_H 
+
 #include "allocator.h"
 #include "boagz/error_handling.h"
 
-//TODO: Need to do an alloc of memory up front and then do some pointer manipulation within the allocator
-class Linear_Allocator : public Allocator
+void* _PushSize(i32 memPartitionID, i64 size);
+#define PushType(memPartitionID, type, count) (type*)_PushSize(memPartitionID, ((sizeof(type)) * (count)))
+#define PushSize(memPartitionID, size) _PushSize(memPartitionID, size)
+void Release(i32 memPartitionID);
+
+#endif
+
+#ifdef LINEAR_ALLOCATOR_IMPL
+
+struct _Linear_Allocator
 {
-public:
-    Linear_Allocator() = default;
-    ~Linear_Allocator() = default;
-    Linear_Allocator(const Linear_Allocator&) = delete;
-    void operator=(const Linear_Allocator&) = delete;
-
-    void Init(i64 totalPossibleSizeOfAllocator)
-    {
-        totalPossibleSizeOfAllocator -= 48;
-        this->baseAddress = MallocSize(Allocator::memRegionID, totalPossibleSizeOfAllocator);
-        this->size = totalPossibleSizeOfAllocator;
-        this->usedAmount = 0;
-    };
-
-    void* Allocate(i64 size) override
-    {
-        BGZ_ASSERT((this->usedAmount + size) <= this->size, "Not enough space in linear allocator to allocate requested size");
-
-        void* memoryPointer = ((ui8*)this->baseAddress) + this->usedAmount;
-        this->usedAmount += (size);
-
-        return memoryPointer;
-    };
-
-    void* ReAllocate(void*, i64 ) override
-    {
-        InvalidCodePath;
-
-        void* incorrect{};
-        return incorrect;
-    };
-
-    void DeAllocate(void** ptr) override
-    {
-        this->usedAmount = 0;
-    };
-
-private:
     void* baseAddress;
     i64 usedAmount;
     i64 size;
 };
+
+_Linear_Allocator linearAllocators[10] = {};
+
+void InitLinearAllocator(i32 memPartitionID, i64 totalPossibleSizeOfAllocator)
+{
+    ASSERT(appMemory->partitions[memPartitionID].allocatorType == LINEAR);
+
+    linearAllocators[memPartitionID].baseAddress = _AllocSize(memPartitionID, totalPossibleSizeOfAllocator);
+    linearAllocators[memPartitionID].size = totalPossibleSizeOfAllocator;
+    linearAllocators[memPartitionID].usedAmount = 0;
+};
+
+void* _PushSize(i32 memPartitionID, i64 size) 
+{
+    BGZ_ASSERT((linearAllocators[memPartitionID].usedAmount + size) <= linearAllocators[memPartitionID].size, "Not enough space in linear allocator to allocate requested size");
+    ASSERT(appMemory->partitions[memPartitionID].allocatorType == LINEAR);
+
+    void* memoryPointer = ((ui8*)linearAllocators[memPartitionID].baseAddress) + linearAllocators[memPartitionID].usedAmount;
+    linearAllocators[memPartitionID].usedAmount += (size);
+
+    return memoryPointer;
+};
+
+void Release(i32 memPartitionID) 
+{
+    ASSERT(appMemory->partitions[memPartitionID].allocatorType == LINEAR);
+
+    linearAllocators[memPartitionID].usedAmount = 0;
+};
+
+#endif LINEAR_ALLOCATOR_IMPL

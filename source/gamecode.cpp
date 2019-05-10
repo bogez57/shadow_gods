@@ -38,7 +38,7 @@ global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
 global_variable f32 viewportHeight;
 global_variable i32 heap;
-global_variable i32 commandBuff;
+global_variable i32 renderBuffer;
 
 const i32 bytesPerPixel{4};
 
@@ -46,6 +46,8 @@ const i32 bytesPerPixel{4};
 #include "memory_handling.h"
 #define DYNAMIC_ALLOCATOR_IMPL
 #include "dynamic_allocator.h"
+#define LINEAR_ALLOCATOR_IMPL
+#include "linear_allocator.h"
 #define COLLISION_IMPL
 #include "collisions.h"
 #define ATLAS_IMPL
@@ -208,21 +210,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         InitApplicationMemory(gameMemory);
 
         heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
-        commandBuff = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
+        renderBuffer = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), LINEAR);
 
         InitDynamAllocator(heap);
-        InitDynamAllocator(commandBuff);
-
-        i32* thing = MallocType(heap, i32, 1);
-        i32* thing2 = MallocType(commandBuff, i32, 1);
-        i32* thing3 = (i32*)CallocSize(commandBuff, 1023);
-
-        *thing = 23;
-        *thing2 = 46;
-        *thing3 = 66;
-
-        DeAlloc(heap, thing);
-        DeAlloc(heap, thing2);
+        InitLinearAllocator(renderBuffer, Megabytes(10));
 
         /*
             OTHER POSSIBLE MEMORY ALLOCATION IMPLEMENTATION:

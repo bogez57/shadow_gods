@@ -2,7 +2,6 @@
 #define DYNAMIC_ALLOCATOR_H 
 
 #include <assert.h>
-#include <cstring>
 
 #define ASSERT(x) assert(x)
 
@@ -60,6 +59,8 @@ void* _GetDataFromBlock(_Memory_Block* Header)
 
 void InitDynamAllocator(i32 memRegionIdentifier)
 {
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
+
     dynamAllocators[memRegionIdentifier].AmountOfBlocks = 0;
 
     ui16 BlockSize = 8;
@@ -214,9 +215,9 @@ _Memory_Block* _AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
 
 void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 {
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
     ASSERT(dynamAllocators[memRegionIdentifier].head);
     ASSERT(Size <= (appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount)); //Not enough memory left for dynmaic memory allocation!
-    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
 
     void* Result { nullptr };
 
@@ -256,9 +257,9 @@ void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 
 void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 {
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
     ASSERT(dynamAllocators[memRegionIdentifier].head);
     ASSERT(Size <= (appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount));
-    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
 
     void* MemBlockData = _MallocSize(memRegionIdentifier, Size);
 
@@ -275,9 +276,9 @@ void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 
 void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
 {
+    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
     ASSERT(dynamAllocators[memRegionIdentifier].head);
     ASSERT((appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount)); //Not enough room left in memory region!
-    ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
 
     _Memory_Block* BlockToRealloc;
     if (DataToRealloc)
