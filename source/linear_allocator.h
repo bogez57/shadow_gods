@@ -22,12 +22,12 @@ struct _Linear_Allocator
 
 _Linear_Allocator linearAllocators[10] = {};
 
-void InitLinearAllocator(i32 memPartitionID, i64 totalPossibleSizeOfAllocator)
+void InitLinearAllocator(i32 memPartitionID)
 {
     ASSERT(appMemory->partitions[memPartitionID].allocatorType == LINEAR);
 
-    linearAllocators[memPartitionID].baseAddress = _AllocSize(memPartitionID, totalPossibleSizeOfAllocator);
-    linearAllocators[memPartitionID].size = totalPossibleSizeOfAllocator;
+    linearAllocators[memPartitionID].baseAddress = _AllocSize(memPartitionID, MemoryPartitionSize(memPartitionID));
+    linearAllocators[memPartitionID].size = MemoryPartitionSize(memPartitionID);
     linearAllocators[memPartitionID].usedAmount = 0;
 };
 

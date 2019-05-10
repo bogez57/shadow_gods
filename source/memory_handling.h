@@ -59,7 +59,7 @@ void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 
 
 i32 CreatePartitionFromMemoryBlock(Application_Memory* Memory, i64 size, Allocator_Type allocatorType);
 
-i64 MemoryRegionSize(i32 memRegionID);
+i64 MemoryPartitionSize(i32 memRegionID);
 
 #endif
 
@@ -85,7 +85,7 @@ void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 
     appMemory->partitionCount = 0;
 };
 
-i64 MemoryRegionSize(i32 memRegionID)
+i64 MemoryPartitionSize(i32 memRegionID)
 {
    Memory_Partition region = appMemory->partitions[memRegionID];
    return region.Size;

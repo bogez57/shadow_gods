@@ -207,13 +207,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
 
-        InitApplicationMemory(gameMemory);
+        {//Initialize memory/allocator stuff
+            InitApplicationMemory(gameMemory);
+            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
+            renderBuffer = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(10), LINEAR);
 
-        heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
-        renderBuffer = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), LINEAR);
-
-        InitDynamAllocator(heap);
-        InitLinearAllocator(renderBuffer, Megabytes(10));
+            InitDynamAllocator(heap);
+            InitLinearAllocator(renderBuffer);
+        };
 
         /*
             OTHER POSSIBLE MEMORY ALLOCATION IMPLEMENTATION:
@@ -225,7 +226,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
             Render_Entry_Type* thing = Alloc(renderBuffer_id, 1, renderEntry);
             General_Type* anotherThing = Alloc(default_id, 1, i32);
-
 
             /////Impl
 
@@ -258,7 +258,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
                 Allocator specificAllocatorType = allocatorArray.At(memregion_id);
                 specificAllocatorType.alloc(size);
             };
-
         */
 
         //Stage Init
