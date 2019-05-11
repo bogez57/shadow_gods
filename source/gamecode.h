@@ -5,6 +5,13 @@
 #include "collisions.h"
 #include "skeleton.h"
 
+struct RenderBufferInfo
+{
+    ui8* baseAddress;
+    i64 size;
+    i32 entryCount;
+};
+
 struct Coordinate_Space
 {
     v2f origin;
