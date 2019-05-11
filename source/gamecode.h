@@ -53,6 +53,7 @@ struct Stage_Data
 
 struct Game_State
 {
+    RenderBufferInfo renderBuffData;
     i32 imageWidth, imageHeight;
     Atlas* atlas;
     Image composite;

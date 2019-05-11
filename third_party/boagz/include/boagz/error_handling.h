@@ -26,6 +26,7 @@
 #if BGZ_ERRHANDLING_ON
 
 #define InvalidCodePath assert(!"InvalidCodePath")
+#define InvalidDefaultCase default: {InvalidCodePath;} break
 
 #define BGZ_ERRCTXT1(errorDescription) \
     Bgz::ErrContext ec(errorDescription);
