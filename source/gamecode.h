@@ -5,13 +5,6 @@
 #include "collisions.h"
 #include "skeleton.h"
 
-struct RenderBufferInfo
-{
-    ui8* baseAddress;
-    i64 size;
-    i32 entryCount;
-};
-
 struct Coordinate_Space
 {
     v2f origin;
@@ -58,9 +51,10 @@ struct Stage_Data
     Game_Camera camera;
 };
 
+struct RenderBufferInfo;
 struct Game_State
 {
-    RenderBufferInfo renderBuffData;
+    RenderBufferInfo* renderBuffData;//This is only a pointer because of current circular dependency issues
     i32 imageWidth, imageHeight;
     Atlas* atlas;
     Image composite;

@@ -937,16 +937,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.Calloc = &Win32::Dbg::Calloc;
                 platformServices.Realloc = &Win32::Dbg::Realloc;
                 platformServices.Free = &Win32::Dbg::Free;
-
-                //If using hardware rendering
-                RenderCmds.DrawStuff = &GL::DrawStuff;
-                RenderCmds.DrawRect = &GL::DrawRect;
-                RenderCmds.ClearScreen = &GL::ClearScreen;
-                RenderCmds.DrawBackground = &GL::DrawBackground;
-                RenderCmds.LoadTexture = &GL::LoadTexture;
-                RenderCmds.DrawTexture = &GL::DrawTexture;
-                RenderCmds.DrawLine = &GL::DrawLine;
-                RenderCmds.Init = &GL::Init;
             }
 
             ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();

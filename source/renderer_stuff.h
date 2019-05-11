@@ -1,26 +1,6 @@
 #ifndef RENDERER_STUFF_INCLUDE_H
 #define RENDERER_STUFF_INCLUDE_H
 
-struct Image
-{
-    ui8* data;
-    v2i size;
-    ui32 pitch;
-    f32 opacity {1.0f};
-};
-
-struct Rectf
-{
-    v2f min;
-    v2f max;
-};
-
-struct Recti
-{
-    v2i min;
-    v2i max;
-};
-
 struct Quadf
 {
     union
@@ -51,18 +31,37 @@ struct Quadi
     };
 };
 
-struct Texture
+enum Render_Entry_Type
 {
-    ui32 ID;
-    v2i size;
+    EntryType_Image
 };
+
+struct RenderEntry_Header
+{
+    Render_Entry_Type type;
+};
+
+struct RenderEntry_Image
+{
+    RenderEntry_Header header;
+    Transform world;
+    Image normalMap;
+    Image imageData;
+};
+
+struct RenderBufferInfo
+{
+    ui8* baseAddress;
+    i64 size;
+    i32 entryCount;
+};
+
+void InitRenderBufferInfo(RenderBufferInfo&& renderBufInfo);
+void PushImage(RenderBufferInfo&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo);
+void Render(Game_State* gState, Image&& colorBuffer, RenderBufferInfo renderBufferInfo, Game_Camera camera);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
-void DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b);
-void DrawImage(Image&& buffer, Rectf rect, Image image);
-void DrawBackground(Image&& buffer, Quadf targetQuad, Image image);
-void DrawImageSlowly(Image&& buffer, Quadf targetQuad, Image image);
 void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat);
 Rectf ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
@@ -75,6 +74,41 @@ Quadf DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf Quad
 #endif //RENDERER_STUFF_INCLUDE_H 
 
 #ifdef RENDERER_STUFF_IMPL
+
+Quadf WorldTransform(Quadf localCoords, Transform transformInfo_world)
+{
+    //With world space origin at 0, 0
+    Coordinate_Space imageSpace{};
+    imageSpace.origin = transformInfo_world.pos;
+    imageSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
+    imageSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(imageSpace.xBasis);
+    imageSpace.xBasis *= transformInfo_world.scale.x;
+
+    Quadf transformedCoords{};
+    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
+    {
+        //This equation rotates first then moves to correct world position
+        transformedCoords.vertices.At(vertIndex) = imageSpace.origin + (localCoords.vertices.At(vertIndex).x * imageSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * imageSpace.yBasis);
+    };
+
+    return transformedCoords;
+};
+
+Quadf CameraTransform(Quadf worldCoords, Game_Camera camera)
+{
+    Quadf transformedCoords{};
+
+    v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+
+    for(i32 vertIndex{}; vertIndex < 4; vertIndex++) 
+    {
+        worldCoords.vertices[vertIndex] += translationToCameraSpace;
+    };
+
+    transformedCoords = DilateAboutArbitraryPoint(camera.dilatePoint, camera.zoomFactor, worldCoords);
+
+    return transformedCoords;
+};
 
 local_func
 auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat) 
@@ -560,6 +594,53 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, f32 lightAngle 
 void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
 {
     DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
+};
+
+void InitRenderBufferInfo(RenderBufferInfo&& renderBufInfo)
+{
+    renderBufInfo.baseAddress = PushType(renderBuffer, ui8, 1);
+    Release(renderBuffer);//clear out ui8 type I just pushed to grab base address of render buffer allocator
+    renderBufInfo.size = MemoryPartitionSize(renderBuffer);
+};
+
+void PushImage(RenderBufferInfo&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
+{
+    RenderEntry_Image* imageEntry = PushType(renderBuffer, RenderEntry_Image, 1);
+
+    imageEntry->header.type = EntryType_Image;
+    imageEntry->world = image_worldTransformInfo;
+    imageEntry->normalMap = normalMap;
+    imageEntry->imageData = imageToDraw;
+
+    ++bufferInfo.entryCount;
+};
+
+void Render(Game_State* gState, Image&& colorBuffer, RenderBufferInfo renderBufferInfo, Game_Camera camera)
+{
+    ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
+    for(i32 entryNumber = 0; entryNumber < renderBufferInfo.entryCount; ++entryNumber)
+    {
+        RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
+        switch(entryHeader->type)
+        {
+            case EntryType_Image:
+            {
+                RenderEntry_Image* imageEntry = (RenderEntry_Image*)currentRenderBufferEntry;
+                Quadf imageTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)imageEntry->imageData.size.width, (f32)imageEntry->imageData.size.height);
+
+                ConvertToCorrectPositiveRadian($(imageEntry->world.rotation));
+
+                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, imageEntry->world);
+                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, camera);
+
+                DrawImageSlowly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, gState->lightAngle, gState->lightThreshold, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
+
+                currentRenderBufferEntry += sizeof(RenderEntry_Image);
+            }break;
+
+            InvalidDefaultCase;
+        }
+    };
 };
 
 #endif //RENDERER_STUFF_IMPL

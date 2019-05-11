@@ -138,106 +138,6 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-Quadf WorldTransform(Quadf localCoords, Transform transformInfo_world)
-{
-    //With world space origin at 0, 0
-    Coordinate_Space imageSpace{};
-    imageSpace.origin = transformInfo_world.pos;
-    imageSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
-    imageSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(imageSpace.xBasis);
-    imageSpace.xBasis *= transformInfo_world.scale.x;
-
-    Quadf transformedCoords{};
-    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
-    {
-        //This equation rotates first then moves to correct world position
-        transformedCoords.vertices.At(vertIndex) = imageSpace.origin + (localCoords.vertices.At(vertIndex).x * imageSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * imageSpace.yBasis);
-    };
-
-    return transformedCoords;
-};
-
-Quadf CameraTransform(Quadf worldCoords, Game_Camera camera)
-{
-    Quadf transformedCoords{};
-
-    v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
-
-    for(i32 vertIndex{}; vertIndex < 4; vertIndex++) 
-    {
-        worldCoords.vertices[vertIndex] += translationToCameraSpace;
-    };
-
-    transformedCoords = DilateAboutArbitraryPoint(camera.dilatePoint, camera.zoomFactor, worldCoords);
-
-    return transformedCoords;
-};
-
-enum Render_Entry_Type
-{
-    EntryType_Image
-};
-
-struct RenderEntry_Header
-{
-    Render_Entry_Type type;
-};
-
-struct RenderEntry_Image
-{
-    RenderEntry_Header header;
-    Transform world;
-    Image normalMap;
-    Image imageData;
-};
-
-void InitRenderBufferInfo(RenderBufferInfo&& renderBufInfo)
-{
-    renderBufInfo.baseAddress = PushType(renderBuffer, ui8, 1);
-    Release(renderBuffer);//clear out ui8 type I just pushed to grab base address of render buffer allocator
-    renderBufInfo.size = MemoryPartitionSize(renderBuffer);
-};
-
-void PushImage(RenderBufferInfo&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
-{
-    RenderEntry_Image* imageEntry = PushType(renderBuffer, RenderEntry_Image, 1);
-
-    imageEntry->header.type = EntryType_Image;
-    imageEntry->world = image_worldTransformInfo;
-    imageEntry->normalMap = normalMap;
-    imageEntry->imageData = imageToDraw;
-
-    ++bufferInfo.entryCount;
-};
-
-void Render(Game_State* gState, Image&& colorBuffer, RenderBufferInfo renderBufferInfo, Game_Camera camera)
-{
-    ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
-    for(i32 entryNumber = 0; entryNumber < renderBufferInfo.entryCount; ++entryNumber)
-    {
-        RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
-        switch(entryHeader->type)
-        {
-            case EntryType_Image:
-            {
-                RenderEntry_Image* imageEntry = (RenderEntry_Image*)currentRenderBufferEntry;
-                Quadf imageTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)imageEntry->imageData.size.width, (f32)imageEntry->imageData.size.height);
-
-                ConvertToCorrectPositiveRadian($(imageEntry->world.rotation));
-
-                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, imageEntry->world);
-                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, camera);
-
-                DrawImageSlowly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, gState->lightAngle, gState->lightThreshold, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
-
-                currentRenderBufferEntry += sizeof(RenderEntry_Image);
-            }break;
-
-            InvalidDefaultCase;
-        }
-    };
-};
-
 extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -281,8 +181,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
             InitLinearAllocator(renderBuffer);
         };
 
+        gState->renderBuffData = MallocType(heap, RenderBufferInfo, 1);
         //Init render buffer stuff
-        InitRenderBufferInfo($(gState->renderBuffData));
+        InitRenderBufferInfo($(*gState->renderBuffData));
 
         //Stage Init
         stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/1440p.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
@@ -405,7 +306,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->camera.zoomFactor += .01f;
     };
 
-    PushImage($(gState->renderBuffData), player->image, gState->normalMap, player->world);
+    PushImage($(*gState->renderBuffData), player->image, gState->normalMap, player->world);
 
     //Essentially local fighter coordinates
     Quadf playerTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
@@ -413,8 +314,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     ConvertToCorrectPositiveRadian($(player->world.rotation));
 
-    Render(gState, $(gState->colorBuffer), gState->renderBuffData, stage->camera);
+    Render(gState, $(gState->colorBuffer), *gState->renderBuffData, stage->camera);
 
     Release(renderBuffer);
-    gState->renderBuffData.entryCount = 0;
+    gState->renderBuffData->entryCount = 0;
 };

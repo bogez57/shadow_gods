@@ -134,6 +134,7 @@ void _AtlasPage_createTexture(AtlasPage* self, const char* path)
     Image image;
     image.data = globalPlatformServices->LoadBGRAImage(path, $(image.size.width), $(image.size.height));
 
+#if 0
     Texture texture = globalRenderCmds.LoadTexture(image);
     Texture* textureptr = MallocType(0, Texture, 1);
     *textureptr = texture;
@@ -141,6 +142,7 @@ void _AtlasPage_createTexture(AtlasPage* self, const char* path)
     self->rendererObject = textureptr;
     self->width = image.size.width;
     self->height = image.size.height;
+#endif
 };
 
 void _AtlasPage_disposeTexture(AtlasPage* self)

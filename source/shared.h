@@ -128,16 +128,32 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
 
-#include "renderer_stuff.h"
+struct Rectf
+{
+    v2f min;
+    v2f max;
+};
+
+struct Recti
+{
+    v2i min;
+    v2i max;
+};
+
+struct Image
+{
+    ui8* data;
+    v2i size;
+    ui32 pitch;
+    f32 opacity {1.0f};
+};
+
+struct Texture
+{
+    ui32 ID;
+    v2i size;
+};
 
 struct Game_Render_Cmds
 {
-    void (*ClearScreen)();
-    void (*DrawStuff)();
-    void (*DrawRect)(v2f, v2f, v4f);
-    void (*DrawBackground)(ui32, Rectf, v2f, v2f);
-    void (*DrawTexture)(ui32, Rectf, v2f*);
-    void (*DrawLine)(v2f, v2f);
-    Texture (*LoadTexture)(Image);
-    void (*Init)();
 };
