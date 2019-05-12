@@ -50,7 +50,7 @@
 
 global_variable ui32 globalWindowWidth { 1280 };
 global_variable ui32 globalWindowHeight { 720 };
-global_variable Win32::Offscreen_Buffer globalBackbuffer;
+global_variable Win32::Offscreen_Buffer globalBackBuffer;
 global_variable Application_Memory GameMemory;
 global_variable bool GameRunning {};
 
@@ -409,26 +409,26 @@ namespace Win32
     }
 
     local_func void
-    DisplayBufferInWindow(Win32::Offscreen_Buffer&& gameBackBuffer, HDC deviceContext, int windowWidth, int windowHeight)
+    DisplayBufferInWindow(Game_Render_Cmds renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
     {
         //Performs screen clear so resizing window doesn't screw up the image displayed
         PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
-        PatBlt(deviceContext, 0, gameBackBuffer.height, windowWidth, windowHeight, BLACKNESS);
+        PatBlt(deviceContext, 0, globalBackBuffer.height, windowWidth, windowHeight, BLACKNESS);
         PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
-        PatBlt(deviceContext, gameBackBuffer.width, 0, windowWidth, windowHeight, BLACKNESS);
+        PatBlt(deviceContext, globalBackBuffer.width, 0, windowWidth, windowHeight, BLACKNESS);
         
         {//Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
             v2i displayRect_BottomLeftCoords{0, 0};
             v2i displayRect_Dimensions{};
-            displayRect_Dimensions.width = gameBackBuffer.width;
-            displayRect_Dimensions.height = gameBackBuffer.height;
+            displayRect_Dimensions.width = globalBackBuffer.width;
+            displayRect_Dimensions.height = globalBackBuffer.height;
 
             //Copy game's rendered back buffer to whatever display area size you want
             StretchDIBits(deviceContext,
                         displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
-                        0, 0, gameBackBuffer.width, gameBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
-                        gameBackBuffer.memory,
-                        &gameBackBuffer.Info,
+                        0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
+                        globalBackBuffer.memory,
+                        &globalBackBuffer.Info,
                         DIB_RGB_COLORS, SRCCOPY);
         };
     };
@@ -662,11 +662,14 @@ namespace Win32
 
         case WM_PAINT:
         {
+            //To understand why you need a display buffer call here as well as game loop, see this post:
+            //https://hero.handmade.network/forums/code-discussion/t/825-wm_paint_question_beginner
             PAINTSTRUCT Paint;
             HDC deviceContext = BeginPaint(WindowHandle, &Paint);
+#if 0
             Win32::Window_Dimension dimension = GetWindowDimension(WindowHandle);
-            Win32::DisplayBufferInWindow($(globalBackbuffer), deviceContext,
-                                       dimension.width, dimension.height);
+            Win32::DisplayBufferInWindow($(globalBackBuffer), deviceContext, dimension.width, dimension.height);
+#endif
             EndPaint(WindowHandle, &Paint);
         }break;
 
@@ -879,7 +882,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     UINT DesiredSchedulerGranularityMS = 1;
     BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR, "Error when trying to set windows granularity!");
 
-    Win32::ResizeDIBSection($(globalBackbuffer), globalWindowWidth, globalWindowHeight);
+    Win32::ResizeDIBSection($(globalBackBuffer), globalWindowWidth, globalWindowHeight);
 
     WNDCLASS WindowProperties {};
     WindowProperties.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
@@ -913,7 +916,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             Game_Input Input {};
             Game_Sound_Output_Buffer SoundBuffer {};
-            Game_Render_Cmds RenderCmdBuffer {};
+            Game_Render_Cmds renderCmdBuffer {};
             Platform_Services platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
@@ -925,10 +928,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             {//Init render command buffer
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + appMemory->TotalSize + 1);
-                RenderCmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); 
-                RenderCmdBuffer.size = Megabytes(10);
-                RenderCmdBuffer.entryCount = 0;
-                RenderCmdBuffer.usedAmount = 0;
+                renderCmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); 
+                renderCmdBuffer.size = Megabytes(10);
+                renderCmdBuffer.entryCount = 0;
+                renderCmdBuffer.usedAmount = 0;
             }
 
             { //Init input recording and replay services
@@ -1095,13 +1098,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput($(UpdatedInput), $(UpdatedReplayState));
                 }
 
-                Game_Offscreen_Buffer gameBackBuffer{};
-                gameBackBuffer.memory = globalBackbuffer.memory;
-                gameBackBuffer.width = globalBackbuffer.width; 
-                gameBackBuffer.height = globalBackbuffer.height;
-                gameBackBuffer.pitch = globalBackbuffer.pitch;
-
-                GameCode.UpdateFunc(&GameMemory, &platformServices, &RenderCmdBuffer, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &platformServices, &renderCmdBuffer, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState;
@@ -1120,7 +1117,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 Win32::Window_Dimension dimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
-                Win32::DisplayBufferInWindow($(globalBackbuffer), deviceContext, dimension.width, dimension.height);
+                Win32::DisplayBufferInWindow(renderCmdBuffer, deviceContext, dimension.width, dimension.height);
                 ReleaseDC(window, deviceContext);
 
                 //Hardware Rendering
