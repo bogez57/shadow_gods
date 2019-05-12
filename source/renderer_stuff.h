@@ -49,16 +49,8 @@ struct RenderEntry_Image
     Image imageData;
 };
 
-struct RenderBufferInfo
-{
-    ui8* baseAddress;
-    i64 size;
-    i32 entryCount;
-};
-
-void InitRenderBufferInfo(RenderBufferInfo&& renderBufInfo);
-void PushImage(RenderBufferInfo&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo);
-void Render(Game_State* gState, Image&& colorBuffer, RenderBufferInfo renderBufferInfo, Game_Camera camera);
+void PushImage(Game_Render_Cmds&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo);
+void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -74,6 +66,16 @@ Quadf DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf Quad
 #endif //RENDERER_STUFF_INCLUDE_H 
 
 #ifdef RENDERER_STUFF_IMPL
+
+void* _RenderCmdBuf_Push(Game_Render_Cmds* commandBuf, i32 sizeOfCommand)
+{
+    void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
+    commandBuf->usedAmount += (sizeOfCommand);
+
+    return memoryPointer;
+};
+
+#define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
 Quadf WorldTransform(Quadf localCoords, Transform transformInfo_world)
 {
@@ -596,26 +598,19 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
     DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void InitRenderBufferInfo(RenderBufferInfo&& renderBufInfo)
+void PushImage(Game_Render_Cmds* bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
 {
-    renderBufInfo.baseAddress = PushType(renderBuffer, ui8, 1);
-    Release(renderBuffer);//clear out ui8 type I just pushed to grab base address of render buffer allocator
-    renderBufInfo.size = MemoryPartitionSize(renderBuffer);
-};
-
-void PushImage(RenderBufferInfo&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
-{
-    RenderEntry_Image* imageEntry = PushType(renderBuffer, RenderEntry_Image, 1);
+    RenderEntry_Image* imageEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Image);
 
     imageEntry->header.type = EntryType_Image;
     imageEntry->world = image_worldTransformInfo;
     imageEntry->normalMap = normalMap;
     imageEntry->imageData = imageToDraw;
 
-    ++bufferInfo.entryCount;
+    ++bufferInfo->entryCount;
 };
 
-void Render(Game_State* gState, Image&& colorBuffer, RenderBufferInfo renderBufferInfo, Game_Camera camera)
+void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
     for(i32 entryNumber = 0; entryNumber < renderBufferInfo.entryCount; ++entryNumber)

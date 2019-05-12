@@ -906,21 +906,29 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         {
 
 #if DEVELOPMENT_BUILD
-            void* BaseAddress { (void*)Terabytes(2) };
+            void* baseAddress { (void*)Terabytes(2) };
 #else
-            void* BaseAddress { (void*)0 };
+            void* baseAddress { (void*)0 };
 #endif
 
             Game_Input Input {};
             Game_Sound_Output_Buffer SoundBuffer {};
-            Game_Render_Cmds RenderCmds {};
+            Game_Render_Cmds RenderCmdBuffer {};
             Platform_Services platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
             { //Init Game memory
-                InitApplicationMemory(&GameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(BaseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
+                InitApplicationMemory(&GameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
+            }
+
+            {//Init render command buffer
+                void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + appMemory->TotalSize + 1);
+                RenderCmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); 
+                RenderCmdBuffer.size = Megabytes(10);
+                RenderCmdBuffer.entryCount = 0;
+                RenderCmdBuffer.usedAmount = 0;
             }
 
             { //Init input recording and replay services
@@ -1093,7 +1101,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 gameBackBuffer.height = globalBackbuffer.height;
                 gameBackBuffer.pitch = globalBackbuffer.pitch;
 
-                GameCode.UpdateFunc(&GameMemory, &gameBackBuffer, &platformServices, RenderCmds, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &gameBackBuffer, &platformServices, &RenderCmdBuffer, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState;

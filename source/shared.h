@@ -126,6 +126,14 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
     return result;
 };
 
+struct Game_Render_Cmds
+{
+    ui8* baseAddress;
+    ui32 usedAmount;
+    ui32 size;
+    i32 entryCount;
+};
+
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
 
 struct Rectf
@@ -152,8 +160,4 @@ struct Texture
 {
     ui32 ID;
     v2i size;
-};
-
-struct Game_Render_Cmds
-{
 };

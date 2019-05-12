@@ -32,7 +32,7 @@
 #include "utilities.h"
 
 global_variable Platform_Services* globalPlatformServices;
-global_variable Game_Render_Cmds globalRenderCmds;
+global_variable Game_Render_Cmds* global_renderCmdBuf;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
@@ -138,7 +138,7 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
@@ -151,7 +151,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     deltaT = platformServices->prevFrameTimeInSecs;
     deltaTFixed = platformServices->targetFrameTimeInSecs;
     globalPlatformServices = platformServices;
-    globalRenderCmds = renderCmds;
+    global_renderCmdBuf = renderCmdBuf;
 
     Stage_Data* stage = &gState->stage;
     Fighter* player = &stage->player;
@@ -175,15 +175,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         {//Initialize memory/allocator stuff
             InitApplicationMemory(gameMemory);
             heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
-            renderBuffer = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(10), LINEAR);
-
             InitDynamAllocator(heap);
-            InitLinearAllocator(renderBuffer);
         };
-
-        gState->renderBuffData = MallocType(heap, RenderBufferInfo, 1);
-        //Init render buffer stuff
-        InitRenderBufferInfo($(*gState->renderBuffData));
 
         //Stage Init
         stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/1440p.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
@@ -306,7 +299,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
         stage->camera.zoomFactor += .01f;
     };
 
-    PushImage($(*gState->renderBuffData), player->image, gState->normalMap, player->world);
+    PushImage(global_renderCmdBuf, player->image, gState->normalMap, player->world);
 
     //Essentially local fighter coordinates
     Quadf playerTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
@@ -314,8 +307,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
     ConvertToCorrectPositiveRadian($(player->world.rotation));
 
-    Render(gState, $(gState->colorBuffer), *gState->renderBuffData, stage->camera);
+    Render(gState, $(gState->colorBuffer), *global_renderCmdBuf, stage->camera);
 
-    Release(renderBuffer);
-    gState->renderBuffData->entryCount = 0;
+    global_renderCmdBuf->usedAmount = 0;
 };
