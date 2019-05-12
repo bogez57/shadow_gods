@@ -40,8 +40,6 @@ global_variable f32 viewportHeight;
 global_variable i32 heap;
 global_variable i32 renderBuffer;
 
-const i32 bytesPerPixel{4};
-
 #define MEMORY_HANDLING_IMPL
 #include "memory_handling.h"
 #define DYNAMIC_ALLOCATOR_IMPL

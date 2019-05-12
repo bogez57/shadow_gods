@@ -50,7 +50,7 @@ struct RenderEntry_Image
 };
 
 void PushImage(Game_Render_Cmds&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo);
-void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera);
+void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -61,6 +61,8 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 
 
 #ifdef GAME_RENDERER_STUFF_IMPL
+
+const i32 bytesPerPixel{4};
 
 void* _RenderCmdBuf_Push(Game_Render_Cmds* commandBuf, i32 sizeOfCommand)
 {
@@ -87,6 +89,8 @@ void PushImage(Game_Render_Cmds* bufferInfo, Image imageToDraw, Image normalMap,
 
 
 #ifdef PLATFORM_RENDERER_STUFF_IMPL
+
+const i32 bytesPerPixel{4};
 
 local_func
 Rectf _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDilate)
@@ -386,7 +390,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 local_func void
-DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, f32 lightAngle = {}, f32 lightThreshold = {}, Image normalMap = {}, f32 rotation = {}, v2f scale = {1.0f, 1.0f})
+DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale, f32 lightAngle = {}, f32 lightThreshold = {})
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
     {
@@ -606,10 +610,10 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, f32 lightAngle 
 
 void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
 {
-    DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
+    //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera)
+void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
     for(i32 entryNumber = 0; entryNumber < renderBufferInfo.entryCount; ++entryNumber)
@@ -627,7 +631,7 @@ void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBuff
                 Quadf imageTargetRect_world = WorldTransform(imageTargetRect, imageEntry->world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, camera);
 
-                DrawImageSlowly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, gState->lightAngle, gState->lightThreshold, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
+                DrawImageSlowly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Image);
             }break;

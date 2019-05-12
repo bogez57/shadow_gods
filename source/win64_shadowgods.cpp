@@ -44,6 +44,8 @@
 #include "utilities.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
+#define PLATFORM_RENDERER_STUFF_IMPL
+#include "renderer_stuff.h"
 
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_context.cpp>

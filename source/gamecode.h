@@ -5,20 +5,6 @@
 #include "collisions.h"
 #include "skeleton.h"
 
-struct Coordinate_Space
-{
-    v2f origin;
-    v2f xBasis;
-    v2f yBasis;
-};
-
-struct Transform
-{
-    f32 rotation;
-    v2f pos;
-    v2f scale;
-};
-
 struct Fighter
 {
     Image image;
