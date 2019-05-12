@@ -32,16 +32,6 @@ struct StageInfo
     Image backgroundImg;
 };
 
-struct Game_Camera
-{
-    v2f lookAt;
-    v2f viewCenter;
-    f32 viewWidth;
-    f32 viewHeight;
-    v2f dilatePoint;
-    f32 zoomFactor;
-};
-
 struct Stage_Data
 {
     StageInfo info;
@@ -56,7 +46,6 @@ struct Game_State
     i32 imageWidth, imageHeight;
     Atlas* atlas;
     Image composite;
-    Image colorBuffer;
     Image normalMap;
     f32 lightAngle;
     f32 lightThreshold;

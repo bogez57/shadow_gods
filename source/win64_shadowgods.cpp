@@ -1101,7 +1101,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 gameBackBuffer.height = globalBackbuffer.height;
                 gameBackBuffer.pitch = globalBackbuffer.pitch;
 
-                GameCode.UpdateFunc(&GameMemory, &gameBackBuffer, &platformServices, &RenderCmdBuffer, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &platformServices, &RenderCmdBuffer, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState;

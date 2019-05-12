@@ -138,7 +138,7 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer* gameBackBuffer, Platform_Services* platformServices, Game_Render_Cmds* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
@@ -164,10 +164,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
 
         gameMemory->Initialized = true;
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
-
-        gState->colorBuffer.data = (ui8*)gameBackBuffer->memory;
-        gState->colorBuffer.size = v2i{gameBackBuffer->width, gameBackBuffer->height};
-        gState->colorBuffer.pitch = gameBackBuffer->pitch;
 
         viewportWidth = 1280.0f;
         viewportHeight = 720.0f;
@@ -306,8 +302,4 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Game_Offscreen_Buffer
     Quadf enemyTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
 
     ConvertToCorrectPositiveRadian($(player->world.rotation));
-
-    Render(gState, $(gState->colorBuffer), *global_renderCmdBuf, stage->camera);
-
-    global_renderCmdBuf->usedAmount = 0;
 };
