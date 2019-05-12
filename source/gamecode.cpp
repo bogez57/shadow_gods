@@ -296,10 +296,4 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     PushImage(global_renderCmdBuf, player->image, gState->normalMap, player->world);
-
-    //Essentially local fighter coordinates
-    Quadf playerTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)player->image.size.width, (f32)player->image.size.height);
-    Quadf enemyTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)enemy->image.size.width, (f32)enemy->image.size.height);
-
-    ConvertToCorrectPositiveRadian($(player->world.rotation));
 };

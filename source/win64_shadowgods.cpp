@@ -411,6 +411,12 @@ namespace Win32
     local_func void
     DisplayBufferInWindow(Game_Render_Cmds renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
     {
+        Image colorBuffer{};
+        colorBuffer.data = (ui8*)globalBackBuffer.memory;
+        colorBuffer.size.width = globalBackBuffer.width;
+        colorBuffer.size.height = globalBackBuffer.height;
+        colorBuffer.pitch = globalBackBuffer.pitch;
+
         //Performs screen clear so resizing window doesn't screw up the image displayed
         PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
         PatBlt(deviceContext, 0, globalBackBuffer.height, windowWidth, windowHeight, BLACKNESS);

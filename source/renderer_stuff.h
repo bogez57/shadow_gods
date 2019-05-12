@@ -55,13 +55,6 @@ void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBuff
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
 void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
-auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat);
-Rectf ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
-Rectf ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
-Rectf ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
-Quadf ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
-Rectf DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDilate);
-Quadf DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate);
 
 #endif //RENDERER_STUFF_INCLUDE_H 
 
@@ -76,6 +69,36 @@ void* _RenderCmdBuf_Push(Game_Render_Cmds* commandBuf, i32 sizeOfCommand)
 };
 
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
+
+local_func
+Rectf _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDilate)
+{
+    Rectf DilatedRect {};
+
+    v2f Distance = PointOfDilation - RectToDilate.min;
+    Distance *= ScaleFactor;
+    DilatedRect.min = PointOfDilation - Distance;
+
+    Distance = PointOfDilation - RectToDilate.max;
+    Distance *= ScaleFactor;
+    DilatedRect.max = PointOfDilation - Distance;
+
+    return DilatedRect;
+};
+
+auto _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate) -> Quadf
+{
+    Quadf DilatedQuad {};
+
+    for (i32 vertIndex = 0; vertIndex < 4; ++vertIndex)
+    {
+        v2f Distance = PointOfDilation - QuadToDilate.vertices[vertIndex];
+        Distance *= ScaleFactor;
+        DilatedQuad.vertices[vertIndex] = PointOfDilation - Distance;
+    };
+
+    return DilatedQuad;
+};
 
 Quadf WorldTransform(Quadf localCoords, Transform transformInfo_world)
 {
@@ -107,13 +130,13 @@ Quadf CameraTransform(Quadf worldCoords, Game_Camera camera)
         worldCoords.vertices[vertIndex] += translationToCameraSpace;
     };
 
-    transformedCoords = DilateAboutArbitraryPoint(camera.dilatePoint, camera.zoomFactor, worldCoords);
+    transformedCoords = _DilateAboutArbitraryPoint(camera.dilatePoint, camera.zoomFactor, worldCoords);
 
     return transformedCoords;
 };
 
 local_func
-auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat) 
+auto _LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat) 
 {
     struct Result {ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B;};
     Result blendedColor{};
@@ -131,7 +154,7 @@ auto LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFo
 };
 
 local_func
-Rectf ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height)
+Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height)
 {
     Rectf Result;
 
@@ -142,7 +165,7 @@ Rectf ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height)
 };
 
 local_func
-Rectf ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height)
+Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height)
 {
     Rectf Result;
 
@@ -153,7 +176,7 @@ Rectf ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height)
 };
 
 local_func
-Rectf ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
+Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 {
     Rectf Result;
 
@@ -164,7 +187,7 @@ Rectf ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 };
 
 local_func
-Quadf ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
+Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
 {
     Quadf Result;
 
@@ -174,36 +197,6 @@ Quadf ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
     Result.topLeft = { originPoint.x, originPoint.y + height };
 
     return Result;
-};
-
-local_func
-Rectf DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDilate)
-{
-    Rectf DilatedRect {};
-
-    v2f Distance = PointOfDilation - RectToDilate.min;
-    Distance *= ScaleFactor;
-    DilatedRect.min = PointOfDilation - Distance;
-
-    Distance = PointOfDilation - RectToDilate.max;
-    Distance *= ScaleFactor;
-    DilatedRect.max = PointOfDilation - Distance;
-
-    return DilatedRect;
-};
-
-auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate) -> Quadf
-{
-    Quadf DilatedQuad {};
-
-    for (i32 vertIndex = 0; vertIndex < 4; ++vertIndex)
-    {
-        v2f Distance = PointOfDilation - QuadToDilate.vertices[vertIndex];
-        Distance *= ScaleFactor;
-        DilatedQuad.vertices[vertIndex] = PointOfDilation - Distance;
-    };
-
-    return DilatedQuad;
 };
 
 local_func
@@ -621,7 +614,7 @@ void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBuff
             case EntryType_Image:
             {
                 RenderEntry_Image* imageEntry = (RenderEntry_Image*)currentRenderBufferEntry;
-                Quadf imageTargetRect = ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)imageEntry->imageData.size.width, (f32)imageEntry->imageData.size.height);
+                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)imageEntry->imageData.size.width, (f32)imageEntry->imageData.size.height);
 
                 ConvertToCorrectPositiveRadian($(imageEntry->world.rotation));
 
