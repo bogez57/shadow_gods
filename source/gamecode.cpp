@@ -56,7 +56,7 @@ const i32 bytesPerPixel{4};
 #include "json.h"
 #define SKELETON_IMPL
 #include "skeleton.h"
-#define RENDERER_STUFF_IMPL
+#define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
 
 // Third Party

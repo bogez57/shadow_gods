@@ -58,17 +58,35 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 
 #endif //RENDERER_STUFF_INCLUDE_H 
 
-#ifdef RENDERER_STUFF_IMPL
+
+
+#ifdef GAME_RENDERER_STUFF_IMPL
 
 void* _RenderCmdBuf_Push(Game_Render_Cmds* commandBuf, i32 sizeOfCommand)
 {
     void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
     commandBuf->usedAmount += (sizeOfCommand);
-
     return memoryPointer;
 };
-
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
+
+void PushImage(Game_Render_Cmds* bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
+{
+    RenderEntry_Image* imageEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Image);
+
+    imageEntry->header.type = EntryType_Image;
+    imageEntry->world = image_worldTransformInfo;
+    imageEntry->normalMap = normalMap;
+    imageEntry->imageData = imageToDraw;
+
+    ++bufferInfo->entryCount;
+};
+
+#endif //GAME_RENDERER_STUFF_IMPL
+
+
+
+#ifdef PLATFORM_RENDERER_STUFF_IMPL
 
 local_func
 Rectf _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDilate)
@@ -591,18 +609,6 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
     DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void PushImage(Game_Render_Cmds* bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
-{
-    RenderEntry_Image* imageEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Image);
-
-    imageEntry->header.type = EntryType_Image;
-    imageEntry->world = image_worldTransformInfo;
-    imageEntry->normalMap = normalMap;
-    imageEntry->imageData = imageToDraw;
-
-    ++bufferInfo->entryCount;
-};
-
 void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
@@ -631,4 +637,4 @@ void Render(Game_State* gState, Image&& colorBuffer, Game_Render_Cmds renderBuff
     };
 };
 
-#endif //RENDERER_STUFF_IMPL
+#endif //PLATFORM_RENDERER_STUFF_IMPL
