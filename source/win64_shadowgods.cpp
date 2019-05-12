@@ -411,7 +411,7 @@ namespace Win32
     }
 
     local_func void
-    DisplayBufferInWindow(Game_Render_Cmds&& renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
+    DisplayBufferInWindow(Game_Render_Cmd_Buffer&& renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
     {
         Image colorBuffer{};
         colorBuffer.data = (ui8*)globalBackBuffer.memory;
@@ -928,7 +928,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             Game_Input Input {};
             Game_Sound_Output_Buffer SoundBuffer {};
-            Game_Render_Cmds renderCmdBuffer {};
+            Game_Render_Cmd_Buffer renderCmdBuffer {};
             Platform_Services platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };

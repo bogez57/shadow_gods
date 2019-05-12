@@ -126,6 +126,14 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
     return result;
 };
 
+struct Game_Render_Cmd_Buffer
+{
+    ui8* baseAddress;
+    ui32 usedAmount;
+    ui32 size;
+    i32 entryCount;
+};
+
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
 
 struct Coordinate_Space
@@ -142,18 +150,6 @@ struct Transform
     v2f scale;
 };
 
-struct Rectf
-{
-    v2f min;
-    v2f max;
-};
-
-struct Recti
-{
-    v2i min;
-    v2i max;
-};
-
 struct Image
 {
     ui8* data;
@@ -166,13 +162,5 @@ struct Texture
 {
     ui32 ID;
     v2i size;
-};
-
-struct Game_Render_Cmds
-{
-    ui8* baseAddress;
-    ui32 usedAmount;
-    ui32 size;
-    i32 entryCount;
 };
 

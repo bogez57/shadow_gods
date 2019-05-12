@@ -32,7 +32,7 @@
 #include "utilities.h"
 
 global_variable Platform_Services* globalPlatformServices;
-global_variable Game_Render_Cmds* global_renderCmdBuf;
+global_variable Game_Render_Cmd_Buffer* global_renderCmdBuf;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable f32 viewportWidth;
@@ -136,7 +136,7 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmd_Buffer* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 

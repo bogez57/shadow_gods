@@ -31,6 +31,18 @@ struct Quadi
     };
 };
 
+struct Rectf
+{
+    v2f min;
+    v2f max;
+};
+
+struct Recti
+{
+    v2i min;
+    v2i max;
+};
+
 enum Render_Entry_Type
 {
     EntryType_Image,
@@ -60,9 +72,9 @@ struct RenderEntry_2DCamera
     f32 zoomFactor;
 };
 
-void PushImage(Game_Render_Cmds&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo);
-void PushCamera(Game_Render_Cmds* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor);
-void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo);
+void PushImage(Game_Render_Cmd_Buffer&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo);
+void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor);
+void Render(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -76,7 +88,7 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 
 const i32 bytesPerPixel{4};
 
-void* _RenderCmdBuf_Push(Game_Render_Cmds* commandBuf, i32 sizeOfCommand)
+void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 {
     void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
     commandBuf->usedAmount += (sizeOfCommand);
@@ -84,7 +96,7 @@ void* _RenderCmdBuf_Push(Game_Render_Cmds* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void PushImage(Game_Render_Cmds* bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
+void PushImage(Game_Render_Cmd_Buffer* bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo)
 {
     RenderEntry_Image* imageEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Image);
 
@@ -96,7 +108,7 @@ void PushImage(Game_Render_Cmds* bufferInfo, Image imageToDraw, Image normalMap,
     ++bufferInfo->entryCount;
 };
 
-void PushCamera(Game_Render_Cmds* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor)
+void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor)
 {
     RenderEntry_2DCamera* camera = RenderCmdBuf_Push(bufferInfo, RenderEntry_2DCamera);
     camera->lookAt = lookAt;
@@ -635,7 +647,7 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
     //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo)
+void Render(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
 
