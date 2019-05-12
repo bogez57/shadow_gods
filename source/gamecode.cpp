@@ -293,5 +293,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
+    global_renderCmdBuf->camera = stage->camera;
+
     PushImage(global_renderCmdBuf, player->image, gState->normalMap, player->world);
 };

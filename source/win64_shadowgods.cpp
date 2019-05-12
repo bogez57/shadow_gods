@@ -411,13 +411,17 @@ namespace Win32
     }
 
     local_func void
-    DisplayBufferInWindow(Game_Render_Cmds renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
+    DisplayBufferInWindow(Game_Render_Cmds&& renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
     {
         Image colorBuffer{};
         colorBuffer.data = (ui8*)globalBackBuffer.memory;
         colorBuffer.size.width = globalBackBuffer.width;
         colorBuffer.size.height = globalBackBuffer.height;
         colorBuffer.pitch = globalBackBuffer.pitch;
+
+        Render($(colorBuffer), renderCmdBuf, renderCmdBuf.camera);
+
+        renderCmdBuf.usedAmount = 0;
 
         //Performs screen clear so resizing window doesn't screw up the image displayed
         PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
@@ -1125,7 +1129,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 Win32::Window_Dimension dimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
-                Win32::DisplayBufferInWindow(renderCmdBuffer, deviceContext, dimension.width, dimension.height);
+                Win32::DisplayBufferInWindow($(renderCmdBuffer), deviceContext, dimension.width, dimension.height);
                 ReleaseDC(window, deviceContext);
 
                 //Hardware Rendering
