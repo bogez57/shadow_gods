@@ -33,7 +33,8 @@ struct Quadi
 
 enum Render_Entry_Type
 {
-    EntryType_Image
+    EntryType_Image,
+    EntryType_2DCamera
 };
 
 struct RenderEntry_Header
@@ -49,8 +50,19 @@ struct RenderEntry_Image
     Image imageData;
 };
 
+struct RenderEntry_2DCamera
+{
+    RenderEntry_Header header;
+    v2f lookAt;
+    v2f viewCenter;
+    v2f viewDims;
+    v2f dilatePoint;
+    f32 zoomFactor;
+};
+
 void PushImage(Game_Render_Cmds&& bufferInfo, Image imageToDraw, Image normalMap, Transform image_worldTransformInfo);
-void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera);
+void PushCamera(Game_Render_Cmds* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor);
+void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -82,6 +94,16 @@ void PushImage(Game_Render_Cmds* bufferInfo, Image imageToDraw, Image normalMap,
     imageEntry->imageData = imageToDraw;
 
     ++bufferInfo->entryCount;
+};
+
+void PushCamera(Game_Render_Cmds* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor)
+{
+    RenderEntry_2DCamera* camera = RenderCmdBuf_Push(bufferInfo, RenderEntry_2DCamera);
+    camera->lookAt = lookAt;
+    camera->viewCenter = viewCenter;
+    camera->viewDims = dims;
+    camera->dilatePoint = dilatePoint;
+    camera->zoomFactor = zoomFactor;
 };
 
 #endif //GAME_RENDERER_STUFF_IMPL
@@ -141,7 +163,7 @@ Quadf WorldTransform(Quadf localCoords, Transform transformInfo_world)
     return transformedCoords;
 };
 
-Quadf CameraTransform(Quadf worldCoords, Game_Camera camera)
+Quadf CameraTransform(Quadf worldCoords, RenderEntry_2DCamera camera)
 {
     Quadf transformedCoords{};
 
@@ -613,9 +635,14 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
     //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera camera)
+void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
+
+    //First element should always be camera so I can use it for multiple entry's
+    RenderEntry_2DCamera* camera = (RenderEntry_2DCamera*)currentRenderBufferEntry;
+    currentRenderBufferEntry += sizeof(RenderEntry_2DCamera);
+
     for(i32 entryNumber = 0; entryNumber < renderBufferInfo.entryCount; ++entryNumber)
     {
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
@@ -629,7 +656,7 @@ void Render(Image&& colorBuffer, Game_Render_Cmds renderBufferInfo, Game_Camera 
                 ConvertToCorrectPositiveRadian($(imageEntry->world.rotation));
 
                 Quadf imageTargetRect_world = WorldTransform(imageTargetRect, imageEntry->world);
-                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, camera);
+                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
                 DrawImageSlowly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
 

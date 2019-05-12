@@ -419,7 +419,7 @@ namespace Win32
         colorBuffer.size.height = globalBackBuffer.height;
         colorBuffer.pitch = globalBackBuffer.pitch;
 
-        Render($(colorBuffer), renderCmdBuf, renderCmdBuf.camera);
+        Render($(colorBuffer), renderCmdBuf);
 
         renderCmdBuf.usedAmount = 0;
 
