@@ -415,36 +415,46 @@ namespace Win32
     local_func void
     DisplayBufferInWindow(Game_Render_Cmd_Buffer&& renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
     {
-        Image colorBuffer{};
-        colorBuffer.data = (ui8*)globalBackBuffer.memory;
-        colorBuffer.size.width = globalBackBuffer.width;
-        colorBuffer.size.height = globalBackBuffer.height;
-        colorBuffer.pitch = globalBackBuffer.pitch;
+        b renderThroughHardware{false};
+        if(renderThroughHardware)
+        {
 
-        Render($(colorBuffer), renderCmdBuf);
+        }
+        else
+        {
+            //Render through software
+            Image colorBuffer{};
+            colorBuffer.data = (ui8*)globalBackBuffer.memory;
+            colorBuffer.size.width = globalBackBuffer.width;
+            colorBuffer.size.height = globalBackBuffer.height;
+            colorBuffer.pitch = globalBackBuffer.pitch;
 
-        renderCmdBuf.usedAmount = 0;
+            RenderViaSoftware($(colorBuffer), renderCmdBuf);
 
-        //Performs screen clear so resizing window doesn't screw up the image displayed
-        PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
-        PatBlt(deviceContext, 0, globalBackBuffer.height, windowWidth, windowHeight, BLACKNESS);
-        PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
-        PatBlt(deviceContext, globalBackBuffer.width, 0, windowWidth, windowHeight, BLACKNESS);
-        
-        {//Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
-            v2i displayRect_BottomLeftCoords{0, 0};
-            v2i displayRect_Dimensions{};
-            displayRect_Dimensions.width = globalBackBuffer.width;
-            displayRect_Dimensions.height = globalBackBuffer.height;
+            //Performs screen clear so resizing window doesn't screw up the image displayed
+            PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
+            PatBlt(deviceContext, 0, colorBuffer.size.height, windowWidth, windowHeight, BLACKNESS);
+            PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
+            PatBlt(deviceContext, colorBuffer.size.width, 0, windowWidth, windowHeight, BLACKNESS);
+            
+            {//Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
+                v2i displayRect_BottomLeftCoords{0, 0};
+                v2i displayRect_Dimensions{};
+                displayRect_Dimensions.width = colorBuffer.size.width;
+                displayRect_Dimensions.height = colorBuffer.size.height;
 
-            //Copy game's rendered back buffer to whatever display area size you want
-            StretchDIBits(deviceContext,
-                        displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
-                        0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
-                        globalBackBuffer.memory,
-                        &globalBackBuffer.Info,
-                        DIB_RGB_COLORS, SRCCOPY);
+                //Copy game's rendered back buffer to whatever display area size you want
+                StretchDIBits(deviceContext,
+                            displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
+                            0, 0, colorBuffer.size.width, colorBuffer.size.height, //Source - The dimensions/coords of the back buffer the game rendered to
+                            (void*)colorBuffer.data,
+                            &globalBackBuffer.Info,
+                            DIB_RGB_COLORS, SRCCOPY);
+            };
         };
+
+        //Clear out command buffer
+        renderCmdBuf.usedAmount = 0;
     };
 
     local_func auto
@@ -584,12 +594,10 @@ namespace Win32
         LRESULT Result { 0 };
 
         //For hardware rendering
-        //HDC WindowContext = GetDC(WindowHandle);
+        HDC WindowContext = GetDC(WindowHandle);
 
         switch (Message)
         {
-//Turning off hardware rendering for now
-#if 0
         case WM_CREATE:
         {
             if (WindowContext)
@@ -672,7 +680,6 @@ namespace Win32
             }
         }
         break;
-#endif
 
         case WM_PAINT:
         {
@@ -986,9 +993,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 Win32::DisplayBufferInWindow($(renderCmdBuffer), deviceContext, dimension.width, dimension.height);
                 ReleaseDC(window, deviceContext);
 
-                //Hardware Rendering
-                //SwapBuffers(WindowContext);
-
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
 
                 platformServices.prevFrameTimeInSecs = FramePerformanceTimer.SecondsElapsed();
@@ -1000,9 +1004,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             };
 
 
-            //Hardware Rendering 
-            //wglMakeCurrent(NULL, NULL);
-            //ReleaseDC(window, WindowContext);
+            //Hardware Rendering shutdown procedure
+            wglMakeCurrent(NULL, NULL);
+            ReleaseDC(window, WindowContext);
         }
         else
         {

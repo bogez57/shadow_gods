@@ -92,7 +92,7 @@ struct RenderEntry_2DCamera
 
 void PushImage(Game_Render_Cmd_Buffer&& bufferInfo, Image imageToDraw, Image normalMap, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor);
-void Render(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo);
+void RenderViaSoftware(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);

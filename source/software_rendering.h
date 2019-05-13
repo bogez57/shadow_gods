@@ -380,7 +380,7 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
     //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void Render(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo)
+void RenderViaSoftware(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
 

@@ -138,4 +138,9 @@
         glClear(GL_COLOR_BUFFER_BIT);
     };
 
+    void RenderViaHardware()
+    {
+
+    };
+
 #endif //OPENGL_INCLUDE_H
