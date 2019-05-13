@@ -136,13 +136,6 @@ struct Game_Render_Cmd_Buffer
 
 ////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
 
-struct Coordinate_Space
-{
-    v2f origin;
-    v2f xBasis;
-    v2f yBasis;
-};
-
 struct Transform
 {
     f32 rotation;

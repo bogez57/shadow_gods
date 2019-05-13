@@ -45,6 +45,8 @@
 #include "win64_shadowgods.h"
 #include "shared.h"
 #include "opengl.h"
+#include "software_rendering.h"
+
 #define PLATFORM_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
 
@@ -387,8 +389,7 @@ namespace Win32
         buffer.width = width;
         buffer.height = height;
 
-        int bytesPerPixel = 4;
-        buffer.bytesPerPixel = bytesPerPixel;
+        buffer.bytesPerPixel = 4;
 
         // When the biHeight field is negative, this is the clue to
         // Windows to treat this bitmap as top-down, not bottom-up, meaning that
@@ -404,9 +405,9 @@ namespace Win32
         // Thank you to Chris Hecker of Spy Party fame
         // for clarifying the deal with StretchDIBits and BitBlt!
         // No more DC for us.
-        int BitmapMemorySize = (buffer.width*buffer.height)*bytesPerPixel;
+        int BitmapMemorySize = (buffer.width*buffer.height)*buffer.bytesPerPixel;
         buffer.memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-        buffer.pitch = width*bytesPerPixel;
+        buffer.pitch = width*buffer.bytesPerPixel;
 
         // TODO: Probably clear this to black
     }

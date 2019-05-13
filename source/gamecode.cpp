@@ -172,9 +172,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             InitDynamAllocator(heap);
         };
 
+        i32 numBytesPerPixel = 4;
         //Stage Init
         stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/1440p.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
-        stage->info.backgroundImg.pitch = stage->info.backgroundImg.size.width * bytesPerPixel;
+        stage->info.backgroundImg.pitch = stage->info.backgroundImg.size.width * numBytesPerPixel;
         stage->info.size.x = (f32)stage->info.backgroundImg.size.x;
         stage->info.size.y = (f32)stage->info.backgroundImg.size.y;
         stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
@@ -189,7 +190,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Player Init
         player->image.data = platformServices->LoadBGRAImage("data/left-bicep.png", $(player->image.size.width), $(player->image.size.height));
-        player->image.pitch = player->image.size.width * bytesPerPixel;
+        player->image.pitch = player->image.size.width * numBytesPerPixel;
         player->world.pos = {800.0f, 600.0f};
         player->world.rotation = 0.0f;
         player->world.scale = {1.0f, 1.0f};
@@ -197,7 +198,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         //Enemy Init
         enemy->image.data = platformServices->LoadBGRAImage("data/test_body_back.bmp", $(enemy->image.size.width), $(enemy->image.size.height));
-        enemy->image.pitch = enemy->image.size.width * bytesPerPixel;
+        enemy->image.pitch = enemy->image.size.width * numBytesPerPixel;
         enemy->world.pos = {200.0f, 150.0f};
         enemy->world.rotation = 0.0f;
         enemy->world.scale = {2.3f, 2.3f};
@@ -206,13 +207,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         gState->normalMap.data = platformServices->LoadBGRAImage("data/test.png", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
 
         //Create empty image
-        auto CreateEmptyImage = [](i32 width, i32 height) -> Image
+        auto CreateEmptyImage = [numBytesPerPixel](i32 width, i32 height) -> Image
                             {
                                 Image image{};
 
-                                image.data = (ui8*)MallocSize(heap, width*height*bytesPerPixel);
+                                image.data = (ui8*)MallocSize(heap, width*height*numBytesPerPixel);
                                 image.size = v2i{width, height};
-                                image.pitch = width*bytesPerPixel;
+                                image.pitch = width*numBytesPerPixel;
 
                                 return image;
                             };
@@ -294,5 +295,5 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.viewCenter, v2f{stage->camera.viewWidth, stage->camera.viewHeight}, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    PushImage(global_renderCmdBuf, player->image, gState->normalMap, player->world);
+    PushImage(global_renderCmdBuf, player->image, gState->normalMap, player->world.rotation, player->world.pos, player->world.scale);
 };
