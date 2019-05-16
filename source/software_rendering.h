@@ -108,6 +108,7 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
 
 //Avoids a lot of the calcuations found in DrawImageSlowly for better performance (Since background won't rotate or
 //do other fancier things. Though it will still scale)
+//TODO: Will probably end up removing and just combine with DrawImage call so there is just one imaging drawing func
 local_func void
 DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 {
@@ -155,13 +156,11 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
     }
 };
 
-//For images that move/rotate/scale - Assumes pre-multiplied alpha
-local_func void
-DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale, f32 lightAngle = {}, f32 lightThreshold = {})
-{    
-    auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui
+void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale) 
+{
+    auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
     {
-        v4ui result{};
+        v4ui32 result{};
 
         result.x = *(ui32*)(pixelToSampleFrom);
         result.y = *(ui32*)(pixelToSampleFrom + sizeof(ui32));
@@ -171,7 +170,7 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
         return result;
     };
 
-    auto BiLinearLerp = [](v4ui pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
+    auto BiLinearLerp = [](v4ui32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
     {
         v4f newBlendedValue {};
         v4f pixelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
@@ -229,24 +228,179 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
         ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; ++screenX)
         {            
-            //In order to fill only pixels defined by our rectangle points/vecs, we are
-            //testing to see if a pixel iterated over falls into that rectangle. This is
-            //done by checking if the dot product of the screen pixel vector, subtracted from
-            //origin, and the certain 'edge' vector of the rect comes out positive. If 
-            //positive then pixel is within, if negative then it is outside. 
             v2f screenPixelCoord{screenX, screenY};
             v2f d {screenPixelCoord - origin};
-            f32 edge1 = DotProduct(d, targetRectYAxis);
-            f32 edge2 = DotProduct(d + -targetRectXAxis, -targetRectXAxis);
-            f32 edge3 = DotProduct(d + -targetRectXAxis + -targetRectYAxis, -targetRectYAxis);
-            f32 edge4 = DotProduct(d + -targetRectYAxis, targetRectXAxis);
 
-            if(edge1 > 0 && edge2 > 0 && edge3 > 0 && edge4 > 0)
+            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
+            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
+
+            f32 epsilon = 0.00001f;//TODO: Remove????
+            BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
+            BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
+
+            if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
                 //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
-                f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
+                f32 texelPosX = 1.0f + (u*(f32)(image.size.width - 3));
+                f32 texelPosY = 1.0f + (v*(f32)(image.size.height - 3)); 
+                
+                BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
+                BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "y coord is out of range!");
 
+                //Gather 4 texels (in a square pattern) from certain texel Ptr
+                v4ui32 texelSquare {}; 
+                ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
+                texelSquare.x = *(ui32*)(texelPtr);
+                texelSquare.y = *(ui32*)(texelPtr + sizeof(ui32));
+                texelSquare.z = *(ui32*)(texelPtr + image.pitch);
+                texelSquare.w = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
+
+                //Unpack individual color values from pixels found in texel square
+                v4f pixelA {}, pixelB {}, pixelC {}, pixelD {};
+                {
+                    ui32* pixel1 = &texelSquare.x;
+                    pixelA.b = (f32)*((ui8*)pixel1 + 0);
+                    pixelA.g = (f32)*((ui8*)pixel1 + 1);
+                    pixelA.r = (f32)*((ui8*)pixel1 + 2);
+                    pixelA.a = (f32)*((ui8*)pixel1 + 3);
+
+                    ui32* pixel2 = &texelSquare.y;
+                    pixelB.b = (f32)*((ui8*)pixel2 + 0);
+                    pixelB.g = (f32)*((ui8*)pixel2 + 1);
+                    pixelB.r = (f32)*((ui8*)pixel2 + 2);
+                    pixelB.a = (f32)*((ui8*)pixel2 + 3);
+
+                    ui32* pixel3 = &texelSquare.z;
+                    pixelC.b = (f32)*((ui8*)pixel3 + 0);
+                    pixelC.g = (f32)*((ui8*)pixel3 + 1);
+                    pixelC.r = (f32)*((ui8*)pixel3 + 2);
+                    pixelC.a = (f32)*((ui8*)pixel3 + 3);
+
+                    ui32* pixel4 = &texelSquare.w;
+                    pixelD.b = (f32)*((ui8*)pixel4 + 0);
+                    pixelD.g = (f32)*((ui8*)pixel4 + 1);
+                    pixelD.r = (f32)*((ui8*)pixel4 + 2);
+                    pixelD.a = (f32)*((ui8*)pixel4 + 3);
+                };
+                
+                f32 percentToLerpInX = texelPosX - Floor(texelPosX);
+                f32 percentToLerpInY = texelPosY - Floor(texelPosY);
+
+                v4f ABLerpColor = (1.0f - percentToLerpInX)*pixelA + percentToLerpInX*pixelB;
+                v4f CDLerpColor = (1.0f - percentToLerpInX)*pixelC + percentToLerpInX*pixelD;
+                v4f newBlendedTexel = (1.0f - percentToLerpInY)*ABLerpColor + percentToLerpInY*CDLerpColor; 
+
+                {//Linearly Blend with background - Assuming Pre-multiplied alpha
+                    //Unpack individual color values from dest pixel
+                    v4f backgroundColors{};
+                    backgroundColors.b = (f32)*((ui8*)destPixel + 0);
+                    backgroundColors.g = (f32)*((ui8*)destPixel + 1);
+                    backgroundColors.r = (f32)*((ui8*)destPixel + 2);
+                    backgroundColors.a = (f32)*((ui8*)destPixel + 3);
+
+                    f32 alphaBlend = newBlendedTexel.a / 255.0f;
+                    v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
+
+                    *destPixel = ((0xFF << 24) |
+                                ((ui8)finalBlendedColor.r << 16) |
+                                ((ui8)finalBlendedColor.g << 8) |
+                                ((ui8)finalBlendedColor.b << 0));
+                };
+
+                ++destPixel;
+            }
+        }
+        
+        currentRow += buffer.pitch;
+    }
+
+};
+
+//For images that move/rotate/scale - Assumes pre-multiplied alpha
+//Also involves lighting calcuation
+//TODO: Will eventually be removed entirely/combine with DrawImageQuickly
+local_func void
+DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale, f32 lightAngle = {}, f32 lightThreshold = {})
+{    
+    auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
+    {
+        v4ui32 result{};
+
+        result.x = *(ui32*)(pixelToSampleFrom);
+        result.y = *(ui32*)(pixelToSampleFrom + sizeof(ui32));
+        result.z = *(ui32*)(pixelToSampleFrom + pitch);
+        result.w = *(ui32*)(pixelToSampleFrom + pitch + sizeof(ui32));
+
+        return result;
+    };
+
+    auto BiLinearLerp = [](v4ui32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
+    {
+        v4f newBlendedValue {};
+        v4f pixelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
+        v4f pixelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
+        v4f pixelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
+        v4f pixelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
+
+        v4f ABLerpColor = Lerp(pixelA, pixelB, percentToLerpInX);
+        v4f CDLerpColor = Lerp(pixelC, pixelD, percentToLerpInX);
+        newBlendedValue = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
+
+        return newBlendedValue;
+    };
+
+    v2f origin = cameraCoords.bottomLeft;
+    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
+    v2f targetRectYAxis = cameraCoords.topLeft - origin;
+
+    f32 widthMax = (f32)(buffer.size.width - 1);
+    f32 heightMax = (f32)(buffer.size.height - 1);
+    
+    f32 xMin = widthMax;
+    f32 xMax = 0.0f;
+    f32 yMin = heightMax;
+    f32 yMax = 0.0f;
+
+    {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
+        Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
+        for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
+        {
+            v2f testVec = vecs.At(vecIndex);
+            i32 flooredX = FloorF32ToI32(testVec.x);
+            i32 ceiledX = CeilF32ToI32(testVec.x);
+            i32 flooredY= FloorF32ToI32(testVec.y);
+            i32 ceiledY = CeilF32ToI32(testVec.y);
+
+            if(xMin > flooredX) {xMin = (f32)flooredX;}
+            if(yMin > flooredY) {yMin = (f32)flooredY;}
+            if(xMax < ceiledX) {xMax = (f32)ceiledX;}
+            if(yMax < ceiledY) {yMax = (f32)ceiledY;}
+        }
+
+        if(xMin < 0.0f) {xMin = 0.0f;}
+        if(yMin < 0.0f) {yMin = 0.0f;}
+        if(xMax > widthMax) {xMax = widthMax;}
+        if(yMax > heightMax) {yMax = heightMax;}
+    };
+
+    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
+    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
+    ui8* currentRow = (ui8*)buffer.data + (i32)xMin * 4+ (i32)yMin * buffer.pitch; 
+
+    for(f32 screenY = yMin; screenY < yMax; ++screenY)
+    {
+        ui32* destPixel = (ui32*)currentRow;
+        for(f32 screenX = xMin; screenX < xMax; ++screenX)
+        {            
+            v2f screenPixelCoord{screenX, screenY};
+            v2f d {screenPixelCoord - origin};
+
+            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
+            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
+
+            if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
+            {
+                //Gather normalized coordinates (uv's) in order to find the correct texel position below
                 f32 texelPosX = 1.0f + (u*(f32)(image.size.width - 3));
                 f32 texelPosY = 1.0f + (v*(f32)(image.size.height - 3)); 
 
@@ -258,7 +412,11 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
 
                 ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
 
-                v4ui texelSquare = Grab4NearestPixelPtrs_SquarePattern(texelPtr, image.pitch);
+                v4ui32 texelSquare {}; 
+                texelSquare.x = *(ui32*)(texelPtr);
+                texelSquare.y = *(ui32*)(texelPtr + sizeof(ui32));
+                texelSquare.z = *(ui32*)(texelPtr + image.pitch);
+                texelSquare.w = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
 
                 //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
                 v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPosX - Floor(texelPosX)), (texelPosY - Floor(texelPosY)));
@@ -274,7 +432,7 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
                     ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
 
                     //Grab 4 normals (in a square pattern) to blend
-                    v4ui normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
+                    v4ui32 normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
 
                     v4f blendedNormal = BiLinearLerp(normalSquare, (texelPosX - Floor(texelPosX)), (texelPosY - Floor(texelPosY)));
 
@@ -403,7 +561,7 @@ void RenderViaSoftware(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferI
                 Quadf imageTargetRect_world = WorldTransform(imageTargetRect, imageEntry->world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                DrawImageSlowly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
+                DrawImageQuickly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Image);
             }break;

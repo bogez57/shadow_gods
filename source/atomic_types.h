@@ -175,10 +175,10 @@ struct v4i
     };
 };
 
-struct v4ui
+struct v4ui32
 {
-    v4ui() = default;
-    v4ui(ui32 x, ui32 y, ui32 z, ui32 w);
+    v4ui32() = default;
+    v4ui32(ui32 x, ui32 y, ui32 z, ui32 w);
 
     union
     {

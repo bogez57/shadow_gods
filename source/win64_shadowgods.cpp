@@ -31,12 +31,10 @@
 #include <gl/gl.h>
 #include <boagz/timing.h>
 #include <boagz/error_handling.h>
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
-#define MEMORY_HANDLING_IMPL
 #include "memory_handling.h"
 #include "array.h"
 
@@ -47,9 +45,12 @@
 #include "opengl.h"
 #include "software_rendering.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 #define PLATFORM_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
-
+#define MEMORY_HANDLING_IMPL
+#include "memory_handling.h"
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_context.cpp>
 
