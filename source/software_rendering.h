@@ -219,10 +219,15 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
+    //Pre calcuations for optimization
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
-    ui8* currentRow = (ui8*)buffer.data + (i32)xMin * 4+ (i32)yMin * buffer.pitch; 
+    i32 imageWidth = image.size.width - 3;
+    i32 imageHeight = image.size.height - 3;
+    v2f normalizedXAxis = invertedXAxisSqd * targetRectXAxis;
+    v2f normalizedYAxis = invertedYAxisSqd * targetRectYAxis;
 
+    ui8* currentRow = (ui8*)buffer.data + (i32)xMin * 4+ (i32)yMin * buffer.pitch; 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
         ui32* destPixel = (ui32*)currentRow;
@@ -231,8 +236,8 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             v2f screenPixelCoord{screenX, screenY};
             v2f d {screenPixelCoord - origin};
 
-            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
-            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
+            f32 u = (d.x*normalizedXAxis.x + d.y*normalizedXAxis.y);
+            f32 v = (d.x*normalizedYAxis.x + d.y*normalizedYAxis.y);
 
             f32 epsilon = 0.00001f;//TODO: Remove????
             BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
@@ -241,8 +246,8 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
                 //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                f32 texelPosX = 1.0f + (u*(f32)(image.size.width - 3));
-                f32 texelPosY = 1.0f + (v*(f32)(image.size.height - 3)); 
+                f32 texelPosX = 1.0f + (u*(f32)(imageWidth));
+                f32 texelPosY = 1.0f + (v*(f32)(imageHeight)); 
                 
                 BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
                 BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "y coord is out of range!");
@@ -283,12 +288,33 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                     pixelD.a = (f32)*((ui8*)pixel4 + 3);
                 };
                 
-                f32 percentToLerpInX = texelPosX - Floor(texelPosX);
-                f32 percentToLerpInY = texelPosY - Floor(texelPosY);
+                v4f newBlendedTexel {};
+                {//Bilinear Lerp
+                    f32 percentToLerpInX = texelPosX - Floor(texelPosX);
+                    f32 percentToLerpInY = texelPosY - Floor(texelPosY);
+                    f32 xLerp = 1.0f - percentToLerpInX;
+                    f32 yLerp = 1.0f - percentToLerpInY;
 
-                v4f ABLerpColor = (1.0f - percentToLerpInX)*pixelA + percentToLerpInX*pixelB;
-                v4f CDLerpColor = (1.0f - percentToLerpInX)*pixelC + percentToLerpInX*pixelD;
-                v4f newBlendedTexel = (1.0f - percentToLerpInY)*ABLerpColor + percentToLerpInY*CDLerpColor; 
+                    //1st lerp
+                    v4f ABLerpColor{};
+                    v4f CDLerpColor{};
+                    ABLerpColor.r = (xLerp)*pixelA.r + percentToLerpInX*pixelB.r;
+                    ABLerpColor.g = (xLerp)*pixelA.g + percentToLerpInX*pixelB.g;
+                    ABLerpColor.b = (xLerp)*pixelA.b + percentToLerpInX*pixelB.b;
+                    ABLerpColor.a = (xLerp)*pixelA.a + percentToLerpInX*pixelB.a;
+
+                    //2nd lerp
+                    CDLerpColor.r = (xLerp)*pixelC.r + percentToLerpInX*pixelD.r;
+                    CDLerpColor.g = (xLerp)*pixelC.g + percentToLerpInX*pixelD.g;
+                    CDLerpColor.b = (xLerp)*pixelC.b + percentToLerpInX*pixelD.b;
+                    CDLerpColor.a = (xLerp)*pixelC.a + percentToLerpInX*pixelD.a;
+
+                    //final lerp
+                    newBlendedTexel.r = (yLerp)*ABLerpColor.r + percentToLerpInY*CDLerpColor.r; 
+                    newBlendedTexel.g = (yLerp)*ABLerpColor.g + percentToLerpInY*CDLerpColor.g; 
+                    newBlendedTexel.b = (yLerp)*ABLerpColor.b + percentToLerpInY*CDLerpColor.b; 
+                    newBlendedTexel.a = (yLerp)*ABLerpColor.a + percentToLerpInY*CDLerpColor.a; 
+                };
 
                 {//Linearly Blend with background - Assuming Pre-multiplied alpha
                     //Unpack individual color values from dest pixel
@@ -299,7 +325,11 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                     backgroundColors.a = (f32)*((ui8*)destPixel + 3);
 
                     f32 alphaBlend = newBlendedTexel.a / 255.0f;
-                    v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
+                    v4f finalBlendedColor {};
+                    finalBlendedColor.r = (1.0f - alphaBlend)*backgroundColors.r + newBlendedTexel.r;
+                    finalBlendedColor.g = (1.0f - alphaBlend)*backgroundColors.g + newBlendedTexel.g;
+                    finalBlendedColor.b = (1.0f - alphaBlend)*backgroundColors.b + newBlendedTexel.b;
+                    finalBlendedColor.a = (1.0f - alphaBlend)*backgroundColors.a + newBlendedTexel.a;
 
                     *destPixel = ((0xFF << 24) |
                                 ((ui8)finalBlendedColor.r << 16) |

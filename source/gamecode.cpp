@@ -286,7 +286,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        player->world.pos += 10.0f;
+        player->world.rotation += 1.0f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
