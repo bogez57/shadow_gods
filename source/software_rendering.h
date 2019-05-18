@@ -239,10 +239,6 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             f32 u = (d.x*normalizedXAxis.x + d.y*normalizedXAxis.y);
             f32 v = (d.x*normalizedYAxis.x + d.y*normalizedYAxis.y);
 
-            f32 epsilon = 0.00001f;//TODO: Remove????
-            BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
-            BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
-
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
                 //Gather normalized coordinates (uv's) in order to find the correct texel position below
@@ -336,9 +332,9 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                                 ((ui8)finalBlendedColor.g << 8) |
                                 ((ui8)finalBlendedColor.b << 0));
                 };
-
-                ++destPixel;
             }
+
+            ++destPixel;
         }
         
         currentRow += buffer.pitch;
