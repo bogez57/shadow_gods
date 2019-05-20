@@ -285,31 +285,21 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 };
                 
                 v4f newBlendedTexel {};
-                {//Bilinear Lerp
+                {//Optimized bilinear lerp
                     f32 percentToLerpInX = texelPosX - Floor(texelPosX);
                     f32 percentToLerpInY = texelPosY - Floor(texelPosY);
-                    f32 xLerp = 1.0f - percentToLerpInX;
-                    f32 yLerp = 1.0f - percentToLerpInY;
 
-                    //1st lerp
-                    v4f ABLerpColor{};
-                    v4f CDLerpColor{};
-                    ABLerpColor.r = (xLerp)*pixelA.r + percentToLerpInX*pixelB.r;
-                    ABLerpColor.g = (xLerp)*pixelA.g + percentToLerpInX*pixelB.g;
-                    ABLerpColor.b = (xLerp)*pixelA.b + percentToLerpInX*pixelB.b;
-                    ABLerpColor.a = (xLerp)*pixelA.a + percentToLerpInX*pixelB.a;
+                    f32 oneMinusXLerp = 1.0f - percentToLerpInX;
+                    f32 oneMinusYLerp = 1.0f - percentToLerpInY;
+                    f32 coefficient1 = oneMinusYLerp * oneMinusXLerp;
+                    f32 coefficient2 = oneMinusYLerp * percentToLerpInX;
+                    f32 coefficient3 = percentToLerpInY * oneMinusXLerp;
+                    f32 coefficient4 = percentToLerpInY * percentToLerpInX;
 
-                    //2nd lerp
-                    CDLerpColor.r = (xLerp)*pixelC.r + percentToLerpInX*pixelD.r;
-                    CDLerpColor.g = (xLerp)*pixelC.g + percentToLerpInX*pixelD.g;
-                    CDLerpColor.b = (xLerp)*pixelC.b + percentToLerpInX*pixelD.b;
-                    CDLerpColor.a = (xLerp)*pixelC.a + percentToLerpInX*pixelD.a;
-
-                    //final lerp
-                    newBlendedTexel.r = (yLerp)*ABLerpColor.r + percentToLerpInY*CDLerpColor.r; 
-                    newBlendedTexel.g = (yLerp)*ABLerpColor.g + percentToLerpInY*CDLerpColor.g; 
-                    newBlendedTexel.b = (yLerp)*ABLerpColor.b + percentToLerpInY*CDLerpColor.b; 
-                    newBlendedTexel.a = (yLerp)*ABLerpColor.a + percentToLerpInY*CDLerpColor.a; 
+                    newBlendedTexel.r = coefficient1*pixelA.r + coefficient2*pixelB.r + coefficient3*pixelC.r + coefficient4*pixelD.r; 
+                    newBlendedTexel.g = coefficient1*pixelA.g + coefficient2*pixelB.g + coefficient3*pixelC.g + coefficient4*pixelD.g; 
+                    newBlendedTexel.b = coefficient1*pixelA.b + coefficient2*pixelB.b + coefficient3*pixelC.b + coefficient4*pixelD.b; 
+                    newBlendedTexel.a = coefficient1*pixelA.a + coefficient2*pixelB.a + coefficient3*pixelC.a + coefficient4*pixelD.a; 
                 };
 
                 {//Linearly Blend with background - Assuming Pre-multiplied alpha
