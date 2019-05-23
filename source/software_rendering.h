@@ -332,6 +332,73 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
 };
 
+#if 0
+//Set 4 pixel values into sse register
+            __m128 texelRs{};
+            __m128 texelGs{};
+            __m128 texelBs{};
+            __m128 texelAs{};
+            __m128 backgroundTexelRs{};
+            __m128 backgroundTexelGs{};
+            __m128 backgroundTexelBs{};
+            __m128 backgroundTexelAs{};
+            for(i32 texelIndex{}; texelIndex < 4; ++texelIndex)
+            {
+                v2f screenPixelCoord{screenX + texelIndex, screenY};
+                v2f d {screenPixelCoord - origin};
+
+                f32 u = (d.x*normalizedXAxis.x + d.y*normalizedXAxis.y);
+                f32 v = (d.x*normalizedYAxis.x + d.y*normalizedYAxis.y);
+
+                f32 texelPosX {}, texelPosY {};
+                if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
+                {
+                    texelPosX = 1.0f + (u*(f32)(imageWidth));
+                    texelPosY = 1.0f + (v*(f32)(imageHeight)); 
+
+                    BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
+                    BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "y coord is out of range!");
+
+                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX *sizeof(ui32));//size of pixel
+                    texelRs.m128_f32[texelIndex] = (f32)*(texelPtr + 2);
+                    texelGs.m128_f32[texelIndex] = (f32)*(texelPtr + 1);
+                    texelBs.m128_f32[texelIndex] = (f32)*(texelPtr + 0);
+                    texelAs.m128_f32[texelIndex] = (f32)*(texelPtr + 3);
+                };
+
+                backgroundTexelRs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 2);
+                backgroundTexelGs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 1);
+                backgroundTexelBs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 0);
+                backgroundTexelAs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 3);
+           };
+
+            {//Linearly Blend with background - Assuming Pre-multiplied alpha
+                //Unpack individual color values from dest pixel
+                __m128 maxColorValue = _mm_set_ps1(255.0f);
+                __m128 one = _mm_set_ps1(1.0f);
+                __m128 texelAlphas = _mm_set_ps(texelAs.m128_f32[0], texelAs.m128_f32[1], texelAs.m128_f32[2], texelAs.m128_f32[3]);
+                __m128 alphaBlend = _mm_div_ps(texelAlphas, maxColorValue);
+                __m128 oneMinusAlphaBlend = _mm_sub_ps(one, alphaBlend);
+
+                __m128 finalBlendedColor_r;
+                __m128 finalBlendedColor_g;
+                __m128 finalBlendedColor_b;
+                finalBlendedColor_r = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundTexelRs), texelRs);
+                finalBlendedColor_g = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundTexelGs), texelGs);
+                finalBlendedColor_b = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundTexelBs), texelBs);
+
+                for(i32 texelIndex{}; texelIndex < 4; ++texelIndex)
+                {
+                    *(destPixel + texelIndex) = ((0xFF << 24) |
+                        ((ui8)finalBlendedColor_r.m128_f32[texelIndex] << 16) |
+                        ((ui8)finalBlendedColor_g.m128_f32[texelIndex] << 8) |
+                        ((ui8)finalBlendedColor_b.m128_f32[texelIndex] << 0));
+                };
+            };
+
+            destPixel += 4;
+#endif
+
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 //Also involves lighting calcuation
 //TODO: Will eventually be removed entirely/combine with DrawImageQuickly
