@@ -189,11 +189,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        player->image.data = platformServices->LoadBGRAImage("data/left-bicep.png", $(player->image.size.width), $(player->image.size.height));
+        player->image.data = platformServices->LoadBGRAImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
         player->image.pitch = player->image.size.width * numBytesPerPixel;
         player->world.pos = {800.0f, 600.0f};
         player->world.rotation = 0.0f;
-        player->world.scale = {1.0f, 1.0f};
+        player->world.scale = {2.0f, 2.0f};
         player->image.opacity = .5f;
         
         //Enemy Init
@@ -295,6 +295,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.viewCenter, v2f{stage->camera.viewWidth, stage->camera.viewHeight}, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    PushImage(global_renderCmdBuf, stage->info.backgroundImg, gState->normalMap, 0.0f, v2f{0.0f, 0.0f}, player->world.scale);
+    PushImage(global_renderCmdBuf, stage->info.backgroundImg, gState->normalMap, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
     PushImage(global_renderCmdBuf, player->image, gState->normalMap, player->world.rotation, player->world.pos, player->world.scale);
 };
