@@ -259,6 +259,8 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             Array<f32, 4> backgroundColors_b{};
             Array<f32, 4> backgroundColors_a{};
 
+            Array<b, 4> shouldColorPixel{};
+
             //Unpack individual color values from current image texels and background texel
             for(i32 index{}; index < 4; ++index)
             {
@@ -268,7 +270,9 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 f32 u = (d.x*normalizedXAxis.x + d.y*normalizedXAxis.y);
                 f32 v = (d.x*normalizedYAxis.x + d.y*normalizedYAxis.y);
 
-                if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
+                shouldColorPixel[index] = (u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f);
+
+                if(shouldColorPixel[index])
                 {
                     //Gather normalized coordinates (uv's) in order to find the correct texel position below
                     texelPosX[index] = 1.0f + (u*(f32)(imageWidth));
@@ -321,36 +325,42 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             Array<f32, 4> newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
             for(i32 index{}; index < 4; ++index)
             {
-                f32 percentToLerpInX = texelPosX[index] - Floor(texelPosX[index]);
-                f32 percentToLerpInY = texelPosY[index] - Floor(texelPosY[index]);
+                if(shouldColorPixel[index])
+                {
+                    f32 percentToLerpInX = texelPosX[index] - Floor(texelPosX[index]);
+                    f32 percentToLerpInY = texelPosY[index] - Floor(texelPosY[index]);
 
-                f32 oneMinusXLerp = 1.0f - percentToLerpInX;
-                f32 oneMinusYLerp = 1.0f - percentToLerpInY;
-                f32 coefficient1 = oneMinusYLerp * oneMinusXLerp;
-                f32 coefficient2 = oneMinusYLerp * percentToLerpInX;
-                f32 coefficient3 = percentToLerpInY * oneMinusXLerp;
-                f32 coefficient4 = percentToLerpInY * percentToLerpInX;
+                    f32 oneMinusXLerp = 1.0f - percentToLerpInX;
+                    f32 oneMinusYLerp = 1.0f - percentToLerpInY;
+                    f32 coefficient1 = oneMinusYLerp * oneMinusXLerp;
+                    f32 coefficient2 = oneMinusYLerp * percentToLerpInX;
+                    f32 coefficient3 = percentToLerpInY * oneMinusXLerp;
+                    f32 coefficient4 = percentToLerpInY * percentToLerpInX;
 
-                newBlendedTexel_r[index] = coefficient1*pixelA_r[index] + coefficient2*pixelB_r[index] + coefficient3*pixelC_r[index] + coefficient4*pixelD_r[index]; 
-                newBlendedTexel_g[index] = coefficient1*pixelA_g[index] + coefficient2*pixelB_g[index] + coefficient3*pixelC_g[index] + coefficient4*pixelD_g[index]; 
-                newBlendedTexel_b[index] = coefficient1*pixelA_b[index] + coefficient2*pixelB_b[index] + coefficient3*pixelC_b[index] + coefficient4*pixelD_b[index]; 
-                newBlendedTexel_a[index] = coefficient1*pixelA_a[index] + coefficient2*pixelB_a[index] + coefficient3*pixelC_a[index] + coefficient4*pixelD_a[index]; 
+                    newBlendedTexel_r[index] = coefficient1*pixelA_r[index] + coefficient2*pixelB_r[index] + coefficient3*pixelC_r[index] + coefficient4*pixelD_r[index]; 
+                    newBlendedTexel_g[index] = coefficient1*pixelA_g[index] + coefficient2*pixelB_g[index] + coefficient3*pixelC_g[index] + coefficient4*pixelD_g[index]; 
+                    newBlendedTexel_b[index] = coefficient1*pixelA_b[index] + coefficient2*pixelB_b[index] + coefficient3*pixelC_b[index] + coefficient4*pixelD_b[index]; 
+                    newBlendedTexel_a[index] = coefficient1*pixelA_a[index] + coefficient2*pixelB_a[index] + coefficient3*pixelC_a[index] + coefficient4*pixelD_a[index]; 
+                };
             };
 
             //Linear blend (w/ pre multiplied alpha)
             Array<f32, 4> finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
             for(i32 index{}; index < 4; ++index)
             {
-                f32 alphaBlend = newBlendedTexel_a[index] / 255.0f;
-                finalBlendedColor_r[index] = (1.0f - alphaBlend)*backgroundColors_r[index] + newBlendedTexel_r[index];
-                finalBlendedColor_g[index] = (1.0f - alphaBlend)*backgroundColors_g[index] + newBlendedTexel_g[index];
-                finalBlendedColor_b[index] = (1.0f - alphaBlend)*backgroundColors_b[index] + newBlendedTexel_b[index];
-                finalBlendedColor_a[index] = (1.0f - alphaBlend)*backgroundColors_a[index] + newBlendedTexel_a[index];
+                if(shouldColorPixel[index])
+                {
+                    f32 alphaBlend = newBlendedTexel_a[index] / 255.0f;
+                    finalBlendedColor_r[index] = (1.0f - alphaBlend)*backgroundColors_r[index] + newBlendedTexel_r[index];
+                    finalBlendedColor_g[index] = (1.0f - alphaBlend)*backgroundColors_g[index] + newBlendedTexel_g[index];
+                    finalBlendedColor_b[index] = (1.0f - alphaBlend)*backgroundColors_b[index] + newBlendedTexel_b[index];
+                    finalBlendedColor_a[index] = (1.0f - alphaBlend)*backgroundColors_a[index] + newBlendedTexel_a[index];
 
-                *(destPixel + index) = ((0xFF << 24) |
-                    ((ui8)finalBlendedColor_r[index] << 16) |
-                    ((ui8)finalBlendedColor_g[index] << 8) |
-                    ((ui8)finalBlendedColor_b[index] << 0));
+                    *(destPixel + index) = ((0xFF << 24) |
+                        ((ui8)finalBlendedColor_r[index] << 16) |
+                        ((ui8)finalBlendedColor_g[index] << 8) |
+                        ((ui8)finalBlendedColor_b[index] << 0));
+                };
             };
 
             destPixel += 4;
