@@ -233,7 +233,33 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; screenX += 4)
         {            
-            f32 texelPosX{}, texelPosY{};
+            Array<f32, 4> texelPosX{}, texelPosY{};
+            Array<f32, 4> pixelA_g{};
+            Array<f32, 4> pixelA_b{};
+            Array<f32, 4> pixelA_r{};
+            Array<f32, 4> pixelA_a{}; 
+
+            Array<f32, 4> pixelB_b{}; 
+            Array<f32, 4> pixelB_g{}; 
+            Array<f32, 4> pixelB_r{}; 
+            Array<f32, 4> pixelB_a{}; 
+
+            Array<f32, 4> pixelC_b{}; 
+            Array<f32, 4> pixelC_g{}; 
+            Array<f32, 4> pixelC_r{}; 
+            Array<f32, 4> pixelC_a{}; 
+
+            Array<f32, 4> pixelD_b{}; 
+            Array<f32, 4> pixelD_g{}; 
+            Array<f32, 4> pixelD_r{}; 
+            Array<f32, 4> pixelD_a{}; 
+
+            Array<f32, 4> backgroundColors_r{};
+            Array<f32, 4> backgroundColors_g{};
+            Array<f32, 4> backgroundColors_b{};
+            Array<f32, 4> backgroundColors_a{};
+
+            //Unpack individual color values from current image texels and background texel
             for(i32 index{}; index < 4; ++index)
             {
                 v2f screenPixelCoord{screenX + index, screenY};
@@ -245,14 +271,14 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
                 {
                     //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                    texelPosX = 1.0f + (u*(f32)(imageWidth));
-                    texelPosY = 1.0f + (v*(f32)(imageHeight)); 
+                    texelPosX[index] = 1.0f + (u*(f32)(imageWidth));
+                    texelPosY[index] = 1.0f + (v*(f32)(imageHeight)); 
                     
-                    BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
-                    BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "y coord is out of range!");
+                    BGZ_ASSERT((texelPosX[index] >= 0) && (texelPosX[index] <= (i32)image.size.width), "x coord is out of range!: ");
+                    BGZ_ASSERT((texelPosY[index] >= 0) && (texelPosY[index] <= (i32)image.size.height), "y coord is out of range!");
 
                     //Gather 4 texels (in a square pattern) from certain texel Ptr
-                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
+                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY[index]*image.pitch) + ((ui32)texelPosX[index]*sizeof(ui32));//size of pixel
                     ui32 sampleTexelA = *(ui32*)(texelPtr);
                     ui32 sampleTexelB = *(ui32*)(texelPtr + sizeof(ui32));
                     ui32 sampleTexelC = *(ui32*)(texelPtr + image.pitch);
@@ -260,74 +286,78 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
                     //Unpack individual color values from pixels found in texel square
                     ui32* pixel1 = &sampleTexelA;
-                    f32 pixelA_b = (f32)*((ui8*)pixel1 + 0);
-                    f32 pixelA_g = (f32)*((ui8*)pixel1 + 1);
-                    f32 pixelA_r = (f32)*((ui8*)pixel1 + 2);
-                    f32 pixelA_a = (f32)*((ui8*)pixel1 + 3);
+                    pixelA_b[index] = (f32)*((ui8*)pixel1 + 0);
+                    pixelA_g[index] = (f32)*((ui8*)pixel1 + 1);
+                    pixelA_r[index] = (f32)*((ui8*)pixel1 + 2);
+                    pixelA_a[index] = (f32)*((ui8*)pixel1 + 3);
 
                     ui32* pixel2 = &sampleTexelB;
-                    f32 pixelB_b = (f32)*((ui8*)pixel2 + 0);
-                    f32 pixelB_g = (f32)*((ui8*)pixel2 + 1);
-                    f32 pixelB_r = (f32)*((ui8*)pixel2 + 2);
-                    f32 pixelB_a = (f32)*((ui8*)pixel2 + 3);
+                    pixelB_b[index] = (f32)*((ui8*)pixel2 + 0);
+                    pixelB_g[index] = (f32)*((ui8*)pixel2 + 1);
+                    pixelB_r[index] = (f32)*((ui8*)pixel2 + 2);
+                    pixelB_a[index] = (f32)*((ui8*)pixel2 + 3);
 
                     ui32* pixel3 = &sampleTexelC;
-                    f32 pixelC_b = (f32)*((ui8*)pixel3 + 0);
-                    f32 pixelC_g = (f32)*((ui8*)pixel3 + 1);
-                    f32 pixelC_r = (f32)*((ui8*)pixel3 + 2);
-                    f32 pixelC_a = (f32)*((ui8*)pixel3 + 3);
+                    pixelC_b[index] = (f32)*((ui8*)pixel3 + 0);
+                    pixelC_g[index] = (f32)*((ui8*)pixel3 + 1);
+                    pixelC_r[index] = (f32)*((ui8*)pixel3 + 2);
+                    pixelC_a[index] = (f32)*((ui8*)pixel3 + 3);
 
                     ui32* pixel4 = &sampleTexelD;
-                    f32 pixelD_b = (f32)*((ui8*)pixel4 + 0);
-                    f32 pixelD_g = (f32)*((ui8*)pixel4 + 1);
-                    f32 pixelD_r = (f32)*((ui8*)pixel4 + 2);
-                    f32 pixelD_a = (f32)*((ui8*)pixel4 + 3);
-                    
-                    f32 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;
-                    {//Optimized bilinear lerp
-                        f32 percentToLerpInX = texelPosX - Floor(texelPosX);
-                        f32 percentToLerpInY = texelPosY - Floor(texelPosY);
+                    pixelD_b[index] = (f32)*((ui8*)pixel4 + 0);
+                    pixelD_g[index] = (f32)*((ui8*)pixel4 + 1);
+                    pixelD_r[index] = (f32)*((ui8*)pixel4 + 2);
+                    pixelD_a[index] = (f32)*((ui8*)pixel4 + 3);
 
-                        f32 oneMinusXLerp = 1.0f - percentToLerpInX;
-                        f32 oneMinusYLerp = 1.0f - percentToLerpInY;
-                        f32 coefficient1 = oneMinusYLerp * oneMinusXLerp;
-                        f32 coefficient2 = oneMinusYLerp * percentToLerpInX;
-                        f32 coefficient3 = percentToLerpInY * oneMinusXLerp;
-                        f32 coefficient4 = percentToLerpInY * percentToLerpInX;
+                    //Unpack individual color values from dest pixel
+                    backgroundColors_b[index] = (f32)*((ui8*)(destPixel + index) + 0);
+                    backgroundColors_g[index] = (f32)*((ui8*)(destPixel + index)+ 1);
+                    backgroundColors_r[index] = (f32)*((ui8*)(destPixel + index)+ 2);
+                    backgroundColors_a[index] = (f32)*((ui8*)(destPixel + index)+ 3);
+                };
+            };
 
-                        newBlendedTexel_r = coefficient1*pixelA_r + coefficient2*pixelB_r + coefficient3*pixelC_r + coefficient4*pixelD_r; 
-                        newBlendedTexel_g = coefficient1*pixelA_g + coefficient2*pixelB_g + coefficient3*pixelC_g + coefficient4*pixelD_g; 
-                        newBlendedTexel_b = coefficient1*pixelA_b + coefficient2*pixelB_b + coefficient3*pixelC_b + coefficient4*pixelD_b; 
-                        newBlendedTexel_a = coefficient1*pixelA_a + coefficient2*pixelB_a + coefficient3*pixelC_a + coefficient4*pixelD_a; 
-                    };
+            //Bilinear blend 
+            Array<f32, 4> newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
+            for(i32 index{}; index < 4; ++index)
+            {
+                f32 percentToLerpInX = texelPosX[index] - Floor(texelPosX[index]);
+                f32 percentToLerpInY = texelPosY[index] - Floor(texelPosY[index]);
 
-                    {//Linearly Blend with background - Assuming Pre-multiplied alpha
-                        //Unpack individual color values from dest pixel
-                        f32 backgroundColors_b = (f32)*((ui8*)(destPixel + index) + 0);
-                        f32 backgroundColors_g = (f32)*((ui8*)(destPixel + index)+ 1);
-                        f32 backgroundColors_r = (f32)*((ui8*)(destPixel + index)+ 2);
-                        f32 backgroundColors_a = (f32)*((ui8*)(destPixel + index)+ 3);
+                f32 oneMinusXLerp = 1.0f - percentToLerpInX;
+                f32 oneMinusYLerp = 1.0f - percentToLerpInY;
+                f32 coefficient1 = oneMinusYLerp * oneMinusXLerp;
+                f32 coefficient2 = oneMinusYLerp * percentToLerpInX;
+                f32 coefficient3 = percentToLerpInY * oneMinusXLerp;
+                f32 coefficient4 = percentToLerpInY * percentToLerpInX;
 
-                        f32 alphaBlend = newBlendedTexel_a / 255.0f;
-                        f32 finalBlendedColor_r = (1.0f - alphaBlend)*backgroundColors_r + newBlendedTexel_r;
-                        f32 finalBlendedColor_g = (1.0f - alphaBlend)*backgroundColors_g + newBlendedTexel_g;
-                        f32 finalBlendedColor_b = (1.0f - alphaBlend)*backgroundColors_b + newBlendedTexel_b;
-                        f32 finalBlendedColor_a = (1.0f - alphaBlend)*backgroundColors_a + newBlendedTexel_a;
+                newBlendedTexel_r[index] = coefficient1*pixelA_r[index] + coefficient2*pixelB_r[index] + coefficient3*pixelC_r[index] + coefficient4*pixelD_r[index]; 
+                newBlendedTexel_g[index] = coefficient1*pixelA_g[index] + coefficient2*pixelB_g[index] + coefficient3*pixelC_g[index] + coefficient4*pixelD_g[index]; 
+                newBlendedTexel_b[index] = coefficient1*pixelA_b[index] + coefficient2*pixelB_b[index] + coefficient3*pixelC_b[index] + coefficient4*pixelD_b[index]; 
+                newBlendedTexel_a[index] = coefficient1*pixelA_a[index] + coefficient2*pixelB_a[index] + coefficient3*pixelC_a[index] + coefficient4*pixelD_a[index]; 
+            };
 
-                        *(destPixel + index) = ((0xFF << 24) |
-                                    ((ui8)finalBlendedColor_r << 16) |
-                                    ((ui8)finalBlendedColor_g << 8) |
-                                    ((ui8)finalBlendedColor_b << 0));
-                    };
-                };//if statement (checking u v coords)
+            //Linear blend (w/ pre multiplied alpha)
+            Array<f32, 4> finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
+            for(i32 index{}; index < 4; ++index)
+            {
+                f32 alphaBlend = newBlendedTexel_a[index] / 255.0f;
+                finalBlendedColor_r[index] = (1.0f - alphaBlend)*backgroundColors_r[index] + newBlendedTexel_r[index];
+                finalBlendedColor_g[index] = (1.0f - alphaBlend)*backgroundColors_g[index] + newBlendedTexel_g[index];
+                finalBlendedColor_b[index] = (1.0f - alphaBlend)*backgroundColors_b[index] + newBlendedTexel_b[index];
+                finalBlendedColor_a[index] = (1.0f - alphaBlend)*backgroundColors_a[index] + newBlendedTexel_a[index];
 
-            }; //For loop iterating over 4 pixels
+                *(destPixel + index) = ((0xFF << 24) |
+                    ((ui8)finalBlendedColor_r[index] << 16) |
+                    ((ui8)finalBlendedColor_g[index] << 8) |
+                    ((ui8)finalBlendedColor_b[index] << 0));
+            };
 
             destPixel += 4;
-        }
+        };
         
         currentRow += buffer.pitch;
-    }
+    };
 
 };
 
