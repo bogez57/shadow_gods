@@ -356,7 +356,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                     finalBlendedColor_b[index] = (1.0f - alphaBlend)*backgroundColors_b[index] + newBlendedTexel_b[index];
                     finalBlendedColor_a[index] = (1.0f - alphaBlend)*backgroundColors_a[index] + newBlendedTexel_a[index];
 
-                    *(destPixel + index) = ((0xFF << 24) |
+                    *(destPixel + index) = (((ui8)finalBlendedColor_a[index] << 24) |
                         ((ui8)finalBlendedColor_r[index] << 16) |
                         ((ui8)finalBlendedColor_g[index] << 8) |
                         ((ui8)finalBlendedColor_b[index] << 0));
