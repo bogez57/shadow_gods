@@ -156,6 +156,8 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
     }
 };
 
+#include <smmintrin.h>
+
 void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale) 
 {
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
@@ -233,31 +235,31 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; screenX += 4)
         {            
-            Array<f32, 4> texelPosX{}, texelPosY{};
-            Array<f32, 4> pixelA_g{};
-            Array<f32, 4> pixelA_b{};
-            Array<f32, 4> pixelA_r{};
-            Array<f32, 4> pixelA_a{}; 
+            __m128 texelPosX{}, texelPosY{};
+            __m128 pixelA_g{};
+            __m128 pixelA_b{};
+            __m128 pixelA_r{};
+            __m128 pixelA_a{}; 
 
-            Array<f32, 4> pixelB_b{}; 
-            Array<f32, 4> pixelB_g{}; 
-            Array<f32, 4> pixelB_r{}; 
-            Array<f32, 4> pixelB_a{}; 
+            __m128 pixelB_b{}; 
+            __m128 pixelB_g{}; 
+            __m128 pixelB_r{}; 
+            __m128 pixelB_a{}; 
 
-            Array<f32, 4> pixelC_b{}; 
-            Array<f32, 4> pixelC_g{}; 
-            Array<f32, 4> pixelC_r{}; 
-            Array<f32, 4> pixelC_a{}; 
+            __m128 pixelC_b{}; 
+            __m128 pixelC_g{}; 
+            __m128 pixelC_r{}; 
+            __m128 pixelC_a{}; 
 
-            Array<f32, 4> pixelD_b{}; 
-            Array<f32, 4> pixelD_g{}; 
-            Array<f32, 4> pixelD_r{}; 
-            Array<f32, 4> pixelD_a{}; 
+            __m128 pixelD_b{}; 
+            __m128 pixelD_g{}; 
+            __m128 pixelD_r{}; 
+            __m128 pixelD_a{}; 
 
-            Array<f32, 4> backgroundColors_r{};
-            Array<f32, 4> backgroundColors_g{};
-            Array<f32, 4> backgroundColors_b{};
-            Array<f32, 4> backgroundColors_a{};
+            __m128 backgroundColors_r{};
+            __m128 backgroundColors_g{};
+            __m128 backgroundColors_b{};
+            __m128 backgroundColors_a{};
 
             Array<b, 4> shouldColorPixel{};
 
@@ -275,14 +277,14 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 if(shouldColorPixel[index])
                 {
                     //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                    texelPosX[index] = 1.0f + (u*(f32)(imageWidth));
-                    texelPosY[index] = 1.0f + (v*(f32)(imageHeight)); 
+                    texelPosX.m128_f32[index] = 1.0f + (u*(f32)(imageWidth));
+                    texelPosY.m128_f32[index] = 1.0f + (v*(f32)(imageHeight)); 
                     
-                    BGZ_ASSERT((texelPosX[index] >= 0) && (texelPosX[index] <= (i32)image.size.width), "x coord is out of range!: ");
-                    BGZ_ASSERT((texelPosY[index] >= 0) && (texelPosY[index] <= (i32)image.size.height), "y coord is out of range!");
+                    BGZ_ASSERT((texelPosX.m128_f32[index] >= 0) && (texelPosX.m128_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
+                    BGZ_ASSERT((texelPosY.m128_f32[index] >= 0) && (texelPosY.m128_f32[index] <= (i32)image.size.height), "y coord is out of range!");
 
                     //Gather 4 texels (in a square pattern) from certain texel Ptr
-                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY[index]*image.pitch) + ((ui32)texelPosX[index]*sizeof(ui32));//size of pixel
+                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY.m128_f32[index]*image.pitch) + ((ui32)texelPosX.m128_f32[index]*sizeof(ui32));//size of pixel
                     ui32 sampleTexelA = *(ui32*)(texelPtr);
                     ui32 sampleTexelB = *(ui32*)(texelPtr + sizeof(ui32));
                     ui32 sampleTexelC = *(ui32*)(texelPtr + image.pitch);
@@ -322,28 +324,23 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             };
 
             //Bilinear blend 
-            Array<f32, 4> newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
-            for(i32 index{}; index < 4; ++index)
-            {
-                if(shouldColorPixel[index])
-                {
-                    f32 percentToLerpInX = texelPosX[index] - Floor(texelPosX[index]);
-                    f32 percentToLerpInY = texelPosY[index] - Floor(texelPosY[index]);
+            __m128 percentToLerpInX = _mm_sub_ps(texelPosX, _mm_floor_ps(texelPosX));
+            __m128 percentToLerpInY = _mm_sub_ps(texelPosY, _mm_floor_ps(texelPosY));
+            __m128 one = _mm_set1_ps(1.0f);
+            __m128 oneMinusXLerp = _mm_sub_ps(one, percentToLerpInX);
+            __m128 oneMinusYLerp = _mm_sub_ps(one, percentToLerpInY);
+            __m128 coefficient1 = _mm_mul_ps(oneMinusYLerp, oneMinusXLerp);
+            __m128 coefficient2 = _mm_mul_ps(oneMinusYLerp, percentToLerpInX);
+            __m128 coefficient3 = _mm_mul_ps(percentToLerpInY, oneMinusXLerp);
+            __m128 coefficient4 = _mm_mul_ps(percentToLerpInY, percentToLerpInX);
 
-                    f32 oneMinusXLerp = 1.0f - percentToLerpInX;
-                    f32 oneMinusYLerp = 1.0f - percentToLerpInY;
-                    f32 coefficient1 = oneMinusYLerp * oneMinusXLerp;
-                    f32 coefficient2 = oneMinusYLerp * percentToLerpInX;
-                    f32 coefficient3 = percentToLerpInY * oneMinusXLerp;
-                    f32 coefficient4 = percentToLerpInY * percentToLerpInX;
+            __m128 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
+            newBlendedTexel_r = _mm_mul_ps(coefficient1, pixelA_r) + _mm_mul_ps(coefficient2, pixelB_r) + _mm_mul_ps(coefficient3, pixelC_r) + _mm_mul_ps(coefficient4, pixelD_r); 
+            newBlendedTexel_g = _mm_mul_ps(coefficient1, pixelA_g) + _mm_mul_ps(coefficient2, pixelB_g) + _mm_mul_ps(coefficient3, pixelC_g) + _mm_mul_ps(coefficient4, pixelD_g); 
+            newBlendedTexel_b = _mm_mul_ps(coefficient1, pixelA_b) + _mm_mul_ps(coefficient2, pixelB_b) + _mm_mul_ps(coefficient3, pixelC_b) + _mm_mul_ps(coefficient4, pixelD_b); 
+            newBlendedTexel_a = _mm_mul_ps(coefficient1, pixelA_a) + _mm_mul_ps(coefficient2, pixelB_a) + _mm_mul_ps(coefficient3, pixelC_a) + _mm_mul_ps(coefficient4, pixelD_a); 
 
-                    newBlendedTexel_r[index] = coefficient1*pixelA_r[index] + coefficient2*pixelB_r[index] + coefficient3*pixelC_r[index] + coefficient4*pixelD_r[index]; 
-                    newBlendedTexel_g[index] = coefficient1*pixelA_g[index] + coefficient2*pixelB_g[index] + coefficient3*pixelC_g[index] + coefficient4*pixelD_g[index]; 
-                    newBlendedTexel_b[index] = coefficient1*pixelA_b[index] + coefficient2*pixelB_b[index] + coefficient3*pixelC_b[index] + coefficient4*pixelD_b[index]; 
-                    newBlendedTexel_a[index] = coefficient1*pixelA_a[index] + coefficient2*pixelB_a[index] + coefficient3*pixelC_a[index] + coefficient4*pixelD_a[index]; 
-                };
-            };
-
+#if 0
             //Linear blend (w/ pre multiplied alpha)
             Array<f32, 4> finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
             for(i32 index{}; index < 4; ++index)
@@ -362,6 +359,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                         ((ui8)finalBlendedColor_b[index] << 0));
                 };
             };
+            #endif
 
             destPixel += 4;
         };
