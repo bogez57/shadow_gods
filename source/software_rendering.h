@@ -156,7 +156,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
     }
 };
 
-#include <smmintrin.h>
+#include <immintrin.h>
 
 void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale) 
 {
@@ -233,38 +233,38 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
         ui32* destPixel = (ui32*)currentRow;
-        for(f32 screenX = xMin; screenX < xMax; screenX += 4)
+        for(f32 screenX = xMin; screenX < xMax; screenX += 8)
         {            
-            __m128 texelPosX{}, texelPosY{};
-            __m128 pixelA_g{};
-            __m128 pixelA_b{};
-            __m128 pixelA_r{};
-            __m128 pixelA_a{}; 
+            __m256 texelPosX{}, texelPosY{};
+            __m256 pixelA_g{};
+            __m256 pixelA_b{};
+            __m256 pixelA_r{};
+            __m256 pixelA_a{}; 
 
-            __m128 pixelB_b{}; 
-            __m128 pixelB_g{}; 
-            __m128 pixelB_r{}; 
-            __m128 pixelB_a{}; 
+            __m256 pixelB_b{}; 
+            __m256 pixelB_g{}; 
+            __m256 pixelB_r{}; 
+            __m256 pixelB_a{}; 
 
-            __m128 pixelC_b{}; 
-            __m128 pixelC_g{}; 
-            __m128 pixelC_r{}; 
-            __m128 pixelC_a{}; 
+            __m256 pixelC_b{}; 
+            __m256 pixelC_g{}; 
+            __m256 pixelC_r{}; 
+            __m256 pixelC_a{}; 
 
-            __m128 pixelD_b{}; 
-            __m128 pixelD_g{}; 
-            __m128 pixelD_r{}; 
-            __m128 pixelD_a{}; 
+            __m256 pixelD_b{}; 
+            __m256 pixelD_g{}; 
+            __m256 pixelD_r{}; 
+            __m256 pixelD_a{}; 
 
-            __m128 backgroundColors_r{};
-            __m128 backgroundColors_g{};
-            __m128 backgroundColors_b{};
-            __m128 backgroundColors_a{};
+            __m256 backgroundColors_r{};
+            __m256 backgroundColors_g{};
+            __m256 backgroundColors_b{};
+            __m256 backgroundColors_a{};
 
-            Array<b, 4> shouldColorPixel{};
+            Array<b, 8> shouldColorPixel{};
 
             //Unpack individual color values from current image texels and background texel
-            for(i32 index{}; index < 4; ++index)
+            for(i32 index{}; index < 8; ++index)
             {
                 v2f screenPixelCoord{screenX + index, screenY};
                 v2f d {screenPixelCoord - origin};
@@ -277,14 +277,14 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 if(shouldColorPixel[index])
                 {
                     //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                    texelPosX.m128_f32[index] = 1.0f + (u*(f32)(imageWidth));
-                    texelPosY.m128_f32[index] = 1.0f + (v*(f32)(imageHeight)); 
+                    texelPosX.m256_f32[index] = 1.0f + (u*(f32)(imageWidth));
+                    texelPosY.m256_f32[index] = 1.0f + (v*(f32)(imageHeight)); 
                     
-                    BGZ_ASSERT((texelPosX.m128_f32[index] >= 0) && (texelPosX.m128_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
-                    BGZ_ASSERT((texelPosY.m128_f32[index] >= 0) && (texelPosY.m128_f32[index] <= (i32)image.size.height), "y coord is out of range!");
+                    BGZ_ASSERT((texelPosX.m256_f32[index] >= 0) && (texelPosX.m256_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
+                    BGZ_ASSERT((texelPosY.m256_f32[index] >= 0) && (texelPosY.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
 
                     //Gather 4 texels (in a square pattern) from certain texel Ptr
-                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY.m128_f32[index]*image.pitch) + ((ui32)texelPosX.m128_f32[index]*sizeof(ui32));//size of pixel
+                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY.m256_f32[index]*image.pitch) + ((ui32)texelPosX.m256_f32[index]*sizeof(ui32));//size of pixel
                     ui32 sampleTexelA = *(ui32*)(texelPtr);
                     ui32 sampleTexelB = *(ui32*)(texelPtr + sizeof(ui32));
                     ui32 sampleTexelC = *(ui32*)(texelPtr + image.pitch);
@@ -292,163 +292,96 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
                     //Unpack individual color values from pixels found in texel square
                     ui32* pixel1 = &sampleTexelA;
-                    pixelA_b.m128_f32[index] = (f32)*((ui8*)pixel1 + 0);
-                    pixelA_g.m128_f32[index] = (f32)*((ui8*)pixel1 + 1);
-                    pixelA_r.m128_f32[index] = (f32)*((ui8*)pixel1 + 2);
-                    pixelA_a.m128_f32[index] = (f32)*((ui8*)pixel1 + 3);
+                    pixelA_b.m256_f32[index] = (f32)*((ui8*)pixel1 + 0);
+                    pixelA_g.m256_f32[index] = (f32)*((ui8*)pixel1 + 1);
+                    pixelA_r.m256_f32[index] = (f32)*((ui8*)pixel1 + 2);
+                    pixelA_a.m256_f32[index] = (f32)*((ui8*)pixel1 + 3);
 
                     ui32* pixel2 = &sampleTexelB;
-                    pixelB_b.m128_f32[index] = (f32)*((ui8*)pixel2 + 0);
-                    pixelB_g.m128_f32[index] = (f32)*((ui8*)pixel2 + 1);
-                    pixelB_r.m128_f32[index] = (f32)*((ui8*)pixel2 + 2);
-                    pixelB_a.m128_f32[index] = (f32)*((ui8*)pixel2 + 3);
+                    pixelB_b.m256_f32[index] = (f32)*((ui8*)pixel2 + 0);
+                    pixelB_g.m256_f32[index] = (f32)*((ui8*)pixel2 + 1);
+                    pixelB_r.m256_f32[index] = (f32)*((ui8*)pixel2 + 2);
+                    pixelB_a.m256_f32[index] = (f32)*((ui8*)pixel2 + 3);
 
                     ui32* pixel3 = &sampleTexelC;
-                    pixelC_b.m128_f32[index] = (f32)*((ui8*)pixel3 + 0);
-                    pixelC_g.m128_f32[index] = (f32)*((ui8*)pixel3 + 1);
-                    pixelC_r.m128_f32[index] = (f32)*((ui8*)pixel3 + 2);
-                    pixelC_a.m128_f32[index] = (f32)*((ui8*)pixel3 + 3);
+                    pixelC_b.m256_f32[index] = (f32)*((ui8*)pixel3 + 0);
+                    pixelC_g.m256_f32[index] = (f32)*((ui8*)pixel3 + 1);
+                    pixelC_r.m256_f32[index] = (f32)*((ui8*)pixel3 + 2);
+                    pixelC_a.m256_f32[index] = (f32)*((ui8*)pixel3 + 3);
 
                     ui32* pixel4 = &sampleTexelD;
-                    pixelD_b.m128_f32[index] = (f32)*((ui8*)pixel4 + 0);
-                    pixelD_g.m128_f32[index] = (f32)*((ui8*)pixel4 + 1);
-                    pixelD_r.m128_f32[index] = (f32)*((ui8*)pixel4 + 2);
-                    pixelD_a.m128_f32[index] = (f32)*((ui8*)pixel4 + 3);
+                    pixelD_b.m256_f32[index] = (f32)*((ui8*)pixel4 + 0);
+                    pixelD_g.m256_f32[index] = (f32)*((ui8*)pixel4 + 1);
+                    pixelD_r.m256_f32[index] = (f32)*((ui8*)pixel4 + 2);
+                    pixelD_a.m256_f32[index] = (f32)*((ui8*)pixel4 + 3);
 
                     //Unpack individual color values from dest pixel
-                    backgroundColors_b.m128_f32[index] = (f32)*((ui8*)(destPixel + index) + 0);
-                    backgroundColors_g.m128_f32[index] = (f32)*((ui8*)(destPixel + index)+ 1);
-                    backgroundColors_r.m128_f32[index] = (f32)*((ui8*)(destPixel + index)+ 2);
-                    backgroundColors_a.m128_f32[index] = (f32)*((ui8*)(destPixel + index)+ 3);
+                    backgroundColors_b.m256_f32[index] = (f32)*((ui8*)(destPixel + index) + 0);
+                    backgroundColors_g.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 1);
+                    backgroundColors_r.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 2);
+                    backgroundColors_a.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 3);
                 };
             };
 
             //Bilinear blend 
-            __m128 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
-            __m128 one = _mm_set1_ps(1.0f);
+            __m256 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
+            __m256 one = _mm256_set1_ps(1.0f);
             {
-                __m128 percentToLerpInX = _mm_sub_ps(texelPosX, _mm_floor_ps(texelPosX));
-                __m128 percentToLerpInY = _mm_sub_ps(texelPosY, _mm_floor_ps(texelPosY));
-                __m128 oneMinusXLerp = _mm_sub_ps(one, percentToLerpInX);
-                __m128 oneMinusYLerp = _mm_sub_ps(one, percentToLerpInY);
-                __m128 coefficient1 = _mm_mul_ps(oneMinusYLerp, oneMinusXLerp);
-                __m128 coefficient2 = _mm_mul_ps(oneMinusYLerp, percentToLerpInX);
-                __m128 coefficient3 = _mm_mul_ps(percentToLerpInY, oneMinusXLerp);
-                __m128 coefficient4 = _mm_mul_ps(percentToLerpInY, percentToLerpInX);
+                __m256 percentToLerpInX = _mm256_sub_ps(texelPosX, _mm256_floor_ps(texelPosX));
+                __m256 percentToLerpInY = _mm256_sub_ps(texelPosY, _mm256_floor_ps(texelPosY));
+                __m256 oneMinusXLerp = _mm256_sub_ps(one, percentToLerpInX);
+                __m256 oneMinusYLerp = _mm256_sub_ps(one, percentToLerpInY);
+                __m256 coefficient1 = _mm256_mul_ps(oneMinusYLerp, oneMinusXLerp);
+                __m256 coefficient2 = _mm256_mul_ps(oneMinusYLerp, percentToLerpInX);
+                __m256 coefficient3 = _mm256_mul_ps(percentToLerpInY, oneMinusXLerp);
+                __m256 coefficient4 = _mm256_mul_ps(percentToLerpInY, percentToLerpInX);
 
-                newBlendedTexel_r = _mm_add_ps(
-                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_r), _mm_mul_ps(coefficient2, pixelB_r)), 
-                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_r), _mm_mul_ps(coefficient4, pixelD_r))); 
-                newBlendedTexel_g = _mm_add_ps(
-                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_g), _mm_mul_ps(coefficient2, pixelB_g)), 
-                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_g), _mm_mul_ps(coefficient4, pixelD_g))); 
-                newBlendedTexel_b = _mm_add_ps(
-                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_b), _mm_mul_ps(coefficient2, pixelB_b)), 
-                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_b), _mm_mul_ps(coefficient4, pixelD_b))); 
-                newBlendedTexel_a = _mm_add_ps(
-                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_a), _mm_mul_ps(coefficient2, pixelB_a)), 
-                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_a), _mm_mul_ps(coefficient4, pixelD_a))); 
+                newBlendedTexel_r = _mm256_add_ps(
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_r), _mm256_mul_ps(coefficient2, pixelB_r)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_r), _mm256_mul_ps(coefficient4, pixelD_r))); 
+                newBlendedTexel_g = _mm256_add_ps(
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_g), _mm256_mul_ps(coefficient2, pixelB_g)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_g), _mm256_mul_ps(coefficient4, pixelD_g))); 
+                newBlendedTexel_b = _mm256_add_ps(
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_b), _mm256_mul_ps(coefficient2, pixelB_b)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_b), _mm256_mul_ps(coefficient4, pixelD_b))); 
+                newBlendedTexel_a = _mm256_add_ps(
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_a), _mm256_mul_ps(coefficient2, pixelB_a)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_a), _mm256_mul_ps(coefficient4, pixelD_a))); 
             };
 
             //Linear blend (w/ pre multiplied alpha)
-            __m128 finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
+            __m256 finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
             {
-                __m128 maxColorValue = _mm_set1_ps(255.0f);
-                __m128 alphaBlend = _mm_div_ps(newBlendedTexel_a, maxColorValue);
-                __m128 oneMinusAlphaBlend = _mm_sub_ps(one, alphaBlend);
+                __m256 maxColorValue = _mm256_set1_ps(255.0f);
+                __m256 alphaBlend = _mm256_div_ps(newBlendedTexel_a, maxColorValue);
+                __m256 oneMinusAlphaBlend = _mm256_sub_ps(one, alphaBlend);
 
-                finalBlendedColor_r = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_r), newBlendedTexel_r);
-                finalBlendedColor_g = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_g), newBlendedTexel_g);
-                finalBlendedColor_b = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_b), newBlendedTexel_b);
-                finalBlendedColor_a = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_a), newBlendedTexel_a);
+                finalBlendedColor_r = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_r), newBlendedTexel_r);
+                finalBlendedColor_g = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_g), newBlendedTexel_g);
+                finalBlendedColor_b = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_b), newBlendedTexel_b);
+                finalBlendedColor_a = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_a), newBlendedTexel_a);
             };
 
             //Pack into dest pixels
-            for(i32 index{}; index < 4; ++index)
+            for(i32 index{}; index < 8; ++index)
             {
                 if(shouldColorPixel[index])
                 {
-                    *(destPixel + index) = (((ui8)finalBlendedColor_a.m128_f32[index] << 24) |
-                        ((ui8)finalBlendedColor_r.m128_f32[index] << 16) |
-                        ((ui8)finalBlendedColor_g.m128_f32[index] << 8) |
-                        ((ui8)finalBlendedColor_b.m128_f32[index] << 0));
+                    *(destPixel + index) = (((ui8)finalBlendedColor_a.m256_f32[index] << 24) |
+                        ((ui8)finalBlendedColor_r.m256_f32[index] << 16) |
+                        ((ui8)finalBlendedColor_g.m256_f32[index] << 8) |
+                        ((ui8)finalBlendedColor_b.m256_f32[index] << 0));
                 };
             };
 
-            destPixel += 4;
+            destPixel += 8;
         };
         
         currentRow += buffer.pitch;
     };
 
 };
-
-#if 0
-//Set 4 pixel values into sse register
-            __m128 texelRs{};
-            __m128 texelGs{};
-            __m128 texelBs{};
-            __m128 texelAs{};
-            __m128 backgroundTexelRs{};
-            __m128 backgroundTexelGs{};
-            __m128 backgroundTexelBs{};
-            __m128 backgroundTexelAs{};
-            for(i32 texelIndex{}; texelIndex < 4; ++texelIndex)
-            {
-                v2f screenPixelCoord{screenX + texelIndex, screenY};
-                v2f d {screenPixelCoord - origin};
-
-                f32 u = (d.x*normalizedXAxis.x + d.y*normalizedXAxis.y);
-                f32 v = (d.x*normalizedYAxis.x + d.y*normalizedYAxis.y);
-
-                f32 texelPosX {}, texelPosY {};
-                if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
-                {
-                    texelPosX = 1.0f + (u*(f32)(imageWidth));
-                    texelPosY = 1.0f + (v*(f32)(imageHeight)); 
-
-                    BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
-                    BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "y coord is out of range!");
-
-                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX *sizeof(ui32));//size of pixel
-                    texelRs.m128_f32[texelIndex] = (f32)*(texelPtr + 2);
-                    texelGs.m128_f32[texelIndex] = (f32)*(texelPtr + 1);
-                    texelBs.m128_f32[texelIndex] = (f32)*(texelPtr + 0);
-                    texelAs.m128_f32[texelIndex] = (f32)*(texelPtr + 3);
-                };
-
-                backgroundTexelRs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 2);
-                backgroundTexelGs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 1);
-                backgroundTexelBs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 0);
-                backgroundTexelAs.m128_f32[texelIndex] = (f32)*((destPixel + texelIndex) + 3);
-           };
-
-            {//Linearly Blend with background - Assuming Pre-multiplied alpha
-                //Unpack individual color values from dest pixel
-                __m128 maxColorValue = _mm_set_ps1(255.0f);
-                __m128 one = _mm_set_ps1(1.0f);
-                __m128 texelAlphas = _mm_set_ps(texelAs.m128_f32[0], texelAs.m128_f32[1], texelAs.m128_f32[2], texelAs.m128_f32[3]);
-                __m128 alphaBlend = _mm_div_ps(texelAlphas, maxColorValue);
-                __m128 oneMinusAlphaBlend = _mm_sub_ps(one, alphaBlend);
-
-                __m128 finalBlendedColor_r;
-                __m128 finalBlendedColor_g;
-                __m128 finalBlendedColor_b;
-                finalBlendedColor_r = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundTexelRs), texelRs);
-                finalBlendedColor_g = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundTexelGs), texelGs);
-                finalBlendedColor_b = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundTexelBs), texelBs);
-
-                for(i32 texelIndex{}; texelIndex < 4; ++texelIndex)
-                {
-                    *(destPixel + texelIndex) = ((0xFF << 24) |
-                        ((ui8)finalBlendedColor_r.m128_f32[texelIndex] << 16) |
-                        ((ui8)finalBlendedColor_g.m128_f32[texelIndex] << 8) |
-                        ((ui8)finalBlendedColor_b.m128_f32[texelIndex] << 0));
-                };
-            };
-
-            destPixel += 4;
-#endif
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 //Also involves lighting calcuation
