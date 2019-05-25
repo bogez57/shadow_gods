@@ -236,30 +236,13 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         for(f32 screenX = xMin; screenX < xMax; screenX += 8)
         {            
             __m256 texelPosX{}, texelPosY{};
-            __m256 pixelA_g{};
-            __m256 pixelA_b{};
-            __m256 pixelA_r{};
-            __m256 pixelA_a{}; 
 
-            __m256 pixelB_b{}; 
-            __m256 pixelB_g{}; 
-            __m256 pixelB_r{}; 
-            __m256 pixelB_a{}; 
+            __m256 pixelA_r{}, pixelA_g{}, pixelA_b{}, pixelA_a{};
+            __m256 pixelB_r{}, pixelB_g{}, pixelB_b{}, pixelB_a{}; 
+            __m256 pixelC_r{}, pixelC_g{}, pixelC_b{}, pixelC_a{}; 
+            __m256 pixelD_r{}, pixelD_g{}, pixelD_b{}, pixelD_a{}; 
 
-            __m256 pixelC_b{}; 
-            __m256 pixelC_g{}; 
-            __m256 pixelC_r{}; 
-            __m256 pixelC_a{}; 
-
-            __m256 pixelD_b{}; 
-            __m256 pixelD_g{}; 
-            __m256 pixelD_r{}; 
-            __m256 pixelD_a{}; 
-
-            __m256 backgroundColors_r{};
-            __m256 backgroundColors_g{};
-            __m256 backgroundColors_b{};
-            __m256 backgroundColors_a{};
+            __m256 backgroundColors_r{}, backgroundColors_g{}, backgroundColors_b{}, backgroundColors_a{};
 
             Array<b, 8> shouldColorPixel{};
 
@@ -323,10 +306,9 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 };
             };
 
-            //Bilinear blend 
             __m256 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
             __m256 one = _mm256_set1_ps(1.0f);
-            {
+            {//Bilinear blend 
                 __m256 percentToLerpInX = _mm256_sub_ps(texelPosX, _mm256_floor_ps(texelPosX));
                 __m256 percentToLerpInY = _mm256_sub_ps(texelPosY, _mm256_floor_ps(texelPosY));
                 __m256 oneMinusXLerp = _mm256_sub_ps(one, percentToLerpInX);
@@ -350,9 +332,8 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                                     _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_a), _mm256_mul_ps(coefficient4, pixelD_a))); 
             };
 
-            //Linear blend (w/ pre multiplied alpha)
             __m256 finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
-            {
+            {//Linear blend (w/ pre multiplied alpha)
                 __m256 maxColorValue = _mm256_set1_ps(255.0f);
                 __m256 alphaBlend = _mm256_div_ps(newBlendedTexel_a, maxColorValue);
                 __m256 oneMinusAlphaBlend = _mm256_sub_ps(one, alphaBlend);
@@ -363,20 +344,20 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 finalBlendedColor_a = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_a), newBlendedTexel_a);
             };
 
-            //Pack into dest pixels
-            for(i32 index{}; index < 8; ++index)
-            {
-                if(shouldColorPixel[index])
-                {
-                    *(destPixel + index) = (((ui8)finalBlendedColor_a.m256_f32[index] << 24) |
-                        ((ui8)finalBlendedColor_r.m256_f32[index] << 16) |
-                        ((ui8)finalBlendedColor_g.m256_f32[index] << 8) |
-                        ((ui8)finalBlendedColor_b.m256_f32[index] << 0));
-                };
+            {//Pack into dest pixels
+                __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
+                __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
+                __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
+                __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
+
+                __m256i out = _mm256_or_si256(_mm256_or_si256(_mm256_or_si256(_mm256_slli_epi32(finalBlendedColori_r, 16), _mm256_slli_epi32(finalBlendedColori_g, 8)), finalBlendedColori_b), _mm256_slli_epi32(finalBlendedColori_a, 24));
+                *(__m256i*)destPixel = out;
             };
 
             destPixel += 8;
         };
+
+
         
         currentRow += buffer.pitch;
     };
