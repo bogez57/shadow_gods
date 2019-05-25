@@ -344,7 +344,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 finalBlendedColor_a = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_a), newBlendedTexel_a);
             };
 
-#if 0
+#if __AVX2__
             {//Pack into dest pixels
                 __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
                 __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
@@ -354,35 +354,29 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 __m256i out = _mm256_or_si256(_mm256_or_si256(_mm256_or_si256(_mm256_slli_epi32(finalBlendedColori_r, 16), _mm256_slli_epi32(finalBlendedColori_g, 8)), finalBlendedColori_b), _mm256_slli_epi32(finalBlendedColori_a, 24));
                 *(__m256i*)destPixel = out;
             };
-#endif
 
-#if 1
+#elif __AVX__
             __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
             __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
             __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
             __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
 
-            __m256i r1b1r0b0 = _mm256_unpacklo_epi32(finalBlendedColori_r, finalBlendedColori_b);
-            __m256i a1g1a0g0 = _mm256_unpacklo_epi32(finalBlendedColori_g, finalBlendedColori_a);
+            __m128i pixelSet1_r = _mm256_extractf128_si256(finalBlendedColori_r, 0);
+            __m128i pixelSet2_r = _mm256_extractf128_si256(finalBlendedColori_r, 1);
+            __m128i pixelSet1_g = _mm256_extractf128_si256(finalBlendedColori_g, 0);
+            __m128i pixelSet2_g = _mm256_extractf128_si256(finalBlendedColori_g, 1);
+            __m128i pixelSet1_b = _mm256_extractf128_si256(finalBlendedColori_b, 0);
+            __m128i pixelSet2_b = _mm256_extractf128_si256(finalBlendedColori_b, 1);
+            __m128i pixelSet1_a = _mm256_extractf128_si256(finalBlendedColori_a, 0);
+            __m128i pixelSet2_a = _mm256_extractf128_si256(finalBlendedColori_a, 1);
 
-            __m256i r3b3r2b2 = _mm256_unpackhi_epi32(finalBlendedColori_r, finalBlendedColori_b);
-            __m256i a3g3a2g2 = _mm256_unpackhi_epi32(finalBlendedColori_g, finalBlendedColori_a);
+            __m128i pixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet1_r, 16), _mm_slli_epi32(pixelSet1_g, 8)), pixelSet1_b), _mm_slli_epi32(pixelSet1_a, 24));
+            __m128i pixels5Through8 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet2_r, 16), _mm_slli_epi32(pixelSet2_g, 8)), pixelSet2_b), _mm_slli_epi32(pixelSet2_a, 24));
 
-            __m256i argb0 = _mm256_unpacklo_epi32(r1b1r0b0, a1g1a0g0);
-            __m256i argb1 = _mm256_unpackhi_epi32(r1b1r0b0, a1g1a0g0);
-            __m256i argb2 = _mm256_unpacklo_epi32(r3b3r2b2, a3g3a2g2);
-            __m256i argb3 = _mm256_unpackhi_epi32(r3b3r2b2, a3g3a2g2);
+            __m256i out = _mm256_castsi128_si256(pixels1Through4);
+            out = _mm256_insertf128_si256(out, pixels5Through8, 1);
 
-            __m128i argb0_lo = _mm256_extractf128_si256(argb0, 0);
-            __m128i argb0_hi = _mm256_extractf128_si256(argb0, 1);
-            __m128i argb1_lo = _mm256_extractf128_si256(argb1, 0);
-            __m128i argb1_hi = _mm256_extractf128_si256(argb1, 1);
-            __m128i argb2_lo = _mm256_extractf128_si256(argb2, 0);
-            __m128i argb2_hi = _mm256_extractf128_si256(argb2, 1);
-            __m128i argb3_lo = _mm256_extractf128_si256(argb3, 0);
-            __m128i argb3_hi = _mm256_extractf128_si256(argb3, 1);
-
-            _mm_slli_epi32(argb0_lo, 24)
+            *(__m256i*)destPixel = out;
 
 #endif
 
