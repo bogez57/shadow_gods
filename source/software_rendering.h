@@ -292,74 +292,88 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
                     //Unpack individual color values from pixels found in texel square
                     ui32* pixel1 = &sampleTexelA;
-                    pixelA_b[index] = (f32)*((ui8*)pixel1 + 0);
-                    pixelA_g[index] = (f32)*((ui8*)pixel1 + 1);
-                    pixelA_r[index] = (f32)*((ui8*)pixel1 + 2);
-                    pixelA_a[index] = (f32)*((ui8*)pixel1 + 3);
+                    pixelA_b.m128_f32[index] = (f32)*((ui8*)pixel1 + 0);
+                    pixelA_g.m128_f32[index] = (f32)*((ui8*)pixel1 + 1);
+                    pixelA_r.m128_f32[index] = (f32)*((ui8*)pixel1 + 2);
+                    pixelA_a.m128_f32[index] = (f32)*((ui8*)pixel1 + 3);
 
                     ui32* pixel2 = &sampleTexelB;
-                    pixelB_b[index] = (f32)*((ui8*)pixel2 + 0);
-                    pixelB_g[index] = (f32)*((ui8*)pixel2 + 1);
-                    pixelB_r[index] = (f32)*((ui8*)pixel2 + 2);
-                    pixelB_a[index] = (f32)*((ui8*)pixel2 + 3);
+                    pixelB_b.m128_f32[index] = (f32)*((ui8*)pixel2 + 0);
+                    pixelB_g.m128_f32[index] = (f32)*((ui8*)pixel2 + 1);
+                    pixelB_r.m128_f32[index] = (f32)*((ui8*)pixel2 + 2);
+                    pixelB_a.m128_f32[index] = (f32)*((ui8*)pixel2 + 3);
 
                     ui32* pixel3 = &sampleTexelC;
-                    pixelC_b[index] = (f32)*((ui8*)pixel3 + 0);
-                    pixelC_g[index] = (f32)*((ui8*)pixel3 + 1);
-                    pixelC_r[index] = (f32)*((ui8*)pixel3 + 2);
-                    pixelC_a[index] = (f32)*((ui8*)pixel3 + 3);
+                    pixelC_b.m128_f32[index] = (f32)*((ui8*)pixel3 + 0);
+                    pixelC_g.m128_f32[index] = (f32)*((ui8*)pixel3 + 1);
+                    pixelC_r.m128_f32[index] = (f32)*((ui8*)pixel3 + 2);
+                    pixelC_a.m128_f32[index] = (f32)*((ui8*)pixel3 + 3);
 
                     ui32* pixel4 = &sampleTexelD;
-                    pixelD_b[index] = (f32)*((ui8*)pixel4 + 0);
-                    pixelD_g[index] = (f32)*((ui8*)pixel4 + 1);
-                    pixelD_r[index] = (f32)*((ui8*)pixel4 + 2);
-                    pixelD_a[index] = (f32)*((ui8*)pixel4 + 3);
+                    pixelD_b.m128_f32[index] = (f32)*((ui8*)pixel4 + 0);
+                    pixelD_g.m128_f32[index] = (f32)*((ui8*)pixel4 + 1);
+                    pixelD_r.m128_f32[index] = (f32)*((ui8*)pixel4 + 2);
+                    pixelD_a.m128_f32[index] = (f32)*((ui8*)pixel4 + 3);
 
                     //Unpack individual color values from dest pixel
-                    backgroundColors_b[index] = (f32)*((ui8*)(destPixel + index) + 0);
-                    backgroundColors_g[index] = (f32)*((ui8*)(destPixel + index)+ 1);
-                    backgroundColors_r[index] = (f32)*((ui8*)(destPixel + index)+ 2);
-                    backgroundColors_a[index] = (f32)*((ui8*)(destPixel + index)+ 3);
+                    backgroundColors_b.m128_f32[index] = (f32)*((ui8*)(destPixel + index) + 0);
+                    backgroundColors_g.m128_f32[index] = (f32)*((ui8*)(destPixel + index)+ 1);
+                    backgroundColors_r.m128_f32[index] = (f32)*((ui8*)(destPixel + index)+ 2);
+                    backgroundColors_a.m128_f32[index] = (f32)*((ui8*)(destPixel + index)+ 3);
                 };
             };
 
             //Bilinear blend 
-            __m128 percentToLerpInX = _mm_sub_ps(texelPosX, _mm_floor_ps(texelPosX));
-            __m128 percentToLerpInY = _mm_sub_ps(texelPosY, _mm_floor_ps(texelPosY));
-            __m128 one = _mm_set1_ps(1.0f);
-            __m128 oneMinusXLerp = _mm_sub_ps(one, percentToLerpInX);
-            __m128 oneMinusYLerp = _mm_sub_ps(one, percentToLerpInY);
-            __m128 coefficient1 = _mm_mul_ps(oneMinusYLerp, oneMinusXLerp);
-            __m128 coefficient2 = _mm_mul_ps(oneMinusYLerp, percentToLerpInX);
-            __m128 coefficient3 = _mm_mul_ps(percentToLerpInY, oneMinusXLerp);
-            __m128 coefficient4 = _mm_mul_ps(percentToLerpInY, percentToLerpInX);
-
             __m128 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
-            newBlendedTexel_r = _mm_mul_ps(coefficient1, pixelA_r) + _mm_mul_ps(coefficient2, pixelB_r) + _mm_mul_ps(coefficient3, pixelC_r) + _mm_mul_ps(coefficient4, pixelD_r); 
-            newBlendedTexel_g = _mm_mul_ps(coefficient1, pixelA_g) + _mm_mul_ps(coefficient2, pixelB_g) + _mm_mul_ps(coefficient3, pixelC_g) + _mm_mul_ps(coefficient4, pixelD_g); 
-            newBlendedTexel_b = _mm_mul_ps(coefficient1, pixelA_b) + _mm_mul_ps(coefficient2, pixelB_b) + _mm_mul_ps(coefficient3, pixelC_b) + _mm_mul_ps(coefficient4, pixelD_b); 
-            newBlendedTexel_a = _mm_mul_ps(coefficient1, pixelA_a) + _mm_mul_ps(coefficient2, pixelB_a) + _mm_mul_ps(coefficient3, pixelC_a) + _mm_mul_ps(coefficient4, pixelD_a); 
+            __m128 one = _mm_set1_ps(1.0f);
+            {
+                __m128 percentToLerpInX = _mm_sub_ps(texelPosX, _mm_floor_ps(texelPosX));
+                __m128 percentToLerpInY = _mm_sub_ps(texelPosY, _mm_floor_ps(texelPosY));
+                __m128 oneMinusXLerp = _mm_sub_ps(one, percentToLerpInX);
+                __m128 oneMinusYLerp = _mm_sub_ps(one, percentToLerpInY);
+                __m128 coefficient1 = _mm_mul_ps(oneMinusYLerp, oneMinusXLerp);
+                __m128 coefficient2 = _mm_mul_ps(oneMinusYLerp, percentToLerpInX);
+                __m128 coefficient3 = _mm_mul_ps(percentToLerpInY, oneMinusXLerp);
+                __m128 coefficient4 = _mm_mul_ps(percentToLerpInY, percentToLerpInX);
 
-#if 0
+                newBlendedTexel_r = _mm_add_ps(
+                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_r), _mm_mul_ps(coefficient2, pixelB_r)), 
+                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_r), _mm_mul_ps(coefficient4, pixelD_r))); 
+                newBlendedTexel_g = _mm_add_ps(
+                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_g), _mm_mul_ps(coefficient2, pixelB_g)), 
+                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_g), _mm_mul_ps(coefficient4, pixelD_g))); 
+                newBlendedTexel_b = _mm_add_ps(
+                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_b), _mm_mul_ps(coefficient2, pixelB_b)), 
+                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_b), _mm_mul_ps(coefficient4, pixelD_b))); 
+                newBlendedTexel_a = _mm_add_ps(
+                                    _mm_add_ps(_mm_mul_ps(coefficient1, pixelA_a), _mm_mul_ps(coefficient2, pixelB_a)), 
+                                    _mm_add_ps(_mm_mul_ps(coefficient3, pixelC_a), _mm_mul_ps(coefficient4, pixelD_a))); 
+            };
+
             //Linear blend (w/ pre multiplied alpha)
-            Array<f32, 4> finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
+            __m128 finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
+            {
+                __m128 maxColorValue = _mm_set1_ps(255.0f);
+                __m128 alphaBlend = _mm_div_ps(newBlendedTexel_a, maxColorValue);
+                __m128 oneMinusAlphaBlend = _mm_sub_ps(one, alphaBlend);
+
+                finalBlendedColor_r = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_r), newBlendedTexel_r);
+                finalBlendedColor_g = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_g), newBlendedTexel_g);
+                finalBlendedColor_b = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_b), newBlendedTexel_b);
+                finalBlendedColor_a = _mm_add_ps(_mm_mul_ps(oneMinusAlphaBlend, backgroundColors_a), newBlendedTexel_a);
+            };
+
+            //Pack into dest pixels
             for(i32 index{}; index < 4; ++index)
             {
                 if(shouldColorPixel[index])
                 {
-                    f32 alphaBlend = newBlendedTexel_a[index] / 255.0f;
-                    finalBlendedColor_r[index] = (1.0f - alphaBlend)*backgroundColors_r[index] + newBlendedTexel_r[index];
-                    finalBlendedColor_g[index] = (1.0f - alphaBlend)*backgroundColors_g[index] + newBlendedTexel_g[index];
-                    finalBlendedColor_b[index] = (1.0f - alphaBlend)*backgroundColors_b[index] + newBlendedTexel_b[index];
-                    finalBlendedColor_a[index] = (1.0f - alphaBlend)*backgroundColors_a[index] + newBlendedTexel_a[index];
-
-                    *(destPixel + index) = (((ui8)finalBlendedColor_a[index] << 24) |
-                        ((ui8)finalBlendedColor_r[index] << 16) |
-                        ((ui8)finalBlendedColor_g[index] << 8) |
-                        ((ui8)finalBlendedColor_b[index] << 0));
+                    *(destPixel + index) = (((ui8)finalBlendedColor_a.m128_f32[index] << 24) |
+                        ((ui8)finalBlendedColor_r.m128_f32[index] << 16) |
+                        ((ui8)finalBlendedColor_g.m128_f32[index] << 8) |
+                        ((ui8)finalBlendedColor_b.m128_f32[index] << 0));
                 };
             };
-            #endif
 
             destPixel += 4;
         };
