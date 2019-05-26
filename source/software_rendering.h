@@ -134,13 +134,13 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
             f32 u = invertedXAxisSqd * DotProduct(d, targetQuadXAxis);
             f32 v = invertedYAxisSqd * DotProduct(d, targetQuadYAxis);
 
-            f32 texelPosX = 1.0f + (u*(f32)(image.size.width));
-            f32 texelPosY = 1.0f + (v*(f32)(image.size.height)); 
+            f32 texelPos_x = 1.0f + (u*(f32)(image.size.width));
+            f32 texelPos_y = 1.0f + (v*(f32)(image.size.height)); 
 
-            BGZ_ASSERT(texelPosX <= (f32)image.size.width, "Trying to fill in pixel outside current background image width boundry!");
-            BGZ_ASSERT(texelPosY <= (f32)image.size.height, "Trying to fill in pixel outside current background image height boundry!");
+            BGZ_ASSERT(texelPos_x <= (f32)image.size.width, "Trying to fill in pixel outside current background image width boundry!");
+            BGZ_ASSERT(texelPos_y <= (f32)image.size.height, "Trying to fill in pixel outside current background image height boundry!");
 
-            ui32* backgroundTexel = (ui32*)(((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32)));//size of pixel
+            ui32* backgroundTexel = (ui32*)(((ui8*)image.data) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32)));//size of pixel
 
             v4f imagePixel = UnPackPixelValues(*backgroundTexel, BGRA);
 
@@ -235,7 +235,9 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; screenX += 8)
         {            
-            __m256 texelPosX{}, texelPosY{};
+            __m256 one = _mm256_set1_ps(1.0f);
+
+            __m256 texelCoords_x{}, texelCoords_y{};
 
             __m256 pixelA_r{}, pixelA_g{}, pixelA_b{}, pixelA_a{};
             __m256 pixelB_r{}, pixelB_g{}, pixelB_b{}, pixelB_a{}; 
@@ -244,30 +246,47 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
             __m256 backgroundColors_r{}, backgroundColors_g{}, backgroundColors_b{}, backgroundColors_a{};
 
-            Array<b, 8> shouldColorPixel{};
+            {//Unpack individual color values from current image texels and background texel
+                _m256 screenPixelCoords_x = _mm256_set_ps(screenX + 0, screenX + 1, screenX + 2, screenX + 3, screenX + 4, screenX + 5, screenX + 6, screenX + 7,};
+                _m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
+                _m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
+                _m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
 
-            //Unpack individual color values from current image texels and background texel
+                _m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x};
+                _m256 dYs = _mm256_sub_ps(screenPixelCoords_y, targetRectOrigin_y};
+
+                _m256 normalizedXAxis_x = _mm256_set1_ps(normalizedXAxis.x);
+                _m256 normalizedXAxis_y = _mm256_set1_ps(normalizedXAxis.y);
+                _m256 normalizedYAxis_x = _mm256_set1_ps(normalizedYAxis.x);
+                _m256 normalizedYAxis_y = _mm256_set1_ps(normalizedYAxis.y);
+
+                _m256 Us = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedXAxis_x), _mm256_mul_ps(dYs, normalizedXAxis_y));
+                _m256 Vs = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedYAxis_x), _mm256_mul_ps(dYs, normalizedYAxis_y));
+
+                _m256 imgWidth = _mm256_set1_ps((f32)imageWidth);
+                _m256 imgHeight = _mm256_set1_ps((f32)imageHeight);
+
+                //conditional/masking?
+                texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
+                texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
+
+            };
+
             for(i32 index{}; index < 8; ++index)
             {
-                v2f screenPixelCoord{screenX + index, screenY};
-                v2f d {screenPixelCoord - origin};
-
-                f32 u = (d.x*normalizedXAxis.x + d.y*normalizedXAxis.y);
-                f32 v = (d.x*normalizedYAxis.x + d.y*normalizedYAxis.y);
+                Array<b, 8> shouldColorPixel{};
 
                 shouldColorPixel[index] = (u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f);
 
                 if(shouldColorPixel[index])
                 {
                     //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                    texelPosX.m256_f32[index] = 1.0f + (u*(f32)(imageWidth));
-                    texelPosY.m256_f32[index] = 1.0f + (v*(f32)(imageHeight)); 
                     
-                    BGZ_ASSERT((texelPosX.m256_f32[index] >= 0) && (texelPosX.m256_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
-                    BGZ_ASSERT((texelPosY.m256_f32[index] >= 0) && (texelPosY.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
+                    BGZ_ASSERT((texelCoords_x.m256_f32[index] >= 0) && (texelCoords_x.m256_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
+                    BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
 
                     //Gather 4 texels (in a square pattern) from certain texel Ptr
-                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY.m256_f32[index]*image.pitch) + ((ui32)texelPosX.m256_f32[index]*sizeof(ui32));//size of pixel
+                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelCoords_y.m256_f32[index]*image.pitch) + ((ui32)texelCoords_x.m256_f32[index]*sizeof(ui32));//size of pixel
                     ui32 sampleTexelA = *(ui32*)(texelPtr);
                     ui32 sampleTexelB = *(ui32*)(texelPtr + sizeof(ui32));
                     ui32 sampleTexelC = *(ui32*)(texelPtr + image.pitch);
@@ -307,10 +326,9 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             };
 
             __m256 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
-            __m256 one = _mm256_set1_ps(1.0f);
             {//Bilinear blend 
-                __m256 percentToLerpInX = _mm256_sub_ps(texelPosX, _mm256_floor_ps(texelPosX));
-                __m256 percentToLerpInY = _mm256_sub_ps(texelPosY, _mm256_floor_ps(texelPosY));
+                __m256 percentToLerpInX = _mm256_sub_ps(texelCoords_x, _mm256_floor_ps(texelCoords_x));
+                __m256 percentToLerpInY = _mm256_sub_ps(texelPos_y, _mm256_floor_ps(texelPos_y));
                 __m256 oneMinusXLerp = _mm256_sub_ps(one, percentToLerpInX);
                 __m256 oneMinusYLerp = _mm256_sub_ps(one, percentToLerpInY);
                 __m256 coefficient1 = _mm256_mul_ps(oneMinusYLerp, oneMinusXLerp);
@@ -475,16 +493,16 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
                 //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                f32 texelPosX = 1.0f + (u*(f32)(image.size.width - 3));
-                f32 texelPosY = 1.0f + (v*(f32)(image.size.height - 3)); 
+                f32 texelPos_x = 1.0f + (u*(f32)(image.size.width - 3));
+                f32 texelPos_y = 1.0f + (v*(f32)(image.size.height - 3)); 
 
                 f32 epsilon = 0.00001f;//TODO: Remove????
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
                 BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
-                BGZ_ASSERT((texelPosX >= 0) && (texelPosX <= (i32)image.size.width), "x coord is out of range!: ");
-                BGZ_ASSERT((texelPosY >= 0) && (texelPosY <= (i32)image.size.height), "x coord is out of range!");
+                BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (i32)image.size.width), "x coord is out of range!: ");
+                BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (i32)image.size.height), "x coord is out of range!");
 
-                ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
+                ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
 
                 v4ui32 texelSquare {}; 
                 texelSquare.x = *(ui32*)(texelPtr);
@@ -493,7 +511,7 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
                 texelSquare.w = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
 
                 //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
-                v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPosX - Floor(texelPosX)), (texelPosY - Floor(texelPosY)));
+                v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
 
                 //Linearly Blend with background - Assuming Pre-multiplied alpha
                 v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
@@ -503,12 +521,12 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
                 b shadePixel{false};
                 if(normalMap.data)
                 {
-                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPosY*image.pitch) + ((ui32)texelPosX*sizeof(ui32));//size of pixel
+                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
 
                     //Grab 4 normals (in a square pattern) to blend
                     v4ui32 normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
 
-                    v4f blendedNormal = BiLinearLerp(normalSquare, (texelPosX - Floor(texelPosX)), (texelPosY - Floor(texelPosY)));
+                    v4f blendedNormal = BiLinearLerp(normalSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
 
                     //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
                     f32 inv255 = 1.0f / 255.0f;
