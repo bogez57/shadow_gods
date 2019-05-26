@@ -236,6 +236,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         for(f32 screenX = xMin; screenX < xMax; screenX += 8)
         {            
             __m256 one = _mm256_set1_ps(1.0f);
+            __m256 zero = _mm256_set1_ps(0.0f);
 
             __m256 texelCoords_x{}, texelCoords_y{};
 
@@ -246,42 +247,39 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
             __m256 backgroundColors_r{}, backgroundColors_g{}, backgroundColors_b{}, backgroundColors_a{};
 
-            {//Unpack individual color values from current image texels and background texel
-                _m256 screenPixelCoords_x = _mm256_set_ps(screenX + 0, screenX + 1, screenX + 2, screenX + 3, screenX + 4, screenX + 5, screenX + 6, screenX + 7,};
-                _m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
-                _m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
-                _m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
+            //Unpack individual color values from current image texels and background texel
+                __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 0, screenX + 1, screenX + 2, screenX + 3, screenX + 4, screenX + 5, screenX + 6, screenX + 7);
+                __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
+                __m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
+                __m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
 
-                _m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x};
-                _m256 dYs = _mm256_sub_ps(screenPixelCoords_y, targetRectOrigin_y};
+                __m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x);
+                __m256 dYs = _mm256_sub_ps(screenPixelCoords_y, targetRectOrigin_y);
 
-                _m256 normalizedXAxis_x = _mm256_set1_ps(normalizedXAxis.x);
-                _m256 normalizedXAxis_y = _mm256_set1_ps(normalizedXAxis.y);
-                _m256 normalizedYAxis_x = _mm256_set1_ps(normalizedYAxis.x);
-                _m256 normalizedYAxis_y = _mm256_set1_ps(normalizedYAxis.y);
+                __m256 normalizedXAxis_x = _mm256_set1_ps(normalizedXAxis.x);
+                __m256 normalizedXAxis_y = _mm256_set1_ps(normalizedXAxis.y);
+                __m256 normalizedYAxis_x = _mm256_set1_ps(normalizedYAxis.x);
+                __m256 normalizedYAxis_y = _mm256_set1_ps(normalizedYAxis.y);
 
-                _m256 Us = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedXAxis_x), _mm256_mul_ps(dYs, normalizedXAxis_y));
-                _m256 Vs = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedYAxis_x), _mm256_mul_ps(dYs, normalizedYAxis_y));
+                //Gather normalized coordinates (uv's) in order to find the correct texel position below
+                __m256 Us = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedXAxis_x), _mm256_mul_ps(dYs, normalizedXAxis_y));
+                __m256 Vs = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedYAxis_x), _mm256_mul_ps(dYs, normalizedYAxis_y));
 
-                _m256 imgWidth = _mm256_set1_ps((f32)imageWidth);
-                _m256 imgHeight = _mm256_set1_ps((f32)imageHeight);
+                __m256 imgWidth = _mm256_set1_ps((f32)imageWidth);
+                __m256 imgHeight = _mm256_set1_ps((f32)imageHeight);
 
-                //conditional/masking?
+                //Replaces conditional
+                __m256i backGroundPixelValues = _mm256_load_si256((__m256i*)destPixel);
+                __m256i writeMask = _mm256_castps_si256(_mm256_and_ps(_mm256_and_ps(_mm256_cmp_ps(Us, zero, _CMP_GE_OQ),
+                                                                                    _mm256_cmp_ps(Us, one, _CMP_LE_OQ)),
+                                                                      _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
+                                                                                    _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
+
                 texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
                 texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
 
-            };
-
             for(i32 index{}; index < 8; ++index)
             {
-                Array<b, 8> shouldColorPixel{};
-
-                shouldColorPixel[index] = (u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f);
-
-                if(shouldColorPixel[index])
-                {
-                    //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                    
                     BGZ_ASSERT((texelCoords_x.m256_f32[index] >= 0) && (texelCoords_x.m256_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
                     BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
 
@@ -322,13 +320,12 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                     backgroundColors_g.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 1);
                     backgroundColors_r.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 2);
                     backgroundColors_a.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 3);
-                };
             };
 
             __m256 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
             {//Bilinear blend 
                 __m256 percentToLerpInX = _mm256_sub_ps(texelCoords_x, _mm256_floor_ps(texelCoords_x));
-                __m256 percentToLerpInY = _mm256_sub_ps(texelPos_y, _mm256_floor_ps(texelPos_y));
+                __m256 percentToLerpInY = _mm256_sub_ps(texelCoords_y, _mm256_floor_ps(texelCoords_y));
                 __m256 oneMinusXLerp = _mm256_sub_ps(one, percentToLerpInX);
                 __m256 oneMinusYLerp = _mm256_sub_ps(one, percentToLerpInY);
                 __m256 coefficient1 = _mm256_mul_ps(oneMinusYLerp, oneMinusXLerp);
@@ -370,7 +367,11 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
 
                 __m256i out = _mm256_or_si256(_mm256_or_si256(_mm256_or_si256(_mm256_slli_epi32(finalBlendedColori_r, 16), _mm256_slli_epi32(finalBlendedColori_g, 8)), finalBlendedColori_b), _mm256_slli_epi32(finalBlendedColori_a, 24));
-                *(__m256i*)destPixel = out;
+
+                __m256i maskedOut = _mm256_or_si256(_mm256_and_si256(writeMask, out),
+                                                    _mm256_andnot_si256(writeMask, backGroundPixelValues));
+
+                *(__m256i*)destPixel = maskedOut;
             };
 
 #elif __AVX__
