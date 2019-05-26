@@ -248,7 +248,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             __m256 backgroundColors_r{}, backgroundColors_g{}, backgroundColors_b{}, backgroundColors_a{};
 
             //Unpack individual color values from current image texels and background texel
-                __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 0, screenX + 1, screenX + 2, screenX + 3, screenX + 4, screenX + 5, screenX + 6, screenX + 7);
+                __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 7, screenX + 6, screenX + 5, screenX + 4, screenX + 3, screenX + 2, screenX + 1, screenX + 0);
                 __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
                 __m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
                 __m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
@@ -274,6 +274,10 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                                                                                     _mm256_cmp_ps(Us, one, _CMP_LE_OQ)),
                                                                       _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
                                                                                     _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
+
+                //Clamp UVs to prevent accessing memory that is invalid
+                Us = _mm256_min_ps(_mm256_max_ps(Us, zero), one);
+                Vs = _mm256_min_ps(_mm256_max_ps(Vs, zero), one);
 
                 texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
                 texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
