@@ -175,13 +175,13 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
     auto BiLinearLerp = [](v4ui32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
     {
         v4f newBlendedValue {};
-        v4f pixelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
-        v4f pixelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
-        v4f pixelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
-        v4f pixelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
+        v4f texelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
+        v4f texelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
+        v4f texelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
+        v4f texelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
 
-        v4f ABLerpColor = Lerp(pixelA, pixelB, percentToLerpInX);
-        v4f CDLerpColor = Lerp(pixelC, pixelD, percentToLerpInX);
+        v4f ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
+        v4f CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
         newBlendedValue = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
 
         return newBlendedValue;
@@ -285,37 +285,33 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 sampleTexelDs.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
             };
 
-            //Unpack individual color values from pixels found in texel squares
-            __m256i* ptrToSampleTexelAs = &sampleTexelAs;
-            __m256 pixelA_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 28), (f32)*((ui8*)ptrToSampleTexelAs + 24), (f32)*((ui8*)ptrToSampleTexelAs + 20), (f32)*((ui8*)ptrToSampleTexelAs + 16), (f32)*((ui8*)ptrToSampleTexelAs + 12), (f32)*((ui8*)ptrToSampleTexelAs + 8), (f32)*((ui8*)ptrToSampleTexelAs + 4), (f32)*((ui8*)ptrToSampleTexelAs + 0));
-            __m256 pixelA_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 29), (f32)*((ui8*)ptrToSampleTexelAs + 25), (f32)*((ui8*)ptrToSampleTexelAs + 21), (f32)*((ui8*)ptrToSampleTexelAs + 17), (f32)*((ui8*)ptrToSampleTexelAs + 13), (f32)*((ui8*)ptrToSampleTexelAs + 9), (f32)*((ui8*)ptrToSampleTexelAs + 5), (f32)*((ui8*)ptrToSampleTexelAs + 1));
-            __m256 pixelA_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 30), (f32)*((ui8*)ptrToSampleTexelAs + 26), (f32)*((ui8*)ptrToSampleTexelAs + 22), (f32)*((ui8*)ptrToSampleTexelAs + 18), (f32)*((ui8*)ptrToSampleTexelAs + 14), (f32)*((ui8*)ptrToSampleTexelAs + 10), (f32)*((ui8*)ptrToSampleTexelAs + 6), (f32)*((ui8*)ptrToSampleTexelAs + 2));
-            __m256 pixelA_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 31), (f32)*((ui8*)ptrToSampleTexelAs + 27), (f32)*((ui8*)ptrToSampleTexelAs + 23), (f32)*((ui8*)ptrToSampleTexelAs + 19), (f32)*((ui8*)ptrToSampleTexelAs + 15), (f32)*((ui8*)ptrToSampleTexelAs + 11), (f32)*((ui8*)ptrToSampleTexelAs + 7), (f32)*((ui8*)ptrToSampleTexelAs + 3));
+            __m256i maskFF = _mm256_set1_epi32(0xFF);
 
-            __m256i* ptrToSampleTexelBs = &sampleTexelBs;
-            __m256 pixelB_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 28), (f32)*((ui8*)ptrToSampleTexelBs + 24), (f32)*((ui8*)ptrToSampleTexelBs + 20), (f32)*((ui8*)ptrToSampleTexelBs + 16), (f32)*((ui8*)ptrToSampleTexelBs + 12), (f32)*((ui8*)ptrToSampleTexelBs + 8), (f32)*((ui8*)ptrToSampleTexelBs + 4), (f32)*((ui8*)ptrToSampleTexelBs + 0));
-            __m256 pixelB_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 29), (f32)*((ui8*)ptrToSampleTexelBs + 25), (f32)*((ui8*)ptrToSampleTexelBs + 21), (f32)*((ui8*)ptrToSampleTexelBs + 17), (f32)*((ui8*)ptrToSampleTexelBs + 13), (f32)*((ui8*)ptrToSampleTexelBs + 9), (f32)*((ui8*)ptrToSampleTexelBs + 5), (f32)*((ui8*)ptrToSampleTexelBs + 1));
-            __m256 pixelB_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 30), (f32)*((ui8*)ptrToSampleTexelBs + 26), (f32)*((ui8*)ptrToSampleTexelBs + 22), (f32)*((ui8*)ptrToSampleTexelBs + 18), (f32)*((ui8*)ptrToSampleTexelBs + 14), (f32)*((ui8*)ptrToSampleTexelBs + 10), (f32)*((ui8*)ptrToSampleTexelBs + 6), (f32)*((ui8*)ptrToSampleTexelBs + 2));
-            __m256 pixelB_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 31), (f32)*((ui8*)ptrToSampleTexelBs + 27), (f32)*((ui8*)ptrToSampleTexelBs + 23), (f32)*((ui8*)ptrToSampleTexelBs + 19), (f32)*((ui8*)ptrToSampleTexelBs + 15), (f32)*((ui8*)ptrToSampleTexelBs + 11), (f32)*((ui8*)ptrToSampleTexelBs + 7), (f32)*((ui8*)ptrToSampleTexelBs + 3));
+            __m256 texelA_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelAs, maskFF));
+            __m256 texelA_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 8), maskFF));
+            __m256 texelA_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 16), maskFF));
+            __m256 texelA_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 24), maskFF));
 
-            __m256i* ptrToSampleTexelCs = &sampleTexelCs;
-            __m256 pixelC_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 28), (f32)*((ui8*)ptrToSampleTexelCs + 24), (f32)*((ui8*)ptrToSampleTexelCs + 20), (f32)*((ui8*)ptrToSampleTexelCs + 16), (f32)*((ui8*)ptrToSampleTexelCs + 12), (f32)*((ui8*)ptrToSampleTexelCs + 8), (f32)*((ui8*)ptrToSampleTexelCs + 4), (f32)*((ui8*)ptrToSampleTexelCs + 0));
-            __m256 pixelC_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 29), (f32)*((ui8*)ptrToSampleTexelCs + 25), (f32)*((ui8*)ptrToSampleTexelCs + 21), (f32)*((ui8*)ptrToSampleTexelCs + 17), (f32)*((ui8*)ptrToSampleTexelCs + 13), (f32)*((ui8*)ptrToSampleTexelCs + 9), (f32)*((ui8*)ptrToSampleTexelCs + 5), (f32)*((ui8*)ptrToSampleTexelCs + 1));
-            __m256 pixelC_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 30), (f32)*((ui8*)ptrToSampleTexelCs + 26), (f32)*((ui8*)ptrToSampleTexelCs + 22), (f32)*((ui8*)ptrToSampleTexelCs + 18), (f32)*((ui8*)ptrToSampleTexelCs + 14), (f32)*((ui8*)ptrToSampleTexelCs + 10), (f32)*((ui8*)ptrToSampleTexelCs + 6), (f32)*((ui8*)ptrToSampleTexelCs + 2));
-            __m256 pixelC_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 31), (f32)*((ui8*)ptrToSampleTexelCs + 27), (f32)*((ui8*)ptrToSampleTexelCs + 23), (f32)*((ui8*)ptrToSampleTexelCs + 19), (f32)*((ui8*)ptrToSampleTexelCs + 15), (f32)*((ui8*)ptrToSampleTexelCs + 11), (f32)*((ui8*)ptrToSampleTexelCs + 7), (f32)*((ui8*)ptrToSampleTexelCs + 3));
+            __m256 texelB_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelBs, maskFF));
+            __m256 texelB_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 8), maskFF));
+            __m256 texelB_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 16), maskFF));
+            __m256 texelB_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 24), maskFF));
 
-            __m256i* ptrToSampleTexelDs = &sampleTexelDs;
-            __m256 pixelD_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 28), (f32)*((ui8*)ptrToSampleTexelDs + 24), (f32)*((ui8*)ptrToSampleTexelDs + 20), (f32)*((ui8*)ptrToSampleTexelDs + 16), (f32)*((ui8*)ptrToSampleTexelDs + 12), (f32)*((ui8*)ptrToSampleTexelDs + 8), (f32)*((ui8*)ptrToSampleTexelDs + 4), (f32)*((ui8*)ptrToSampleTexelDs + 0));
-            __m256 pixelD_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 29), (f32)*((ui8*)ptrToSampleTexelDs + 25), (f32)*((ui8*)ptrToSampleTexelDs + 21), (f32)*((ui8*)ptrToSampleTexelDs + 17), (f32)*((ui8*)ptrToSampleTexelDs + 13), (f32)*((ui8*)ptrToSampleTexelDs + 9), (f32)*((ui8*)ptrToSampleTexelDs + 5), (f32)*((ui8*)ptrToSampleTexelDs + 1));
-            __m256 pixelD_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 30), (f32)*((ui8*)ptrToSampleTexelDs + 26), (f32)*((ui8*)ptrToSampleTexelDs + 22), (f32)*((ui8*)ptrToSampleTexelDs + 18), (f32)*((ui8*)ptrToSampleTexelDs + 14), (f32)*((ui8*)ptrToSampleTexelDs + 10), (f32)*((ui8*)ptrToSampleTexelDs + 6), (f32)*((ui8*)ptrToSampleTexelDs + 2));
-            __m256 pixelD_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 31), (f32)*((ui8*)ptrToSampleTexelDs + 27), (f32)*((ui8*)ptrToSampleTexelDs + 23), (f32)*((ui8*)ptrToSampleTexelDs + 19), (f32)*((ui8*)ptrToSampleTexelDs + 15), (f32)*((ui8*)ptrToSampleTexelDs + 11), (f32)*((ui8*)ptrToSampleTexelDs + 7), (f32)*((ui8*)ptrToSampleTexelDs + 3));
+            __m256 texelC_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelCs, maskFF));
+            __m256 texelC_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 8), maskFF));
+            __m256 texelC_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 16), maskFF));
+            __m256 texelC_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 24), maskFF));
+
+            __m256 texelD_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelDs, maskFF));
+            __m256 texelD_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 8), maskFF));
+            __m256 texelD_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 16), maskFF));
+            __m256 texelD_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 24), maskFF));
 
             __m256i backGroundPixels = _mm256_load_si256((__m256i*)destPixel);
-            __m256i* ptrToBackgroundPixels = &backGroundPixels; 
-            __m256 backgroundColors_b = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 28), (f32)*((ui8*)ptrToBackgroundPixels + 24), (f32)*((ui8*)ptrToBackgroundPixels + 20), (f32)*((ui8*)ptrToBackgroundPixels + 16), (f32)*((ui8*)ptrToBackgroundPixels + 12), (f32)*((ui8*)ptrToBackgroundPixels + 8), (f32)*((ui8*)ptrToBackgroundPixels + 4), (f32)*((ui8*)ptrToBackgroundPixels + 0));
-            __m256 backgroundColors_g = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 29), (f32)*((ui8*)ptrToBackgroundPixels + 25), (f32)*((ui8*)ptrToBackgroundPixels + 21), (f32)*((ui8*)ptrToBackgroundPixels + 17), (f32)*((ui8*)ptrToBackgroundPixels + 13), (f32)*((ui8*)ptrToBackgroundPixels + 9), (f32)*((ui8*)ptrToBackgroundPixels + 5), (f32)*((ui8*)ptrToBackgroundPixels + 1));
-            __m256 backgroundColors_r = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 30), (f32)*((ui8*)ptrToBackgroundPixels + 26), (f32)*((ui8*)ptrToBackgroundPixels + 22), (f32)*((ui8*)ptrToBackgroundPixels + 18), (f32)*((ui8*)ptrToBackgroundPixels + 14), (f32)*((ui8*)ptrToBackgroundPixels + 10), (f32)*((ui8*)ptrToBackgroundPixels + 6), (f32)*((ui8*)ptrToBackgroundPixels + 2));
-            __m256 backgroundColors_a = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 31), (f32)*((ui8*)ptrToBackgroundPixels + 27), (f32)*((ui8*)ptrToBackgroundPixels + 23), (f32)*((ui8*)ptrToBackgroundPixels + 19), (f32)*((ui8*)ptrToBackgroundPixels + 15), (f32)*((ui8*)ptrToBackgroundPixels + 11), (f32)*((ui8*)ptrToBackgroundPixels + 7), (f32)*((ui8*)ptrToBackgroundPixels + 3));
+            __m256 backgroundColors_b = _mm256_cvtepi32_ps(_mm256_and_si256(backGroundPixels , maskFF)); 
+            __m256 backgroundColors_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 8), maskFF));
+            __m256 backgroundColors_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 16), maskFF));
+            __m256 backgroundColors_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 24), maskFF));
 
             __m256 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
             {//Bilinear blend 
@@ -329,17 +325,17 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 __m256 coefficient4 = _mm256_mul_ps(percentToLerpInY, percentToLerpInX);
 
                 newBlendedTexel_r = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_r), _mm256_mul_ps(coefficient2, pixelB_r)), 
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_r), _mm256_mul_ps(coefficient4, pixelD_r))); 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_r), _mm256_mul_ps(coefficient2, texelB_r)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_r), _mm256_mul_ps(coefficient4, texelD_r))); 
                 newBlendedTexel_g = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_g), _mm256_mul_ps(coefficient2, pixelB_g)), 
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_g), _mm256_mul_ps(coefficient4, pixelD_g))); 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_g), _mm256_mul_ps(coefficient2, texelB_g)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_g), _mm256_mul_ps(coefficient4, texelD_g))); 
                 newBlendedTexel_b = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_b), _mm256_mul_ps(coefficient2, pixelB_b)), 
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_b), _mm256_mul_ps(coefficient4, pixelD_b))); 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_b), _mm256_mul_ps(coefficient2, texelB_b)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_b), _mm256_mul_ps(coefficient4, texelD_b))); 
                 newBlendedTexel_a = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, pixelA_a), _mm256_mul_ps(coefficient2, pixelB_a)), 
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, pixelC_a), _mm256_mul_ps(coefficient4, pixelD_a))); 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_a), _mm256_mul_ps(coefficient2, texelB_a)), 
+                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_a), _mm256_mul_ps(coefficient4, texelD_a))); 
             };
 
             __m256 finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
@@ -456,13 +452,13 @@ DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap
     auto BiLinearLerp = [](v4ui32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
     {
         v4f newBlendedValue {};
-        v4f pixelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
-        v4f pixelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
-        v4f pixelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
-        v4f pixelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
+        v4f texelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
+        v4f texelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
+        v4f texelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
+        v4f texelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
 
-        v4f ABLerpColor = Lerp(pixelA, pixelB, percentToLerpInX);
-        v4f CDLerpColor = Lerp(pixelC, pixelD, percentToLerpInX);
+        v4f ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
+        v4f CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
         newBlendedValue = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
 
         return newBlendedValue;
