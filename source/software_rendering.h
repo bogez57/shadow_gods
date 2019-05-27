@@ -280,49 +280,51 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
             __m256i backGroundPixelValues = _mm256_load_si256((__m256i*)destPixel);
 
+            __m256i sampleTexelA{}, sampleTexelB{}, sampleTexelC{}, sampleTexelD{},
             for(i32 index{}; index < 8; ++index)
             {
-                    BGZ_ASSERT((texelCoords_x.m256_f32[index] >= 0) && (texelCoords_x.m256_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
-                    BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
+                BGZ_ASSERT((texelCoords_x.m256_f32[index] >= 0) && (texelCoords_x.m256_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
+                BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
 
-                    //Gather 4 texels (in a square pattern) from certain texel Ptr
-                    ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelCoords_y.m256_f32[index]*image.pitch) + ((ui32)texelCoords_x.m256_f32[index]*sizeof(ui32));//size of pixel
-                    ui32 sampleTexelA = *(ui32*)(texelPtr);
-                    ui32 sampleTexelB = *(ui32*)(texelPtr + sizeof(ui32));
-                    ui32 sampleTexelC = *(ui32*)(texelPtr + image.pitch);
-                    ui32 sampleTexelD = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
-
-                    //Unpack individual color values from pixels found in texel square
-                    ui32* pixel1 = &sampleTexelA;
-                    pixelA_b.m256_f32[index] = (f32)*((ui8*)pixel1 + 0);
-                    pixelA_g.m256_f32[index] = (f32)*((ui8*)pixel1 + 1);
-                    pixelA_r.m256_f32[index] = (f32)*((ui8*)pixel1 + 2);
-                    pixelA_a.m256_f32[index] = (f32)*((ui8*)pixel1 + 3);
-
-                    ui32* pixel2 = &sampleTexelB;
-                    pixelB_b.m256_f32[index] = (f32)*((ui8*)pixel2 + 0);
-                    pixelB_g.m256_f32[index] = (f32)*((ui8*)pixel2 + 1);
-                    pixelB_r.m256_f32[index] = (f32)*((ui8*)pixel2 + 2);
-                    pixelB_a.m256_f32[index] = (f32)*((ui8*)pixel2 + 3);
-
-                    ui32* pixel3 = &sampleTexelC;
-                    pixelC_b.m256_f32[index] = (f32)*((ui8*)pixel3 + 0);
-                    pixelC_g.m256_f32[index] = (f32)*((ui8*)pixel3 + 1);
-                    pixelC_r.m256_f32[index] = (f32)*((ui8*)pixel3 + 2);
-                    pixelC_a.m256_f32[index] = (f32)*((ui8*)pixel3 + 3);
-
-                    ui32* pixel4 = &sampleTexelD;
-                    pixelD_b.m256_f32[index] = (f32)*((ui8*)pixel4 + 0);
-                    pixelD_g.m256_f32[index] = (f32)*((ui8*)pixel4 + 1);
-                    pixelD_r.m256_f32[index] = (f32)*((ui8*)pixel4 + 2);
-                    pixelD_a.m256_f32[index] = (f32)*((ui8*)pixel4 + 3);
-
-                    //Unpack individual color values from dest pixel
-                    backgroundColors_b.m256_f32[index] = (f32)*((ui8*)(destPixel + index) + 0);
-                    backgroundColors_g.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 1);
-                    backgroundColors_r.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 2);
-                    backgroundColors_a.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 3);
+                //Gather 4 texels (in a square pattern) from certain texel Ptr
+                ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelCoords_y.m256_f32[index]*image.pitch) + ((ui32)texelCoords_x.m256_f32[index]*sizeof(ui32));//size of pixel
+                sampleTexelA.m256i_u32[index] = *(ui32*)(texelPtr);
+                sampleTexelB.m256i_u32[index] = *(ui32*)(texelPtr + sizeof(ui32));
+                sampleTexelC.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch);
+                sampleTexelD.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
             };
+
+            //Unpack individual color values from pixels found in texel square
+            ui32* pixel1 = &sampleTexelA;
+            pixelA_b = _mm256_set_ps((f32)*((ui8*)pixel1 + 0), 
+            pixelA_b.m256_f32[index] = (f32)*((ui8*)pixel1 + 0);
+            pixelA_g.m256_f32[index] = (f32)*((ui8*)pixel1 + 1);
+            pixelA_r.m256_f32[index] = (f32)*((ui8*)pixel1 + 2);
+            pixelA_a.m256_f32[index] = (f32)*((ui8*)pixel1 + 3);
+
+            ui32* pixel2 = &sampleTexelB;
+            pixelB_b.m256_f32[index] = (f32)*((ui8*)pixel2 + 0);
+            pixelB_g.m256_f32[index] = (f32)*((ui8*)pixel2 + 1);
+            pixelB_r.m256_f32[index] = (f32)*((ui8*)pixel2 + 2);
+            pixelB_a.m256_f32[index] = (f32)*((ui8*)pixel2 + 3);
+
+            ui32* pixel3 = &sampleTexelC;
+            pixelC_b.m256_f32[index] = (f32)*((ui8*)pixel3 + 0);
+            pixelC_g.m256_f32[index] = (f32)*((ui8*)pixel3 + 1);
+            pixelC_r.m256_f32[index] = (f32)*((ui8*)pixel3 + 2);
+            pixelC_a.m256_f32[index] = (f32)*((ui8*)pixel3 + 3);
+
+            ui32* pixel4 = &sampleTexelD;
+            pixelD_b.m256_f32[index] = (f32)*((ui8*)pixel4 + 0);
+            pixelD_g.m256_f32[index] = (f32)*((ui8*)pixel4 + 1);
+            pixelD_r.m256_f32[index] = (f32)*((ui8*)pixel4 + 2);
+            pixelD_a.m256_f32[index] = (f32)*((ui8*)pixel4 + 3);
+
+            //Unpack individual color values from dest pixel
+            backgroundColors_b.m256_f32[index] = (f32)*((ui8*)(destPixel + index) + 0);
+            backgroundColors_g.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 1);
+            backgroundColors_r.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 2);
+            backgroundColors_a.m256_f32[index] = (f32)*((ui8*)(destPixel + index)+ 3);
 
             __m256 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
             {//Bilinear blend 
