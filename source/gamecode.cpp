@@ -286,12 +286,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        player->world.rotation += 1.0f;
+        player->world.rotation += .01f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
     {
-        stage->camera.zoomFactor += .01f;
+        stage->camera.zoomFactor += .001f;
     };
 
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.viewCenter, v2f{stage->camera.viewWidth, stage->camera.viewHeight}, stage->camera.dilatePoint, stage->camera.zoomFactor);
