@@ -278,7 +278,6 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 //Clamp UVs to prevent accessing memory that is invalid
                 Us = _mm256_min_ps(_mm256_max_ps(Us, zero), one);
                 Vs = _mm256_min_ps(_mm256_max_ps(Vs, zero), one);
-
                 texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
                 texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
 
@@ -370,8 +369,11 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
                 __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
 
+                //Move pixels (through bitwise operations and shifting) from RRRR GGGG etc. format to expected BGRA format
                 __m256i out = _mm256_or_si256(_mm256_or_si256(_mm256_or_si256(_mm256_slli_epi32(finalBlendedColori_r, 16), _mm256_slli_epi32(finalBlendedColori_g, 8)), finalBlendedColori_b), _mm256_slli_epi32(finalBlendedColori_a, 24));
 
+                //Use write mask in order to correctly fill 8 wide pixel lane (properly writing either the texel color or 
+                //the background color)
                 __m256i maskedOut = _mm256_or_si256(_mm256_and_si256(writeMask, out),
                                                     _mm256_andnot_si256(writeMask, backGroundPixelValues));
 
@@ -384,6 +386,13 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
             __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
 
+            __m256i backgroundColorsi_r = _mm256_cvttps_epi32(backgroundColors_r);
+            __m256i backgroundColorsi_g = _mm256_cvttps_epi32(backgroundColors_g);
+            __m256i backgroundColorsi_b = _mm256_cvttps_epi32(backgroundColors_b);
+            __m256i backgroundColorsi_a = _mm256_cvttps_epi32(backgroundColors_a);
+
+            //Since AVX doesn't have certain bitwise operations I need to extract 128 bit values from
+            //256 bit ones and then use the available bitwise operations on those 
             __m128i pixelSet1_r = _mm256_extractf128_si256(finalBlendedColori_r, 0);
             __m128i pixelSet2_r = _mm256_extractf128_si256(finalBlendedColori_r, 1);
             __m128i pixelSet1_g = _mm256_extractf128_si256(finalBlendedColori_g, 0);
@@ -392,14 +401,35 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             __m128i pixelSet2_b = _mm256_extractf128_si256(finalBlendedColori_b, 1);
             __m128i pixelSet1_a = _mm256_extractf128_si256(finalBlendedColori_a, 0);
             __m128i pixelSet2_a = _mm256_extractf128_si256(finalBlendedColori_a, 1);
+            __m128i backgroundPixelSet1_r = _mm256_extractf128_si256(backgroundColorsi_r, 0);
+            __m128i backgroundPixelSet2_r = _mm256_extractf128_si256(backgroundColorsi_r, 1);
+            __m128i backgroundPixelSet1_g = _mm256_extractf128_si256(backgroundColorsi_g, 0);
+            __m128i backgroundPixelSet2_g = _mm256_extractf128_si256(backgroundColorsi_g, 1);
+            __m128i backgroundPixelSet1_b = _mm256_extractf128_si256(backgroundColorsi_b, 0);
+            __m128i backgroundPixelSet2_b = _mm256_extractf128_si256(backgroundColorsi_b, 1);
+            __m128i backgroundPixelSet1_a = _mm256_extractf128_si256(backgroundColorsi_a, 0);
+            __m128i backgroundPixelSet2_a = _mm256_extractf128_si256(backgroundColorsi_a, 1);
+            __m128i writeMaskSet1 = _mm256_extractf128_si256(writeMask, 0);
+            __m128i writeMaskSet2 = _mm256_extractf128_si256(writeMask, 1);
 
+            //Move pixels (through bitwise operations and shifting) from RRRR GGGG ... format to expected BGRA format
             __m128i pixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet1_r, 16), _mm_slli_epi32(pixelSet1_g, 8)), pixelSet1_b), _mm_slli_epi32(pixelSet1_a, 24));
             __m128i pixels5Through8 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet2_r, 16), _mm_slli_epi32(pixelSet2_g, 8)), pixelSet2_b), _mm_slli_epi32(pixelSet2_a, 24));
+            __m128i backgroundPixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(backgroundPixelSet1_r, 16), _mm_slli_epi32(backgroundPixelSet1_g, 8)), backgroundPixelSet1_b), _mm_slli_epi32(backgroundPixelSet1_a, 24));
+            __m128i backgroundPixels5Through8 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(backgroundPixelSet2_r, 16), _mm_slli_epi32(backgroundPixelSet2_g, 8)), backgroundPixelSet2_b), _mm_slli_epi32(backgroundPixelSet2_a, 24));
 
-            __m256i out = _mm256_castsi128_si256(pixels1Through4);
-            out = _mm256_insertf128_si256(out, pixels5Through8, 1);
+            //Use write mask in order to correctly fill 8 wide pixel lane (properly writing either the texel color or 
+            //the background color)
+            __m128i maskedOutSet1 = _mm_or_si128(_mm_and_si128(writeMaskSet1, pixels1Through4),
+                                                _mm_andnot_si128(writeMaskSet1, backgroundPixels1Through4));
+            __m128i maskedOutSet2 = _mm_or_si128(_mm_and_si128(writeMaskSet2, pixels5Through8),
+                                                _mm_andnot_si128(writeMaskSet2, backgroundPixels5Through8));
 
-            *(__m256i*)destPixel = out;
+            //Pack 128 bit pixel values back into 256 bit values to write out
+            __m256i maskedOut = _mm256_castsi128_si256(maskedOutSet1);
+            maskedOut = _mm256_insertf128_si256(maskedOut, maskedOutSet2, 1);
+
+            *(__m256i*)destPixel = maskedOut;
 
 #endif
 
