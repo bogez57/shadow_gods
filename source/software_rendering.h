@@ -235,6 +235,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; screenX += 8)
         {            
+            //Initial setup variables for SIMD code
             __m256 one = _mm256_set1_ps(1.0f);
             __m256 zero = _mm256_set1_ps(0.0f);
             __m256 imgWidth = _mm256_set1_ps((f32)imageWidth);
@@ -243,14 +244,11 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             __m256 normalizedXAxis_y = _mm256_set1_ps(normalizedXAxis.y);
             __m256 normalizedYAxis_x = _mm256_set1_ps(normalizedYAxis.x);
             __m256 normalizedYAxis_y = _mm256_set1_ps(normalizedYAxis.y);
-            
-            __m256 texelCoords_x{}, texelCoords_y{};
-
-            //Unpack individual color values from current image texels and background texel
-            __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 7, screenX + 6, screenX + 5, screenX + 4, screenX + 3, screenX + 2, screenX + 1, screenX + 0);
-            __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
             __m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
             __m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
+
+            __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 7, screenX + 6, screenX + 5, screenX + 4, screenX + 3, screenX + 2, screenX + 1, screenX + 0);
+            __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
 
             //Gather normalized coordinates (uv's) in order to find the correct texel position below
             __m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x);
@@ -265,11 +263,12 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                                                                   _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
                                                                                 _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
 
-            //Clamp UVs to prevent accessing memory that is invalid
+            //Clamp UVs to prevent accessing memory that is invalid 
             Us = _mm256_min_ps(_mm256_max_ps(Us, zero), one);
             Vs = _mm256_min_ps(_mm256_max_ps(Vs, zero), one);
-            texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
-            texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
+
+            __m256 texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
+            __m256 texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
 
             __m256i sampleTexelAs{}, sampleTexelBs{}, sampleTexelCs{}, sampleTexelDs{};
             for(i32 index{}; index < 8; ++index)
@@ -285,73 +284,63 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 sampleTexelDs.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
             };
 
+            //Unpack 4 sample texels to prepare for bilinear blend
             __m256i maskFF = _mm256_set1_epi32(0xFF);
-
             __m256 texelA_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelAs, maskFF));
             __m256 texelA_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 8), maskFF));
             __m256 texelA_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 16), maskFF));
             __m256 texelA_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 24), maskFF));
-
             __m256 texelB_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelBs, maskFF));
             __m256 texelB_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 8), maskFF));
             __m256 texelB_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 16), maskFF));
             __m256 texelB_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 24), maskFF));
-
             __m256 texelC_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelCs, maskFF));
             __m256 texelC_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 8), maskFF));
             __m256 texelC_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 16), maskFF));
             __m256 texelC_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 24), maskFF));
-
             __m256 texelD_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelDs, maskFF));
             __m256 texelD_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 8), maskFF));
             __m256 texelD_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 16), maskFF));
             __m256 texelD_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 24), maskFF));
-
             __m256i backGroundPixels = _mm256_load_si256((__m256i*)destPixel);
             __m256 backgroundColors_b = _mm256_cvtepi32_ps(_mm256_and_si256(backGroundPixels , maskFF)); 
             __m256 backgroundColors_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 8), maskFF));
             __m256 backgroundColors_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 16), maskFF));
             __m256 backgroundColors_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 24), maskFF));
 
-            __m256 newBlendedTexel_r, newBlendedTexel_g, newBlendedTexel_b, newBlendedTexel_a;       
-            {//Bilinear blend 
-                __m256 percentToLerpInX = _mm256_sub_ps(texelCoords_x, _mm256_floor_ps(texelCoords_x));
-                __m256 percentToLerpInY = _mm256_sub_ps(texelCoords_y, _mm256_floor_ps(texelCoords_y));
-                __m256 oneMinusXLerp = _mm256_sub_ps(one, percentToLerpInX);
-                __m256 oneMinusYLerp = _mm256_sub_ps(one, percentToLerpInY);
-                __m256 coefficient1 = _mm256_mul_ps(oneMinusYLerp, oneMinusXLerp);
-                __m256 coefficient2 = _mm256_mul_ps(oneMinusYLerp, percentToLerpInX);
-                __m256 coefficient3 = _mm256_mul_ps(percentToLerpInY, oneMinusXLerp);
-                __m256 coefficient4 = _mm256_mul_ps(percentToLerpInY, percentToLerpInX);
-
-                newBlendedTexel_r = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_r), _mm256_mul_ps(coefficient2, texelB_r)), 
+            //Bilinear blend 
+            __m256 percentToLerpInX = _mm256_sub_ps(texelCoords_x, _mm256_floor_ps(texelCoords_x));
+            __m256 percentToLerpInY = _mm256_sub_ps(texelCoords_y, _mm256_floor_ps(texelCoords_y));
+            __m256 oneMinusXLerp = _mm256_sub_ps(one, percentToLerpInX);
+            __m256 oneMinusYLerp = _mm256_sub_ps(one, percentToLerpInY);
+            __m256 coefficient1 = _mm256_mul_ps(oneMinusYLerp, oneMinusXLerp);
+            __m256 coefficient2 = _mm256_mul_ps(oneMinusYLerp, percentToLerpInX);
+            __m256 coefficient3 = _mm256_mul_ps(percentToLerpInY, oneMinusXLerp);
+            __m256 coefficient4 = _mm256_mul_ps(percentToLerpInY, percentToLerpInX);
+            __m256 newBlendedTexel_r = _mm256_add_ps(
+                                       _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_r), _mm256_mul_ps(coefficient2, texelB_r)), 
                                     _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_r), _mm256_mul_ps(coefficient4, texelD_r))); 
-                newBlendedTexel_g = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_g), _mm256_mul_ps(coefficient2, texelB_g)), 
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_g), _mm256_mul_ps(coefficient4, texelD_g))); 
-                newBlendedTexel_b = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_b), _mm256_mul_ps(coefficient2, texelB_b)), 
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_b), _mm256_mul_ps(coefficient4, texelD_b))); 
-                newBlendedTexel_a = _mm256_add_ps(
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_a), _mm256_mul_ps(coefficient2, texelB_a)), 
-                                    _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_a), _mm256_mul_ps(coefficient4, texelD_a))); 
-            };
+            __m256 newBlendedTexel_g = _mm256_add_ps(
+                                       _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_g), _mm256_mul_ps(coefficient2, texelB_g)), 
+                                       _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_g), _mm256_mul_ps(coefficient4, texelD_g))); 
+            __m256 newBlendedTexel_b = _mm256_add_ps(
+                                       _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_b), _mm256_mul_ps(coefficient2, texelB_b)), 
+                                       _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_b), _mm256_mul_ps(coefficient4, texelD_b))); 
+            __m256 newBlendedTexel_a = _mm256_add_ps(
+                                       _mm256_add_ps(_mm256_mul_ps(coefficient1, texelA_a), _mm256_mul_ps(coefficient2, texelB_a)), 
+                                       _mm256_add_ps(_mm256_mul_ps(coefficient3, texelC_a), _mm256_mul_ps(coefficient4, texelD_a))); 
 
-            __m256 finalBlendedColor_r{}, finalBlendedColor_g{}, finalBlendedColor_b{}, finalBlendedColor_a{};
-            {//Linear blend (w/ pre multiplied alpha)
-                __m256 maxColorValue = _mm256_set1_ps(255.0f);
-                __m256 alphaBlend = _mm256_div_ps(newBlendedTexel_a, maxColorValue);
-                __m256 oneMinusAlphaBlend = _mm256_sub_ps(one, alphaBlend);
-
-                finalBlendedColor_r = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_r), newBlendedTexel_r);
-                finalBlendedColor_g = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_g), newBlendedTexel_g);
-                finalBlendedColor_b = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_b), newBlendedTexel_b);
-                finalBlendedColor_a = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_a), newBlendedTexel_a);
-            };
+            //Linear blend (w/ pre multiplied alpha)
+            __m256 maxColorValue = _mm256_set1_ps(255.0f);
+            __m256 alphaBlend = _mm256_div_ps(newBlendedTexel_a, maxColorValue);
+            __m256 oneMinusAlphaBlend = _mm256_sub_ps(one, alphaBlend);
+            __m256 finalBlendedColor_r = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_r), newBlendedTexel_r);
+            __m256 finalBlendedColor_g = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_g), newBlendedTexel_g);
+            __m256 finalBlendedColor_b = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_b), newBlendedTexel_b);
+            __m256 finalBlendedColor_a = _mm256_add_ps(_mm256_mul_ps(oneMinusAlphaBlend, backgroundColors_a), newBlendedTexel_a);
 
 #if __AVX2__
-            {//Pack into dest pixels
+            {//Convert and Pack into dest pixels to write out
                 __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
                 __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
                 __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
@@ -363,61 +352,63 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 //Use write mask in order to correctly fill 8 wide pixel lane (properly writing either the texel color or 
                 //the background color)
                 __m256i maskedOut = _mm256_or_si256(_mm256_and_si256(writeMask, out),
-                                                    _mm256_andnot_si256(writeMask, backGroundPixels));
+                                                _mm256_andnot_si256(writeMask, backGroundPixels));
 
                 *(__m256i*)destPixel = maskedOut;
             };
 
 #elif __AVX__
-            __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
-            __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
-            __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
-            __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
+            {//Convert and Pack into dest pixels to write out
+                __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
+                __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
+                __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
+                __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
 
-            __m256i backgroundColorsi_r = _mm256_cvttps_epi32(backgroundColors_r);
-            __m256i backgroundColorsi_g = _mm256_cvttps_epi32(backgroundColors_g);
-            __m256i backgroundColorsi_b = _mm256_cvttps_epi32(backgroundColors_b);
-            __m256i backgroundColorsi_a = _mm256_cvttps_epi32(backgroundColors_a);
+                __m256i backgroundColorsi_r = _mm256_cvttps_epi32(backgroundColors_r);
+                __m256i backgroundColorsi_g = _mm256_cvttps_epi32(backgroundColors_g);
+                __m256i backgroundColorsi_b = _mm256_cvttps_epi32(backgroundColors_b);
+                __m256i backgroundColorsi_a = _mm256_cvttps_epi32(backgroundColors_a);
 
-            //Since AVX doesn't have certain bitwise operations I need to extract 128 bit values from
-            //256 bit ones and then use the available bitwise operations on those 
-            __m128i pixelSet1_r = _mm256_extractf128_si256(finalBlendedColori_r, 0);
-            __m128i pixelSet2_r = _mm256_extractf128_si256(finalBlendedColori_r, 1);
-            __m128i pixelSet1_g = _mm256_extractf128_si256(finalBlendedColori_g, 0);
-            __m128i pixelSet2_g = _mm256_extractf128_si256(finalBlendedColori_g, 1);
-            __m128i pixelSet1_b = _mm256_extractf128_si256(finalBlendedColori_b, 0);
-            __m128i pixelSet2_b = _mm256_extractf128_si256(finalBlendedColori_b, 1);
-            __m128i pixelSet1_a = _mm256_extractf128_si256(finalBlendedColori_a, 0);
-            __m128i pixelSet2_a = _mm256_extractf128_si256(finalBlendedColori_a, 1);
-            __m128i backgroundPixelSet1_r = _mm256_extractf128_si256(backgroundColorsi_r, 0);
-            __m128i backgroundPixelSet2_r = _mm256_extractf128_si256(backgroundColorsi_r, 1);
-            __m128i backgroundPixelSet1_g = _mm256_extractf128_si256(backgroundColorsi_g, 0);
-            __m128i backgroundPixelSet2_g = _mm256_extractf128_si256(backgroundColorsi_g, 1);
-            __m128i backgroundPixelSet1_b = _mm256_extractf128_si256(backgroundColorsi_b, 0);
-            __m128i backgroundPixelSet2_b = _mm256_extractf128_si256(backgroundColorsi_b, 1);
-            __m128i backgroundPixelSet1_a = _mm256_extractf128_si256(backgroundColorsi_a, 0);
-            __m128i backgroundPixelSet2_a = _mm256_extractf128_si256(backgroundColorsi_a, 1);
-            __m128i writeMaskSet1 = _mm256_extractf128_si256(writeMask, 0);
-            __m128i writeMaskSet2 = _mm256_extractf128_si256(writeMask, 1);
+                //Since AVX doesn't have certain bitwise operations I need to extract 128 bit values from
+                //256 bit ones and then use the available bitwise operations on those 
+                __m128i pixelSet1_r = _mm256_extractf128_si256(finalBlendedColori_r, 0);
+                __m128i pixelSet2_r = _mm256_extractf128_si256(finalBlendedColori_r, 1);
+                __m128i pixelSet1_g = _mm256_extractf128_si256(finalBlendedColori_g, 0);
+                __m128i pixelSet2_g = _mm256_extractf128_si256(finalBlendedColori_g, 1);
+                __m128i pixelSet1_b = _mm256_extractf128_si256(finalBlendedColori_b, 0);
+                __m128i pixelSet2_b = _mm256_extractf128_si256(finalBlendedColori_b, 1);
+                __m128i pixelSet1_a = _mm256_extractf128_si256(finalBlendedColori_a, 0);
+                __m128i pixelSet2_a = _mm256_extractf128_si256(finalBlendedColori_a, 1);
+                __m128i backgroundPixelSet1_r = _mm256_extractf128_si256(backgroundColorsi_r, 0);
+                __m128i backgroundPixelSet2_r = _mm256_extractf128_si256(backgroundColorsi_r, 1);
+                __m128i backgroundPixelSet1_g = _mm256_extractf128_si256(backgroundColorsi_g, 0);
+                __m128i backgroundPixelSet2_g = _mm256_extractf128_si256(backgroundColorsi_g, 1);
+                __m128i backgroundPixelSet1_b = _mm256_extractf128_si256(backgroundColorsi_b, 0);
+                __m128i backgroundPixelSet2_b = _mm256_extractf128_si256(backgroundColorsi_b, 1);
+                __m128i backgroundPixelSet1_a = _mm256_extractf128_si256(backgroundColorsi_a, 0);
+                __m128i backgroundPixelSet2_a = _mm256_extractf128_si256(backgroundColorsi_a, 1);
+                __m128i writeMaskSet1 = _mm256_extractf128_si256(writeMask, 0);
+                __m128i writeMaskSet2 = _mm256_extractf128_si256(writeMask, 1);
 
-            //Move pixels (through bitwise operations and shifting) from RRRR GGGG ... format to expected BGRA format
-            __m128i pixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet1_r, 16), _mm_slli_epi32(pixelSet1_g, 8)), pixelSet1_b), _mm_slli_epi32(pixelSet1_a, 24));
-            __m128i pixels5Through8 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet2_r, 16), _mm_slli_epi32(pixelSet2_g, 8)), pixelSet2_b), _mm_slli_epi32(pixelSet2_a, 24));
-            __m128i backgroundPixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(backgroundPixelSet1_r, 16), _mm_slli_epi32(backgroundPixelSet1_g, 8)), backgroundPixelSet1_b), _mm_slli_epi32(backgroundPixelSet1_a, 24));
-            __m128i backgroundPixels5Through8 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(backgroundPixelSet2_r, 16), _mm_slli_epi32(backgroundPixelSet2_g, 8)), backgroundPixelSet2_b), _mm_slli_epi32(backgroundPixelSet2_a, 24));
+                //Move pixels (through bitwise operations and shifting) from RRRR GGGG ... format to expected BGRA format
+                __m128i pixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet1_r, 16), _mm_slli_epi32(pixelSet1_g, 8)), pixelSet1_b), _mm_slli_epi32(pixelSet1_a, 24));
+                __m128i pixels5Through8 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet2_r, 16), _mm_slli_epi32(pixelSet2_g, 8)), pixelSet2_b), _mm_slli_epi32(pixelSet2_a, 24));
+                __m128i backgroundPixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(backgroundPixelSet1_r, 16), _mm_slli_epi32(backgroundPixelSet1_g, 8)), backgroundPixelSet1_b), _mm_slli_epi32(backgroundPixelSet1_a, 24));
+                __m128i backgroundPixels5Through8 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(backgroundPixelSet2_r, 16), _mm_slli_epi32(backgroundPixelSet2_g, 8)), backgroundPixelSet2_b), _mm_slli_epi32(backgroundPixelSet2_a, 24));
 
-            //Use write mask in order to correctly fill 8 wide pixel lane (properly writing either the texel color or 
-            //the background color)
-            __m128i maskedOutSet1 = _mm_or_si128(_mm_and_si128(writeMaskSet1, pixels1Through4),
-                                                _mm_andnot_si128(writeMaskSet1, backgroundPixels1Through4));
-            __m128i maskedOutSet2 = _mm_or_si128(_mm_and_si128(writeMaskSet2, pixels5Through8),
-                                                _mm_andnot_si128(writeMaskSet2, backgroundPixels5Through8));
+                //Use write mask in order to correctly fill 8 wide pixel lane (properly writing either the texel color or 
+                //the background color)
+                __m128i maskedOutSet1 = _mm_or_si128(_mm_and_si128(writeMaskSet1, pixels1Through4),
+                                                    _mm_andnot_si128(writeMaskSet1, backgroundPixels1Through4));
+                __m128i maskedOutSet2 = _mm_or_si128(_mm_and_si128(writeMaskSet2, pixels5Through8),
+                                                    _mm_andnot_si128(writeMaskSet2, backgroundPixels5Through8));
 
-            //Pack 128 bit pixel values back into 256 bit values to write out
-            __m256i maskedOut = _mm256_castsi128_si256(maskedOutSet1);
-            maskedOut = _mm256_insertf128_si256(maskedOut, maskedOutSet2, 1);
+                //Pack 128 bit pixel values back into 256 bit values to write out
+                __m256i maskedOut = _mm256_castsi128_si256(maskedOutSet1);
+                maskedOut = _mm256_insertf128_si256(maskedOut, maskedOutSet2, 1);
 
-            *(__m256i*)destPixel = maskedOut;
+                *(__m256i*)destPixel = maskedOut;
+            };
 
 #endif
 
