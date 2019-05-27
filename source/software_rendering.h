@@ -237,7 +237,13 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
         {            
             __m256 one = _mm256_set1_ps(1.0f);
             __m256 zero = _mm256_set1_ps(0.0f);
-
+            __m256 imgWidth = _mm256_set1_ps((f32)imageWidth);
+            __m256 imgHeight = _mm256_set1_ps((f32)imageHeight);
+            __m256 normalizedXAxis_x = _mm256_set1_ps(normalizedXAxis.x);
+            __m256 normalizedXAxis_y = _mm256_set1_ps(normalizedXAxis.y);
+            __m256 normalizedYAxis_x = _mm256_set1_ps(normalizedYAxis.x);
+            __m256 normalizedYAxis_y = _mm256_set1_ps(normalizedYAxis.y);
+            
             __m256 texelCoords_x{}, texelCoords_y{};
 
             __m256 pixelA_r{}, pixelA_g{}, pixelA_b{}, pixelA_a{};
@@ -248,38 +254,31 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             __m256 backgroundColors_r{}, backgroundColors_g{}, backgroundColors_b{}, backgroundColors_a{};
 
             //Unpack individual color values from current image texels and background texel
-                __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 7, screenX + 6, screenX + 5, screenX + 4, screenX + 3, screenX + 2, screenX + 1, screenX + 0);
-                __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
-                __m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
-                __m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
+            __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 7, screenX + 6, screenX + 5, screenX + 4, screenX + 3, screenX + 2, screenX + 1, screenX + 0);
+            __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
+            __m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
+            __m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
 
-                __m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x);
-                __m256 dYs = _mm256_sub_ps(screenPixelCoords_y, targetRectOrigin_y);
+            //Gather normalized coordinates (uv's) in order to find the correct texel position below
+            __m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x);
+            __m256 dYs = _mm256_sub_ps(screenPixelCoords_y, targetRectOrigin_y);
+            __m256 Us = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedXAxis_x), _mm256_mul_ps(dYs, normalizedXAxis_y));
+            __m256 Vs = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedYAxis_x), _mm256_mul_ps(dYs, normalizedYAxis_y));
 
-                __m256 normalizedXAxis_x = _mm256_set1_ps(normalizedXAxis.x);
-                __m256 normalizedXAxis_y = _mm256_set1_ps(normalizedXAxis.y);
-                __m256 normalizedYAxis_x = _mm256_set1_ps(normalizedYAxis.x);
-                __m256 normalizedYAxis_y = _mm256_set1_ps(normalizedYAxis.y);
+            //Using a mask to determine what colors final 8 wide pixel destintion buffer should except 
+            //(background texels or image texels). This replaces the need for a conditional 
+            __m256i writeMask = _mm256_castps_si256(_mm256_and_ps(_mm256_and_ps(_mm256_cmp_ps(Us, zero, _CMP_GE_OQ),
+                                                                                _mm256_cmp_ps(Us, one, _CMP_LE_OQ)),
+                                                                  _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
+                                                                                _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
 
-                //Gather normalized coordinates (uv's) in order to find the correct texel position below
-                __m256 Us = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedXAxis_x), _mm256_mul_ps(dYs, normalizedXAxis_y));
-                __m256 Vs = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedYAxis_x), _mm256_mul_ps(dYs, normalizedYAxis_y));
+            //Clamp UVs to prevent accessing memory that is invalid
+            Us = _mm256_min_ps(_mm256_max_ps(Us, zero), one);
+            Vs = _mm256_min_ps(_mm256_max_ps(Vs, zero), one);
+            texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
+            texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
 
-                __m256 imgWidth = _mm256_set1_ps((f32)imageWidth);
-                __m256 imgHeight = _mm256_set1_ps((f32)imageHeight);
-
-                //Replaces conditional
-                __m256i backGroundPixelValues = _mm256_load_si256((__m256i*)destPixel);
-                __m256i writeMask = _mm256_castps_si256(_mm256_and_ps(_mm256_and_ps(_mm256_cmp_ps(Us, zero, _CMP_GE_OQ),
-                                                                                    _mm256_cmp_ps(Us, one, _CMP_LE_OQ)),
-                                                                      _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
-                                                                                    _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
-
-                //Clamp UVs to prevent accessing memory that is invalid
-                Us = _mm256_min_ps(_mm256_max_ps(Us, zero), one);
-                Vs = _mm256_min_ps(_mm256_max_ps(Vs, zero), one);
-                texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
-                texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
+            __m256i backGroundPixelValues = _mm256_load_si256((__m256i*)destPixel);
 
             for(i32 index{}; index < 8; ++index)
             {
