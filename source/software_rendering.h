@@ -308,9 +308,8 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             __m256 backgroundColors_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 8), maskFF));
             __m256 backgroundColors_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 16), maskFF));
             __m256 backgroundColors_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 24), maskFF));
-#endif
 
-#if __AVX__
+#elif __AVX__
             //Unpack 4 sample texels to prepare for bilinear blend
             __m128i maskFF = _mm_set1_epi32(0xFF);
             __m256i backGroundPixels = _mm256_load_si256((__m256i*)destPixel);
