@@ -285,28 +285,63 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
             };
 
             //Unpack 4 sample texels to prepare for bilinear blend
-            __m256i maskFF = _mm256_set1_epi32(0xFF);
-            __m256 texelA_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelAs, maskFF));
-            __m256 texelA_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 8), maskFF));
-            __m256 texelA_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 16), maskFF));
-            __m256 texelA_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelAs, 24), maskFF));
-            __m256 texelB_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelBs, maskFF));
-            __m256 texelB_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 8), maskFF));
-            __m256 texelB_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 16), maskFF));
-            __m256 texelB_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelBs, 24), maskFF));
-            __m256 texelC_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelCs, maskFF));
-            __m256 texelC_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 8), maskFF));
-            __m256 texelC_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 16), maskFF));
-            __m256 texelC_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelCs, 24), maskFF));
-            __m256 texelD_b = _mm256_cvtepi32_ps(_mm256_and_si256(sampleTexelDs, maskFF));
-            __m256 texelD_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 8), maskFF));
-            __m256 texelD_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 16), maskFF));
-            __m256 texelD_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(sampleTexelDs, 24), maskFF));
+            __m128i maskFF = _mm_set1_epi32(0xFF);
             __m256i backGroundPixels = _mm256_load_si256((__m256i*)destPixel);
-            __m256 backgroundColors_b = _mm256_cvtepi32_ps(_mm256_and_si256(backGroundPixels , maskFF)); 
-            __m256 backgroundColors_g = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 8), maskFF));
-            __m256 backgroundColors_r = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 16), maskFF));
-            __m256 backgroundColors_a = _mm256_cvtepi32_ps(_mm256_and_si256(_mm256_srli_epi32(backGroundPixels, 24), maskFF));
+            __m128i sampleTexelAs_set1 = _mm256_extractf128_si256(sampleTexelAs, 0);
+            __m128i sampleTexelAs_set2 = _mm256_extractf128_si256(sampleTexelAs, 1);
+            __m128i sampleTexelBs_set1 = _mm256_extractf128_si256(sampleTexelBs, 0);
+            __m128i sampleTexelBs_set2 = _mm256_extractf128_si256(sampleTexelBs, 1);
+            __m128i sampleTexelCs_set1 = _mm256_extractf128_si256(sampleTexelCs, 0);
+            __m128i sampleTexelCs_set2 = _mm256_extractf128_si256(sampleTexelCs, 1);
+            __m128i sampleTexelDs_set1 = _mm256_extractf128_si256(sampleTexelDs, 0);
+            __m128i sampleTexelDs_set2 = _mm256_extractf128_si256(sampleTexelDs, 1);
+            __m128i backgroundPixels_set1 = _mm256_extractf128_si256(backGroundPixels, 0);
+            __m128i backgroundPixels_set2 = _mm256_extractf128_si256(backGroundPixels, 1);
+
+            __m256 texelA_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelAs_set1, maskFF)));
+                   texelA_b = _mm256_insertf128_ps(texelA_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelAs_set2, maskFF)), 1);
+            __m256 texelA_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set1, 8), maskFF)));
+                   texelA_g = _mm256_insertf128_ps(texelA_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set2, 8), maskFF)), 1);
+            __m256 texelA_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set1, 16), maskFF)));
+                   texelA_r = _mm256_insertf128_ps(texelA_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set2, 16), maskFF)), 1);
+            __m256 texelA_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set1, 24), maskFF)));
+                   texelA_a = _mm256_insertf128_ps(texelA_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set2, 24), maskFF)), 1);
+
+            __m256 texelB_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelBs_set1, maskFF)));
+                   texelB_b = _mm256_insertf128_ps(texelB_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelBs_set2, maskFF)), 1);
+            __m256 texelB_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set1, 8), maskFF)));
+                   texelB_g = _mm256_insertf128_ps(texelB_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set2, 8), maskFF)), 1);
+            __m256 texelB_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set1, 16), maskFF)));
+                   texelB_r = _mm256_insertf128_ps(texelB_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set2, 16), maskFF)), 1);
+            __m256 texelB_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set1, 24), maskFF)));
+                   texelB_a = _mm256_insertf128_ps(texelB_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set2, 24), maskFF)), 1);
+
+            __m256 texelC_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelCs_set1, maskFF)));
+                   texelC_b = _mm256_insertf128_ps(texelC_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelCs_set2, maskFF)), 1);
+            __m256 texelC_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set1, 8), maskFF)));
+                   texelC_g = _mm256_insertf128_ps(texelC_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set2, 8), maskFF)), 1);
+            __m256 texelC_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set1, 16), maskFF)));
+                   texelC_r = _mm256_insertf128_ps(texelC_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set2, 16), maskFF)), 1);
+            __m256 texelC_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set1, 24), maskFF)));
+                   texelC_a = _mm256_insertf128_ps(texelC_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set2, 24), maskFF)), 1);
+
+            __m256 texelD_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelDs_set1, maskFF)));
+                   texelD_b = _mm256_insertf128_ps(texelD_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelDs_set2, maskFF)), 1);
+            __m256 texelD_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set1, 8), maskFF)));
+                   texelD_g = _mm256_insertf128_ps(texelD_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set2, 8), maskFF)), 1);
+            __m256 texelD_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set1, 16), maskFF)));
+                   texelD_r = _mm256_insertf128_ps(texelD_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set2, 16), maskFF)), 1);
+            __m256 texelD_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set1, 24), maskFF)));
+                   texelD_a = _mm256_insertf128_ps(texelD_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set2, 24), maskFF)), 1);
+
+            __m256 backgroundColors_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(backgroundPixels_set1, maskFF)));
+                   backgroundColors_b = _mm256_insertf128_ps(backgroundColors_b, _mm_cvtepi32_ps(_mm_and_si128(backgroundPixels_set2, maskFF)), 1);
+            __m256 backgroundColors_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set1, 8), maskFF)));
+                   backgroundColors_g = _mm256_insertf128_ps(backgroundColors_g, _mm_cvtepi32_ps(_mm_and_si128(backgroundPixels_set2, maskFF)), 1);
+            __m256 backgroundColors_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set1, 16), maskFF)));
+                   backgroundColors_r = _mm256_insertf128_ps(backgroundColors_r, _mm_cvtepi32_ps(_mm_and_si128(backgroundPixels_set2, maskFF)), 1);
+            __m256 backgroundColors_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set1, 24), maskFF)));
+                   backgroundColors_a = _mm256_insertf128_ps(backgroundColors_a, _mm_cvtepi32_ps(_mm_and_si128(backgroundPixels_set2, maskFF)), 1);
 
             //Bilinear blend 
             __m256 percentToLerpInX = _mm256_sub_ps(texelCoords_x, _mm256_floor_ps(texelCoords_x));
