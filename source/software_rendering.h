@@ -311,63 +311,36 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
 #elif __AVX__
             //Unpack 4 sample texels to prepare for bilinear blend
-            __m128i maskFF = _mm_set1_epi32(0xFF);
+            __m256i* ptrToSampleTexelAs = &sampleTexelAs;
+            __m256 texelA_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 28), (f32)*((ui8*)ptrToSampleTexelAs + 24), (f32)*((ui8*)ptrToSampleTexelAs + 20), (f32)*((ui8*)ptrToSampleTexelAs + 16), (f32)*((ui8*)ptrToSampleTexelAs + 12), (f32)*((ui8*)ptrToSampleTexelAs + 8), (f32)*((ui8*)ptrToSampleTexelAs + 4), (f32)*((ui8*)ptrToSampleTexelAs + 0));
+            __m256 texelA_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 29), (f32)*((ui8*)ptrToSampleTexelAs + 25), (f32)*((ui8*)ptrToSampleTexelAs + 21), (f32)*((ui8*)ptrToSampleTexelAs + 17), (f32)*((ui8*)ptrToSampleTexelAs + 13), (f32)*((ui8*)ptrToSampleTexelAs + 9), (f32)*((ui8*)ptrToSampleTexelAs + 5), (f32)*((ui8*)ptrToSampleTexelAs + 1));
+            __m256 texelA_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 30), (f32)*((ui8*)ptrToSampleTexelAs + 26), (f32)*((ui8*)ptrToSampleTexelAs + 22), (f32)*((ui8*)ptrToSampleTexelAs + 18), (f32)*((ui8*)ptrToSampleTexelAs + 14), (f32)*((ui8*)ptrToSampleTexelAs + 10), (f32)*((ui8*)ptrToSampleTexelAs + 6), (f32)*((ui8*)ptrToSampleTexelAs + 2));
+            __m256 texelA_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelAs + 31), (f32)*((ui8*)ptrToSampleTexelAs + 27), (f32)*((ui8*)ptrToSampleTexelAs + 23), (f32)*((ui8*)ptrToSampleTexelAs + 19), (f32)*((ui8*)ptrToSampleTexelAs + 15), (f32)*((ui8*)ptrToSampleTexelAs + 11), (f32)*((ui8*)ptrToSampleTexelAs + 7), (f32)*((ui8*)ptrToSampleTexelAs + 3));
+
+            __m256i* ptrToSampleTexelBs = &sampleTexelBs;
+            __m256 texelB_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 28), (f32)*((ui8*)ptrToSampleTexelBs + 24), (f32)*((ui8*)ptrToSampleTexelBs + 20), (f32)*((ui8*)ptrToSampleTexelBs + 16), (f32)*((ui8*)ptrToSampleTexelBs + 12), (f32)*((ui8*)ptrToSampleTexelBs + 8), (f32)*((ui8*)ptrToSampleTexelBs + 4), (f32)*((ui8*)ptrToSampleTexelBs + 0));
+            __m256 texelB_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 29), (f32)*((ui8*)ptrToSampleTexelBs + 25), (f32)*((ui8*)ptrToSampleTexelBs + 21), (f32)*((ui8*)ptrToSampleTexelBs + 17), (f32)*((ui8*)ptrToSampleTexelBs + 13), (f32)*((ui8*)ptrToSampleTexelBs + 9), (f32)*((ui8*)ptrToSampleTexelBs + 5), (f32)*((ui8*)ptrToSampleTexelBs + 1));
+            __m256 texelB_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 30), (f32)*((ui8*)ptrToSampleTexelBs + 26), (f32)*((ui8*)ptrToSampleTexelBs + 22), (f32)*((ui8*)ptrToSampleTexelBs + 18), (f32)*((ui8*)ptrToSampleTexelBs + 14), (f32)*((ui8*)ptrToSampleTexelBs + 10), (f32)*((ui8*)ptrToSampleTexelBs + 6), (f32)*((ui8*)ptrToSampleTexelBs + 2));
+            __m256 texelB_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelBs + 31), (f32)*((ui8*)ptrToSampleTexelBs + 27), (f32)*((ui8*)ptrToSampleTexelBs + 23), (f32)*((ui8*)ptrToSampleTexelBs + 19), (f32)*((ui8*)ptrToSampleTexelBs + 15), (f32)*((ui8*)ptrToSampleTexelBs + 11), (f32)*((ui8*)ptrToSampleTexelBs + 7), (f32)*((ui8*)ptrToSampleTexelBs + 3));
+
+            __m256i* ptrToSampleTexelCs = &sampleTexelCs;
+            __m256 texelC_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 28), (f32)*((ui8*)ptrToSampleTexelCs + 24), (f32)*((ui8*)ptrToSampleTexelCs + 20), (f32)*((ui8*)ptrToSampleTexelCs + 16), (f32)*((ui8*)ptrToSampleTexelCs + 12), (f32)*((ui8*)ptrToSampleTexelCs + 8), (f32)*((ui8*)ptrToSampleTexelCs + 4), (f32)*((ui8*)ptrToSampleTexelCs + 0));
+            __m256 texelC_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 29), (f32)*((ui8*)ptrToSampleTexelCs + 25), (f32)*((ui8*)ptrToSampleTexelCs + 21), (f32)*((ui8*)ptrToSampleTexelCs + 17), (f32)*((ui8*)ptrToSampleTexelCs + 13), (f32)*((ui8*)ptrToSampleTexelCs + 9), (f32)*((ui8*)ptrToSampleTexelCs + 5), (f32)*((ui8*)ptrToSampleTexelCs + 1));
+            __m256 texelC_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 30), (f32)*((ui8*)ptrToSampleTexelCs + 26), (f32)*((ui8*)ptrToSampleTexelCs + 22), (f32)*((ui8*)ptrToSampleTexelCs + 18), (f32)*((ui8*)ptrToSampleTexelCs + 14), (f32)*((ui8*)ptrToSampleTexelCs + 10), (f32)*((ui8*)ptrToSampleTexelCs + 6), (f32)*((ui8*)ptrToSampleTexelCs + 2));
+            __m256 texelC_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelCs + 31), (f32)*((ui8*)ptrToSampleTexelCs + 27), (f32)*((ui8*)ptrToSampleTexelCs + 23), (f32)*((ui8*)ptrToSampleTexelCs + 19), (f32)*((ui8*)ptrToSampleTexelCs + 15), (f32)*((ui8*)ptrToSampleTexelCs + 11), (f32)*((ui8*)ptrToSampleTexelCs + 7), (f32)*((ui8*)ptrToSampleTexelCs + 3));
+
+            __m256i* ptrToSampleTexelDs = &sampleTexelDs;
+            __m256 texelD_b = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 28), (f32)*((ui8*)ptrToSampleTexelDs + 24), (f32)*((ui8*)ptrToSampleTexelDs + 20), (f32)*((ui8*)ptrToSampleTexelDs + 16), (f32)*((ui8*)ptrToSampleTexelDs + 12), (f32)*((ui8*)ptrToSampleTexelDs + 8), (f32)*((ui8*)ptrToSampleTexelDs + 4), (f32)*((ui8*)ptrToSampleTexelDs + 0));
+            __m256 texelD_g = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 29), (f32)*((ui8*)ptrToSampleTexelDs + 25), (f32)*((ui8*)ptrToSampleTexelDs + 21), (f32)*((ui8*)ptrToSampleTexelDs + 17), (f32)*((ui8*)ptrToSampleTexelDs + 13), (f32)*((ui8*)ptrToSampleTexelDs + 9), (f32)*((ui8*)ptrToSampleTexelDs + 5), (f32)*((ui8*)ptrToSampleTexelDs + 1));
+            __m256 texelD_r = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 30), (f32)*((ui8*)ptrToSampleTexelDs + 26), (f32)*((ui8*)ptrToSampleTexelDs + 22), (f32)*((ui8*)ptrToSampleTexelDs + 18), (f32)*((ui8*)ptrToSampleTexelDs + 14), (f32)*((ui8*)ptrToSampleTexelDs + 10), (f32)*((ui8*)ptrToSampleTexelDs + 6), (f32)*((ui8*)ptrToSampleTexelDs + 2));
+            __m256 texelD_a = _mm256_set_ps((f32)*((ui8*)ptrToSampleTexelDs + 31), (f32)*((ui8*)ptrToSampleTexelDs + 27), (f32)*((ui8*)ptrToSampleTexelDs + 23), (f32)*((ui8*)ptrToSampleTexelDs + 19), (f32)*((ui8*)ptrToSampleTexelDs + 15), (f32)*((ui8*)ptrToSampleTexelDs + 11), (f32)*((ui8*)ptrToSampleTexelDs + 7), (f32)*((ui8*)ptrToSampleTexelDs + 3));
+
             __m256i backGroundPixels = _mm256_load_si256((__m256i*)destPixel);
-            __m128i sampleTexelAs_set1 = _mm256_extractf128_si256(sampleTexelAs, 0);
-            __m128i sampleTexelAs_set2 = _mm256_extractf128_si256(sampleTexelAs, 1);
-            __m128i sampleTexelBs_set1 = _mm256_extractf128_si256(sampleTexelBs, 0);
-            __m128i sampleTexelBs_set2 = _mm256_extractf128_si256(sampleTexelBs, 1);
-            __m128i sampleTexelCs_set1 = _mm256_extractf128_si256(sampleTexelCs, 0);
-            __m128i sampleTexelCs_set2 = _mm256_extractf128_si256(sampleTexelCs, 1);
-            __m128i sampleTexelDs_set1 = _mm256_extractf128_si256(sampleTexelDs, 0);
-            __m128i sampleTexelDs_set2 = _mm256_extractf128_si256(sampleTexelDs, 1);
-            __m128i backgroundPixels_set1 = _mm256_extractf128_si256(backGroundPixels, 0);
-            __m128i backgroundPixels_set2 = _mm256_extractf128_si256(backGroundPixels, 1);
-
-            __m256 texelA_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelAs_set1, maskFF)));
-                   texelA_b = _mm256_insertf128_ps(texelA_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelAs_set2, maskFF)), 1);
-            __m256 texelA_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set1, 8), maskFF)));
-                   texelA_g = _mm256_insertf128_ps(texelA_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set2, 8), maskFF)), 1);
-            __m256 texelA_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set1, 16), maskFF)));
-                   texelA_r = _mm256_insertf128_ps(texelA_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set2, 16), maskFF)), 1);
-            __m256 texelA_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set1, 24), maskFF)));
-                   texelA_a = _mm256_insertf128_ps(texelA_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelAs_set2, 24), maskFF)), 1);
-
-            __m256 texelB_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelBs_set1, maskFF)));
-                   texelB_b = _mm256_insertf128_ps(texelB_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelBs_set2, maskFF)), 1);
-            __m256 texelB_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set1, 8), maskFF)));
-                   texelB_g = _mm256_insertf128_ps(texelB_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set2, 8), maskFF)), 1);
-            __m256 texelB_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set1, 16), maskFF)));
-                   texelB_r = _mm256_insertf128_ps(texelB_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set2, 16), maskFF)), 1);
-            __m256 texelB_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set1, 24), maskFF)));
-                   texelB_a = _mm256_insertf128_ps(texelB_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelBs_set2, 24), maskFF)), 1);
-
-            __m256 texelC_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelCs_set1, maskFF)));
-                   texelC_b = _mm256_insertf128_ps(texelC_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelCs_set2, maskFF)), 1);
-            __m256 texelC_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set1, 8), maskFF)));
-                   texelC_g = _mm256_insertf128_ps(texelC_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set2, 8), maskFF)), 1);
-            __m256 texelC_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set1, 16), maskFF)));
-                   texelC_r = _mm256_insertf128_ps(texelC_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set2, 16), maskFF)), 1);
-            __m256 texelC_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set1, 24), maskFF)));
-                   texelC_a = _mm256_insertf128_ps(texelC_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelCs_set2, 24), maskFF)), 1);
-
-            __m256 texelD_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(sampleTexelDs_set1, maskFF)));
-                   texelD_b = _mm256_insertf128_ps(texelD_b, _mm_cvtepi32_ps(_mm_and_si128(sampleTexelDs_set2, maskFF)), 1);
-            __m256 texelD_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set1, 8), maskFF)));
-                   texelD_g = _mm256_insertf128_ps(texelD_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set2, 8), maskFF)), 1);
-            __m256 texelD_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set1, 16), maskFF)));
-                   texelD_r = _mm256_insertf128_ps(texelD_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set2, 16), maskFF)), 1);
-            __m256 texelD_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set1, 24), maskFF)));
-                   texelD_a = _mm256_insertf128_ps(texelD_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sampleTexelDs_set2, 24), maskFF)), 1);
-
-            __m256 backgroundColors_b = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(backgroundPixels_set1, maskFF)));
-                   backgroundColors_b = _mm256_insertf128_ps(backgroundColors_b, _mm_cvtepi32_ps(_mm_and_si128(backgroundPixels_set2, maskFF)), 1);
-            __m256 backgroundColors_g = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set1, 8), maskFF)));
-                   backgroundColors_g = _mm256_insertf128_ps(backgroundColors_g, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set2, 8), maskFF)), 1);
-            __m256 backgroundColors_r = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set1, 16), maskFF)));
-                   backgroundColors_r = _mm256_insertf128_ps(backgroundColors_r, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set2, 16), maskFF)), 1);
-            __m256 backgroundColors_a = _mm256_cvtepi32_ps(_mm256_castsi128_si256(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set1, 24), maskFF)));
-                   backgroundColors_a = _mm256_insertf128_ps(backgroundColors_a, _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(backgroundPixels_set2, 24), maskFF)), 1);
+            __m256i* ptrToBackgroundPixels = &backGroundPixels; 
+            __m256 backgroundColors_b = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 28), (f32)*((ui8*)ptrToBackgroundPixels + 24), (f32)*((ui8*)ptrToBackgroundPixels + 20), (f32)*((ui8*)ptrToBackgroundPixels + 16), (f32)*((ui8*)ptrToBackgroundPixels + 12), (f32)*((ui8*)ptrToBackgroundPixels + 8), (f32)*((ui8*)ptrToBackgroundPixels + 4), (f32)*((ui8*)ptrToBackgroundPixels + 0));
+            __m256 backgroundColors_g = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 29), (f32)*((ui8*)ptrToBackgroundPixels + 25), (f32)*((ui8*)ptrToBackgroundPixels + 21), (f32)*((ui8*)ptrToBackgroundPixels + 17), (f32)*((ui8*)ptrToBackgroundPixels + 13), (f32)*((ui8*)ptrToBackgroundPixels + 9), (f32)*((ui8*)ptrToBackgroundPixels + 5), (f32)*((ui8*)ptrToBackgroundPixels + 1));
+            __m256 backgroundColors_r = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 30), (f32)*((ui8*)ptrToBackgroundPixels + 26), (f32)*((ui8*)ptrToBackgroundPixels + 22), (f32)*((ui8*)ptrToBackgroundPixels + 18), (f32)*((ui8*)ptrToBackgroundPixels + 14), (f32)*((ui8*)ptrToBackgroundPixels + 10), (f32)*((ui8*)ptrToBackgroundPixels + 6), (f32)*((ui8*)ptrToBackgroundPixels + 2));
+            __m256 backgroundColors_a = _mm256_set_ps((f32)*((ui8*)ptrToBackgroundPixels + 31), (f32)*((ui8*)ptrToBackgroundPixels + 27), (f32)*((ui8*)ptrToBackgroundPixels + 23), (f32)*((ui8*)ptrToBackgroundPixels + 19), (f32)*((ui8*)ptrToBackgroundPixels + 15), (f32)*((ui8*)ptrToBackgroundPixels + 11), (f32)*((ui8*)ptrToBackgroundPixels + 7), (f32)*((ui8*)ptrToBackgroundPixels + 3));
 #endif
 
             //Bilinear blend 
