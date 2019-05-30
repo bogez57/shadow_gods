@@ -376,10 +376,10 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
 #if __AVX2__
             {//Convert and Pack into dest pixels to write out
-                __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
-                __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
-                __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
-                __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
+                __m256i finalBlendedColori_r = _mm256_cvtps_epi32(finalBlendedColor_r);
+                __m256i finalBlendedColori_g = _mm256_cvtps_epi32(finalBlendedColor_g);
+                __m256i finalBlendedColori_b = _mm256_cvtps_epi32(finalBlendedColor_b);
+                __m256i finalBlendedColori_a = _mm256_cvtps_epi32(finalBlendedColor_a);
 
                 //Move pixels (through bitwise operations and shifting) from RRRR GGGG etc. format to expected BGRA format
                 __m256i out = _mm256_or_si256(_mm256_or_si256(_mm256_or_si256(_mm256_slli_epi32(finalBlendedColori_r, 16), _mm256_slli_epi32(finalBlendedColori_g, 8)), finalBlendedColori_b), _mm256_slli_epi32(finalBlendedColori_a, 24));
@@ -395,15 +395,15 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
 #if __AVX__
             {//Convert and Pack into dest pixels to write out
-                __m256i finalBlendedColori_r = _mm256_cvttps_epi32(finalBlendedColor_r);
-                __m256i finalBlendedColori_g = _mm256_cvttps_epi32(finalBlendedColor_g);
-                __m256i finalBlendedColori_b = _mm256_cvttps_epi32(finalBlendedColor_b);
-                __m256i finalBlendedColori_a = _mm256_cvttps_epi32(finalBlendedColor_a);
+                __m256i finalBlendedColori_r = _mm256_cvtps_epi32(finalBlendedColor_r);
+                __m256i finalBlendedColori_g = _mm256_cvtps_epi32(finalBlendedColor_g);
+                __m256i finalBlendedColori_b = _mm256_cvtps_epi32(finalBlendedColor_b);
+                __m256i finalBlendedColori_a = _mm256_cvtps_epi32(finalBlendedColor_a);
 
-                __m256i backgroundColorsi_r = _mm256_cvttps_epi32(backgroundColors_r);
-                __m256i backgroundColorsi_g = _mm256_cvttps_epi32(backgroundColors_g);
-                __m256i backgroundColorsi_b = _mm256_cvttps_epi32(backgroundColors_b);
-                __m256i backgroundColorsi_a = _mm256_cvttps_epi32(backgroundColors_a);
+                __m256i backgroundColorsi_r = _mm256_cvtps_epi32(backgroundColors_r);
+                __m256i backgroundColorsi_g = _mm256_cvtps_epi32(backgroundColors_g);
+                __m256i backgroundColorsi_b = _mm256_cvtps_epi32(backgroundColors_b);
+                __m256i backgroundColorsi_a = _mm256_cvtps_epi32(backgroundColors_a);
 
                 //Since AVX doesn't have certain bitwise operations I need to extract 128 bit values from
                 //256 bit ones and then use the available bitwise operations on those 
