@@ -423,32 +423,25 @@ namespace Win32
         }
         else
         {
-            //Render through software
-            Image colorBuffer{};
-            colorBuffer.data = (ui8*)globalBackBuffer.memory;
-            colorBuffer.size.width = globalBackBuffer.width;
-            colorBuffer.size.height = globalBackBuffer.height;
-            colorBuffer.pitch = globalBackBuffer.pitch;
-
-            RenderViaSoftware($(colorBuffer), renderCmdBuf);
+            RenderViaSoftware(globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch, renderCmdBuf);
 
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
-            PatBlt(deviceContext, 0, colorBuffer.size.height, windowWidth, windowHeight, BLACKNESS);
+            PatBlt(deviceContext, 0, globalBackBuffer.height, windowWidth, windowHeight, BLACKNESS);
             PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
-            PatBlt(deviceContext, colorBuffer.size.width, 0, windowWidth, windowHeight, BLACKNESS);
+            PatBlt(deviceContext, globalBackBuffer.width, 0, windowWidth, windowHeight, BLACKNESS);
             
             {//Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
                 v2i displayRect_BottomLeftCoords{0, 0};
                 v2i displayRect_Dimensions{};
-                displayRect_Dimensions.width = colorBuffer.size.width;
-                displayRect_Dimensions.height = colorBuffer.size.height;
+                displayRect_Dimensions.width = globalBackBuffer.width;
+                displayRect_Dimensions.height = globalBackBuffer.height;
 
                 //Copy game's rendered back buffer to whatever display area size you want
                 StretchDIBits(deviceContext,
                             displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
-                            0, 0, colorBuffer.size.width, colorBuffer.size.height, //Source - The dimensions/coords of the back buffer the game rendered to
-                            (void*)colorBuffer.data,
+                            0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
+                            globalBackBuffer.memory,
                             &globalBackBuffer.Info,
                             DIB_RGB_COLORS, SRCCOPY);
             };

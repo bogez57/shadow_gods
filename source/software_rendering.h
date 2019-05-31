@@ -3,6 +3,7 @@
 
 #include "renderer_stuff.h"
 
+#if 0
 local_func void
 DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
 {    
@@ -155,10 +156,11 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
         currentRow += buffer.pitch;
     }
 };
+#endif
 
 #include <immintrin.h>
 
-void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale) 
+void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale) 
 {
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
     {
@@ -191,8 +193,8 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
     v2f targetRectXAxis = cameraCoords.bottomRight - origin;
     v2f targetRectYAxis = cameraCoords.topLeft - origin;
 
-    f32 widthMax = (f32)(buffer.size.width - 1);
-    f32 heightMax = (f32)(buffer.size.height - 1);
+    f32 widthMax = (f32)(colorBufferSize.width - 1);
+    f32 heightMax = (f32)(colorBufferSize.height - 1);
     
     f32 xMin = widthMax;
     f32 xMax = 0.0f;
@@ -229,7 +231,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
     v2f normalizedXAxis = invertedXAxisSqd * targetRectXAxis;
     v2f normalizedYAxis = invertedYAxisSqd * targetRectYAxis;
 
-    ui8* currentRow = (ui8*)buffer.data + (i32)xMin * 4+ (i32)yMin * buffer.pitch; 
+    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
         ui32* destPixel = (ui32*)currentRow;
@@ -277,7 +279,7 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
                 BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
 
                 //Gather 4 texels (in a square pattern) from certain texel Ptr
-                ui8* texelPtr = ((ui8*)image.data) + ((ui32)texelCoords_y.m256_f32[index]*image.pitch) + ((ui32)texelCoords_x.m256_f32[index]*sizeof(ui32));//size of pixel
+                ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelCoords_y.m256_f32[index]*image.pitch) + ((ui32)texelCoords_x.m256_f32[index]*sizeof(ui32));//size of pixel
                 sampleTexelAs.m256i_u32[index] = *(ui32*)(texelPtr);
                 sampleTexelBs.m256i_u32[index] = *(ui32*)(texelPtr + sizeof(ui32));
                 sampleTexelCs.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch);
@@ -453,14 +455,15 @@ void DrawImageQuickly(Image&& buffer, Quadf cameraCoords, Image image, Image nor
 
 
         
-        currentRow += buffer.pitch;
+        currentRow += colorBufferPitch;
     };
 
 };
 
+#if 0
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 //Also involves lighting calcuation
-//TODO: Will eventually be removed entirely/combine with DrawImageQuickly
+//TODO: Will eventually be removed entirely/combine with DrawTextureQuickly
 local_func void
 DrawImageSlowly(Image&& buffer, Quadf cameraCoords, Image image, Image normalMap, f32 rotation, v2f scale, f32 lightAngle = {}, f32 lightThreshold = {})
 {    
@@ -679,8 +682,9 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
 {
     //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
+#endif
 
-void RenderViaSoftware(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo)
+void RenderViaSoftware(void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Game_Render_Cmd_Buffer renderBufferInfo)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
 
@@ -693,19 +697,19 @@ void RenderViaSoftware(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferI
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
         switch(entryHeader->type)
         {
-            case EntryType_Image:
+            case EntryType_Texture:
             {
-                RenderEntry_Image* imageEntry = (RenderEntry_Image*)currentRenderBufferEntry;
-                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)imageEntry->imageData.size.width, (f32)imageEntry->imageData.size.height);
+                RenderEntry_Texture* imageEntry = (RenderEntry_Texture*)currentRenderBufferEntry;
+                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)imageEntry->size.width, (f32)imageEntry->size.height);
 
                 ConvertToCorrectPositiveRadian($(imageEntry->world.rotation));
 
                 Quadf imageTargetRect_world = WorldTransform(imageTargetRect, imageEntry->world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                DrawImageQuickly($(colorBuffer), imageTargetRect_camera, imageEntry->imageData, imageEntry->normalMap, imageEntry->world.rotation, imageEntry->world.scale);
+                DrawTextureQuickly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, *imageEntry, imageEntry->world.rotation, imageEntry->world.scale);
 
-                currentRenderBufferEntry += sizeof(RenderEntry_Image);
+                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
 
             InvalidDefaultCase;

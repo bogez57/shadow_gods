@@ -18,21 +18,14 @@
     }
 
     local_func auto
-    LoadTexture(Image ImageToSendToGPU) -> Texture
+    LoadTexture(ui8* textureData, v2i textureSize) -> ui32
     {
-        Texture ResultingTexture {};
-        ResultingTexture.size.width = ImageToSendToGPU.size.width;
-        ResultingTexture.size.height = ImageToSendToGPU.size.height;
-
-        ui8* ImageData = ImageToSendToGPU.data;
-
+        ui32 textureID{};
         glEnable(GL_TEXTURE_2D);
-        glGenTextures(1, &ResultingTexture.ID);
-        glBindTexture(GL_TEXTURE_2D, ResultingTexture.ID);
+        glGenTextures(1, &textureID);
+        glBindTexture(GL_TEXTURE_2D, textureID);
 
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA, ResultingTexture.size.width, ResultingTexture.size.height,
-            0, GL_RGBA, GL_UNSIGNED_BYTE, ImageData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureSize.width, textureSize.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -44,7 +37,7 @@
         glBindTexture(GL_TEXTURE_2D, 0);
         glDisable(GL_TEXTURE_2D);
 
-        return ResultingTexture;
+        return textureID;
     }
 
     local_func auto

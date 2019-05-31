@@ -194,7 +194,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         player->world.pos = {800.0f, 600.0f};
         player->world.rotation = 0.0f;
         player->world.scale = {2.0f, 2.0f};
-        player->image.opacity = .5f;
         
         //Enemy Init
         enemy->image.data = platformServices->LoadBGRAImage("data/test_cape_front.bmp", $(enemy->image.size.width), $(enemy->image.size.height));
@@ -202,7 +201,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         enemy->world.pos = {800.0f, 700.0f};
         enemy->world.rotation = 0.0f;
         enemy->world.scale = {2.0f, 2.0f};
-        enemy->image.opacity = .7f;
 
         gState->normalMap.data = platformServices->LoadBGRAImage("data/test.png", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
 
@@ -266,11 +264,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         gState->lightThreshold = 1.0f;
         gState->lightAngle = 1.0f;
-
-        //Render to Image
-        v2f origin{0.0f, 0.0f};
-        origin += 300.0f;
-        origin.x += 100.0f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -295,7 +288,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.viewCenter, v2f{stage->camera.viewWidth, stage->camera.viewHeight}, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    PushImage(global_renderCmdBuf, stage->info.backgroundImg, gState->normalMap, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
-    PushImage(global_renderCmdBuf, player->image, gState->normalMap, player->world.rotation, player->world.pos, player->world.scale);
-    PushImage(global_renderCmdBuf, enemy->image, gState->normalMap, enemy->world.rotation, enemy->world.pos, enemy->world.scale);
+    PushTexture(global_renderCmdBuf, stage->info.backgroundImg.data, stage->info.backgroundImg.size, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    PushTexture(global_renderCmdBuf, player->image.data, player->image.size, player->world.rotation, player->world.pos, player->world.scale);
+    PushTexture(global_renderCmdBuf, enemy->image.data, enemy->image.size, enemy->world.rotation, enemy->world.pos, enemy->world.scale);
 };

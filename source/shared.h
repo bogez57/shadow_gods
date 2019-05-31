@@ -142,18 +142,3 @@ struct Transform
     v2f pos;
     v2f scale;
 };
-
-struct Image
-{
-    ui8* data;
-    v2i size;
-    ui32 pitch;
-    f32 opacity {1.0f};
-};
-
-struct Texture
-{
-    ui32 ID;
-    v2i size;
-};
-

@@ -63,7 +63,7 @@ struct Object_Transform
 
 enum Render_Entry_Type
 {
-    EntryType_Image,
+    EntryType_Texture,
     EntryType_2DCamera
 };
 
@@ -72,12 +72,13 @@ struct RenderEntry_Header
     Render_Entry_Type type;
 };
 
-struct RenderEntry_Image
+struct RenderEntry_Texture
 {
     RenderEntry_Header header;
     Object_Transform world;
-    Image normalMap;
-    Image imageData;
+    ui8* colorData;
+    v2i size;
+    ui32 pitch;
 };
 
 struct RenderEntry_2DCamera
@@ -90,13 +91,13 @@ struct RenderEntry_2DCamera
     f32 zoomFactor;
 };
 
-void PushImage(Game_Render_Cmd_Buffer&& bufferInfo, Image imageToDraw, Image normalMap, f32 worldRotation, v2f worldPos, v2f worldScale);
+void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, ui8* textureData, v2i textureSize, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor);
-void RenderViaSoftware(Image&& colorBuffer, Game_Render_Cmd_Buffer renderBufferInfo);
+void RenderViaSoftware(void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Game_Render_Cmd_Buffer renderBufferInfo);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
-void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
+//void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, RenderEntry_2DCamera camera);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
@@ -119,16 +120,17 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void PushImage(Game_Render_Cmd_Buffer* bufferInfo, Image imageToDraw, Image normalMap, f32 rotation, v2f pos, v2f scale)
+void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, ui8* textureData, v2i textureSize, f32 rotation, v2f pos, v2f scale)
 {
-    RenderEntry_Image* imageEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Image);
+    RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
 
-    imageEntry->header.type = EntryType_Image;
-    imageEntry->world.rotation = rotation;
-    imageEntry->world.pos = pos;
-    imageEntry->world.scale = scale;
-    imageEntry->normalMap = normalMap;
-    imageEntry->imageData = imageToDraw;
+    textureEntry->header.type = EntryType_Texture;
+    textureEntry->world.rotation = rotation;
+    textureEntry->world.pos = pos;
+    textureEntry->world.scale = scale;
+    textureEntry->colorData = textureData;
+    textureEntry->size = textureSize;
+    textureEntry->pitch = textureSize.width * BYTES_PER_PIXEL;
 
     ++bufferInfo->entryCount;
 };
