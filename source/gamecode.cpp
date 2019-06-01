@@ -60,7 +60,67 @@ global_variable i32 renderBuffer;
 // Third Party
 #include <boagz/error_context.cpp>
 
-local_func auto FlipImage(Image image) -> Image
+//Move out to Renderer eventually
+local_func
+Image CreateEmptyImage(i32 width, i32 height)
+{
+    Image image{};
+
+    i32 numBytesPerPixel{4};
+    image.data = (ui8*)MallocSize(heap, width*height*numBytesPerPixel);
+    image.size = v2i{width, height};
+    image.pitch = width*numBytesPerPixel;
+
+    return image;
+};
+
+local_func
+void GenerateSphereNormalMap(Image&& sourceImage)
+{
+    f32 invWidth = 1.0f / (f32)(sourceImage.size.width - 1);
+    f32 invHeight = 1.0f / (f32)(sourceImage.size.height - 1);
+                                
+    ui8* row = (ui8*)sourceImage.data;
+    for(i32 y = 0; y < sourceImage.size.height; ++y)
+    {
+        ui32* pixel = (ui32*)row;
+
+        for(i32 x = 0; x < sourceImage.size.width; ++x)
+        {
+            v2f normalUV = {invWidth*(f32)x, invHeight*(f32)y};
+            
+            f32 normalX = 2.0f*normalUV.x - 1.0f;
+            f32 normalY = 2.0f*normalUV.y - 1.0f;
+                                        
+            f32 rootTerm = 1.0f - normalX*normalX - normalY*normalY;
+            f32 normalZ = 0.0f;
+
+            v3f normal {0.0f, 0.0f, 1.0f};
+
+            if(rootTerm >= 0.0f)
+            {
+                normalZ = Sqrt(rootTerm);
+                normal = v3f{normalX, normalY, normalZ};
+            };
+
+            //Convert from -1 to 1 range to value between 0 and 255
+            v4f color = {255.0f*(.5f*(normal.x + 1.0f)),
+                         255.0f*(.5f*(normal.y + 1.0f)),
+                         255.0f*(.5f*(normal.z + 1.0f)),
+                         0.0f};
+
+            *pixel++ = (((ui8)(color.a + .5f) << 24) |
+                        ((ui8)(color.r + .5f) << 16) |
+                        ((ui8)(color.g + .5f) << 8) |
+                        ((ui8)(color.b + .5f) << 0));
+            };
+
+        row += sourceImage.pitch;
+    };
+};
+
+local_func 
+Image FlipImage(Image image)
 {
     i32 widthInBytes = image.size.width * 4;
     ui8* p_topRowOfTexels = nullptr;
@@ -175,7 +235,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         i32 numBytesPerPixel = 4;
         //Stage Init
         stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/1440p.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
-        stage->info.backgroundImg.pitch = stage->info.backgroundImg.size.width * numBytesPerPixel;
         stage->info.size.x = (f32)stage->info.backgroundImg.size.x;
         stage->info.size.y = (f32)stage->info.backgroundImg.size.y;
         stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
@@ -190,80 +249,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Player Init
         player->image.data = platformServices->LoadBGRAImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
-        player->image.pitch = player->image.size.width * numBytesPerPixel;
         player->world.pos = {800.0f, 600.0f};
         player->world.rotation = 0.0f;
         player->world.scale = {2.0f, 2.0f};
         
         //Enemy Init
         enemy->image.data = platformServices->LoadBGRAImage("data/test_cape_front.bmp", $(enemy->image.size.width), $(enemy->image.size.height));
-        enemy->image.pitch = enemy->image.size.width * numBytesPerPixel;
         enemy->world.pos = {800.0f, 700.0f};
         enemy->world.rotation = 0.0f;
         enemy->world.scale = {2.0f, 2.0f};
-
-        gState->normalMap.data = platformServices->LoadBGRAImage("data/test.png", $(gState->normalMap.size.width), $(gState->normalMap.size.height));
-
-        //Create empty image
-        auto CreateEmptyImage = [numBytesPerPixel](i32 width, i32 height) -> Image
-                            {
-                                Image image{};
-
-                                image.data = (ui8*)MallocSize(heap, width*height*numBytesPerPixel);
-                                image.size = v2i{width, height};
-                                image.pitch = width*numBytesPerPixel;
-
-                                return image;
-                            };
-
-        auto GenerateSphereNormalMap = [](Image&& sourceImage) -> void
-                            {
-                                f32 invWidth = 1.0f / (f32)(sourceImage.size.width - 1);
-                                f32 invHeight = 1.0f / (f32)(sourceImage.size.height - 1);
-                                
-                                ui8* row = (ui8*)sourceImage.data;
-                                for(i32 y = 0; y < sourceImage.size.height; ++y)
-                                {
-                                    ui32* pixel = (ui32*)row;
-
-                                    for(i32 x = 0; x < sourceImage.size.width; ++x)
-                                    {
-                                        v2f normalUV = {invWidth*(f32)x, invHeight*(f32)y};
-                                        
-                                        f32 normalX = 2.0f*normalUV.x - 1.0f;
-                                        f32 normalY = 2.0f*normalUV.y - 1.0f;
-                                        
-                                        f32 rootTerm = 1.0f - normalX*normalX - normalY*normalY;
-                                        f32 normalZ = 0.0f;
-
-                                        v3f normal {0.0f, 0.0f, 1.0f};
-
-                                        if(rootTerm >= 0.0f)
-                                        {
-                                            normalZ = Sqrt(rootTerm);
-                                            normal = v3f{normalX, normalY, normalZ};
-                                        };
-
-                                        //Convert from -1 to 1 range to value between 0 and 255
-                                        v4f color = {255.0f*(.5f*(normal.x + 1.0f)),
-                                                     255.0f*(.5f*(normal.y + 1.0f)),
-                                                     255.0f*(.5f*(normal.z + 1.0f)),
-                                                     0.0f};
-
-                                        *pixel++ = (((ui8)(color.a + .5f) << 24) |
-                                                     ((ui8)(color.r + .5f) << 16) |
-                                                     ((ui8)(color.g + .5f) << 8) |
-                                                     ((ui8)(color.b + .5f) << 0));
-                                    }
-
-                                    row += sourceImage.pitch;
-                                }
-                            };
-        
-        gState->composite = CreateEmptyImage((i32)stage->info.size.x, (i32)stage->info.size.y);
-
-        gState->lightThreshold = 1.0f;
-        gState->lightAngle = 1.0f;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -287,6 +281,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .001f;
     };
 
+    //Camera needs to be first thing pushed with current implementation
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.viewCenter, v2f{stage->camera.viewWidth, stage->camera.viewHeight}, stage->camera.dilatePoint, stage->camera.zoomFactor);
     PushTexture(global_renderCmdBuf, stage->info.backgroundImg.data, stage->info.backgroundImg.size, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
     PushTexture(global_renderCmdBuf, player->image.data, player->image.size, player->world.rotation, player->world.pos, player->world.scale);

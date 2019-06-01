@@ -688,7 +688,7 @@ void RenderViaSoftware(void* colorBufferData, v2i colorBufferSize, i32 colorBuff
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
 
-    //First element should always be camera so I can use it for multiple entry's
+    //First element should always be camera since it is used in other entry calculations
     RenderEntry_2DCamera* camera = (RenderEntry_2DCamera*)currentRenderBufferEntry;
     currentRenderBufferEntry += sizeof(RenderEntry_2DCamera);
 
