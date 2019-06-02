@@ -699,15 +699,15 @@ void RenderViaSoftware(void* colorBufferData, v2i colorBufferSize, i32 colorBuff
         {
             case EntryType_Texture:
             {
-                RenderEntry_Texture* imageEntry = (RenderEntry_Texture*)currentRenderBufferEntry;
-                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)imageEntry->size.width, (f32)imageEntry->size.height);
+                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.size.width, (f32)textureEntry.size.height);
 
-                ConvertToCorrectPositiveRadian($(imageEntry->world.rotation));
+                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
-                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, imageEntry->world);
+                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                DrawTextureQuickly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, *imageEntry, imageEntry->world.rotation, imageEntry->world.scale);
+                DrawTextureQuickly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
