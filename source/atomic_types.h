@@ -259,6 +259,16 @@ operator*=(v2f& B, f32 a)
 }
 
 inline v2f
+operator/(v2f b, f32 a)
+{
+    v2f result;
+    result.x = b.x / a;
+    result.y = b.y / a;
+
+    return result;
+}
+
+inline v2f
 operator+(v2f a, v2f B)
 {
     v2f result;

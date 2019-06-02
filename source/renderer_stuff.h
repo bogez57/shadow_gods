@@ -63,6 +63,7 @@ struct Object_Transform
 
 enum Render_Entry_Type
 {
+    EntryType_OrthoProj,
     EntryType_Texture,
     EntryType_2DCamera
 };
@@ -70,6 +71,11 @@ enum Render_Entry_Type
 struct RenderEntry_Header
 {
     Render_Entry_Type type;
+};
+
+struct RenderEntry_OrthoProj
+{
+    v2f screenDimensions;
 };
 
 struct RenderEntry_Texture
@@ -92,8 +98,8 @@ struct RenderEntry_2DCamera
 };
 
 void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, ui8* textureData, v2i textureSize, f32 worldRotation, v2f worldPos, v2f worldScale);
-void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor);
-void RenderViaSoftware(void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Game_Render_Cmd_Buffer renderBufferInfo);
+void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
+void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -112,6 +118,8 @@ Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
 
 #ifdef GAME_RENDERER_STUFF_IMPL
 
+f32 pixels_PerMeter{200.0f};
+
 void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 {
     void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
@@ -120,13 +128,20 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
+void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimensions_pixels)
+{
+    RenderEntry_OrthoProj* ortho = RenderCmdBuf_Push(bufferInfo, RenderEntry_OrthoProj);
+
+    ortho->screenDimensions = screenDimensions_pixels;
+};
+
 void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, ui8* textureData, v2i textureSize, f32 rotation, v2f pos, v2f scale)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;
-    textureEntry->world.pos = pos;
+    textureEntry->world.pos = pos * pixels_PerMeter;
     textureEntry->world.scale = scale;
     textureEntry->colorData = textureData;
     textureEntry->size = textureSize;
@@ -135,12 +150,11 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, ui8* textureData, v2i textu
     ++bufferInfo->entryCount;
 };
 
-void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f viewCenter, v2f dims, v2f dilatePoint, f32 zoomFactor)
+void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor)
 {
     RenderEntry_2DCamera* camera = RenderCmdBuf_Push(bufferInfo, RenderEntry_2DCamera);
-    camera->lookAt = lookAt;
-    camera->viewCenter = viewCenter;
-    camera->viewDims = dims;
+    camera->lookAt = lookAt * pixels_PerMeter;
+    camera->viewCenter = v2f{1280.0f / 2.0f, 720.0f / 2.0f};//TODO: Need to base this off of actual screen dimensions that were set
     camera->dilatePoint = dilatePoint;
     camera->zoomFactor = zoomFactor;
 };

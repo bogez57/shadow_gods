@@ -423,7 +423,7 @@ namespace Win32
         }
         else
         {
-            RenderViaSoftware(globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch, renderCmdBuf);
+            RenderViaSoftware($(renderCmdBuf), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch);
 
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);

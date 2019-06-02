@@ -60,6 +60,8 @@ global_variable i32 renderBuffer;
 // Third Party
 #include <boagz/error_context.cpp>
 
+f32 pixelsPerMeter = 200.0f;
+
 //Move out to Renderer eventually
 local_func
 Image CreateEmptyImage(i32 width, i32 height)
@@ -196,6 +198,15 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
+v2f SizeInMeters(v2i sizeInPixels)
+{
+    v2f result{};
+    result.x = (f32)sizeInPixels.x / pixelsPerMeter;
+    result.y = (f32)sizeInPixels.y / pixelsPerMeter;
+
+    return result;
+};
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmd_Buffer* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -223,41 +234,27 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         gameMemory->Initialized = true;
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
-        viewportWidth = 1280.0f;
-        viewportHeight = 720.0f;
-
         {//Initialize memory/allocator stuff
             InitApplicationMemory(gameMemory);
             heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
             InitDynamAllocator(heap);
         };
 
-        i32 numBytesPerPixel = 4;
         //Stage Init
-        stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/1440p.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
-        stage->info.size.x = (f32)stage->info.backgroundImg.size.x;
-        stage->info.size.y = (f32)stage->info.backgroundImg.size.y;
+        stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/4k.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
+        stage->info.size = SizeInMeters(stage->info.backgroundImg.size);
         stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
 
         //Camera Init
-        stage->camera.viewWidth = viewportWidth;
-        stage->camera.viewHeight = viewportHeight;
         stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y };
-        stage->camera.viewCenter = { stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f };
-        stage->camera.dilatePoint = stage->camera.viewCenter - v2f {0.0f, 200.0f};
+        stage->camera.dilatePoint = v2f{0.0f, 0.0f};
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
         player->image.data = platformServices->LoadBGRAImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
-        player->world.pos = {800.0f, 600.0f};
+        player->world.pos = stage->info.centerPoint;
         player->world.rotation = 0.0f;
-        player->world.scale = {2.0f, 2.0f};
-        
-        //Enemy Init
-        enemy->image.data = platformServices->LoadBGRAImage("data/test_cape_front.bmp", $(enemy->image.size.width), $(enemy->image.size.height));
-        enemy->world.pos = {800.0f, 700.0f};
-        enemy->world.rotation = 0.0f;
-        enemy->world.scale = {2.0f, 2.0f};
+        player->world.scale = {1.0f, 1.0f};
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -281,9 +278,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .001f;
     };
 
-    //Camera needs to be first thing pushed with current implementation
-    PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.viewCenter, v2f{stage->camera.viewWidth, stage->camera.viewHeight}, stage->camera.dilatePoint, stage->camera.zoomFactor);
+    //Currently projection needs to be set first followed by camera
+    SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
+    PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
     PushTexture(global_renderCmdBuf, stage->info.backgroundImg.data, stage->info.backgroundImg.size, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
     PushTexture(global_renderCmdBuf, player->image.data, player->image.size, player->world.rotation, player->world.pos, player->world.scale);
-    PushTexture(global_renderCmdBuf, enemy->image.data, enemy->image.size, enemy->world.rotation, enemy->world.pos, enemy->world.scale);
 };

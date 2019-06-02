@@ -29,9 +29,6 @@ struct StageInfo
 struct Game_Camera
 {
     v2f lookAt;
-    v2f viewCenter;
-    f32 viewWidth;
-    f32 viewHeight;
     v2f dilatePoint;
     f32 zoomFactor;
 };

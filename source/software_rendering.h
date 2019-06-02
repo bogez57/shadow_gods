@@ -684,11 +684,14 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
 };
 #endif
 
-void RenderViaSoftware(void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Game_Render_Cmd_Buffer renderBufferInfo)
+void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch)
 {
     ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
 
-    //First element should always be camera since it is used in other entry calculations
+    //TODO: With how this is currently setup the user is forced to make sure ortho is set first
+    //followed by the camera. Maybe think of ways to fix this
+    RenderEntry_OrthoProj* orthoProj = (RenderEntry_OrthoProj*)currentRenderBufferEntry;
+    currentRenderBufferEntry += sizeof(RenderEntry_OrthoProj);
     RenderEntry_2DCamera* camera = (RenderEntry_2DCamera*)currentRenderBufferEntry;
     currentRenderBufferEntry += sizeof(RenderEntry_2DCamera);
 
@@ -715,6 +718,8 @@ void RenderViaSoftware(void* colorBufferData, v2i colorBufferSize, i32 colorBuff
             InvalidDefaultCase;
         }
     };
+
+    renderBufferInfo.entryCount = 0; 
 };
 
 #endif //SOFTWARE_RENDERING_INCLUDE_H
