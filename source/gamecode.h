@@ -5,14 +5,6 @@
 #include "collisions.h"
 #include "skeleton.h"
 
-struct Image
-{
-    ui8* data;
-    v2i size;
-    ui32 pitch;
-    f32 opacity {1.0f};
-};
-
 struct Fighter
 {
     Image image;
@@ -44,8 +36,6 @@ struct Stage_Data
 
 struct Game_State
 {
-    i32 imageWidth, imageHeight;
-    Atlas* atlas;
     Image composite;
     Image normalMap;
     f32 lightAngle;

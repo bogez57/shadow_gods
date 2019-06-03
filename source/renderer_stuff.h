@@ -5,6 +5,15 @@
 #define BYTES_PER_PIXEL 4
 #endif
 
+struct Image
+{
+    ui8* data;
+    f32 widthOverHeight;
+    f32 height_meters;
+    ui32 pitch;
+    f32 opacity {1.0f};
+};
+
 struct Quadf
 {
     union
@@ -97,7 +106,7 @@ struct RenderEntry_2DCamera
     f32 zoomFactor;
 };
 
-void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, ui8* textureData, v2i textureSize, f32 worldRotation, v2f worldPos, v2f worldScale);
+void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
 void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
@@ -118,7 +127,7 @@ Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
 
 #ifdef GAME_RENDERER_STUFF_IMPL
 
-f32 pixels_PerMeter{200.0f};
+f32 pixelsPerMeter{200.0f};
 
 void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 {
@@ -135,17 +144,20 @@ void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimension
     ortho->screenDimensions = screenDimensions_pixels;
 };
 
-void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, ui8* textureData, v2i textureSize, f32 rotation, v2f pos, v2f scale)
+void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 rotation, v2f pos, v2f scale)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
 
+    f32 bitmapWidth_pixels = bitmap.widthOverHeight * bitmap.height_meters * pixelsPerMeter;
+    f32 bitmapHeight_pixels = bitmap.height_meters * pixelsPerMeter;
+
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;
-    textureEntry->world.pos = pos * pixels_PerMeter;
+    textureEntry->world.pos = pos * pixelsPerMeter;
     textureEntry->world.scale = scale;
-    textureEntry->colorData = textureData;
-    textureEntry->size = textureSize;
-    textureEntry->pitch = textureSize.width * BYTES_PER_PIXEL;
+    textureEntry->colorData = bitmap.data;
+    textureEntry->size = v2i{(i32)bitmapWidth_pixels, (i32)bitmapHeight_pixels};
+    textureEntry->pitch = (ui32)bitmapWidth_pixels * BYTES_PER_PIXEL;
 
     ++bufferInfo->entryCount;
 };
@@ -153,7 +165,7 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, ui8* textureData, v2i textu
 void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor)
 {
     RenderEntry_2DCamera* camera = RenderCmdBuf_Push(bufferInfo, RenderEntry_2DCamera);
-    camera->lookAt = lookAt * pixels_PerMeter;
+    camera->lookAt = lookAt * pixelsPerMeter;
     camera->viewCenter = v2f{1280.0f / 2.0f, 720.0f / 2.0f};//TODO: Need to base this off of actual screen dimensions that were set
     camera->dilatePoint = dilatePoint;
     camera->zoomFactor = zoomFactor;

@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
+#if 0
 #ifndef ATLAS_INCLUDE_H
 #define ATLAS_INCLUDE_H
 
@@ -544,3 +545,4 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name)
 }
 
 #endif //ATLAS_IMPL
+#endif

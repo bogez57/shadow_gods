@@ -25,8 +25,9 @@
 #include "linked_list.h"
 #include <utility>
 
-#include "atlas.h"
 #include "shared.h"
+#include "renderer_stuff.h"
+#include "atlas.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -60,9 +61,8 @@ global_variable i32 renderBuffer;
 // Third Party
 #include <boagz/error_context.cpp>
 
-f32 pixelsPerMeter = 200.0f;
-
 //Move out to Renderer eventually
+#if 0
 local_func
 Image CreateEmptyImage(i32 width, i32 height)
 {
@@ -147,6 +147,7 @@ Image FlipImage(Image image)
 
     return image;
 };
+#endif
 
 inline b KeyPressed(Button_State KeyState)
 {
@@ -198,13 +199,24 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-v2f SizeInMeters(v2i sizeInPixels)
+Image LoadBitmap(const char* fileName)
 {
-    v2f result{};
-    result.x = (f32)sizeInPixels.x / pixelsPerMeter;
-    result.y = (f32)sizeInPixels.y / pixelsPerMeter;
+    Image result;
+
+    f32 pixelsPerMeter = 200.0f;
+    i32 width_inPixels, height_inPixels;
+    result.data = globalPlatformServices->LoadBGRAImage(fileName, $(width_inPixels), $(height_inPixels));
+    result.widthOverHeight = (f32)width_inPixels/(f32)height_inPixels;
+    result.height_meters = (f32)height_inPixels / pixelsPerMeter;
 
     return result;
+};
+
+f32 BitmapWidth_meters(Image bitmap)
+{
+    f32 width_inMeters = bitmap.widthOverHeight * bitmap.height_meters;
+
+    return width_inMeters;
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmd_Buffer* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -241,8 +253,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         //Stage Init
-        stage->info.backgroundImg.data = platformServices->LoadBGRAImage("data/4k.jpg", $(stage->info.backgroundImg.size.width), $(stage->info.backgroundImg.size.height));
-        stage->info.size = SizeInMeters(stage->info.backgroundImg.size);
+        stage->info.backgroundImg = LoadBitmap("data/4k.jpg");
+        stage->info.size = {BitmapWidth_meters(stage->info.backgroundImg), stage->info.backgroundImg.height_meters};
         stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
 
         //Camera Init
@@ -251,7 +263,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        player->image.data = platformServices->LoadBGRAImage("data/testimgs/test_head_front.bmp", $(player->image.size.width), $(player->image.size.height));
+        player->image = LoadBitmap("data/testimgs/test_head_front.bmp"); 
         player->world.pos = stage->info.centerPoint;
         player->world.rotation = 0.0f;
         player->world.scale = {1.0f, 1.0f};
@@ -281,6 +293,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     //Currently projection needs to be set first followed by camera
     SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    PushTexture(global_renderCmdBuf, stage->info.backgroundImg.data, stage->info.backgroundImg.size, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
-    PushTexture(global_renderCmdBuf, player->image.data, player->image.size, player->world.rotation, player->world.pos, player->world.scale);
+    PushTexture(global_renderCmdBuf, stage->info.backgroundImg, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    PushTexture(global_renderCmdBuf, player->image, player->world.rotation, player->world.pos, player->world.scale);
 };
