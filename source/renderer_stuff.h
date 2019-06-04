@@ -94,6 +94,7 @@ struct RenderEntry_Texture
     ui8* colorData;
     v2i size;
     ui32 pitch;
+    v2i sizeOfOriginalObject;
 };
 
 struct RenderEntry_2DCamera
@@ -106,7 +107,7 @@ struct RenderEntry_2DCamera
     f32 zoomFactor;
 };
 
-void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 worldRotation, v2f worldPos, v2f worldScale);
+void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 hieghtOfObject, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
 void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
@@ -144,12 +145,15 @@ void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimension
     ortho->screenDimensions = screenDimensions_pixels;
 };
 
-void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 rotation, v2f pos, v2f scale)
+void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 heightOfObject, f32 rotation, v2f pos, v2f scale)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
 
     f32 bitmapWidth_pixels = bitmap.widthOverHeight * bitmap.height_meters * pixelsPerMeter;
     f32 bitmapHeight_pixels = bitmap.height_meters * pixelsPerMeter;
+
+    f32 objectWidth_meters = bitmap.widthOverHeight * heightOfObject * pixelsPerMeter;
+    f32 objectHeight_meters = heightOfObject * pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;
@@ -158,6 +162,7 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 rotation,
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmapWidth_pixels, (i32)bitmapHeight_pixels};
     textureEntry->pitch = (ui32)bitmapWidth_pixels * BYTES_PER_PIXEL;
+    textureEntry->sizeOfOriginalObject = v2i{(i32)objectWidth_meters, (i32)objectHeight_meters};
 
     ++bufferInfo->entryCount;
 };

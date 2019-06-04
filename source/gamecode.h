@@ -9,6 +9,7 @@ struct Fighter
 {
     Image image;
     Transform world;
+    f32 height;
 };
 
 struct StageInfo
