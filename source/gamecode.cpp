@@ -206,7 +206,7 @@ Image LoadBitmap(const char* fileName)
     f32 pixelsPerMeter = 200.0f;
     i32 width_inPixels, height_inPixels;
     result.data = globalPlatformServices->LoadBGRAImage(fileName, $(width_inPixels), $(height_inPixels));
-    result.widthOverHeight = (f32)width_inPixels/(f32)height_inPixels;
+    result.aspectRatio = (f32)width_inPixels/(f32)height_inPixels;
     result.height_meters = (f32)height_inPixels / pixelsPerMeter;
 
     return result;
@@ -214,7 +214,7 @@ Image LoadBitmap(const char* fileName)
 
 f32 BitmapWidth_meters(Image bitmap)
 {
-    f32 width_inMeters = bitmap.widthOverHeight * bitmap.height_meters;
+    f32 width_inMeters = bitmap.aspectRatio * bitmap.height_meters;
 
     return width_inMeters;
 };
@@ -264,7 +264,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Player Init
         player->image = LoadBitmap("data/testimgs/test_head_front.bmp"); 
-        player->world.pos = stage->info.centerPoint;
+        player->world.pos = stage->info.centerPoint - 2.0f;
         player->world.rotation = 0.0f;
         player->world.scale = {1.0f, 1.0f};
     };
@@ -280,7 +280,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        stage->camera.lookAt += 2.0f;
+        stage->camera.lookAt += .01f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))

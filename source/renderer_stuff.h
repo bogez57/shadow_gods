@@ -8,7 +8,7 @@
 struct Image
 {
     ui8* data;
-    f32 widthOverHeight;
+    f32 aspectRatio;
     f32 height_meters;
     ui32 pitch;
     f32 opacity {1.0f};
@@ -149,10 +149,10 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 heightOfO
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
 
-    f32 bitmapWidth_pixels = bitmap.widthOverHeight * bitmap.height_meters * pixelsPerMeter;
+    f32 bitmapWidth_pixels = bitmap.aspectRatio* bitmap.height_meters * pixelsPerMeter;
     f32 bitmapHeight_pixels = bitmap.height_meters * pixelsPerMeter;
 
-    f32 objectWidth_meters = bitmap.widthOverHeight * heightOfObject * pixelsPerMeter;
+    f32 objectWidth_meters = bitmap.aspectRatio* heightOfObject * pixelsPerMeter;
     f32 objectHeight_meters = heightOfObject * pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;

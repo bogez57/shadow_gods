@@ -337,6 +337,17 @@ operator-(v2f a, v2f B)
 }
 
 inline v2f
+operator-(v2f a, f32 b)
+{
+    v2f result;
+
+    result.x = a.x - b;
+    result.y = a.y - b;
+
+    return (result);
+}
+
+inline v2f
 operator-(v2f a)
 {
     v2f result;
