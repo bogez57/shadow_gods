@@ -703,7 +703,7 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
             case EntryType_Texture:
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
-                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.sizeOfOriginalObject.width, (f32)textureEntry.sizeOfOriginalObject.height);
+                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
                 ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 

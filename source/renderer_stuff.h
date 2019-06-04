@@ -94,7 +94,7 @@ struct RenderEntry_Texture
     ui8* colorData;
     v2i size;
     ui32 pitch;
-    v2i sizeOfOriginalObject;
+    v2i targetRectSize;
 };
 
 struct RenderEntry_2DCamera
@@ -107,9 +107,13 @@ struct RenderEntry_2DCamera
     f32 zoomFactor;
 };
 
+Image LoadBitmap(const char* fileName);
+f32 BitmapWidth_meters(Image bitmap);
+
 void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 hieghtOfObject, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
 void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
+
 
 void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -152,8 +156,8 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 heightOfO
     f32 bitmapWidth_pixels = bitmap.aspectRatio* bitmap.height_meters * pixelsPerMeter;
     f32 bitmapHeight_pixels = bitmap.height_meters * pixelsPerMeter;
 
-    f32 objectWidth_meters = bitmap.aspectRatio* heightOfObject * pixelsPerMeter;
-    f32 objectHeight_meters = heightOfObject * pixelsPerMeter;
+    f32 desiredWidth_pixels = bitmap.aspectRatio* heightOfObject * pixelsPerMeter;
+    f32 desiredHeight_pixels = heightOfObject * pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;
@@ -162,7 +166,7 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 heightOfO
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmapWidth_pixels, (i32)bitmapHeight_pixels};
     textureEntry->pitch = (ui32)bitmapWidth_pixels * BYTES_PER_PIXEL;
-    textureEntry->sizeOfOriginalObject = v2i{(i32)objectWidth_meters, (i32)objectHeight_meters};
+    textureEntry->targetRectSize= v2i{(i32)desiredWidth_pixels, (i32)desiredHeight_pixels};
 
     ++bufferInfo->entryCount;
 };
@@ -174,6 +178,26 @@ void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint,
     camera->viewCenter = v2f{1280.0f / 2.0f, 720.0f / 2.0f};//TODO: Need to base this off of actual screen dimensions that were set
     camera->dilatePoint = dilatePoint;
     camera->zoomFactor = zoomFactor;
+};
+
+Image LoadBitmap(const char* fileName)
+{
+    Image result;
+
+    f32 pixelsPerMeter = 200.0f;
+    i32 width_inPixels, height_inPixels;
+    result.data = globalPlatformServices->LoadBGRAImage(fileName, $(width_inPixels), $(height_inPixels));
+    result.aspectRatio = (f32)width_inPixels/(f32)height_inPixels;
+    result.height_meters = (f32)height_inPixels / pixelsPerMeter;
+
+    return result;
+};
+
+f32 BitmapWidth_meters(Image bitmap)
+{
+    f32 width_inMeters = bitmap.aspectRatio * bitmap.height_meters;
+
+    return width_inMeters;
 };
 
 #endif //GAME_RENDERER_STUFF_IMPL

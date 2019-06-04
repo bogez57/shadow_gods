@@ -199,26 +199,6 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-Image LoadBitmap(const char* fileName)
-{
-    Image result;
-
-    f32 pixelsPerMeter = 200.0f;
-    i32 width_inPixels, height_inPixels;
-    result.data = globalPlatformServices->LoadBGRAImage(fileName, $(width_inPixels), $(height_inPixels));
-    result.aspectRatio = (f32)width_inPixels/(f32)height_inPixels;
-    result.height_meters = (f32)height_inPixels / pixelsPerMeter;
-
-    return result;
-};
-
-f32 BitmapWidth_meters(Image bitmap)
-{
-    f32 width_inMeters = bitmap.aspectRatio * bitmap.height_meters;
-
-    return width_inMeters;
-};
-
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmd_Buffer* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
