@@ -21,7 +21,6 @@
  THE SOFTWARE.
  */
 
-#if 0
 #ifndef SKELETON_INCLUDE_H
 #define SKELETON_INCLUDE_H
 
@@ -192,4 +191,3 @@ Skeleton CreateSkeletonUsingJsonFile(Atlas atlas, const char* skeletonJsonFilePa
 };
 
 #endif //SKELETON_IMPL
-#endif

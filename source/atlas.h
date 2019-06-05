@@ -28,7 +28,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
-#if 0
 #ifndef ATLAS_INCLUDE_H
 #define ATLAS_INCLUDE_H
 
@@ -126,24 +125,19 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name);
 
 #include <string.h>
 #include <ctype.h>
+#include "renderer_stuff.h"
 
-#define MALLOC_STR(TO, FROM) strcpy(CONST_CAST(char*, TO) = (char*)MallocType(0, char, strlen(FROM) + 1), FROM)
+#define MALLOC_STR(TO, FROM) strcpy(CONST_CAST(char*, TO) = (char*)MallocType(heap, char, strlen(FROM) + 1), FROM)
 #define CONST_CAST(TYPE, VALUE) (*(TYPE*)&VALUE)
 
+//TODO: start loading using my memory managment facilities (Malloc, DeAlloc, etc.) instead of using OS
 void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 {
-    Image image;
-    image.data = globalPlatformServices->LoadBGRAImage(path, $(image.size.width), $(image.size.height));
+    Image bitmap = LoadBitmap(path);
 
-#if 0
-    Texture texture = globalRenderCmds.LoadTexture(image);
-    Texture* textureptr = MallocType(0, Texture, 1);
-    *textureptr = texture;
-
-    self->rendererObject = textureptr;
-    self->width = image.size.width;
-    self->height = image.size.height;
-#endif
+    self->rendererObject = bitmap.data;
+    self->width = bitmap.width_pxls;
+    self->height = bitmap.height_pxls;
 };
 
 void _AtlasPage_disposeTexture(AtlasPage* self)
@@ -151,14 +145,14 @@ void _AtlasPage_disposeTexture(AtlasPage* self)
     BGZ_ERRCTXT1("When disposing of texture in spine's atlaspage");
     BGZ_ASSERT(self->rendererObject, "Texture does not exist!");
 
-    DeAlloc(0, self->rendererObject);
+    DeAlloc(heap, self->rendererObject);
     self->width = 0;
     self->height = 0;
 };
 
 AtlasPage* AtlasPage_create(Atlas* atlas, const char* name)
 {
-    AtlasPage* self = CallocType(0, AtlasPage, 1);
+    AtlasPage* self = CallocType(heap, AtlasPage, 1);
     CONST_CAST(Atlas*, self->atlas) = atlas;
     MALLOC_STR(self->name, name);
     return self;
@@ -167,8 +161,8 @@ AtlasPage* AtlasPage_create(Atlas* atlas, const char* name)
 void AtlasPage_dispose(AtlasPage* self)
 {
     _AtlasPage_disposeTexture(self);
-    DeAlloc(0, self->name);
-    DeAlloc(0, self);
+    DeAlloc(heap, self->name);
+    DeAlloc(heap, self);
 }
 
 /**/
@@ -263,7 +257,7 @@ static int readTuple(const char** begin, const char* end, Str tuple[])
 static char* mallocString(Str* str)
 {
     int length = (int)(str->end - str->begin);
-    char* string = MallocType(0, char, length + 1);
+    char* string = MallocType(heap, char, length + 1);
     memcpy(string, str->begin, length);
     string[length] = '\0';
     return string;
@@ -299,15 +293,15 @@ static Atlas* abortAtlas(Atlas* self)
 
 AtlasRegion* AtlasRegion_create()
 {
-    return CallocType(0, AtlasRegion, 1);
+    return CallocType(heap, AtlasRegion, 1);
 }
 
 void AtlasRegion_dispose(AtlasRegion* self)
 {
-    DeAlloc(0, self->name);
-    DeAlloc(0, self->splits);
-    DeAlloc(0, self->pads);
-    DeAlloc(0, self);
+    DeAlloc(heap, self->name);
+    DeAlloc(heap, self->splits);
+    DeAlloc(heap, self->pads);
+    DeAlloc(heap, self);
 }
 
 static const char* formatNames[] = { "", "Alpha", "Intensity", "LuminanceAlpha", "RGB565", "RGBA4444", "RGB888", "RGBA8888" };
@@ -329,7 +323,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
     Str str;
     Str tuple[4];
 
-    self = CallocType(0, Atlas, 1);
+    self = CallocType(heap, Atlas, 1);
     self->rendererObject = rendererObject;
 
     while (readLine(&begin, end, &str))
@@ -341,14 +335,14 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
         else if (!page)
         {
             char* name = mallocString(&str);
-            char* path = MallocType(0, char, dirLength + needsSlash + strlen(name) + 1);
+            char* path = MallocType(heap, char, dirLength + needsSlash + strlen(name) + 1);
             memcpy(path, dir, dirLength);
             if (needsSlash)
                 path[dirLength] = '/';
             strcpy(path + dirLength + needsSlash, name);
 
             page = AtlasPage_create(self, name);
-            DeAlloc(0, name);
+            DeAlloc(heap, name);
             if (lastPage)
                 lastPage->next = page;
             else
@@ -394,7 +388,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
             }
 
             _AtlasPage_createTexture(page, path);
-            DeAlloc(0, path);
+            DeAlloc(heap, path);
         }
         else
         {
@@ -440,7 +434,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                 return abortAtlas(self);
             if (count == 4)
             { /* split is optional */
-                region->splits = MallocType(0, i32, 4);
+                region->splits = MallocType(heap, i32, 4);
                 region->splits[0] = toInt(tuple);
                 region->splits[1] = toInt(tuple + 1);
                 region->splits[2] = toInt(tuple + 2);
@@ -451,7 +445,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                     return abortAtlas(self);
                 if (count == 4)
                 { /* pad is optional, but only present with splits */
-                    region->pads = MallocType(0, i32, 4);
+                    region->pads = MallocType(heap, i32, 4);
                     region->pads[0] = toInt(tuple);
                     region->pads[1] = toInt(tuple + 1);
                     region->pads[2] = toInt(tuple + 2);
@@ -493,7 +487,7 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
     if (lastSlash == path)
         lastSlash++; /* Never drop starting slash. */
     dirLength = (i32)(lastSlash ? lastSlash - path : 0);
-    dir = MallocType(0, char, dirLength + 1);
+    dir = MallocType(heap, char, dirLength + 1);
     memcpy(dir, path, dirLength);
     dir[dirLength] = '\0';
 
@@ -505,7 +499,7 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
         InvalidCodePath;
 
     globalPlatformServices->Free((void*)fileData);
-    DeAlloc(0, dir);
+    DeAlloc(heap, dir);
 
     return atlas;
 }
@@ -529,7 +523,7 @@ void Atlas_dispose(Atlas* self)
         region = nextRegion;
     }
 
-    DeAlloc(0, self);
+    DeAlloc(heap, self);
 }
 
 AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name)
@@ -545,4 +539,3 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name)
 }
 
 #endif //ATLAS_IMPL
-#endif
