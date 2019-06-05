@@ -1,6 +1,6 @@
 /*
     TODO List:
-
+    1.) Figure out if stb_image has a way to modify how images are read (so I can have all reads go through my platform services struct)
 */
 
 #if (DEVELOPMENT_BUILD)
