@@ -251,7 +251,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Player Init
         player->image = LoadBitmap("data/testimgs/test_head_front.bmp"); 
-        player->world.pos = stage->info.centerPoint - 2.0f;
+        player->world.pos = stage->info.centerPoint - 2.4f;
         player->world.rotation = 0.0f;
         player->world.scale = {1.0f, 1.0f};
     };

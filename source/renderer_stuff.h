@@ -135,6 +135,7 @@ Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
 
 #ifdef GAME_RENDERER_STUFF_IMPL
 
+//TODO: Possibly remove this value entirely or isolate it to one function (for easier transition to resolution independence)
 f32 pixelsPerMeter{200.0f};
 
 void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
@@ -152,7 +153,6 @@ void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimension
     ortho->screenDimensions = screenDimensions_pixels;
 };
 
-//TODO: Do correct rounding here
 void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
@@ -167,7 +167,8 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHei
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
     textureEntry->pitch = bitmap.pitch;
-    textureEntry->targetRectSize= v2i{(i32)desiredWidth_pixels, (i32)desiredHeight_pixels};
+    
+    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
 
     ++bufferInfo->entryCount;
 };
