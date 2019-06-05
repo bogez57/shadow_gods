@@ -133,12 +133,3 @@ struct Game_Render_Cmd_Buffer
     ui32 size;
     i32 entryCount;
 };
-
-////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
-
-struct Transform
-{
-    f32 rotation;
-    v2f pos;
-    v2f scale;
-};

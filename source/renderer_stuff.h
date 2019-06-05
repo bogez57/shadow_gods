@@ -110,7 +110,7 @@ struct RenderEntry_2DCamera
 Image LoadBitmap(const char* fileName);
 f32 BitmapWidth_meters(Image bitmap);
 
-void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 hieghtOfObject, f32 worldRotation, v2f worldPos, v2f worldScale);
+void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
 void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
@@ -149,15 +149,15 @@ void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimension
     ortho->screenDimensions = screenDimensions_pixels;
 };
 
-void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 heightOfObject, f32 rotation, v2f pos, v2f scale)
+void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
 
     f32 bitmapWidth_pixels = bitmap.aspectRatio* bitmap.height_meters * pixelsPerMeter;
     f32 bitmapHeight_pixels = bitmap.height_meters * pixelsPerMeter;
 
-    f32 desiredWidth_pixels = bitmap.aspectRatio* heightOfObject * pixelsPerMeter;
-    f32 desiredHeight_pixels = heightOfObject * pixelsPerMeter;
+    f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * pixelsPerMeter;
+    f32 desiredHeight_pixels = objectHeight_meters * pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;
