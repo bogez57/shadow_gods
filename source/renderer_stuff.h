@@ -185,7 +185,6 @@ Image LoadBitmap(const char* fileName)
 {
     Image result;
 
-    f32 pixelsPerMeter = 200.0f;
     result.data = globalPlatformServices->LoadBGRAImage(fileName, $(result.width_pxls), $(result.height_pxls));
     result.aspectRatio = (f32)result.width_pxls/(f32)result.height_pxls;
     result.pitch = (ui32)result.width_pxls * BYTES_PER_PIXEL;
