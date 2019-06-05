@@ -15,6 +15,7 @@
 
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
+#include <stb/stb_image.h>
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
@@ -41,6 +42,12 @@ global_variable f32 viewportHeight;
 global_variable i32 heap;
 global_variable i32 renderBuffer;
 
+//Third Party source
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#include <boagz/error_context.cpp>
+
+//User source
 #define MEMORY_HANDLING_IMPL
 #include "memory_handling.h"
 #define DYNAMIC_ALLOCATOR_IMPL
@@ -57,9 +64,6 @@ global_variable i32 renderBuffer;
 #include "skeleton.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
-
-// Third Party
-#include <boagz/error_context.cpp>
 
 //Move out to Renderer eventually
 #if 0
@@ -240,7 +244,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
 
         //Stage Init
-        stage->info.backgroundImg = LoadBitmap("data/4k.jpg");
+        stage->info.backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
         stage->info.height = 20.0f;
         stage->info.centerPoint = { (f32)WidthInMeters(stage->info.backgroundImg, stage->info.height) / 2, (f32)stage->info.height / 2 };
 
@@ -250,7 +254,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        player->image = LoadBitmap("data/testimgs/test_head_front.bmp"); 
+        player->image = LoadBitmap_BGRA("data/testimgs/test_head_front.bmp"); 
         player->world.pos = stage->info.centerPoint - 2.4f;
         player->world.rotation = 0.0f;
         player->world.scale = {1.0f, 1.0f};

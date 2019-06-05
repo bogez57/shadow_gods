@@ -110,7 +110,7 @@ struct RenderEntry_2DCamera
     f32 zoomFactor;
 };
 
-Image LoadBitmap(const char* fileName);
+Image LoadBitmap_BGRA(const char* fileName);
 f32 BitmapWidth_meters(Image bitmap);
 
 void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
@@ -182,11 +182,43 @@ void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint,
     camera->zoomFactor = zoomFactor;
 };
 
-Image LoadBitmap(const char* fileName)
+Image LoadBitmap_BGRA(const char* fileName)
 {
     Image result;
 
-    result.data = globalPlatformServices->LoadBGRAImage(fileName, $(result.width_pxls), $(result.height_pxls));
+    {//Load image data using stb (w/ user defined read/seek functions and memory allocation functions)
+        stbi_set_flip_vertically_on_load(true);//So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
+
+        i32 numOfLoadedChannels {};
+        i32 desiredChannels{4};//Since I still draw assuming 4 byte pixels I need 4 channels
+
+        //Returns RGBA
+        unsigned char* imageData = stbi_load(fileName, &result.width_pxls, &result.height_pxls, &numOfLoadedChannels, desiredChannels);
+        BGZ_ASSERT(imageData, "Invalid image data!");
+
+        i32 totalPixelCountOfImg = result.width_pxls * result.height_pxls;
+        ui32* imagePixel = (ui32*)imageData;
+
+        //Swap R and B channels of image
+        for(int i = 0; i < totalPixelCountOfImg; ++i)
+        {
+            auto color = UnPackPixelValues(*imagePixel, RGBA);
+
+            //Pre-multiplied alpha
+            f32 alphaBlend = color.a / 255.0f;
+            color.rgb *= alphaBlend;
+
+            ui32 newSwappedPixelColor = (((ui8)color.a << 24) |
+                                         ((ui8)color.r << 16) |
+                                         ((ui8)color.g << 8) |
+                                         ((ui8)color.b << 0));
+
+            *imagePixel++ = newSwappedPixelColor;
+        }
+
+        result.data = (ui8*)imageData;
+    };
+
     result.aspectRatio = (f32)result.width_pxls/(f32)result.height_pxls;
     result.pitch = (ui32)result.width_pxls * BYTES_PER_PIXEL;
 

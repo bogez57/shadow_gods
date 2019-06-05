@@ -133,7 +133,7 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name);
 //TODO: start loading using my memory managment facilities (Malloc, DeAlloc, etc.) instead of using OS
 void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 {
-    Image bitmap = LoadBitmap(path);
+    Image bitmap = LoadBitmap_BGRA(path);
 
     self->rendererObject = bitmap.data;
     self->width = bitmap.width_pxls;
