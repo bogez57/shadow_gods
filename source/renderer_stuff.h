@@ -5,11 +5,14 @@
 #define BYTES_PER_PIXEL 4
 #endif
 
+//TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
+
 struct Image
 {
     ui8* data;
     f32 aspectRatio;
-    f32 height_meters;
+    i32 width_pxls;
+    i32 height_pxls;
     ui32 pitch;
     f32 opacity {1.0f};
 };
@@ -149,12 +152,10 @@ void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimension
     ortho->screenDimensions = screenDimensions_pixels;
 };
 
+//TODO: Do correct rounding here
 void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
-
-    f32 bitmapWidth_pixels = bitmap.aspectRatio* bitmap.height_meters * pixelsPerMeter;
-    f32 bitmapHeight_pixels = bitmap.height_meters * pixelsPerMeter;
 
     f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * pixelsPerMeter;
     f32 desiredHeight_pixels = objectHeight_meters * pixelsPerMeter;
@@ -164,8 +165,8 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHei
     textureEntry->world.pos = pos * pixelsPerMeter;
     textureEntry->world.scale = scale;
     textureEntry->colorData = bitmap.data;
-    textureEntry->size = v2i{(i32)bitmapWidth_pixels, (i32)bitmapHeight_pixels};
-    textureEntry->pitch = (ui32)bitmapWidth_pixels * BYTES_PER_PIXEL;
+    textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
+    textureEntry->pitch = bitmap.pitch;
     textureEntry->targetRectSize= v2i{(i32)desiredWidth_pixels, (i32)desiredHeight_pixels};
 
     ++bufferInfo->entryCount;
@@ -185,19 +186,11 @@ Image LoadBitmap(const char* fileName)
     Image result;
 
     f32 pixelsPerMeter = 200.0f;
-    i32 width_inPixels, height_inPixels;
-    result.data = globalPlatformServices->LoadBGRAImage(fileName, $(width_inPixels), $(height_inPixels));
-    result.aspectRatio = (f32)width_inPixels/(f32)height_inPixels;
-    result.height_meters = (f32)height_inPixels / pixelsPerMeter;
+    result.data = globalPlatformServices->LoadBGRAImage(fileName, $(result.width_pxls), $(result.height_pxls));
+    result.aspectRatio = (f32)result.width_pxls/(f32)result.height_pxls;
+    result.pitch = (ui32)result.width_pxls * BYTES_PER_PIXEL;
 
     return result;
-};
-
-f32 BitmapWidth_meters(Image bitmap)
-{
-    f32 width_inMeters = bitmap.aspectRatio * bitmap.height_meters;
-
-    return width_inMeters;
 };
 
 #endif //GAME_RENDERER_STUFF_IMPL

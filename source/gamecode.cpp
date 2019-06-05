@@ -199,6 +199,13 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
+f32 WidthInMeters(Image bitmap, f32 heightInMeters)
+{
+    f32 width_meters = bitmap.aspectRatio * heightInMeters;
+
+    return width_meters;
+};
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmd_Buffer* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -234,8 +241,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Stage Init
         stage->info.backgroundImg = LoadBitmap("data/4k.jpg");
-        stage->info.size = {BitmapWidth_meters(stage->info.backgroundImg), stage->info.backgroundImg.height_meters};
-        stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
+        stage->info.height = 20.0f;
+        stage->info.centerPoint = { (f32)WidthInMeters(stage->info.backgroundImg, stage->info.height) / 2, (f32)stage->info.height / 2 };
 
         //Camera Init
         stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y };
@@ -270,12 +277,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveUp))
     {
-        stage->camera.zoomFactor += .001f;
+        stage->camera.zoomFactor += .01f;
+        player->world.pos += .03f;
     };
 
     //Currently projection needs to be set first followed by camera
     SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.backgroundImg.height_meters, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
     PushTexture(global_renderCmdBuf, player->image, player->height, player->world.rotation, player->world.pos, player->world.scale);
 };

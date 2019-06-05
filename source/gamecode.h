@@ -21,7 +21,7 @@ struct Fighter
 
 struct StageInfo
 {
-    v2f size;
+    f32 height;
     v2f centerPoint;
     Image backgroundImg;
 };
