@@ -1,6 +1,6 @@
 /*
     TODO List:
-
+    1.) Figure out if stb_image has a way to modify how images are read (so I can have all reads go through my platform services struct)
 */
 
 #if (DEVELOPMENT_BUILD)
@@ -15,6 +15,7 @@
 
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
+#include <stb/stb_image.h>
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
@@ -27,7 +28,6 @@
 
 #include "shared.h"
 #include "renderer_stuff.h"
-#include "atlas.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -41,6 +41,15 @@ global_variable f32 viewportHeight;
 global_variable i32 heap;
 global_variable i32 renderBuffer;
 
+//Third Party source
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MALLOC(sz) MallocSize(heap, sz)
+#define STBI_REALLOC(p, newsz) ReAllocSize(heap, p, newsz)
+#define STBI_FREE(p) DeAlloc(heap, p)
+#include <stb/stb_image.h>
+#include <boagz/error_context.cpp>
+
+//User source
 #define MEMORY_HANDLING_IMPL
 #include "memory_handling.h"
 #define DYNAMIC_ALLOCATOR_IMPL
@@ -49,17 +58,14 @@ global_variable i32 renderBuffer;
 #include "linear_allocator.h"
 #define COLLISION_IMPL
 #include "collisions.h"
-#define ATLAS_IMPL
-#include "atlas.h"
 #define JSON_IMPL
 #include "json.h"
+#define ATLAS_IMPL
+#include "atlas.h"
 #define SKELETON_IMPL
 #include "skeleton.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
-
-// Third Party
-#include <boagz/error_context.cpp>
 
 //Move out to Renderer eventually
 #if 0
@@ -235,12 +241,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         {//Initialize memory/allocator stuff
             InitApplicationMemory(gameMemory);
-            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
+            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(200), DYNAMIC);
             InitDynamAllocator(heap);
         };
 
         //Stage Init
-        stage->info.backgroundImg = LoadBitmap("data/4k.jpg");
+        stage->info.backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
         stage->info.height = 20.0f;
         stage->info.centerPoint = { (f32)WidthInMeters(stage->info.backgroundImg, stage->info.height) / 2, (f32)stage->info.height / 2 };
 
@@ -250,14 +256,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        player->image = LoadBitmap("data/testimgs/test_head_front.bmp"); 
-        player->world.pos = stage->info.centerPoint - 2.0f;
+        player->image = LoadBitmap_BGRA("data/testimgs/test_head_front.bmp"); 
+        player->world.pos = stage->info.centerPoint - 2.4f;
         player->world.rotation = 0.0f;
         player->world.scale = {1.0f, 1.0f};
+
+        gState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
+        gState->skeleton = CreateSkeletonUsingJsonFile(*gState->atlas, "yellow_god.json");
+        enemy->world.pos = stage->info.centerPoint - 2.4f;
+        enemy->world.rotation = 0.0f;
+        enemy->world.scale = {1.0f, 1.0f};
     };
 
-    player->world.scale = {2.0f, 2.0f};
-    player->height = 1.2f;
+    enemy->world.scale = {1.0f, 1.0f};
+    enemy->height = 1.6f;
 
     if (globalPlatformServices->DLLJustReloaded)
     {
@@ -277,13 +289,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveUp))
     {
-        stage->camera.zoomFactor += .01f;
-        player->world.pos += .03f;
+        enemy->world.pos.y += .01f;
     };
 
     //Currently projection needs to be set first followed by camera
     SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
-    PushTexture(global_renderCmdBuf, player->image, player->height, player->world.rotation, player->world.pos, player->world.scale);
+    PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    PushTexture(global_renderCmdBuf, gState->atlas->pages[0].rendererObject, enemy->height, enemy->world.rotation, enemy->world.pos, enemy->world.scale);
 };

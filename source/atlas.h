@@ -28,11 +28,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
-#if 0
 #ifndef ATLAS_INCLUDE_H
 #define ATLAS_INCLUDE_H
 
-typedef enum
+enum AtlasFormat
 {
     ATLAS_UNKNOWN_FORMAT,
     ATLAS_ALPHA,
@@ -42,9 +41,9 @@ typedef enum
     ATLAS_RGBA4444,
     ATLAS_RGB888,
     ATLAS_RGBA8888
-} AtlasFormat;
+};
 
-typedef enum
+enum AtlasFilter
 {
     ATLAS_UNKNOWN_FILTER,
     ATLAS_NEAREST,
@@ -54,14 +53,14 @@ typedef enum
     ATLAS_MIPMAP_LINEAR_NEAREST,
     ATLAS_MIPMAP_NEAREST_LINEAR,
     ATLAS_MIPMAP_LINEAR_LINEAR
-} AtlasFilter;
+};
 
-typedef enum
+enum AtlasWrap
 {
     ATLAS_MIRROREDREPEAT,
     ATLAS_CLAMPTOEDGE,
     ATLAS_REPEAT
-} AtlasWrap;
+};
 
 struct Atlas;
 struct AtlasPage
@@ -72,8 +71,8 @@ struct AtlasPage
     AtlasFilter minFilter, magFilter;
     AtlasWrap uWrap, vWrap;
 
-    void* rendererObject;
-    int width, height;
+    Image rendererObject;
+    i32 width, height;
 
     AtlasPage* next;
 };
@@ -81,19 +80,18 @@ struct AtlasPage
 AtlasPage* AtlasPage_create(Atlas* atlas, const char* name);
 void AtlasPage_dispose(AtlasPage* self);
 
-typedef struct AtlasRegion AtlasRegion;
 struct AtlasRegion
 {
     const char* name;
-    int x, y, width, height;
-    float u, v, u2, v2;
-    int offsetX, offsetY;
-    int originalWidth, originalHeight;
-    int index;
-    int /*bool*/ rotate;
-    int /*bool*/ flip;
-    int* splits;
-    int* pads;
+    i32 x, y, width, height;
+    f32 u, v, u2, v2;
+    i32 offsetX, offsetY;
+    i32 originalWidth, originalHeight;
+    i32 index;
+    b32 rotate;
+    b32 flip;
+    i32 * splits;
+    i32 * pads;
 
     AtlasPage* page;
 
@@ -126,39 +124,33 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name);
 
 #include <string.h>
 #include <ctype.h>
+#include "renderer_stuff.h"
 
-#define MALLOC_STR(TO, FROM) strcpy(CONST_CAST(char*, TO) = (char*)MallocType(0, char, strlen(FROM) + 1), FROM)
+#define MALLOC_STR(TO, FROM) strcpy(CONST_CAST(char*, TO) = (char*)MallocType(heap, char, strlen(FROM) + 1), FROM)
 #define CONST_CAST(TYPE, VALUE) (*(TYPE*)&VALUE)
 
 void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 {
-    Image image;
-    image.data = globalPlatformServices->LoadBGRAImage(path, $(image.size.width), $(image.size.height));
+    Image bitmap = LoadBitmap_BGRA(path);
 
-#if 0
-    Texture texture = globalRenderCmds.LoadTexture(image);
-    Texture* textureptr = MallocType(0, Texture, 1);
-    *textureptr = texture;
-
-    self->rendererObject = textureptr;
-    self->width = image.size.width;
-    self->height = image.size.height;
-#endif
+    self->rendererObject = bitmap;
+    self->width = bitmap.width_pxls;
+    self->height = bitmap.height_pxls;
 };
 
 void _AtlasPage_disposeTexture(AtlasPage* self)
 {
     BGZ_ERRCTXT1("When disposing of texture in spine's atlaspage");
-    BGZ_ASSERT(self->rendererObject, "Texture does not exist!");
+    BGZ_ASSERT(self->rendererObject.data, "Texture does not exist!");
 
-    DeAlloc(0, self->rendererObject);
+    DeAlloc(heap, self->rendererObject.data);
     self->width = 0;
     self->height = 0;
 };
 
 AtlasPage* AtlasPage_create(Atlas* atlas, const char* name)
 {
-    AtlasPage* self = CallocType(0, AtlasPage, 1);
+    AtlasPage* self = CallocType(heap, AtlasPage, 1);
     CONST_CAST(Atlas*, self->atlas) = atlas;
     MALLOC_STR(self->name, name);
     return self;
@@ -167,8 +159,8 @@ AtlasPage* AtlasPage_create(Atlas* atlas, const char* name)
 void AtlasPage_dispose(AtlasPage* self)
 {
     _AtlasPage_disposeTexture(self);
-    DeAlloc(0, self->name);
-    DeAlloc(0, self);
+    DeAlloc(heap, self->name);
+    DeAlloc(heap, self);
 }
 
 /**/
@@ -192,7 +184,7 @@ static void trim(Str* str)
 }
 
 /* Tokenize string without modification. Returns 0 on failure. */
-static int readLine(const char** begin, const char* end, Str* str)
+static i32 readLine(const char** begin, const char* end, Str* str)
 {
     if (*begin == end)
         return 0;
@@ -211,7 +203,7 @@ static int readLine(const char** begin, const char* end, Str* str)
 }
 
 /* Moves str->begin past the first occurence of c. Returns 0 on failure. */
-static int beginPast(Str* str, char c)
+static i32 beginPast(Str* str, char c)
 {
     const char* begin = str->begin;
     while (1)
@@ -228,7 +220,7 @@ static int beginPast(Str* str, char c)
 }
 
 /* Returns 0 on failure. */
-static int readValue(const char** begin, const char* end, Str* str)
+static i32 readValue(const char** begin, const char* end, Str* str)
 {
     readLine(begin, end, str);
     if (!beginPast(str, ':'))
@@ -238,9 +230,9 @@ static int readValue(const char** begin, const char* end, Str* str)
 }
 
 /* Returns the number of tuple values read (1, 2, 4, or 0 for failure). */
-static int readTuple(const char** begin, const char* end, Str tuple[])
+static i32 readTuple(const char** begin, const char* end, Str tuple[])
 {
-    int i;
+    i32 i;
     Str str = { NULL, NULL };
     readLine(begin, end, &str);
     if (!beginPast(&str, ':'))
@@ -262,29 +254,29 @@ static int readTuple(const char** begin, const char* end, Str tuple[])
 
 static char* mallocString(Str* str)
 {
-    int length = (int)(str->end - str->begin);
-    char* string = MallocType(0, char, length + 1);
+    i32 length = (int)(str->end - str->begin);
+    char* string = MallocType(heap, char, length + 1);
     memcpy(string, str->begin, length);
     string[length] = '\0';
     return string;
 }
 
-static int indexOf(const char** array, int count, Str* str)
+static i32 indexOf(const char** array, i32 count, Str* str)
 {
-    int length = (int)(str->end - str->begin);
-    int i;
+    i32 length = (int)(str->end - str->begin);
+    i32 i;
     for (i = count - 1; i >= 0; i--)
         if (strncmp(array[i], str->begin, length) == 0)
             return i;
     return 0;
 }
 
-static int equals(Str* str, const char* other)
+static b32 equals(Str* str, const char* other)
 {
     return strncmp(other, str->begin, str->end - str->begin) == 0;
 }
 
-static int toInt(Str* str)
+static i32 toInt(Str* str)
 {
     return (int)strtol(str->begin, (char**)&str->end, 10);
 }
@@ -299,15 +291,15 @@ static Atlas* abortAtlas(Atlas* self)
 
 AtlasRegion* AtlasRegion_create()
 {
-    return CallocType(0, AtlasRegion, 1);
+    return CallocType(heap, AtlasRegion, 1);
 }
 
 void AtlasRegion_dispose(AtlasRegion* self)
 {
-    DeAlloc(0, self->name);
-    DeAlloc(0, self->splits);
-    DeAlloc(0, self->pads);
-    DeAlloc(0, self);
+    DeAlloc(heap, self->name);
+    DeAlloc(heap, self->splits);
+    DeAlloc(heap, self->pads);
+    DeAlloc(heap, self);
 }
 
 static const char* formatNames[] = { "", "Alpha", "Intensity", "LuminanceAlpha", "RGB565", "RGBA4444", "RGB888", "RGBA8888" };
@@ -329,7 +321,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
     Str str;
     Str tuple[4];
 
-    self = CallocType(0, Atlas, 1);
+    self = CallocType(heap, Atlas, 1);
     self->rendererObject = rendererObject;
 
     while (readLine(&begin, end, &str))
@@ -341,14 +333,14 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
         else if (!page)
         {
             char* name = mallocString(&str);
-            char* path = MallocType(0, char, dirLength + needsSlash + strlen(name) + 1);
+            char* path = MallocType(heap, char, dirLength + needsSlash + strlen(name) + 1);
             memcpy(path, dir, dirLength);
             if (needsSlash)
                 path[dirLength] = '/';
             strcpy(path + dirLength + needsSlash, name);
 
             page = AtlasPage_create(self, name);
-            DeAlloc(0, name);
+            DeAlloc(heap, name);
             if (lastPage)
                 lastPage->next = page;
             else
@@ -394,7 +386,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
             }
 
             _AtlasPage_createTexture(page, path);
-            DeAlloc(0, path);
+            DeAlloc(heap, path);
         }
         else
         {
@@ -440,7 +432,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                 return abortAtlas(self);
             if (count == 4)
             { /* split is optional */
-                region->splits = MallocType(0, i32, 4);
+                region->splits = MallocType(heap, i32, 4);
                 region->splits[0] = toInt(tuple);
                 region->splits[1] = toInt(tuple + 1);
                 region->splits[2] = toInt(tuple + 2);
@@ -451,7 +443,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                     return abortAtlas(self);
                 if (count == 4)
                 { /* pad is optional, but only present with splits */
-                    region->pads = MallocType(0, i32, 4);
+                    region->pads = MallocType(heap, i32, 4);
                     region->pads[0] = toInt(tuple);
                     region->pads[1] = toInt(tuple + 1);
                     region->pads[2] = toInt(tuple + 2);
@@ -493,7 +485,7 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
     if (lastSlash == path)
         lastSlash++; /* Never drop starting slash. */
     dirLength = (i32)(lastSlash ? lastSlash - path : 0);
-    dir = MallocType(0, char, dirLength + 1);
+    dir = MallocType(heap, char, dirLength + 1);
     memcpy(dir, path, dirLength);
     dir[dirLength] = '\0';
 
@@ -505,7 +497,7 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
         InvalidCodePath;
 
     globalPlatformServices->Free((void*)fileData);
-    DeAlloc(0, dir);
+    DeAlloc(heap, dir);
 
     return atlas;
 }
@@ -529,7 +521,7 @@ void Atlas_dispose(Atlas* self)
         region = nextRegion;
     }
 
-    DeAlloc(0, self);
+    DeAlloc(heap, self);
 }
 
 AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name)
@@ -545,4 +537,3 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name)
 }
 
 #endif //ATLAS_IMPL
-#endif
