@@ -46,6 +46,7 @@ struct Game_State
 {
     Image composite;
     Image normalMap;
+    Atlas* atlas;
     f32 lightAngle;
     f32 lightThreshold;
     Stage_Data stage;

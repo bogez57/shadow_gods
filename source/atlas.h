@@ -71,7 +71,7 @@ struct AtlasPage
     AtlasFilter minFilter, magFilter;
     AtlasWrap uWrap, vWrap;
 
-    void* rendererObject;
+    Image rendererObject;
     int width, height;
 
     AtlasPage* next;
@@ -130,12 +130,11 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name);
 #define MALLOC_STR(TO, FROM) strcpy(CONST_CAST(char*, TO) = (char*)MallocType(heap, char, strlen(FROM) + 1), FROM)
 #define CONST_CAST(TYPE, VALUE) (*(TYPE*)&VALUE)
 
-//TODO: start loading using my memory managment facilities (Malloc, DeAlloc, etc.) instead of using OS
 void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 {
     Image bitmap = LoadBitmap_BGRA(path);
 
-    self->rendererObject = bitmap.data;
+    self->rendererObject = bitmap;
     self->width = bitmap.width_pxls;
     self->height = bitmap.height_pxls;
 };
@@ -143,9 +142,9 @@ void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 void _AtlasPage_disposeTexture(AtlasPage* self)
 {
     BGZ_ERRCTXT1("When disposing of texture in spine's atlaspage");
-    BGZ_ASSERT(self->rendererObject, "Texture does not exist!");
+    BGZ_ASSERT(self->rendererObject.data, "Texture does not exist!");
 
-    DeAlloc(heap, self->rendererObject);
+    DeAlloc(heap, self->rendererObject.data);
     self->width = 0;
     self->height = 0;
 };
