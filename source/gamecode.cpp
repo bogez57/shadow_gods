@@ -284,6 +284,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     //Currently projection needs to be set first followed by camera
     SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
     PushTexture(global_renderCmdBuf, player->image, player->height, player->world.rotation, player->world.pos, player->world.scale);
 };
