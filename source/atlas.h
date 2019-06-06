@@ -31,7 +31,7 @@
 #ifndef ATLAS_INCLUDE_H
 #define ATLAS_INCLUDE_H
 
-typedef enum
+enum AtlasFormat
 {
     ATLAS_UNKNOWN_FORMAT,
     ATLAS_ALPHA,
@@ -41,9 +41,9 @@ typedef enum
     ATLAS_RGBA4444,
     ATLAS_RGB888,
     ATLAS_RGBA8888
-} AtlasFormat;
+};
 
-typedef enum
+enum AtlasFilter
 {
     ATLAS_UNKNOWN_FILTER,
     ATLAS_NEAREST,
@@ -53,14 +53,14 @@ typedef enum
     ATLAS_MIPMAP_LINEAR_NEAREST,
     ATLAS_MIPMAP_NEAREST_LINEAR,
     ATLAS_MIPMAP_LINEAR_LINEAR
-} AtlasFilter;
+};
 
-typedef enum
+enum AtlasWrap
 {
     ATLAS_MIRROREDREPEAT,
     ATLAS_CLAMPTOEDGE,
     ATLAS_REPEAT
-} AtlasWrap;
+};
 
 struct Atlas;
 struct AtlasPage
@@ -72,7 +72,7 @@ struct AtlasPage
     AtlasWrap uWrap, vWrap;
 
     Image rendererObject;
-    int width, height;
+    i32 width, height;
 
     AtlasPage* next;
 };
@@ -80,19 +80,19 @@ struct AtlasPage
 AtlasPage* AtlasPage_create(Atlas* atlas, const char* name);
 void AtlasPage_dispose(AtlasPage* self);
 
-typedef struct AtlasRegion AtlasRegion;
+struct AtlasRegion;
 struct AtlasRegion
 {
     const char* name;
-    int x, y, width, height;
-    float u, v, u2, v2;
-    int offsetX, offsetY;
-    int originalWidth, originalHeight;
-    int index;
-    int /*bool*/ rotate;
-    int /*bool*/ flip;
-    int* splits;
-    int* pads;
+    i32 x, y, width, height;
+    f32 u, v, u2, v2;
+    i32 offsetX, offsetY;
+    i32 originalWidth, originalHeight;
+    i32 index;
+    b32 rotate;
+    b32 flip;
+    i32 * splits;
+    i32 * pads;
 
     AtlasPage* page;
 
@@ -185,7 +185,7 @@ static void trim(Str* str)
 }
 
 /* Tokenize string without modification. Returns 0 on failure. */
-static int readLine(const char** begin, const char* end, Str* str)
+static i32 readLine(const char** begin, const char* end, Str* str)
 {
     if (*begin == end)
         return 0;
@@ -204,7 +204,7 @@ static int readLine(const char** begin, const char* end, Str* str)
 }
 
 /* Moves str->begin past the first occurence of c. Returns 0 on failure. */
-static int beginPast(Str* str, char c)
+static i32 beginPast(Str* str, char c)
 {
     const char* begin = str->begin;
     while (1)
@@ -221,7 +221,7 @@ static int beginPast(Str* str, char c)
 }
 
 /* Returns 0 on failure. */
-static int readValue(const char** begin, const char* end, Str* str)
+static i32 readValue(const char** begin, const char* end, Str* str)
 {
     readLine(begin, end, str);
     if (!beginPast(str, ':'))
@@ -231,9 +231,9 @@ static int readValue(const char** begin, const char* end, Str* str)
 }
 
 /* Returns the number of tuple values read (1, 2, 4, or 0 for failure). */
-static int readTuple(const char** begin, const char* end, Str tuple[])
+static i32 readTuple(const char** begin, const char* end, Str tuple[])
 {
-    int i;
+    i32 i;
     Str str = { NULL, NULL };
     readLine(begin, end, &str);
     if (!beginPast(&str, ':'))
@@ -255,29 +255,29 @@ static int readTuple(const char** begin, const char* end, Str tuple[])
 
 static char* mallocString(Str* str)
 {
-    int length = (int)(str->end - str->begin);
+    i32 length = (int)(str->end - str->begin);
     char* string = MallocType(heap, char, length + 1);
     memcpy(string, str->begin, length);
     string[length] = '\0';
     return string;
 }
 
-static int indexOf(const char** array, int count, Str* str)
+static i32 indexOf(const char** array, i32 count, Str* str)
 {
-    int length = (int)(str->end - str->begin);
-    int i;
+    i32 length = (int)(str->end - str->begin);
+    i32 i;
     for (i = count - 1; i >= 0; i--)
         if (strncmp(array[i], str->begin, length) == 0)
             return i;
     return 0;
 }
 
-static int equals(Str* str, const char* other)
+static b32 equals(Str* str, const char* other)
 {
     return strncmp(other, str->begin, str->end - str->begin) == 0;
 }
 
-static int toInt(Str* str)
+static i32 toInt(Str* str)
 {
     return (int)strtol(str->begin, (char**)&str->end, 10);
 }
