@@ -80,7 +80,6 @@ struct AtlasPage
 AtlasPage* AtlasPage_create(Atlas* atlas, const char* name);
 void AtlasPage_dispose(AtlasPage* self);
 
-struct AtlasRegion;
 struct AtlasRegion
 {
     const char* name;

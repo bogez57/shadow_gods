@@ -28,7 +28,6 @@
 
 #include "shared.h"
 #include "renderer_stuff.h"
-#include "atlas.h"
 #include "gamecode.h"
 #include "math.h"
 #include "utilities.h"
@@ -59,10 +58,10 @@ global_variable i32 renderBuffer;
 #include "linear_allocator.h"
 #define COLLISION_IMPL
 #include "collisions.h"
-#define ATLAS_IMPL
-#include "atlas.h"
 #define JSON_IMPL
 #include "json.h"
+#define ATLAS_IMPL
+#include "atlas.h"
 #define SKELETON_IMPL
 #include "skeleton.h"
 #define GAME_RENDERER_STUFF_IMPL
@@ -242,7 +241,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         {//Initialize memory/allocator stuff
             InitApplicationMemory(gameMemory);
-            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(100), DYNAMIC);
+            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(200), DYNAMIC);
             InitDynamAllocator(heap);
         };
 
@@ -263,6 +262,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         player->world.scale = {1.0f, 1.0f};
 
         gState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
+        gState->skeleton = CreateSkeletonUsingJsonFile(*gState->atlas, "yellow_god.json");
         enemy->world.pos = stage->info.centerPoint - 2.4f;
         enemy->world.rotation = 0.0f;
         enemy->world.scale = {1.0f, 1.0f};
