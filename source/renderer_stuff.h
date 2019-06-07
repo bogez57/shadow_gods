@@ -98,6 +98,7 @@ struct RenderEntry_Texture
     v2i size;
     ui32 pitch;
     v2i targetRectSize;
+    Array<v2f, 2> uvBounds;
 };
 
 struct RenderEntry_2DCamera
@@ -167,6 +168,7 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHei
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
     textureEntry->pitch = bitmap.pitch;
+    textureEntry->uvBounds = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}};
     
     textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
 

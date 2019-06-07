@@ -262,7 +262,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         player->world.scale = {1.0f, 1.0f};
 
         gState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-        gState->skeleton = CreateSkeletonUsingJsonFile(*gState->atlas, "yellow_god.json");
+        gState->skeleton = CreateSkeletonUsingJsonFile(*gState->atlas, "data/yellow_god.json");
         enemy->world.pos = stage->info.centerPoint - 2.4f;
         enemy->world.rotation = 0.0f;
         enemy->world.scale = {1.0f, 1.0f};
@@ -284,17 +284,18 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        player->world.rotation += .01f;
+        enemy->world.rotation += .01f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
     {
-        enemy->world.pos.y += .01f;
+        stage->camera.zoomFactor += .01f;
     };
 
     //Currently projection needs to be set first followed by camera
     SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
-    PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
     PushTexture(global_renderCmdBuf, gState->atlas->pages[0].rendererObject, enemy->height, enemy->world.rotation, enemy->world.pos, enemy->world.scale);
 };
+

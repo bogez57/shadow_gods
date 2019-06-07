@@ -527,6 +527,11 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
+    f32 minPos_x = 1.0f + (image.uvBounds.At(0).x*(f32)(image.size.width - 3));
+    f32 minPos_y = 1.0f + (image.uvBounds.At(0).y*(f32)(image.size.height - 3)); 
+    f32 maxPos_x = 1.0f + (image.uvBounds.At(1).x*(f32)(image.size.width - 3));
+    f32 maxPos_y = 1.0f + (image.uvBounds.At(1).y*(f32)(image.size.height - 3)); 
+
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
     ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
@@ -544,7 +549,6 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
 
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
-                //Gather normalized coordinates (uv's) in order to find the correct texel position below
                 f32 texelPos_x = 1.0f + (u*(f32)(image.size.width - 3));
                 f32 texelPos_y = 1.0f + (v*(f32)(image.size.height - 3)); 
 
@@ -553,6 +557,10 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
                 BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
                 BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (i32)image.size.width), "x coord is out of range!: ");
                 BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (i32)image.size.height), "x coord is out of range!");
+
+                if(texelPos_x >= minPos_x && texelPos_x <= maxPos_x &&
+                   texelPos_y >= minPos_y && texelPos_y <= maxPos_y)
+                {
 
                 ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
 
@@ -668,6 +676,7 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
                             ((ui8)finalBlendedColor.g << 8) |
                             ((ui8)finalBlendedColor.b << 0));
                 }
+                };
             }
 
             ++destPixel;
