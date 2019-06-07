@@ -527,10 +527,11 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    f32 minPos_x = 1.0f + (image.uvBounds.At(0).x*(f32)(image.size.width - 3));
-    f32 minPos_y = 1.0f + (image.uvBounds.At(0).y*(f32)(image.size.height - 3)); 
-    f32 maxPos_x = 1.0f + (image.uvBounds.At(1).x*(f32)(image.size.width - 3));
-    f32 maxPos_y = 1.0f + (image.uvBounds.At(1).y*(f32)(image.size.height - 3)); 
+    //Make sure to grab desired portion of image specified by user
+    f32 minTexelPos_x = 1.0f + (image.uvBounds.At(0).x*(f32)(image.size.width - 3));
+    f32 minTexelPos_y = 1.0f + (image.uvBounds.At(0).y*(f32)(image.size.height - 3)); 
+    f32 maxTexelPos_x = 1.0f + (image.uvBounds.At(1).x*(f32)(image.size.width - 3));
+    f32 maxTexelPos_y = 1.0f + (image.uvBounds.At(1).y*(f32)(image.size.height - 3)); 
 
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
@@ -547,6 +548,8 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
             f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
             f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
 
+            //Used to decide, given what screen pixel were on, whether or not that screen pixel falls
+            //within the target rect's bounds or not
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
                 f32 texelPos_x = 1.0f + (u*(f32)(image.size.width - 3));
@@ -558,124 +561,123 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
                 BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (i32)image.size.width), "x coord is out of range!: ");
                 BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (i32)image.size.height), "x coord is out of range!");
 
-                if(texelPos_x >= minPos_x && texelPos_x <= maxPos_x &&
-                   texelPos_y >= minPos_y && texelPos_y <= maxPos_y)
+                if(texelPos_x >= minTexelPos_x && texelPos_x <= maxTexelPos_x &&
+                   texelPos_y >= minTexelPos_y && texelPos_y <= maxTexelPos_y)
                 {
+                    ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
 
-                ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
+                    v4ui32 texelSquare {}; 
+                    texelSquare.x = *(ui32*)(texelPtr);
+                    texelSquare.y = *(ui32*)(texelPtr + sizeof(ui32));
+                    texelSquare.z = *(ui32*)(texelPtr + image.pitch);
+                    texelSquare.w = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
 
-                v4ui32 texelSquare {}; 
-                texelSquare.x = *(ui32*)(texelPtr);
-                texelSquare.y = *(ui32*)(texelPtr + sizeof(ui32));
-                texelSquare.z = *(ui32*)(texelPtr + image.pitch);
-                texelSquare.w = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
+                    //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
+                    v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
 
-                //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
-                v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
+                    //Linearly Blend with background - Assuming Pre-multiplied alpha
+                    v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
+                    f32 alphaBlend = newBlendedTexel.a / 255.0f;
+                    v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
 
-                //Linearly Blend with background - Assuming Pre-multiplied alpha
-                v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
-                f32 alphaBlend = newBlendedTexel.a / 255.0f;
-                v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + newBlendedTexel;
-
-                b shadePixel{false};
-                if(normalMap.data)
-                {
-                    ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
-
-                    //Grab 4 normals (in a square pattern) to blend
-                    v4ui32 normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
-
-                    v4f blendedNormal = BiLinearLerp(normalSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
-
-                    //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
-                    f32 inv255 = 1.0f / 255.0f;
-                    blendedNormal.x = -1.0f + 2.0f*(inv255*blendedNormal.x);
-                    blendedNormal.y = -1.0f + 2.0f*(inv255*blendedNormal.y);
-                    blendedNormal.z = -1.0f + 2.0f*(inv255*blendedNormal.z);
-
-
-                    {//Rotating and scaling normals (supports non-uniform scaling of normal x and y)
-                        v2f normalXBasis = v2f{CosR(rotation), SinR(rotation)};
-                        v2f normalYBasis = scale.y * PerpendicularOp(normalXBasis);
-                        normalXBasis *= scale.x;
-
-                        normalXBasis *= (Magnitude(normalYBasis) / Magnitude(normalXBasis));
-                        normalYBasis *= (Magnitude(normalXBasis) / Magnitude(normalYBasis));
-
-                        blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
-                    };
-
-					Normalize($(blendedNormal.xyz));
-
-                    if(blendedNormal.z > 0.0f)                
+                    b shadePixel{false};
+                    if(normalMap.data)
                     {
-                        *destPixel = ((0xFF << 24) |
-                            ((ui8)finalBlendedColor.r << 16) |
-                            ((ui8)finalBlendedColor.g << 8) |
-                            ((ui8)finalBlendedColor.b << 0));
-                    }
-                    else
-                    {
-                        if (lightAngle > (PI*2)) ConvertToCorrectPositiveRadian($(lightAngle));
-                        
-                        f32 normalAngle{};
-                        {//Calculate correct raidan angle from normal
-                            if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                            }
-                            else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                                AbsoluteVal($(normalAngle));
-                                normalAngle += (PI / 2.0f);
-                            }
-                            else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                                normalAngle -= ((3.0f*PI) / 2.0f);
-                                AbsoluteVal($(normalAngle));
-                            }
-                            else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                                ConvertNegativeAngleToRadians($(normalAngle));
-                            }
+                        ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
+
+                        //Grab 4 normals (in a square pattern) to blend
+                        v4ui32 normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
+
+                        v4f blendedNormal = BiLinearLerp(normalSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
+
+                        //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
+                        f32 inv255 = 1.0f / 255.0f;
+                        blendedNormal.x = -1.0f + 2.0f*(inv255*blendedNormal.x);
+                        blendedNormal.y = -1.0f + 2.0f*(inv255*blendedNormal.y);
+                        blendedNormal.z = -1.0f + 2.0f*(inv255*blendedNormal.z);
+
+
+                        {//Rotating and scaling normals (supports non-uniform scaling of normal x and y)
+                            v2f normalXBasis = v2f{CosR(rotation), SinR(rotation)};
+                            v2f normalYBasis = scale.y * PerpendicularOp(normalXBasis);
+                            normalXBasis *= scale.x;
+
+                            normalXBasis *= (Magnitude(normalYBasis) / Magnitude(normalXBasis));
+                            normalYBasis *= (Magnitude(normalXBasis) / Magnitude(normalYBasis));
+
+                            blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
                         };
 
-                        f32 maxAngle = Max(lightAngle, normalAngle);
-                        f32 minAngle = Min(lightAngle, normalAngle);
-                        f32 shadeThreholdDirection1 = maxAngle - minAngle;
-                        f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
+                        Normalize($(blendedNormal.xyz));
 
-                        if(shadeThreholdDirection1 > lightThreshold || shadeThreholdDirection2 < lightThreshold)
-                            shadePixel = true;
-                    }
+                        if(blendedNormal.z > 0.0f)                
+                        {
+                            *destPixel = ((0xFF << 24) |
+                                ((ui8)finalBlendedColor.r << 16) |
+                                ((ui8)finalBlendedColor.g << 8) |
+                                ((ui8)finalBlendedColor.b << 0));
+                        }
+                        else
+                        {
+                            if (lightAngle > (PI*2)) ConvertToCorrectPositiveRadian($(lightAngle));
+                            
+                            f32 normalAngle{};
+                            {//Calculate correct raidan angle from normal
+                                if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
+                                {
+                                    normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                                }
+                                else if(blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
+                                {
+                                    normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                                    AbsoluteVal($(normalAngle));
+                                    normalAngle += (PI / 2.0f);
+                                }
+                                else if(blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
+                                {
+                                    normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                                    normalAngle -= ((3.0f*PI) / 2.0f);
+                                    AbsoluteVal($(normalAngle));
+                                }
+                                else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
+                                {
+                                    normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                                    ConvertNegativeAngleToRadians($(normalAngle));
+                                }
+                            };
 
-                    if(shadePixel && finalBlendedColor.a > 100.0f)
-                    {
-                            //Shade pixel
-                        *destPixel = ((0xFF << 24) |
-                            (0 << 16) |
-                            (0 << 8) |
-                            (0 << 0));
+                            f32 maxAngle = Max(lightAngle, normalAngle);
+                            f32 minAngle = Min(lightAngle, normalAngle);
+                            f32 shadeThreholdDirection1 = maxAngle - minAngle;
+                            f32 shadeThreholdDirection2 = ((PI*2) - maxAngle) + minAngle;
+
+                            if(shadeThreholdDirection1 > lightThreshold || shadeThreholdDirection2 < lightThreshold)
+                                shadePixel = true;
+                        }
+
+                        if(shadePixel && finalBlendedColor.a > 100.0f)
+                        {
+                                //Shade pixel
+                            *destPixel = ((0xFF << 24) |
+                                (0 << 16) |
+                                (0 << 8) |
+                                (0 << 0));
+                        }
+                        else
+                        {
+                            *destPixel = ((0xFF << 24) |
+                                ((ui8)finalBlendedColor.r << 16) |
+                                ((ui8)finalBlendedColor.g << 8) |
+                                ((ui8)finalBlendedColor.b << 0));
+                        }
                     }
                     else
                     {
-                        *destPixel = ((0xFF << 24) |
-                            ((ui8)finalBlendedColor.r << 16) |
-                            ((ui8)finalBlendedColor.g << 8) |
-                            ((ui8)finalBlendedColor.b << 0));
+                            *destPixel = ((0xFF << 24) |
+                                ((ui8)finalBlendedColor.r << 16) |
+                                ((ui8)finalBlendedColor.g << 8) |
+                                ((ui8)finalBlendedColor.b << 0));
                     }
-                }
-                else
-                {
-                        *destPixel = ((0xFF << 24) |
-                            ((ui8)finalBlendedColor.r << 16) |
-                            ((ui8)finalBlendedColor.g << 8) |
-                            ((ui8)finalBlendedColor.b << 0));
-                }
                 };
             }
 
