@@ -175,6 +175,19 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
     return newSkeleton;
 };
 
+void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
+{
+    f32 pixelsPerMeter{100.0f};
+
+    for (i32 boneIndex{}; boneIndex < skeleton.bones.size; ++boneIndex)
+    {
+        skeleton.bones.At(boneIndex).parentLocalPos.x /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).parentLocalPos.y /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).rotation = Radians(skeleton.bones.At(boneIndex).rotation);
+        skeleton.bones.At(boneIndex).length /= pixelsPerMeter; 
+    };
+};
+
 Skeleton CreateSkeletonUsingJsonFile(Atlas atlas, const char* skeletonJsonFilePath)
 {
     i32 length;
@@ -188,6 +201,8 @@ Skeleton CreateSkeletonUsingJsonFile(Atlas atlas, const char* skeletonJsonFilePa
         InvalidCodePath;
 
     globalPlatformServices->Free((void*)skeletonJson);
+
+    _TranslateSkelPropertiesToGameUnits($(newSkeleton));
 
     return newSkeleton;
 };
