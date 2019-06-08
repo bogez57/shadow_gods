@@ -3,9 +3,8 @@
 
 #include "renderer_stuff.h"
 
-#if 0
 local_func void
-DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
+DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Rectf rect, f32 r, f32 g, f32 b)
 {    
     //Since I'm dealing with int pixels below
     Recti rectToDraw {};
@@ -19,18 +18,18 @@ DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
         if(rectToDraw.min.y < 0)
             rectToDraw.min.y = 0;
 
-        if(rectToDraw.max.x > buffer.size.width)
-            rectToDraw.max.x = buffer.size.width;
+        if(rectToDraw.max.x > colorBufferSize.width)
+            rectToDraw.max.x = colorBufferSize.width;
 
-        if(rectToDraw.max.y > buffer.size.height)
-            rectToDraw.max.y = buffer.size.height;
+        if(rectToDraw.max.y > colorBufferSize.height)
+            rectToDraw.max.y = colorBufferSize.height;
     };
 
     ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
                   (RoundFloat32ToUInt32(g * 255.0f) << 8) |
                   (RoundFloat32ToUInt32(b * 255.0f) << 0));
 
-    ui8* currentRow = ((ui8*)buffer.data + rectToDraw.min.x*BYTES_PER_PIXEL+ rectToDraw.min.y*buffer.pitch);
+    ui8* currentRow = ((ui8*)colorBufferData + rectToDraw.min.x*BYTES_PER_PIXEL+ rectToDraw.min.y*colorBufferPitch);
     for(i32 column = rectToDraw.min.y; column < rectToDraw.max.y; ++column)
     {
         ui32* destPixel = (ui32*)currentRow;
@@ -39,10 +38,11 @@ DrawRectangle(Image&& buffer, Rectf rect, f32 r, f32 g, f32 b)
             *destPixel++ = Color;
         }
         
-        currentRow += buffer.pitch;
+        currentRow += colorBufferPitch;
     }
 }
 
+#if 0
 //For static images
 local_func void
 DrawImage(Image&& buffer, Rectf rect, Image image)
@@ -722,6 +722,19 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
                 DrawTextureSlowly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+            }break;
+
+            case EntryType_Rect:
+            {
+                RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+                Quadf targetQuad = _ProduceQuadFromBottomMidPoint(rectEntry.worldPos, rectEntry.dimensions.x, rectEntry.dimensions.y);
+                
+                Quadf targetQuad_camera = CameraTransform(targetQuad, *camera);
+
+                Rectf targetRect_camera = {targetQuad_camera.bottomLeft, targetQuad_camera.topRight};
+
+                DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetRect_camera, rectEntry.color.r, rectEntry.color.g, rectEntry.color.b);
+                currentRenderBufferEntry += sizeof(RenderEntry_Rect);
             }break;
 
             InvalidDefaultCase;

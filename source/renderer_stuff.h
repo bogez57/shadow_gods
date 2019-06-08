@@ -76,6 +76,7 @@ struct Object_Transform
 enum Render_Entry_Type
 {
     EntryType_OrthoProj,
+    EntryType_Rect,
     EntryType_Texture,
     EntryType_2DCamera
 };
@@ -88,6 +89,14 @@ struct RenderEntry_Header
 struct RenderEntry_OrthoProj
 {
     v2f screenDimensions;
+};
+
+struct RenderEntry_Rect
+{
+    RenderEntry_Header header;
+    v2f dimensions;
+    v4f color;
+    v2f worldPos;
 };
 
 struct RenderEntry_Texture
@@ -128,6 +137,7 @@ Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
 Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
+Quadf _ProduceQuadFromBottomMidPoint(v2f originPoint, f32 width, f32 height);
 
 
 #endif //RENDERER_STUFF_INCLUDE_H 
@@ -152,6 +162,18 @@ void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimension
     RenderEntry_OrthoProj* ortho = RenderCmdBuf_Push(bufferInfo, RenderEntry_OrthoProj);
 
     ortho->screenDimensions = screenDimensions_pixels;
+};
+
+void PushRect(Game_Render_Cmd_Buffer* bufferInfo, v2f worldPos, v2f dimensions, v4f color)
+{
+    RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Rect);
+
+    rectEntry->header.type = EntryType_Rect;
+    rectEntry->dimensions = dimensions * pixelsPerMeter;
+    rectEntry->color = color;
+    rectEntry->worldPos = worldPos * pixelsPerMeter;
+
+    ++bufferInfo->entryCount;
 };
 
 void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}})
@@ -347,6 +369,18 @@ Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
     Result.max = { originPoint.x + width, originPoint.y + height };
 
     return Result;
+};
+
+Quadf _ProduceQuadFromBottomMidPoint(v2f originPoint, f32 width, f32 height)
+{
+    Quadf result;
+
+    result.bottomLeft = {originPoint.x - (width / 2.0f), originPoint.y};
+    result.bottomRight = {originPoint.x + (width / 2.0f), originPoint.y};
+    result.topRight = {originPoint.x + (width / 2.0f), originPoint.y + height};
+    result.topLeft = {originPoint.x - (width / 2.0f), originPoint.y + height};
+
+    return result;
 };
 
 local_func
