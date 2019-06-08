@@ -122,7 +122,8 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             Slot* slot = &newSkeleton.slots.At((newSkeleton.slots.size - 1) - slotIndex);
             slot->name = (char*)Json_getString(currentJsonObject, "name", 0);
             slot->bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
-            slot->regionAttachment = [currentJsonObject, root, atlas]() -> Region_Attachment {
+            slot->regionAttachment = [currentJsonObject, root, atlas]() -> Region_Attachment 
+            {
                 Region_Attachment resultRegionAttch {};
 
                 const char* attachmentName = Json_getString(currentJsonObject, "attachment", 0);
@@ -143,7 +144,8 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
                         resultRegionAttch.parentLocalRotation.y = Json_getFloat(jsonAttachment, "rotation", 0.0f);
                         resultRegionAttch.scale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
                         resultRegionAttch.scale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
-                        resultRegionAttch.imageInfo = [atlas, attachmentName]() -> AtlasRegion {
+                        resultRegionAttch.imageInfo = [atlas, attachmentName]() -> AtlasRegion 
+                        {
                             AtlasRegion resultAtlasRegion {};
                             AtlasRegion* region = atlas.regions;
 

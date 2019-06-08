@@ -154,7 +154,7 @@ void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimension
     ortho->screenDimensions = screenDimensions_pixels;
 };
 
-void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale)
+void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}})
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
 
@@ -168,7 +168,7 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHei
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
     textureEntry->pitch = bitmap.pitch;
-    textureEntry->uvBounds = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}};
+    textureEntry->uvBounds = uvs;
     
     textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
 

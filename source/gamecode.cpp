@@ -257,7 +257,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Player Init
         player->image = LoadBitmap_BGRA("data/testimgs/test_head_front.bmp"); 
-        player->world.pos = stage->info.centerPoint - 2.4f;
+        player->world.pos = stage->info.centerPoint - .4f;
         player->world.rotation = 0.0f;
         player->world.scale = {1.0f, 1.0f};
 
@@ -270,6 +270,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     enemy->world.scale = {1.0f, 1.0f};
     enemy->height = 1.6f;
+    player->height = 1.6f;
 
     if (globalPlatformServices->DLLJustReloaded)
     {
@@ -292,10 +293,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
+    AtlasRegion* region = &gState->skeleton.slots.At(0).regionAttachment.imageInfo;
+
     //Currently projection needs to be set first followed by camera
     SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
     //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
-    PushTexture(global_renderCmdBuf, gState->atlas->pages[0].rendererObject, enemy->height, enemy->world.rotation, enemy->world.pos, enemy->world.scale);
+    Array<v2f, 2> uvs = {v2f{region->u, region->v}, 
+                         v2f{region->u2, region->v2}};
+    PushTexture(global_renderCmdBuf, gState->atlas->pages[0].rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs);
 };
 
