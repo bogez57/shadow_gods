@@ -532,11 +532,8 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    //Make sure to grab desired portion of image specified by user
-    f32 minTexelPos_x = 1.0f + (image.uvBounds.At(0).x*(f32)(image.size.width - 3));
-    f32 minTexelPos_y = 1.0f + (image.uvBounds.At(0).y*(f32)(image.size.height - 3)); 
-    f32 maxTexelPos_x = 1.0f + (image.uvBounds.At(1).x*(f32)(image.size.width - 3));
-    f32 maxTexelPos_y = 1.0f + (image.uvBounds.At(1).y*(f32)(image.size.height - 3)); 
+    f32 textureV = Lerp(image.uvBounds.At(0).y, image.uvBounds.At(1).y, 0.0f);
+
 
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
@@ -544,6 +541,8 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
+        f32 textureV = Lerp(image.uvBounds.At(0).y, image.uvBounds.At(1).y, (screenY - yMin) / (yMax - yMin));
+
         ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; ++screenX)
         {            
@@ -557,18 +556,17 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
             //within the target rect's bounds or not
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
-                f32 texelPos_x = 1.0f + (u*(f32)(image.size.width - 3));
-                f32 texelPos_y = 1.0f + (v*(f32)(image.size.height - 3)); 
+                f32 textureU = Lerp(image.uvBounds.At(0).x, image.uvBounds.At(1).x, (screenX - xMin) / (xMax - xMin));
+
+                f32 texelPos_x = 1.0f + (textureU*(f32)(image.size.width));
+                f32 texelPos_y = 1.0f + (textureV*(f32)(image.size.height)); 
 
                 f32 epsilon = 0.00001f;//TODO: Remove????
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
                 BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
-                BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (i32)image.size.width), "x coord is out of range!: ");
-                BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (i32)image.size.height), "x coord is out of range!");
+                BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (i32)image.size.width), "x coord is out of range!: %f", texelPos_x);
+                BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (i32)image.size.height), "x coord is out of range!: %f", texelPos_y);
 
-                if(texelPos_x >= minTexelPos_x && texelPos_x <= maxTexelPos_x &&
-                   texelPos_y >= minTexelPos_y && texelPos_y <= maxTexelPos_y)
-                {
                     ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
 
                     v4ui32 texelSquare {}; 
@@ -683,7 +681,6 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
                                 ((ui8)finalBlendedColor.g << 8) |
                                 ((ui8)finalBlendedColor.b << 0));
                     }
-                };
             }
 
             ++destPixel;
@@ -714,21 +711,6 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
         switch(entryHeader->type)
         {
-            case EntryType_Texture:
-            {
-                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
-                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
-
-                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
-
-                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, textureEntry.world);
-                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
-
-                DrawTextureSlowly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
-
-                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
-            }break;
-
             case EntryType_Rect:
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
@@ -740,6 +722,30 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
 
                 DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetRect_camera, rectEntry.color.r, rectEntry.color.g, rectEntry.color.b);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+            }break;
+
+            case EntryType_Texture:
+            {
+                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+
+                v2f targetRect_minCoord = {1.0f + textureEntry.uvBounds.At(0).x*(f32)(textureEntry.targetRectSize.width),
+                                  1.0f + textureEntry.uvBounds.At(0).y*(f32)(textureEntry.targetRectSize.height)};
+                v2f targetRect_maxCoord = {1.0f + textureEntry.uvBounds.At(1).x*(f32)(textureEntry.targetRectSize.width),
+                                  1.0f + textureEntry.uvBounds.At(1).y*(f32)(textureEntry.targetRectSize.height)};
+
+                f32 width = targetRect_maxCoord.x - targetRect_minCoord.x;
+                f32 height = targetRect_maxCoord.y - targetRect_minCoord.y;
+
+                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, width, height);
+
+                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+
+                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, textureEntry.world);
+                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+
+                DrawTextureSlowly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
+
+                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
 
             InvalidDefaultCase;
