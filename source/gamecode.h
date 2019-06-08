@@ -14,9 +14,9 @@ struct Transform
 
 struct Fighter
 {
-    Image image;
     Transform world;
     f32 height;
+    Skeleton skel;
 };
 
 struct StageInfo
@@ -47,7 +47,6 @@ struct Game_State
     Image composite;
     Image normalMap;
     Atlas* atlas;
-    Skeleton skeleton;
     f32 lightAngle;
     f32 lightThreshold;
     Stage_Data stage;

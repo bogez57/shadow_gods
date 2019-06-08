@@ -137,7 +137,7 @@ Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
 #ifdef GAME_RENDERER_STUFF_IMPL
 
 //TODO: Possibly remove this value entirely or isolate it to one function (for easier transition to resolution independence)
-f32 pixelsPerMeter{200.0f};
+f32 pixelsPerMeter{100.0f};
 
 void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 {

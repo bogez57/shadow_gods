@@ -42,7 +42,7 @@ struct Region_Attachment
     v2f parentLocalPos;
     v2f parentLocalRotation;
     v2f scale;
-    AtlasRegion imageInfo;
+    AtlasRegion region_image;
 };
 
 struct Slot
@@ -57,7 +57,7 @@ struct Skeleton
     Dynam_Array<Bone> bones;
     Dynam_Array<Slot> slots;
     f32 width, height;
-    v2f worldPos;
+    v2f* worldPos;
 };
 
 Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath);
@@ -144,7 +144,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
                         resultRegionAttch.parentLocalRotation.y = Json_getFloat(jsonAttachment, "rotation", 0.0f);
                         resultRegionAttch.scale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
                         resultRegionAttch.scale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
-                        resultRegionAttch.imageInfo = [atlas, attachmentName]() -> AtlasRegion 
+                        resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
                         {
                             AtlasRegion resultAtlasRegion {};
                             AtlasRegion* region = atlas.regions;

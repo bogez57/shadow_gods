@@ -212,6 +212,17 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
+void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJsonFilePath, v2f worldPosition)
+{
+    Atlas* atlas;
+    atlas = CreateAtlasFromFile(atlasFilePath, 0);
+    fighter.skel = CreateSkeletonUsingJsonFile(*atlas, skelJsonFilePath);
+    fighter.world.pos = worldPosition;
+    fighter.world.rotation = 0.0f;
+    fighter.world.scale = {1.0f, 1.0f};
+    fighter.skel.worldPos = &fighter.world.pos;
+};
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmd_Buffer* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -256,21 +267,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        player->image = LoadBitmap_BGRA("data/testimgs/test_head_front.bmp"); 
-        player->world.pos = stage->info.centerPoint - .4f;
-        player->world.rotation = 0.0f;
-        player->world.scale = {1.0f, 1.0f};
-
-        gState->atlas = CreateAtlasFromFile("data/yellow_god.atlas", 0);
-        gState->skeleton = CreateSkeletonUsingJsonFile(*gState->atlas, "data/yellow_god.json");
-        enemy->world.pos = stage->info.centerPoint - 2.4f;
-        enemy->world.rotation = 0.0f;
-        enemy->world.scale = {1.0f, 1.0f};
+        InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", stage->info.centerPoint - .4f);
     };
 
-    enemy->world.scale = {1.0f, 1.0f};
-    enemy->height = 1.6f;
-    player->height = 1.6f;
+    player->height = 3.0f;
 
     if (globalPlatformServices->DLLJustReloaded)
     {
@@ -293,14 +293,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
-    AtlasRegion* region = &gState->skeleton.slots.At(0).regionAttachment.imageInfo;
-
     //Currently projection needs to be set first followed by camera
     SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
     //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
-    Array<v2f, 2> uvs = {v2f{region->u, region->v}, 
-                         v2f{region->u2, region->v2}};
-    PushTexture(global_renderCmdBuf, gState->atlas->pages[0].rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs);
+
+    AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
+
+    Array<v2f, 2> uvs = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
+    PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs);
 };
 
