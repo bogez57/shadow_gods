@@ -414,6 +414,8 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
             region->width = toInt(tuple);
             region->height = toInt(tuple + 1);
 
+            region->y = (page->height - region->y) - region->height;//Flip y so origin is bottom left instead of topleft
+
             region->u = region->x / (float)page->width;
             region->v = region->y / (float)page->height;
             if (region->rotate)
