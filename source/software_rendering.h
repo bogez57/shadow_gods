@@ -3,6 +3,11 @@
 
 #include "renderer_stuff.h"
 
+/*
+    TODO:
+    1.) Add a DrawRectangle function that takes into account rotation and scale. When this is done consider removing the need for a Rect struct
+*/
+
 local_func void
 DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Rectf rect, f32 r, f32 g, f32 b)
 {    
