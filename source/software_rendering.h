@@ -532,7 +532,7 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    v2f uvRange = {image.uvBounds.At(1).x - image.uvBounds.At(0).x, image.uvBounds.At(1).y - image.uvBounds.At(0).y};
+    v2f uvRangeForTexture = {image.uvBounds.At(1).u - image.uvBounds.At(0).u, image.uvBounds.At(1).v - image.uvBounds.At(0).v};
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
 
@@ -553,8 +553,8 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
             //within the target rect's bounds or not
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
-                f32 textureU = image.uvBounds.At(0).x + (uvRange.x * u);
-                f32 textureV = image.uvBounds.At(0).y + (uvRange.y * v);
+                f32 textureU = image.uvBounds.At(0).u + (uvRangeForTexture.u * u);
+                f32 textureV = image.uvBounds.At(0).y + (uvRangeForTexture.v * v);
 
                 f32 texelPos_x = (textureU*(f32)(image.size.width));
                 f32 texelPos_y = (textureV*(f32)(image.size.height)); 
@@ -713,9 +713,9 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-                v2f targetRect_minCoord = {1.0f + textureEntry.uvBounds.At(0).x*(f32)(textureEntry.targetRectSize.width),
-                                           1.0f + textureEntry.uvBounds.At(0).y*(f32)(textureEntry.targetRectSize.height)};
-                v2f targetRect_maxCoord = {1.0f + textureEntry.uvBounds.At(1).x*(f32)(textureEntry.targetRectSize.width),
+                v2f targetRect_minCoord = {1.0f + textureEntry.uvBounds.At(0).u*(f32)(textureEntry.targetRectSize.width),
+                                           1.0f + textureEntry.uvBounds.At(0).v*(f32)(textureEntry.targetRectSize.height)};
+                v2f targetRect_maxCoord = {1.0f + textureEntry.uvBounds.At(1).u*(f32)(textureEntry.targetRectSize.width),
                                            1.0f + textureEntry.uvBounds.At(1).y*(f32)(textureEntry.targetRectSize.height)};
 
                 f32 width = targetRect_maxCoord.x - targetRect_minCoord.x;

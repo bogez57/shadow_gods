@@ -304,8 +304,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
     PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
-    //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
-    //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-    //PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs2);
+    AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
+    Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
+    PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs2);
 };
 

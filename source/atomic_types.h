@@ -46,6 +46,10 @@ struct v2f
         };
         struct
         {
+            f32 u, v;
+        };
+        struct
+        {
             f32 width, height;
         };
     };
@@ -131,6 +135,10 @@ struct v2i
         struct
         {
             i32 width, height;
+        };
+        struct
+        {
+            i32 u, v;
         };
     };
 };
