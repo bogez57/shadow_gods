@@ -533,7 +533,7 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
     };
 
     f32 textureV = Lerp(image.uvBounds.At(0).y, image.uvBounds.At(1).y, 0.0f);
-
+    v2f uvRange = {image.uvBounds.At(1).x - image.uvBounds.At(0).x, image.uvBounds.At(1).y - image.uvBounds.At(0).y};
 
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
@@ -541,7 +541,10 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
-        f32 textureV = Lerp(image.uvBounds.At(0).y, image.uvBounds.At(1).y, (screenY - yMin) / (yMax - yMin));
+        f32 offset = screenY - yMin;
+        f32 totalHeight = yMax - yMin;
+        f32 percentToMove = offset / totalHeight;
+        f32 textureV = Lerp(image.uvBounds.At(0).y, image.uvBounds.At(1).y, percentToMove);
 
         ui32* destPixel = (ui32*)currentRow;
         for(f32 screenX = xMin; screenX < xMax; ++screenX)
@@ -558,8 +561,14 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
             {
                 f32 textureU = Lerp(image.uvBounds.At(0).x, image.uvBounds.At(1).x, (screenX - xMin) / (xMax - xMin));
 
+                textureU = image.uvBounds.At(0).x + (uvRange.x * u);
+                f32 textV = image.uvBounds.At(0).y + (uvRange.y * v);
+
                 f32 texelPos_x = 1.0f + (textureU*(f32)(image.size.width));
-                f32 texelPos_y = 1.0f + (textureV*(f32)(image.size.height)); 
+                f32 texelPos_y = 1.0f + (textV*(f32)(image.size.height)); 
+
+                if(textV > image.uvBounds.At(1).y)
+                    BGZ_CONSOLE("ahahah");
 
                 f32 epsilon = 0.00001f;//TODO: Remove????
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
