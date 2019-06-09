@@ -258,7 +258,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Stage Init
         stage->info.backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
-        stage->info.height = 20.0f;
+        stage->info.height = 10.0f;
         stage->info.centerPoint = { (f32)WidthInMeters(stage->info.backgroundImg, stage->info.height) / 2, (f32)stage->info.height / 2 };
 
         //Camera Init
@@ -267,7 +267,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {stage->info.centerPoint.x, stage->info.centerPoint.y - .4f};
+        v2f playerWorldPos = {stage->info.centerPoint.x, stage->info.centerPoint.y};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos);
     };
 
@@ -299,11 +299,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
     //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
 
-    //PushRect(global_renderCmdBuf, stage->info.centerPoint, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
-    PushRect(global_renderCmdBuf, v2f{0.0f, 0.0f}, v2f{1280.0f, 720.0f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
+    PushRect(global_renderCmdBuf, stage->info.centerPoint, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
 
-    AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
-    Array<v2f, 2> uvs = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-    PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs);
+    Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
+    PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
+
+    //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
+    //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
+    //PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs2);
 };
 

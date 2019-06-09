@@ -532,21 +532,15 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    f32 textureV = Lerp(image.uvBounds.At(0).y, image.uvBounds.At(1).y, 0.0f);
     v2f uvRange = {image.uvBounds.At(1).x - image.uvBounds.At(0).x, image.uvBounds.At(1).y - image.uvBounds.At(0).y};
-
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
-    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
 
+    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
     for(f32 screenY = yMin; screenY < yMax; ++screenY)
     {
-        f32 offset = screenY - yMin;
-        f32 totalHeight = yMax - yMin;
-        f32 percentToMove = offset / totalHeight;
-        f32 textureV = Lerp(image.uvBounds.At(0).y, image.uvBounds.At(1).y, percentToMove);
-
         ui32* destPixel = (ui32*)currentRow;
+
         for(f32 screenX = xMin; screenX < xMax; ++screenX)
         {            
             v2f screenPixelCoord{screenX, screenY};
@@ -559,16 +553,11 @@ DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPit
             //within the target rect's bounds or not
             if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
-                f32 textureU = Lerp(image.uvBounds.At(0).x, image.uvBounds.At(1).x, (screenX - xMin) / (xMax - xMin));
+                f32 textureU = image.uvBounds.At(0).x + (uvRange.x * u);
+                f32 textureV = image.uvBounds.At(0).y + (uvRange.y * v);
 
-                textureU = image.uvBounds.At(0).x + (uvRange.x * u);
-                f32 textV = image.uvBounds.At(0).y + (uvRange.y * v);
-
-                f32 texelPos_x = 1.0f + (textureU*(f32)(image.size.width));
-                f32 texelPos_y = 1.0f + (textV*(f32)(image.size.height)); 
-
-                if(textV > image.uvBounds.At(1).y)
-                    BGZ_CONSOLE("ahahah");
+                f32 texelPos_x = (textureU*(f32)(image.size.width));
+                f32 texelPos_y = (textureV*(f32)(image.size.height)); 
 
                 f32 epsilon = 0.00001f;//TODO: Remove????
                 BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
@@ -720,6 +709,30 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
         switch(entryHeader->type)
         {
+            case EntryType_Texture:
+            {
+                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+
+                v2f targetRect_minCoord = {1.0f + textureEntry.uvBounds.At(0).x*(f32)(textureEntry.targetRectSize.width),
+                                           1.0f + textureEntry.uvBounds.At(0).y*(f32)(textureEntry.targetRectSize.height)};
+                v2f targetRect_maxCoord = {1.0f + textureEntry.uvBounds.At(1).x*(f32)(textureEntry.targetRectSize.width),
+                                           1.0f + textureEntry.uvBounds.At(1).y*(f32)(textureEntry.targetRectSize.height)};
+
+                f32 width = targetRect_maxCoord.x - targetRect_minCoord.x;
+                f32 height = targetRect_maxCoord.y - targetRect_minCoord.y;
+
+                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, width, height);
+
+                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+
+                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, textureEntry.world);
+                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+
+                DrawTextureSlowly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
+
+                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+            }break;
+
             case EntryType_Rect:
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
@@ -731,30 +744,6 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
 
                 DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetRect_camera, rectEntry.color.r, rectEntry.color.g, rectEntry.color.b);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-            }break;
-
-            case EntryType_Texture:
-            {
-                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
-
-                v2f targetRect_minCoord = {1.0f + textureEntry.uvBounds.At(0).x*(f32)(textureEntry.targetRectSize.width),
-                                  1.0f + textureEntry.uvBounds.At(0).y*(f32)(textureEntry.targetRectSize.height)};
-                v2f targetRect_maxCoord = {1.0f + textureEntry.uvBounds.At(1).x*(f32)(textureEntry.targetRectSize.width),
-                                  1.0f + textureEntry.uvBounds.At(1).y*(f32)(textureEntry.targetRectSize.height)};
-
-                f32 width = targetRect_maxCoord.x - targetRect_minCoord.x;
-                f32 height = targetRect_maxCoord.y - targetRect_minCoord.y;
-
-                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, width, height);
-
-                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
-
-                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, textureEntry.world);
-                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
-
-                DrawTextureSlowly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
-
-                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
 
             InvalidDefaultCase;
