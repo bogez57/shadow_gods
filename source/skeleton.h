@@ -33,6 +33,7 @@ struct Bone
     v2f worldPos;
     f32 rotation, length;
     Bone* parentBone;
+    Dynam_Array<Bone*> childBones;
     const char* name;
 };
 
@@ -48,7 +49,7 @@ struct Region_Attachment
 struct Slot
 {
     char* name;
-    Bone* bone;
+    Bone bone;
     Region_Attachment regionAttachment;
 };
 
@@ -102,13 +103,17 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
         i32 boneIndex {};
         for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.bones.size; currentJsonObject = currentJsonObject->next, ++boneIndex)
         {
-            newSkeleton.bones.At(boneIndex).name = Json_getString(currentJsonObject, "name", 0);
-            newSkeleton.bones.At(boneIndex).parentLocalPos.x = Json_getFloat(currentJsonObject, "x", 0.0f);
-            newSkeleton.bones.At(boneIndex).parentLocalPos.y = Json_getFloat(currentJsonObject, "y", 0.0f);
-            newSkeleton.bones.At(boneIndex).rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
-            newSkeleton.bones.At(boneIndex).length = Json_getFloat(currentJsonObject, "length", 0.0f);
+            Bone* newBone = &newSkeleton.bones.At(boneIndex);
+            newBone->name = Json_getString(currentJsonObject, "name", 0);
+            newBone->parentLocalPos.x = Json_getFloat(currentJsonObject, "x", 0.0f);
+            newBone->parentLocalPos.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
+            newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
-                newSkeleton.bones.At(boneIndex).parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0));
+            {
+                newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0));
+                newBone->parentBone->childBones.PushBack(newBone);
+            };
         };
     };
 
@@ -121,7 +126,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
             Slot* slot = &newSkeleton.slots.At((newSkeleton.slots.size - 1) - slotIndex);
             slot->name = (char*)Json_getString(currentJsonObject, "name", 0);
-            slot->bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
+            slot->bone = *GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
             slot->regionAttachment = [currentJsonObject, root, atlas]() -> Region_Attachment 
             {
                 Region_Attachment resultRegionAttch {};

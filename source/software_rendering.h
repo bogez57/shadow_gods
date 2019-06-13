@@ -721,7 +721,7 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
                 f32 width = targetRect_maxCoord.x - targetRect_minCoord.x;
                 f32 height = targetRect_maxCoord.y - targetRect_minCoord.y;
 
-                Quadf imageTargetRect = _ProduceQuadFromBottomLeftPoint(v2f{0.0f, 0.0f}, width, height);
+                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, width, height);
 
                 ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
