@@ -247,6 +247,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
+
+
+
         gameMemory->Initialized = true;
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
@@ -267,11 +270,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {stage->info.centerPoint.x, stage->info.centerPoint.y - 2.0f};
+        v2f playerWorldPos = {stage->info.centerPoint.x, stage->info.centerPoint.y - 8.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos);
     };
 
-    player->height = 3.0f;
+    player->height = 2.0f;
 
     if (globalPlatformServices->DLLJustReloaded)
     {
@@ -317,13 +320,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
 
     {//Next: 
-        for(i32 boneIndex{1}; boneIndex < player->skel.slots.size; ++boneIndex)
+        for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
         {
-            Bone* currentBone = &player->skel.bones[boneIndex];
+            Slot* currentSlot = &player->skel.slots[slotIndex];
 
-            AtlasRegion* region = &player->skel.slots[boneIndex].regionAttachment.region_image;
+            AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-            PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, currentBone->worldPos, player->world.scale, uvs2);
+            PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
         };
     };
 

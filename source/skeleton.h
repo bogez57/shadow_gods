@@ -49,7 +49,7 @@ struct Region_Attachment
 struct Slot
 {
     char* name;
-    Bone bone;
+    Bone* bone;
     Region_Attachment regionAttachment;
 };
 
@@ -126,7 +126,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
             Slot* slot = &newSkeleton.slots.At((newSkeleton.slots.size - 1) - slotIndex);
             slot->name = (char*)Json_getString(currentJsonObject, "name", 0);
-            slot->bone = *GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
+            slot->bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
             slot->regionAttachment = [currentJsonObject, root, atlas]() -> Region_Attachment 
             {
                 Region_Attachment resultRegionAttch {};
