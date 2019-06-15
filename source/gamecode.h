@@ -19,13 +19,6 @@ struct Fighter
     Skeleton skel;
 };
 
-struct StageInfo
-{
-    f32 height;
-    v2f centerPoint;
-    Image backgroundImg;
-};
-
 struct Game_Camera
 {
     v2f lookAt;
@@ -35,7 +28,9 @@ struct Game_Camera
 
 struct Stage_Data
 {
-    StageInfo info;
+    Image backgroundImg;
+    v2f size;
+    v2f centerPoint;
     Fighter player;
     Fighter enemy;
     Fighter enemy2;

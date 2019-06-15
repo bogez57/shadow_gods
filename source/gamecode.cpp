@@ -36,8 +36,6 @@ global_variable Platform_Services* globalPlatformServices;
 global_variable Game_Render_Cmd_Buffer* global_renderCmdBuf;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
-global_variable f32 viewportWidth;
-global_variable f32 viewportHeight;
 global_variable i32 heap;
 global_variable i32 renderBuffer;
 
@@ -259,18 +257,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             InitDynamAllocator(heap);
         };
 
+
         //Stage Init
-        stage->info.backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
-        stage->info.height = 10.0f;
-        stage->info.centerPoint = { (f32)WidthInMeters(stage->info.backgroundImg, stage->info.height) / 2, (f32)stage->info.height / 2 };
+        stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
+        stage->size.height = 16.0f;
+        stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
+        stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
         //Camera Init
-        stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y };
+        stage->camera.lookAt = { stage->centerPoint.x, stage->centerPoint.y};
         stage->camera.dilatePoint = v2f{0.0f, 0.0f};
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {stage->info.centerPoint.x, stage->info.centerPoint.y - 8.0f};
+        v2f playerWorldPos = {stage->centerPoint.x, stage->centerPoint.y - 4.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos);
     };
 
@@ -298,25 +298,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     {//Update bone positions
-        player->skel.bones[0].worldPos = player->world.pos;
+        Bone* root = &player->skel.bones[0];
+        Bone* pelvis = &player->skel.bones[1];
 
-        for(i32 boneIndex{}; boneIndex < player->skel.bones.size; ++boneIndex)
+        root->worldPos = player->world.pos;
+
+        pelvis->worldPos = (root->worldPos + pelvis->parentLocalPos);
+
+        for(i32 childBoneIndex{}; childBoneIndex < pelvis->childBones.size; ++childBoneIndex)
         {
-            Bone* currentBone = &player->skel.bones[boneIndex];
-            if(currentBone->parentBone)
-            {
-                currentBone->worldPos = (currentBone->parentBone->worldPos + currentBone->parentLocalPos);
-
-                if(currentBone->childBones.size > 0)
-                {
-                    Bone* childBone = currentBone->childBones[0];
-                    childBone->worldPos = (currentBone->worldPos + childBone->parentLocalPos);
-                };
-            }
-        };
+            Bone* childBone = pelvis->childBones[childBoneIndex];
+            childBone->worldPos = (childBone->parentBone->worldPos + childBone->parentLocalPos);
+       };
     }
 
-    SetProjection_Ortho(global_renderCmdBuf, v2f{viewportWidth, viewportHeight});
+    SetProjection_Ortho(global_renderCmdBuf, v2f{1280.0f, 720.0f});
     PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
 
     {//Next: 
@@ -331,12 +327,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     //Currently projection needs to be set first followed by camera
-    //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    //PushTexture(global_renderCmdBuf, stage->backgroundImg, stage->height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
 
-    PushRect(global_renderCmdBuf, stage->info.centerPoint, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
+    v2f test {10.0f, 3.0f};
+    PushRect(global_renderCmdBuf, test, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
 
     //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
-    //PushTexture(global_renderCmdBuf, stage->info.backgroundImg, stage->info.height, 0.0f, v2f{stage->info.centerPoint.x, 0.0f}, v2f{1.0f, 1.0f}, uvs);
+    //PushTexture(global_renderCmdBuf, stage->backgroundImg, stage->height, 0.0f, v2f{stage->centerPoint.x, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
     //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
