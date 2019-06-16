@@ -7,6 +7,19 @@
 
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
 
+struct Game_Render_Cmd_Buffer
+{
+    ui8* baseAddress;
+    ui32 usedAmount;
+    ui32 size;
+    i32 entryCount;
+};
+
+struct Rendering_Info
+{
+    Game_Render_Cmd_Buffer cmdBuffer;
+};
+
 struct Image
 {
     ui8* data;
@@ -123,9 +136,9 @@ struct RenderEntry_2DCamera
 Image LoadBitmap_BGRA(const char* fileName);
 f32 BitmapWidth_meters(Image bitmap);
 
-void PushTexture(Game_Render_Cmd_Buffer&& bufferInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
-void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
-void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
+void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
+void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
+void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
 
 void ConvertNegativeAngleToRadians(f32&& angle);
@@ -157,28 +170,28 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void SetProjection_Ortho(Game_Render_Cmd_Buffer* bufferInfo, v2f screenDimensions_pixels)
+void SetProjection_Ortho(Rendering_Info* renderingInfo, v2f screenDimensions_pixels)
 {
-    RenderEntry_OrthoProj* ortho = RenderCmdBuf_Push(bufferInfo, RenderEntry_OrthoProj);
+    RenderEntry_OrthoProj* ortho = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_OrthoProj);
 
     ortho->screenDimensions = screenDimensions_pixels;
 };
 
-void PushRect(Game_Render_Cmd_Buffer* bufferInfo, v2f worldPos, v2f dimensions, v4f color)
+void PushRect(Rendering_Info* renderingInfo, v2f worldPos, v2f dimensions, v4f color)
 {
-    RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Rect);
+    RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect);
 
     rectEntry->header.type = EntryType_Rect;
     rectEntry->dimensions = dimensions * pixelsPerMeter;
     rectEntry->color = color;
     rectEntry->worldPos = worldPos * pixelsPerMeter;
 
-    ++bufferInfo->entryCount;
+    ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}})
+void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}})
 {
-    RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(bufferInfo, RenderEntry_Texture);
+    RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
     f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * pixelsPerMeter;
     f32 desiredHeight_pixels = objectHeight_meters * pixelsPerMeter;
@@ -194,12 +207,12 @@ void PushTexture(Game_Render_Cmd_Buffer* bufferInfo, Image bitmap, f32 objectHei
     
     textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
 
-    ++bufferInfo->entryCount;
+    ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushCamera(Game_Render_Cmd_Buffer* bufferInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor)
+void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor)
 {
-    RenderEntry_2DCamera* camera = RenderCmdBuf_Push(bufferInfo, RenderEntry_2DCamera);
+    RenderEntry_2DCamera* camera = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_2DCamera);
     camera->lookAt = lookAt * pixelsPerMeter;
     camera->viewCenter = v2f{1280.0f / 2.0f, 720.0f / 2.0f};//TODO: Need to base this off of actual screen dimensions that were set
     camera->dilatePoint = dilatePoint;

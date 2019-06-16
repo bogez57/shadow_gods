@@ -33,7 +33,7 @@
 #include "utilities.h"
 
 global_variable Platform_Services* globalPlatformServices;
-global_variable Game_Render_Cmd_Buffer* global_renderCmdBuf;
+global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable i32 heap;
@@ -221,7 +221,7 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     fighter.skel.worldPos = &fighter.world.pos;
 };
 
-extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmd_Buffer* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
@@ -234,7 +234,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     deltaT = platformServices->prevFrameTimeInSecs;
     deltaTFixed = platformServices->targetFrameTimeInSecs;
     globalPlatformServices = platformServices;
-    global_renderCmdBuf = renderCmdBuf;
+    global_renderingInfo= renderCmdBuf;
 
     Stage_Data* stage = &gState->stage;
     Fighter* player = &stage->player;
@@ -312,8 +312,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
        };
     }
 
-    SetProjection_Ortho(global_renderCmdBuf, v2f{1280.0f, 720.0f});
-    PushCamera(global_renderCmdBuf, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
+    SetProjection_Ortho(global_renderingInfo, v2f{1280.0f, 720.0f});
+    PushCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
 
     {//Next: 
         for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
@@ -322,21 +322,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-            PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
+            PushTexture(global_renderingInfo, region->page->rendererObject, player->height, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
         };
     };
 
     //Currently projection needs to be set first followed by camera
-    //PushTexture(global_renderCmdBuf, stage->backgroundImg, stage->height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    //PushTexture(global_renderingInfo, stage->backgroundImg, stage->height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
 
     v2f test {10.0f, 3.0f};
-    PushRect(global_renderCmdBuf, test, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
+    PushRect(global_renderingInfo, test, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
 
     //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
-    //PushTexture(global_renderCmdBuf, stage->backgroundImg, stage->height, 0.0f, v2f{stage->centerPoint.x, 0.0f}, v2f{1.0f, 1.0f}, uvs);
+    //PushTexture(global_renderingInfo, stage->backgroundImg, stage->height, 0.0f, v2f{stage->centerPoint.x, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
     //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-    //PushTexture(global_renderCmdBuf, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs2);
+    //PushTexture(global_renderingInfo, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs2);
 };
 

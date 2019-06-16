@@ -693,9 +693,9 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
     //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch)
+void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch)
 {
-    ui8* currentRenderBufferEntry = renderBufferInfo.baseAddress;
+    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
 
     //TODO: With how this is currently setup the user is forced to make sure ortho is set first
     //followed by the camera. Maybe think of ways to fix this
@@ -704,7 +704,7 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
     RenderEntry_2DCamera* camera = (RenderEntry_2DCamera*)currentRenderBufferEntry;
     currentRenderBufferEntry += sizeof(RenderEntry_2DCamera);
 
-    for(i32 entryNumber = 0; entryNumber < renderBufferInfo.entryCount; ++entryNumber)
+    for(i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
         switch(entryHeader->type)
@@ -750,7 +750,7 @@ void RenderViaSoftware(Game_Render_Cmd_Buffer&& renderBufferInfo, void* colorBuf
         }
     };
 
-    renderBufferInfo.entryCount = 0; 
+    renderingInfo.cmdBuffer.entryCount = 0; 
 };
 
 #endif //SOFTWARE_RENDERING_INCLUDE_H

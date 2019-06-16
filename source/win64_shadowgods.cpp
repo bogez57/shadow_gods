@@ -40,6 +40,7 @@
 
 #include "math.h"
 #include "utilities.h"
+#include "renderer_stuff.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
 #include "opengl.h"
@@ -414,7 +415,7 @@ namespace Win32
     }
 
     local_func void
-    DisplayBufferInWindow(Game_Render_Cmd_Buffer&& renderCmdBuf, HDC deviceContext, int windowWidth, int windowHeight)
+    DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight)
     {
         b renderThroughHardware{false};
         if(renderThroughHardware)
@@ -423,7 +424,7 @@ namespace Win32
         }
         else
         {
-            RenderViaSoftware($(renderCmdBuf), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch);
+            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch);
 
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
@@ -448,7 +449,7 @@ namespace Win32
         };
 
         //Clear out command buffer
-        renderCmdBuf.usedAmount = 0;
+        renderingInfo.cmdBuffer.usedAmount = 0;
     };
 
     local_func auto
@@ -783,7 +784,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             Game_Input Input {};
             Game_Sound_Output_Buffer SoundBuffer {};
-            Game_Render_Cmd_Buffer renderCmdBuffer {};
+            Rendering_Info renderingInfo{};
             Platform_Services platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
@@ -795,10 +796,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             {//Init render command buffer
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + appMemory->TotalSize + 1);
-                renderCmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); 
-                renderCmdBuffer.size = Megabytes(10);
-                renderCmdBuffer.entryCount = 0;
-                renderCmdBuffer.usedAmount = 0;
+                renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); 
+                renderingInfo.cmdBuffer.size = Megabytes(10);
+                renderingInfo.cmdBuffer.entryCount = 0;
+                renderingInfo.cmdBuffer.usedAmount = 0;
             }
 
             { //Init input recording and replay services
@@ -965,7 +966,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput($(UpdatedInput), $(UpdatedReplayState));
                 }
 
-                GameCode.UpdateFunc(&GameMemory, &platformServices, &renderCmdBuffer, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &platformServices, &renderingInfo, &SoundBuffer, &UpdatedInput);
 
                 Input = UpdatedInput;
                 GameReplayState = UpdatedReplayState;
@@ -984,7 +985,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 Win32::Window_Dimension dimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
-                Win32::DisplayBufferInWindow($(renderCmdBuffer), deviceContext, dimension.width, dimension.height);
+                Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, dimension.width, dimension.height);
                 ReleaseDC(window, deviceContext);
 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();

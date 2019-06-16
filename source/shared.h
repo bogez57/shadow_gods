@@ -125,11 +125,3 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
 
     return result;
 };
-
-struct Game_Render_Cmd_Buffer
-{
-    ui8* baseAddress;
-    ui32 usedAmount;
-    ui32 size;
-    i32 entryCount;
-};
