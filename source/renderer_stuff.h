@@ -6,6 +6,14 @@
 #endif
 
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
+struct Camera2D
+{
+    v2f lookAt;
+    v2f viewCenter;
+    v2f dilatePoint;
+    f32 zoomFactor;
+    v2f screenDimensions;
+};
 
 struct Game_Render_Cmd_Buffer
 {
@@ -18,6 +26,8 @@ struct Game_Render_Cmd_Buffer
 struct Rendering_Info
 {
     Game_Render_Cmd_Buffer cmdBuffer;
+    Camera2D camera;
+    f32 pixelsPerMeter;
 };
 
 struct Image
@@ -88,20 +98,13 @@ struct Object_Transform
 
 enum Render_Entry_Type
 {
-    EntryType_OrthoProj,
     EntryType_Rect,
-    EntryType_Texture,
-    EntryType_2DCamera
+    EntryType_Texture
 };
 
 struct RenderEntry_Header
 {
     Render_Entry_Type type;
-};
-
-struct RenderEntry_OrthoProj
-{
-    v2f screenDimensions;
 };
 
 struct RenderEntry_Rect
@@ -123,19 +126,11 @@ struct RenderEntry_Texture
     Array<v2f, 2> uvBounds;
 };
 
-struct RenderEntry_2DCamera
-{
-    RenderEntry_Header header;
-    v2f lookAt;
-    v2f viewCenter;
-    v2f viewDims;
-    v2f dilatePoint;
-    f32 zoomFactor;
-};
-
+//Helpers
 Image LoadBitmap_BGRA(const char* fileName);
 f32 BitmapWidth_meters(Image bitmap);
 
+//Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
@@ -145,7 +140,7 @@ void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
 //void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
-Quadf CameraTransform(Quadf worldCoords, RenderEntry_2DCamera camera);
+Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
@@ -159,9 +154,6 @@ Quadf _ProduceQuadFromBottomMidPoint(v2f originPoint, f32 width, f32 height);
 
 #ifdef GAME_RENDERER_STUFF_IMPL
 
-//TODO: Possibly remove this value entirely or isolate it to one function (for easier transition to resolution independence)
-f32 pixelsPerMeter{100.0f};
-
 void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 {
     void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
@@ -170,11 +162,14 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void SetProjection_Ortho(Rendering_Info* renderingInfo, v2f screenDimensions_pixels)
+void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels, v2f cameraLookAtCoords_meters, f32 pixelsPerMeter)
 {
-    RenderEntry_OrthoProj* ortho = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_OrthoProj);
-
-    ortho->screenDimensions = screenDimensions_pixels;
+    renderingInfo->pixelsPerMeter = pixelsPerMeter;
+    renderingInfo->camera.lookAt = cameraLookAtCoords_meters * pixelsPerMeter;
+    renderingInfo->camera.screenDimensions = screenDimensions_pixels;
+    renderingInfo->camera.viewCenter = screenDimensions_pixels / 2.0f;
+    renderingInfo->camera.dilatePoint = renderingInfo->camera.viewCenter;
+    renderingInfo->camera.zoomFactor = 1.0f;
 };
 
 void PushRect(Rendering_Info* renderingInfo, v2f worldPos, v2f dimensions, v4f color)
@@ -182,9 +177,9 @@ void PushRect(Rendering_Info* renderingInfo, v2f worldPos, v2f dimensions, v4f c
     RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect);
 
     rectEntry->header.type = EntryType_Rect;
-    rectEntry->dimensions = dimensions * pixelsPerMeter;
+    rectEntry->dimensions = dimensions * renderingInfo->pixelsPerMeter;
     rectEntry->color = color;
-    rectEntry->worldPos = worldPos * pixelsPerMeter;
+    rectEntry->worldPos = worldPos * renderingInfo->pixelsPerMeter;
 
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -193,12 +188,12 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
-    f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * pixelsPerMeter;
-    f32 desiredHeight_pixels = objectHeight_meters * pixelsPerMeter;
+    f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * renderingInfo->pixelsPerMeter;
+    f32 desiredHeight_pixels = objectHeight_meters * renderingInfo->pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;
-    textureEntry->world.pos = pos * pixelsPerMeter;
+    textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter;
     textureEntry->world.scale = scale;
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
@@ -208,15 +203,6 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
 
     ++renderingInfo->cmdBuffer.entryCount;
-};
-
-void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor)
-{
-    RenderEntry_2DCamera* camera = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_2DCamera);
-    camera->lookAt = lookAt * pixelsPerMeter;
-    camera->viewCenter = v2f{1280.0f / 2.0f, 720.0f / 2.0f};//TODO: Need to base this off of actual screen dimensions that were set
-    camera->dilatePoint = dilatePoint;
-    camera->zoomFactor = zoomFactor;
 };
 
 Image LoadBitmap_BGRA(const char* fileName)
@@ -317,7 +303,7 @@ Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world)
     return transformedCoords;
 };
 
-Quadf CameraTransform(Quadf worldCoords, RenderEntry_2DCamera camera)
+Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
 {
     Quadf transformedCoords{};
 

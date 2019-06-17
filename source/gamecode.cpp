@@ -245,9 +245,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
-
-
-
         gameMemory->Initialized = true;
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
@@ -257,12 +254,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             InitDynamAllocator(heap);
         };
 
-
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
         stage->size.height = 16.0f;
         stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
+
+        InitRenderStuff(global_renderingInfo, v2f{1280.0f, 720.0f}, stage->centerPoint, 100.0f);
 
         //Camera Init
         stage->camera.lookAt = { stage->centerPoint.x, stage->centerPoint.y};
@@ -311,9 +309,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             childBone->worldPos = (childBone->parentBone->worldPos + childBone->parentLocalPos);
        };
     }
-
-    SetProjection_Ortho(global_renderingInfo, v2f{1280.0f, 720.0f});
-    PushCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.dilatePoint, stage->camera.zoomFactor);
 
     {//Next: 
         for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)

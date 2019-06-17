@@ -696,13 +696,7 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
 void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch)
 {
     ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
-
-    //TODO: With how this is currently setup the user is forced to make sure ortho is set first
-    //followed by the camera. Maybe think of ways to fix this
-    RenderEntry_OrthoProj* orthoProj = (RenderEntry_OrthoProj*)currentRenderBufferEntry;
-    currentRenderBufferEntry += sizeof(RenderEntry_OrthoProj);
-    RenderEntry_2DCamera* camera = (RenderEntry_2DCamera*)currentRenderBufferEntry;
-    currentRenderBufferEntry += sizeof(RenderEntry_2DCamera);
+    Camera2D* camera = &renderingInfo.camera;
 
     for(i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {
