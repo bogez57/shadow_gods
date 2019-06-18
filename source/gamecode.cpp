@@ -221,7 +221,7 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     fighter.skel.worldPos = &fighter.world.pos;
 };
 
-extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderCmdBuf, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
 
@@ -234,7 +234,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     deltaT = platformServices->prevFrameTimeInSecs;
     deltaTFixed = platformServices->targetFrameTimeInSecs;
     globalPlatformServices = platformServices;
-    global_renderingInfo= renderCmdBuf;
+    global_renderingInfo = renderingInfo;
 
     Stage_Data* stage = &gState->stage;
     Fighter* player = &stage->player;
@@ -294,6 +294,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         stage->camera.zoomFactor += .01f;
     };
+
+    v2f cameraDims = CameraDimensions_Meters(global_renderingInfo);
 
     {//Update bone positions
         Bone* root = &player->skel.bones[0];

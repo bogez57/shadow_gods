@@ -129,6 +129,7 @@ struct RenderEntry_Texture
 //Helpers
 Image LoadBitmap_BGRA(const char* fileName);
 f32 BitmapWidth_meters(Image bitmap);
+v2f CameraDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
@@ -246,6 +247,11 @@ Image LoadBitmap_BGRA(const char* fileName)
     result.pitch = (ui32)result.width_pxls * BYTES_PER_PIXEL;
 
     return result;
+};
+
+v2f CameraDimensions_Meters(Rendering_Info* renderingInfo)
+{
+    return renderingInfo->camera.screenDimensions / renderingInfo->pixelsPerMeter;
 };
 
 #endif //GAME_RENDERER_STUFF_IMPL
