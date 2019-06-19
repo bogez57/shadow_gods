@@ -260,10 +260,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
-        InitRenderStuff(global_renderingInfo, v2f{1280.0f, 720.0f}, stage->centerPoint, 100.0f);
+        InitRenderStuff(global_renderingInfo, /*screen dims*/v2f{1280.0f, 720.0f}, /*look at point*/viewPortDimensions_Meters(global_renderingInfo) / 2.0f, /*pixelsPerMeter*/100.0f);
 
         //Camera Init
-        stage->camera.lookAt = { stage->centerPoint.x, stage->centerPoint.y};
+        v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
+        stage->camera.lookAt = viewDims / 2.0f;
         stage->camera.dilatePoint = v2f{0.0f, 0.0f};
         stage->camera.zoomFactor = 1.0f;
 
@@ -282,20 +283,18 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        stage->camera.lookAt += .01f;
+        stage->camera.lookAt += .2f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        player->world.rotation += .01f;
+        player->world.pos -= .4f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
     {
         stage->camera.zoomFactor += .01f;
     };
-
-    v2f cameraDims = CameraDimensions_Meters(global_renderingInfo);
 
     {//Update bone positions
         Bone* root = &player->skel.bones[0];
@@ -328,6 +327,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     v2f test {10.0f, 3.0f};
     PushRect(global_renderingInfo, test, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
+    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor);
 
     //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
     //PushTexture(global_renderingInfo, stage->backgroundImg, stage->height, 0.0f, v2f{stage->centerPoint.x, 0.0f}, v2f{1.0f, 1.0f}, uvs);

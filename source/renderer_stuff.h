@@ -129,11 +129,12 @@ struct RenderEntry_Texture
 //Helpers
 Image LoadBitmap_BGRA(const char* fileName);
 f32 BitmapWidth_meters(Image bitmap);
-v2f CameraDimensions_Meters(Rendering_Info&& renderingInfo);
+v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
+void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
 
@@ -206,6 +207,17 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
+void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
+{
+    renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
+    renderingInfo->camera.zoomFactor = zoomFactor;
+};
+
+void ChangeCameraSettings(Rendering_Info* renderingInfo, f32 zoomFactor)
+{
+    renderingInfo->camera.zoomFactor = zoomFactor;
+};
+
 Image LoadBitmap_BGRA(const char* fileName)
 {
     Image result;
@@ -249,7 +261,7 @@ Image LoadBitmap_BGRA(const char* fileName)
     return result;
 };
 
-v2f CameraDimensions_Meters(Rendering_Info* renderingInfo)
+v2f viewPortDimensions_Meters(Rendering_Info* renderingInfo)
 {
     return renderingInfo->camera.screenDimensions / renderingInfo->pixelsPerMeter;
 };

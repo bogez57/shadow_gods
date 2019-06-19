@@ -727,6 +727,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
 
+            //TODO: Need to fix how this is draw to screen. Think it might have some thing to do with world coords not being right? Add object transform to RectEntry?
             case EntryType_Rect:
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
