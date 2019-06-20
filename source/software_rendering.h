@@ -707,15 +707,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-                v2f targetRect_minCoord = {1.0f + textureEntry.uvBounds.At(0).u*(f32)(textureEntry.targetRectSize.width),
-                                           1.0f + textureEntry.uvBounds.At(0).v*(f32)(textureEntry.targetRectSize.height)};
-                v2f targetRect_maxCoord = {1.0f + textureEntry.uvBounds.At(1).u*(f32)(textureEntry.targetRectSize.width),
-                                           1.0f + textureEntry.uvBounds.At(1).y*(f32)(textureEntry.targetRectSize.height)};
-
-                f32 width = targetRect_maxCoord.x - targetRect_minCoord.x;
-                f32 height = targetRect_maxCoord.y - targetRect_minCoord.y;
-
-                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, width, height);
+                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
                 ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 

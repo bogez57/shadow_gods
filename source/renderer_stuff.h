@@ -132,7 +132,7 @@ f32 BitmapWidth_meters(Image bitmap);
 v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
-void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 hieghtOfObject_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
+void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, v2f objectSize_meters, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
@@ -186,12 +186,12 @@ void PushRect(Rendering_Info* renderingInfo, v2f worldPos, v2f dimensions, v4f c
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}})
+void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}})
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
-    f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * renderingInfo->pixelsPerMeter;
-    f32 desiredHeight_pixels = objectHeight_meters * renderingInfo->pixelsPerMeter;
+    f32 desiredWidth_pixels = objectSize_meters.width * renderingInfo->pixelsPerMeter;
+    f32 desiredHeight_pixels = objectSize_meters.height * renderingInfo->pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;

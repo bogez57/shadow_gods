@@ -269,7 +269,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {stage->centerPoint.x, stage->centerPoint.y - 4.0f};
+        v2f playerWorldPos = {1.0f, 0.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos);
     };
 
@@ -288,7 +288,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        player->world.pos -= .4f;
+        player->world.rotation += .1f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
@@ -318,7 +318,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-            PushTexture(global_renderingInfo, region->page->rendererObject, player->height, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
+            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
         };
     };
 

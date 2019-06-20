@@ -39,7 +39,7 @@ struct Bone
 
 struct Region_Attachment
 {
-    i32 width, height;
+    f32 width, height;
     v2f parentLocalPos;
     v2f parentLocalRotation;
     v2f scale;
@@ -142,8 +142,8 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
 
                     if (strcmp(jsonAttachment->name, attachmentName) == 0)
                     {
-                        resultRegionAttch.width = Json_getInt(jsonAttachment, "width", 0);
-                        resultRegionAttch.height = Json_getInt(jsonAttachment, "height", 0);
+                        resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
+                        resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
                         resultRegionAttch.parentLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
                         resultRegionAttch.parentLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
                         resultRegionAttch.parentLocalRotation.y = Json_getFloat(jsonAttachment, "rotation", 0.0f);
@@ -190,6 +190,12 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
         skeleton.bones.At(boneIndex).parentLocalPos.y /= pixelsPerMeter;
         skeleton.bones.At(boneIndex).rotation = Radians(skeleton.bones.At(boneIndex).rotation);
         skeleton.bones.At(boneIndex).length /= pixelsPerMeter; 
+    };
+
+    for (i32 slotI{}; slotI < skeleton.slots.size; ++slotI)
+    {
+        skeleton.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
+        skeleton.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
     };
 };
 
