@@ -132,6 +132,7 @@ f32 BitmapWidth_meters(Image bitmap);
 v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
+void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 objectHeight_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, v2f objectSize_meters, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
@@ -186,12 +187,35 @@ void PushRect(Rendering_Info* renderingInfo, v2f worldPos, v2f dimensions, v4f c
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs = {v2f{0.5f, 0.5f}, v2f{0.7f, 0.7f}})
+void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
     f32 desiredWidth_pixels = objectSize_meters.width * renderingInfo->pixelsPerMeter;
     f32 desiredHeight_pixels = objectSize_meters.height * renderingInfo->pixelsPerMeter;
+
+    textureEntry->header.type = EntryType_Texture;
+    textureEntry->world.rotation = rotation;
+    textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter;
+    textureEntry->world.scale = scale;
+    textureEntry->colorData = bitmap.data;
+    textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
+    textureEntry->pitch = bitmap.pitch;
+    textureEntry->uvBounds = uvs;
+    
+    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
+
+    ++renderingInfo->cmdBuffer.entryCount;
+};
+
+//TODO: Consider not having overloaded function here? The reason this is here is to support current 
+//skeleton drawing with regions 
+void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs)
+{
+    RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
+
+    f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * renderingInfo->pixelsPerMeter;
+    f32 desiredHeight_pixels = objectHeight_meters * renderingInfo->pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->world.rotation = rotation;

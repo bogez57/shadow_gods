@@ -322,15 +322,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
     };
 
-    //Currently projection needs to be set first followed by camera
-    //PushTexture(global_renderingInfo, stage->backgroundImg, stage->height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f});
+    //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
+    //PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
     v2f test {10.0f, 3.0f};
     PushRect(global_renderingInfo, test, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor);
-
-    //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
-    //PushTexture(global_renderingInfo, stage->backgroundImg, stage->height, 0.0f, v2f{stage->centerPoint.x, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
     //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
