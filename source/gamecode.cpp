@@ -296,7 +296,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
-    {//Update bone positions
+    {//Set bones to setup pose
         Bone* root = &player->skel.bones[0];
         Bone* pelvis = &player->skel.bones[1];
 

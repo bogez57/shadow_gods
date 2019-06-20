@@ -41,7 +41,7 @@ struct Region_Attachment
 {
     f32 width, height;
     v2f parentLocalPos;
-    v2f parentLocalRotation;
+    f32 parentLocalRotation;
     v2f scale;
     AtlasRegion region_image;
 };
@@ -146,7 +146,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
                         resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
                         resultRegionAttch.parentLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
                         resultRegionAttch.parentLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
-                        resultRegionAttch.parentLocalRotation.y = Json_getFloat(jsonAttachment, "rotation", 0.0f);
+                        resultRegionAttch.parentLocalRotation = Json_getFloat(jsonAttachment, "rotation", 0.0f);
                         resultRegionAttch.scale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
                         resultRegionAttch.scale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
                         resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
@@ -196,6 +196,9 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
     {
         skeleton.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
         skeleton.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
+        skeleton.slots.At(slotI).regionAttachment.parentLocalRotation = Radians(skeleton.slots.At(slotI).regionAttachment.parentLocalRotation);
+        skeleton.slots.At(slotI).regionAttachment.parentLocalPos.x /= pixelsPerMeter;
+        skeleton.slots.At(slotI).regionAttachment.parentLocalPos.y /= pixelsPerMeter;
     };
 };
 
