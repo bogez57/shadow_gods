@@ -111,8 +111,9 @@ struct RenderEntry_Rect
 {
     RenderEntry_Header header;
     v2f dimensions;
-    v4f color;
-    v2f worldPos;
+    v3f color;
+    Object_Transform world;
+    v2i targetRectSize;
 };
 
 struct RenderEntry_Texture
@@ -175,15 +176,17 @@ void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels,
     renderingInfo->camera.zoomFactor = 1.0f;
 };
 
-void PushRect(Rendering_Info* renderingInfo, v2f worldPos, v2f dimensions, v4f color)
+void PushRect(Rendering_Info* renderingInfo, v2f worldPos, f32 rotation, v2f scale, v2f dimensions, v3f color)
 {
     RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect);
 
     rectEntry->header.type = EntryType_Rect;
-    rectEntry->dimensions = dimensions * renderingInfo->pixelsPerMeter;
+    rectEntry->dimensions = {dimensions.width * renderingInfo->pixelsPerMeter, dimensions.height * renderingInfo->pixelsPerMeter};
     rectEntry->color = color;
-    rectEntry->worldPos = worldPos * renderingInfo->pixelsPerMeter;
-
+    rectEntry->world.rotation = rotation;
+    rectEntry->world.pos = worldPos * renderingInfo->pixelsPerMeter;
+    rectEntry->world.scale = scale;
+ 
     ++renderingInfo->cmdBuffer.entryCount;
 };
 

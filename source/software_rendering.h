@@ -5,47 +5,8 @@
 
 /*
     TODO:
-    1.) Add a DrawRectangle function that takes into account rotation and scale. When this is done consider removing the need for a Rect struct
 */
 
-local_func void
-DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Rectf rect, f32 r, f32 g, f32 b)
-{    
-    //Since I'm dealing with int pixels below
-    Recti rectToDraw {};
-    rectToDraw.min = RoundFloat32ToInt32(rect.min);
-    rectToDraw.max = RoundFloat32ToInt32(rect.max);
-
-    {//Make sure we don't try to draw outside current screen space
-        if(rectToDraw.min.x < 0)
-            rectToDraw.min.x = 0;
-
-        if(rectToDraw.min.y < 0)
-            rectToDraw.min.y = 0;
-
-        if(rectToDraw.max.x > colorBufferSize.width)
-            rectToDraw.max.x = colorBufferSize.width;
-
-        if(rectToDraw.max.y > colorBufferSize.height)
-            rectToDraw.max.y = colorBufferSize.height;
-    };
-
-    ui32 Color = ((RoundFloat32ToUInt32(r * 255.0f) << 16) |
-                  (RoundFloat32ToUInt32(g * 255.0f) << 8) |
-                  (RoundFloat32ToUInt32(b * 255.0f) << 0));
-
-    ui8* currentRow = ((ui8*)colorBufferData + rectToDraw.min.x*BYTES_PER_PIXEL+ rectToDraw.min.y*colorBufferPitch);
-    for(i32 column = rectToDraw.min.y; column < rectToDraw.max.y; ++column)
-    {
-        ui32* destPixel = (ui32*)currentRow;
-        for(i32 row = rectToDraw.min.x; row < rectToDraw.max.x; ++row)
-        {            
-            *destPixel++ = Color;
-        }
-        
-        currentRow += colorBufferPitch;
-    }
-}
 
 #if 0
 //For static images
@@ -465,6 +426,78 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
 
 };
 
+local_func void
+DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, v2f rectDims, v3f rectColor)
+{    
+    v2f origin = cameraCoords.bottomLeft;
+    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
+    v2f targetRectYAxis = cameraCoords.topLeft - origin;
+
+    ui32 pixelColor = {(0xFF << 24) |
+                       (RoundFloat32ToUInt32(rectColor.r * 255.0f) << 16) |
+                       (RoundFloat32ToUInt32(rectColor.g * 255.0f) << 8) |
+                       (RoundFloat32ToUInt32(rectColor.b * 255.0f) << 0)};
+
+    f32 widthMax = (f32)(colorBufferSize.width - 1);
+    f32 heightMax = (f32)(colorBufferSize.height - 1);
+    
+    f32 xMin = widthMax;
+    f32 xMax = 0.0f;
+    f32 yMin = heightMax;
+    f32 yMax = 0.0f;
+
+    {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
+        Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
+        for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
+        {
+            v2f testVec = vecs.At(vecIndex);
+            i32 flooredX = FloorF32ToI32(testVec.x);
+            i32 ceiledX = CeilF32ToI32(testVec.x);
+            i32 flooredY= FloorF32ToI32(testVec.y);
+            i32 ceiledY = CeilF32ToI32(testVec.y);
+
+            if(xMin > flooredX) {xMin = (f32)flooredX;}
+            if(yMin > flooredY) {yMin = (f32)flooredY;}
+            if(xMax < ceiledX) {xMax = (f32)ceiledX;}
+            if(yMax < ceiledY) {yMax = (f32)ceiledY;}
+        }
+
+        if(xMin < 0.0f) {xMin = 0.0f;}
+        if(yMin < 0.0f) {yMin = 0.0f;}
+        if(xMax > widthMax) {xMax = widthMax;}
+        if(yMax > heightMax) {yMax = heightMax;}
+    };
+
+    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
+    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
+
+    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
+    for(f32 screenY = yMin; screenY < yMax; ++screenY)
+    {
+        ui32* destPixel = (ui32*)currentRow;
+
+        for(f32 screenX = xMin; screenX < xMax; ++screenX)
+        {            
+            v2f screenPixelCoord{screenX, screenY};
+            v2f d {screenPixelCoord - origin};
+
+            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
+            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
+
+            //Used to decide, given what screen pixel were on, whether or not that screen pixel falls
+            //within the target rect's bounds or not
+            if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
+            {
+                *destPixel = pixelColor;
+            }
+
+            ++destPixel;
+        }
+        
+        currentRow += colorBufferPitch;
+    }
+};
+
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
 //Also involves lighting calcuation
 //TODO: Will eventually be removed entirely/combine with DrawTextureQuickly
@@ -707,9 +740,9 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
-
                 ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+
+                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
                 Quadf imageTargetRect_world = WorldTransform(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
@@ -723,13 +756,15 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             case EntryType_Rect:
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
-                Quadf targetQuad = _ProduceQuadFromBottomMidPoint(rectEntry.worldPos, rectEntry.dimensions.x, rectEntry.dimensions.y);
-                
-                Quadf targetQuad_camera = CameraTransform(targetQuad, *camera);
 
-                Rectf targetRect_camera = {targetQuad_camera.bottomLeft, targetQuad_camera.topRight};
+                ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
 
-                DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetRect_camera, rectEntry.color.r, rectEntry.color.g, rectEntry.color.b);
+                Quadf targetQuad = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, rectEntry.dimensions.x, rectEntry.dimensions.y);
+
+                Quadf targetQuad_world = WorldTransform(targetQuad, rectEntry.world);
+                Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+
+                DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
             }break;
 

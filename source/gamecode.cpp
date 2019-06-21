@@ -286,16 +286,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.lookAt += .2f;
     };
 
-    if(KeyHeld(keyboard->MoveLeft))
-    {
-        player->world.rotation += .1f;
-    };
-
     if(KeyHeld(keyboard->MoveUp))
     {
         stage->camera.zoomFactor += .01f;
     };
 
+#if 0
     {//Set bones to setup pose
         Bone* root = &player->skel.bones[0];
         Bone* pelvis = &player->skel.bones[1];
@@ -321,12 +317,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
         };
     };
+ #endif
 
     //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
     //PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
-    v2f test {10.0f, 3.0f};
-    PushRect(global_renderingInfo, test, v2f{0.3f, 0.02f}, v4f{1.0f, 0.0f, 0.0f, 1.0f});
+    v2f worldPos {3.0f, 2.0f};
+    v2f scale {1.0f, 1.0f};
+    f32 rotation{0.0f};
+    v2f dimensions {1.0f, 1.0f};
+
+    PushRect(global_renderingInfo, worldPos, rotation, scale, dimensions, v3f{1.0f, 0.0f, 0.0f});
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
