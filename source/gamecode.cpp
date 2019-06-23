@@ -221,6 +221,23 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     fighter.skel.worldPos = &fighter.world.pos;
 };
 
+v2f WorldTransform_1Vector(v2f localCoords, v2f worldPos, f32 worldRotation, v2f worldScale)
+{
+    //With world space origin at 0, 0
+    Coordinate_Space imageSpace{};
+    imageSpace.origin = worldPos;
+    imageSpace.xBasis = v2f{CosR(worldRotation), SinR(worldRotation)};
+    imageSpace.yBasis = worldScale.y * PerpendicularOp(imageSpace.xBasis);
+    imageSpace.xBasis *= worldScale.x;
+
+    v2f transformedCoords{};
+
+    //This equation rotates first then moves to correct world position
+    transformedCoords = imageSpace.origin + (localCoords.x * imageSpace.xBasis) + (localCoords.y * imageSpace.yBasis);
+
+    return transformedCoords;
+};
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -269,7 +286,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {1.0f, 0.0f};
+        v2f playerWorldPos = {2.0f, 0.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos);
     };
 
@@ -291,22 +308,25 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
-#if 0
     {//Set bones to setup pose
         Bone* root = &player->skel.bones[0];
         Bone* pelvis = &player->skel.bones[1];
 
         root->worldPos = player->world.pos;
+        PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{0.0f, 0.0f, 1.0f});
 
         pelvis->worldPos = (root->worldPos + pelvis->parentLocalPos);
 
+        PushRect(global_renderingInfo, pelvis->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{0.0f, 1.0f, 0.0f});
         for(i32 childBoneIndex{}; childBoneIndex < pelvis->childBones.size; ++childBoneIndex)
         {
             Bone* childBone = pelvis->childBones[childBoneIndex];
-            childBone->worldPos = (childBone->parentBone->worldPos + childBone->parentLocalPos);
+            childBone->worldPos = WorldTransform_1Vector(childBone->parentLocalPos, childBone->parentBone->worldPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
+            PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
        };
     }
 
+#if 0
     {//Next: 
         for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
         {
@@ -322,12 +342,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
     //PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
-    v2f worldPos {3.0f, 2.0f};
-    v2f scale {1.0f, 1.0f};
-    f32 rotation{0.0f};
-    v2f dimensions {1.0f, 1.0f};
-
-    PushRect(global_renderingInfo, worldPos, rotation, scale, dimensions, v3f{1.0f, 0.0f, 0.0f});
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;

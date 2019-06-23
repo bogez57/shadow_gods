@@ -99,6 +99,61 @@ InvTanR(f32 value)
     return result;
 };
 
+inline f32
+SinD(f32 angleInDegrees)
+{
+    f32 angleInRadians = Radians(angleInDegrees);
+    f32 result = sinf(angleInRadians);
+
+    return result;
+};
+
+inline f32
+InvSinD(f32 angleInDegrees)
+{
+    f32 angleInRadians = Radians(angleInDegrees);
+    f32 result = asinf(angleInRadians);
+
+    return result;
+};
+
+inline f32
+CosD(f32 angleInDegrees)
+{
+    f32 angleInRadians = Radians(angleInDegrees);
+    f32 result = cosf(angleInRadians);
+
+    return result;
+};
+
+inline f32
+InvCosD(f32 angleInDegrees)
+{
+    f32 angleInRadians = Radians(angleInDegrees);
+    f32 result = acosf(angleInRadians);
+
+    return result;
+};
+
+inline f32
+TanD(f32 angleInDegrees)
+{
+    f32 angleInRadians = Radians(angleInDegrees);
+    f32 result = tanf(angleInRadians);
+
+    return result;
+};
+
+inline f32
+InvTanD(f32 angleInDegrees)
+{
+    f32 angleInRadians = Radians(angleInDegrees);
+    f32 result = atanf(angleInRadians);
+
+    return result;
+};
+
+
 inline void
 Clamp(f32&& value, f32 min, f32 max)
 {
