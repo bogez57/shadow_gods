@@ -308,6 +308,19 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
+    auto UpdateBones = [](Bone&& mainBone) -> void
+    {
+        if(mainBone.childBones.At(0))
+        {
+            for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
+            {
+                Bone* childBone = mainBone.childBones[childBoneIndex];
+                childBone->worldPos = WorldTransform_1Vector(childBone->parentLocalPos, childBone->parentBone->parentLocalPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
+                PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
+            };
+        };
+    };
+
     {//Set bones to setup pose
         Bone* root = &player->skel.bones[0];
         Bone* pelvis = &player->skel.bones[1];
@@ -323,7 +336,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             Bone* childBone = pelvis->childBones[childBoneIndex];
             childBone->worldPos = WorldTransform_1Vector(childBone->parentLocalPos, childBone->parentBone->worldPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-       };
+            UpdateBones($(*childBone));
+        };
     }
 
 #if 0
