@@ -238,6 +238,23 @@ v2f WorldTransform_1Vector(v2f localCoords, v2f worldPos, f32 worldRotation, v2f
     return transformedCoords;
 };
 
+void UpdateBones(Bone&& mainBone)
+    {
+        if(mainBone.childBones.At(0))
+        {
+            Bone* childBone{};
+            for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
+            {
+                childBone = mainBone.childBones[childBoneIndex];
+                v2f parentLocalPos = WorldTransform_1Vector(childBone->parentLocalPos, childBone->parentBone->worldPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
+                childBone->worldPos = WorldTransform_1Vector(parentLocalPos, childBone->parentBone->worldPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
+                PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
+            };
+
+            UpdateBones($(*childBone));
+        };
+    };
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -286,7 +303,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {2.0f, 0.0f};
+        v2f playerWorldPos = {1.2f, -1.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos);
     };
 
@@ -308,19 +325,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
-    auto UpdateBones = [](Bone&& mainBone) -> void
-    {
-        if(mainBone.childBones.At(0))
-        {
-            for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
-            {
-                Bone* childBone = mainBone.childBones[childBoneIndex];
-                childBone->worldPos = WorldTransform_1Vector(childBone->parentLocalPos, childBone->parentBone->parentLocalPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
-                PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-            };
-        };
-    };
-
     {//Set bones to setup pose
         Bone* root = &player->skel.bones[0];
         Bone* pelvis = &player->skel.bones[1];
@@ -336,7 +340,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             Bone* childBone = pelvis->childBones[childBoneIndex];
             childBone->worldPos = WorldTransform_1Vector(childBone->parentLocalPos, childBone->parentBone->worldPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-            UpdateBones($(*childBone));
+
+            if(NOT childBone->childBones.Empty())
+            {
+                for(i32 childBoneIndex{}; childBoneIndex < childBone->childBones.size; ++childBoneIndex)
+                {
+                    Bone* childBone2 = childBone->childBones[childBoneIndex];
+                    v2f pelvisLocalPos = WorldTransform_1Vector(childBone2->parentLocalPos, childBone2->parentBone->parentLocalPos, childBone2->parentBone->rotation, v2f{1.0f, 1.0f});
+                    childBone2->worldPos = WorldTransform_1Vector(pelvisLocalPos, childBone2->parentBone->parentBone->worldPos, childBone2->parentBone->parentBone->rotation, v2f{1.0f, 1.0f});
+                    PushRect(global_renderingInfo, childBone2->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
+                };
+            };
         };
     }
 

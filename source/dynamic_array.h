@@ -126,6 +126,11 @@ public:
         hasArrayBeenDestroyed = true;
     };
 
+    b Empty()
+    {
+        return (size == 0) ? true : false;
+    };
+
     i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
