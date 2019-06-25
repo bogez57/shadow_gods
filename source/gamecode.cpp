@@ -253,17 +253,17 @@ v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
     };
 };
 
-void UpdateBoneChain_StartingFrom(Bone* mainBone)
+void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
 {
-    if(mainBone->childBones.size > 0)
+    if(mainBone.childBones.size > 0)
     {
-        for(i32 childBoneIndex{}; childBoneIndex < mainBone->childBones.size; ++childBoneIndex)
+        for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
-            Bone* childBone = mainBone->childBones[childBoneIndex];
+            Bone* childBone = mainBone.childBones[childBoneIndex];
             childBone->worldPos = WorldTransform_Bone(childBone->parentLocalPos, *childBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
 
-            UpdateBoneChain_StartingFrom(childBone);
+            UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
         };
     };
 }
@@ -277,7 +277,7 @@ void UpdateSkeletonBoneWorldPositions(Fighter&& player)
     root->parentLocalPos = player.world.pos;
     PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{0.0f, 0.0f, 1.0f});
 
-    UpdateBoneChain_StartingFrom(root);
+    UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -342,8 +342,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        Bone* root = &player->skel.bones[0];
-        root->rotation -= .01f;
+        player->world.pos.x += .1f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
@@ -351,54 +350,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
-    {//Set bones to setup pose
-        Bone* root = &player->skel.bones[0];
-        Bone* pelvis = &player->skel.bones[1];
-
-        root->worldPos = player->world.pos;
-        root->parentLocalPos = player->world.pos;
-        PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{0.0f, 0.0f, 1.0f});
-
-        pelvis->worldPos = WorldTransform_Bone(pelvis->parentLocalPos, *pelvis);
-        PushRect(global_renderingInfo, pelvis->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{0.0f, 1.0f, 0.0f});
-
-        for(i32 childBoneIndex{}; childBoneIndex < pelvis->childBones.size; ++childBoneIndex)
-        {
-            Bone* childBone = pelvis->childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(childBone->parentLocalPos, *childBone);
-            PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-
-            if(childBone->childBones.size > 0)
-            {
-                for(i32 childBoneIndex{}; childBoneIndex < childBone->childBones.size; ++childBoneIndex)
-                {
-                    Bone* childBone2 = childBone->childBones[childBoneIndex];
-                    childBone2->worldPos = WorldTransform_Bone(childBone2->parentLocalPos, *childBone2);
-                    PushRect(global_renderingInfo, childBone2->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-
-                    if(childBone2->childBones.size > 0)
-                    {
-                        for(i32 childBoneIndex{}; childBoneIndex < childBone2->childBones.size; ++childBoneIndex)
-                        {
-                            Bone* childBone3 = childBone2->childBones[childBoneIndex];
-                            childBone3->worldPos = WorldTransform_Bone(childBone3->parentLocalPos, *childBone3);
-                            PushRect(global_renderingInfo, childBone3->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-                            
-                            if(childBone3->childBones.size > 0)
-                            {
-                                for(i32 childBoneIndex{}; childBoneIndex < childBone2->childBones.size; ++childBoneIndex)
-                                {
-                                    Bone* childBone4 = childBone3->childBones[childBoneIndex];
-                                    childBone4->worldPos = WorldTransform_Bone(childBone4->parentLocalPos, *childBone4);
-                                    PushRect(global_renderingInfo, childBone4->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-                                };
-                            };
-                        };
-                    };
-                };
-            };
-        };
-    }
+    UpdateSkeletonBoneWorldPositions($(*player));
 
 #if 0
     {//Next: 
