@@ -221,14 +221,14 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     fighter.skel.worldPos = &fighter.world.pos;
 };
 
-v2f ParentTransform_1Vector(v2f localCoords, v2f worldPos, f32 worldRotation, v2f worldScale)
+v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
     //With world space origin at 0, 0
     Coordinate_Space imageSpace{};
-    imageSpace.origin = worldPos;
-    imageSpace.xBasis = v2f{CosR(worldRotation), SinR(worldRotation)};
-    imageSpace.yBasis = worldScale.y * PerpendicularOp(imageSpace.xBasis);
-    imageSpace.xBasis *= worldScale.x;
+    imageSpace.origin = parentTransform.pos;
+    imageSpace.xBasis = v2f{CosR(parentTransform.rotation), SinR(parentTransform.rotation)};
+    imageSpace.yBasis = parentTransform.scale.y * PerpendicularOp(imageSpace.xBasis);
+    imageSpace.xBasis *= parentTransform.scale.x;
 
     v2f transformedCoords{};
 
@@ -243,7 +243,7 @@ v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
     BGZ_ASSERT(mainBone.parentBone, "Expecting you to pass a bone chain, with parents and children, and not a single bone");
 
     Bone parentBone = *mainBone.parentBone;
-    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parentLocalPos, parentBone.rotation, v2f{1.0f, 1.0f});
+    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parent);
 
     if(NOT parentBone.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
     {
@@ -262,7 +262,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(childBone->parentLocalPos, *childBone);
+            childBone->worldPos = WorldTransform_Bone(childBone->parent.pos, *childBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
@@ -276,7 +276,7 @@ void UpdateSkeletonBoneWorldPositions(Fighter&& player)
     Bone* pelvis = &player.skel.bones[1];
 
     root->worldPos = player.world.pos;
-    root->parentLocalPos = player.world.pos;
+    root->parent.pos = player.world.pos;
     PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));

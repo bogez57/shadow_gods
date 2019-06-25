@@ -29,9 +29,9 @@
 
 struct Bone
 {
-    v2f parentLocalPos;
     v2f worldPos;
-    f32 rotation, length;
+    Transform parent;
+    f32 length;
     Bone* parentBone;
     Dynam_Array<Bone*> childBones;
     const char* name;
@@ -105,9 +105,10 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
         {
             Bone* newBone = &newSkeleton.bones.At(boneIndex);
             newBone->name = Json_getString(currentJsonObject, "name", 0);
-            newBone->parentLocalPos.x = Json_getFloat(currentJsonObject, "x", 0.0f);
-            newBone->parentLocalPos.y = Json_getFloat(currentJsonObject, "y", 0.0f);
-            newBone->rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
+            newBone->parent.scale = v2f{1.0f, 1.0f};
+            newBone->parent.pos.x = Json_getFloat(currentJsonObject, "x", 0.0f);
+            newBone->parent.pos.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->parent.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
             newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
             {
@@ -186,9 +187,9 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
 
     for (i32 boneIndex{}; boneIndex < skeleton.bones.size; ++boneIndex)
     {
-        skeleton.bones.At(boneIndex).parentLocalPos.x /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).parentLocalPos.y /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).rotation = Radians(skeleton.bones.At(boneIndex).rotation);
+        skeleton.bones.At(boneIndex).parent.pos.x /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).parent.pos.y /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).parent.rotation = Radians(skeleton.bones.At(boneIndex).parent.rotation);
         skeleton.bones.At(boneIndex).length /= pixelsPerMeter; 
     };
 

@@ -5,13 +5,6 @@
 #include "collisions.h"
 #include "skeleton.h"
 
-struct Transform
-{
-    f32 rotation;
-    v2f pos;
-    v2f scale;
-};
-
 struct Fighter
 {
     Transform world;

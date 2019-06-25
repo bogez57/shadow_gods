@@ -2,6 +2,13 @@
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
+struct Transform
+{
+    f32 rotation;
+    v2f pos;
+    v2f scale;
+};
+
 inline ui32
 SafeTruncateUInt64(ui64 Value)
 {
