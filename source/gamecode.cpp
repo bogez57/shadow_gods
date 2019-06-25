@@ -238,22 +238,20 @@ v2f ParentTransform_1Vector(v2f localCoords, v2f worldPos, f32 worldRotation, v2
     return transformedCoords;
 };
 
-void UpdateBones(Bone&& mainBone)
-    {
-        if(mainBone.childBones.At(0))
-        {
-            Bone* childBone{};
-            for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
-            {
-                childBone = mainBone.childBones[childBoneIndex];
-                v2f parentLocalPos = ParentTransform_1Vector(childBone->parentLocalPos, childBone->parentBone->worldPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
-                childBone->worldPos = ParentTransform_1Vector(parentLocalPos, childBone->parentBone->worldPos, childBone->parentBone->rotation, v2f{1.0f, 1.0f});
-                PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
-            };
+v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
+{
+    Bone parentBone = *mainBone.parentBone;
+    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parentLocalPos, parentBone.rotation, v2f{1.0f, 1.0f});
 
-            UpdateBones($(*childBone));
-        };
+    if(NOT parentBone.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
+    {
+        return pelvisLocalPos;
+    }
+    else
+    {
+        return WorldTransform_Bone(pelvisLocalPos, parentBone);
     };
+};
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
@@ -317,7 +315,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        stage->camera.lookAt += .2f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
@@ -339,8 +336,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         for(i32 childBoneIndex{}; childBoneIndex < pelvis->childBones.size; ++childBoneIndex)
         {
             Bone* childBone = pelvis->childBones[childBoneIndex];
-            v2f pelvisLocalPos = ParentTransform_1Vector(childBone->parentLocalPos, pelvis->parentLocalPos, pelvis->rotation, v2f{1.0f, 1.0f});
-            childBone->worldPos = ParentTransform_1Vector(pelvisLocalPos, root->parentLocalPos, root->rotation, v2f{1.0f, 1.0f});
+            childBone->worldPos = WorldTransform_Bone(childBone->parentLocalPos, *childBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
 
             if(NOT childBone->childBones.Empty())
@@ -348,9 +344,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 for(i32 childBoneIndex{}; childBoneIndex < childBone->childBones.size; ++childBoneIndex)
                 {
                     Bone* childBone2 = childBone->childBones[childBoneIndex];
-                    v2f pelvisLocalPos = ParentTransform_1Vector(childBone2->parentLocalPos, childBone2->parentBone->parentLocalPos, childBone2->parentBone->rotation, v2f{1.0f, 1.0f});
-                    v2f pelvisLocalPos2 = ParentTransform_1Vector(pelvisLocalPos, pelvis->parentLocalPos, pelvis->rotation, v2f{1.0f, 1.0f});
-                    childBone2->worldPos = ParentTransform_1Vector(pelvisLocalPos2, root->parentLocalPos, root->rotation, v2f{1.0f, 1.0f});
+                    childBone2->worldPos = WorldTransform_Bone(childBone2->parentLocalPos, *childBone2);
                     PushRect(global_renderingInfo, childBone2->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
 
                     if(NOT childBone2->childBones.Empty())
@@ -358,10 +352,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                         for(i32 childBoneIndex{}; childBoneIndex < childBone2->childBones.size; ++childBoneIndex)
                         {
                             Bone* childBone3 = childBone2->childBones[childBoneIndex];
-                            v2f pelvisLocalPos = ParentTransform_1Vector(childBone3->parentLocalPos, childBone3->parentBone->parentLocalPos, childBone3->parentBone->rotation, v2f{1.0f, 1.0f});
-                            v2f pelvisLocalPos2 = ParentTransform_1Vector(pelvisLocalPos, childBone3->parentBone->parentBone->parentLocalPos, childBone3->parentBone->parentBone->rotation, v2f{1.0f, 1.0f});
-                            v2f pelvisLocalPos3 = ParentTransform_1Vector(pelvisLocalPos2, pelvis->parentLocalPos, pelvis->rotation, v2f{1.0f, 1.0f});
-                            childBone3->worldPos = ParentTransform_1Vector(pelvisLocalPos3, root->parentLocalPos, root->rotation, v2f{1.0f, 1.0f});
+                            childBone3->worldPos = WorldTransform_Bone(childBone3->parentLocalPos, *childBone3);
                             PushRect(global_renderingInfo, childBone3->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
                         };
                     };
@@ -369,12 +360,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             };
         };
     }
-
-    auto UpdateBoness = [](v2f parentLocalPosOfChildBone, Bone mainBone) -> v2f 
-    {
-        Bone parentBone = *mainBone.parentBone;
-        v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parentLocalPos, parentBone.rotation, v2f{1.0f, 1.0f});
-    };
 
 #if 0
     {//Next: 
