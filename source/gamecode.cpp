@@ -240,6 +240,8 @@ v2f ParentTransform_1Vector(v2f localCoords, v2f worldPos, f32 worldRotation, v2
 
 v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
 {
+    BGZ_ASSERT(mainBone.parentBone, "Expecting you to pass a bone chain, with parents and children, and not a single bone");
+
     Bone parentBone = *mainBone.parentBone;
     v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parentLocalPos, parentBone.rotation, v2f{1.0f, 1.0f});
 
@@ -253,7 +255,7 @@ v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
     };
 };
 
-void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
+inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
 {
     if(mainBone.childBones.size > 0)
     {
@@ -261,7 +263,7 @@ void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
             childBone->worldPos = WorldTransform_Bone(childBone->parentLocalPos, *childBone);
-            PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{1.0f, 0.0f, 0.0f});
+            PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
         };
@@ -275,7 +277,7 @@ void UpdateSkeletonBoneWorldPositions(Fighter&& player)
 
     root->worldPos = player.world.pos;
     root->parentLocalPos = player.world.pos;
-    PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.1f, .1f}, v3f{0.0f, 0.0f, 1.0f});
+    PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 };
