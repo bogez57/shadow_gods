@@ -354,18 +354,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     UpdateSkeletonBoneWorldPositions($(*player));
 
-#if 0
-    {//Next: 
-        for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
+    {//Push images to renderer 
+        for(i32 slotIndex{0}; slotIndex < 1; ++slotIndex)
         {
-            Slot* currentSlot = &player->skel.slots[slotIndex];
+            Slot* currentSlot = &player->skel.slots[player->skel.slots.size - 13];
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
         };
     };
- #endif
 
     //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
     //PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);

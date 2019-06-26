@@ -742,9 +742,9 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
 
                 ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
-                Quadf imageTargetRect = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
+                Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
-                Quadf imageTargetRect_world = WorldTransform(imageTargetRect, textureEntry.world);
+                Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
                 DrawTextureSlowly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);

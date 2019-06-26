@@ -144,12 +144,14 @@ void ConvertNegativeAngleToRadians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
 //void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
+Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
 Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
 Quadf _ProduceQuadFromBottomMidPoint(v2f originPoint, f32 width, f32 height);
+Quadf _ProduceQuadFromCenterPoint(v2f originPoint, f32 width, f32 height);
 
 
 #endif //RENDERER_STUFF_INCLUDE_H 
@@ -348,6 +350,26 @@ Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world)
     return transformedCoords;
 };
 
+Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformInfo_world)
+{
+    //With world space origin at 0, 0
+    Coordinate_Space imageSpace{};
+    imageSpace.origin = transformInfo_world.pos;
+    imageSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
+    imageSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(imageSpace.xBasis);
+    imageSpace.xBasis *= transformInfo_world.scale.x;
+
+    Quadf transformedCoords{};
+    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
+    {
+        localCoords.vertices.At(vertIndex) -= imageSpace.origin;
+        //This equation rotates first then moves to correct world position
+        transformedCoords.vertices.At(vertIndex) = imageSpace.origin + (localCoords.vertices.At(vertIndex).x * imageSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * imageSpace.yBasis);
+    };
+
+    return transformedCoords;
+};
+
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
 {
     Quadf transformedCoords{};
@@ -423,6 +445,18 @@ Quadf _ProduceQuadFromBottomMidPoint(v2f originPoint, f32 width, f32 height)
     result.bottomRight = {originPoint.x + (width / 2.0f), originPoint.y};
     result.topRight = {originPoint.x + (width / 2.0f), originPoint.y + height};
     result.topLeft = {originPoint.x - (width / 2.0f), originPoint.y + height};
+
+    return result;
+};
+
+Quadf _ProduceQuadFromCenterPoint(v2f originPoint, f32 width, f32 height)
+{
+    Quadf result;
+
+    result.bottomLeft = {originPoint.x - (width / 2.0f), originPoint.y - (height/ 2.0f)};
+    result.bottomRight = {originPoint.x + (width / 2.0f), originPoint.y - (height/ 2.0f)};
+    result.topRight = {originPoint.x + (width / 2.0f), originPoint.y + (height / 2.0f)};
+    result.topLeft = {originPoint.x - (width / 2.0f), originPoint.y + (height/2.0f)};
 
     return result;
 };
