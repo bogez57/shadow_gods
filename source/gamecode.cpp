@@ -357,11 +357,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {//Push images to renderer 
         for(i32 slotIndex{0}; slotIndex < 1; ++slotIndex)
         {
-            Slot* currentSlot = &player->skel.slots[player->skel.slots.size - 13];
+            Slot* currentSlot = &player->skel.slots[player->skel.slots.size - 12];
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, currentSlot->bone->worldPos, player->world.scale, uvs2);
+            v2f worldPosOfImage {ParentTransform_1Vector(currentSlot->regionAttachment.parent.pos, currentSlot->regionAttachment.parent)};
+            worldPosOfImage = ParentTransform_1Vector(worldPosOfImage, currentSlot->bone->parentBone->parent);
+
+            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, worldPosOfImage, player->world.scale, uvs2);
+            PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});
         };
     };
 
