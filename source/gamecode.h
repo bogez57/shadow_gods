@@ -7,6 +7,7 @@
 
 struct Fighter
 {
+    v2f* worldPos;
     Transform world;
     f32 height;
     Skeleton skel;

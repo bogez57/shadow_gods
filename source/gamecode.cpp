@@ -219,21 +219,22 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     fighter.world.rotation = 0.0f;
     fighter.world.scale = {1.0f, 1.0f};
     fighter.skel.worldPos = &fighter.world.translation;
+    fighter.worldPos = &fighter.world.translation;
 };
 
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
     //With world space origin at 0, 0
-    Coordinate_Space imageSpace{};
-    imageSpace.origin = parentTransform.translation;
-    imageSpace.xBasis = v2f{CosR(parentTransform.rotation), SinR(parentTransform.rotation)};
-    imageSpace.yBasis = parentTransform.scale.y * PerpendicularOp(imageSpace.xBasis);
-    imageSpace.xBasis *= parentTransform.scale.x;
+    Coordinate_Space localSpace{};
+    localSpace.origin = parentTransform.translation;
+    localSpace.xBasis = v2f{CosR(parentTransform.rotation), SinR(parentTransform.rotation)};
+    localSpace.yBasis = parentTransform.scale.y * PerpendicularOp(localSpace.xBasis);
+    localSpace.xBasis *= parentTransform.scale.x;
 
     v2f transformedCoords{};
 
     //This equation rotates first then moves to correct world position
-    transformedCoords = imageSpace.origin + (localCoords.x * imageSpace.xBasis) + (localCoords.y * imageSpace.yBasis);
+    transformedCoords = localSpace.origin + (localCoords.x * localSpace.xBasis) + (localCoords.y * localSpace.yBasis);
 
     return transformedCoords;
 };
@@ -243,7 +244,7 @@ v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
     BGZ_ASSERT(mainBone.parentBone, "Expecting you to pass a bone chain, with parents and children, and not a single bone");
 
     Bone parentBone = *mainBone.parentBone;
-    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parent);
+    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parentTransform);
 
     if(NOT parentBone.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
     {
@@ -262,7 +263,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(childBone->parent.translation, *childBone);
+            childBone->worldPos = WorldTransform_Bone(childBone->parentTransform.translation, *childBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
@@ -270,13 +271,13 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
     };
 }
 
-void UpdateSkeletonBoneWorldPositions(Fighter&& player)
+void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPos)
 {
-    Bone* root = &player.skel.bones[0];
-    Bone* pelvis = &player.skel.bones[1];
+    Bone* root = &fighterSkel.bones[0];
+    Bone* pelvis = &fighterSkel.bones[1];
 
-    root->worldPos = player.world.translation;
-    root->parent.translation = player.world.translation;
+    root->worldPos = fighterWorldPos;
+    root->parentTransform.translation = fighterWorldPos;
     PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
@@ -344,7 +345,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.translation.x += .1f;
+        player->worldPos->x += .1f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
@@ -352,7 +353,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor += .01f;
     };
 
-    UpdateSkeletonBoneWorldPositions($(*player));
+    UpdateSkeletonBoneWorldPositions($(player->skel), *player->worldPos);
 
     {//Push images to renderer 
         for(i32 slotIndex{0}; slotIndex < 1; ++slotIndex)
@@ -361,8 +362,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-            v2f worldPosOfImage {ParentTransform_1Vector(currentSlot->regionAttachment.parent.translation, currentSlot->regionAttachment.parent)};
-            worldPosOfImage = ParentTransform_1Vector(worldPosOfImage, currentSlot->bone->parentBone->parent);
+            v2f worldPosOfImage {ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneTransform.translation, currentSlot->regionAttachment.parentBoneTransform)};
+            worldPosOfImage = ParentTransform_1Vector(worldPosOfImage, currentSlot->bone->parentBone->parentTransform);
 
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, worldPosOfImage, player->world.scale, uvs2);
             PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});
