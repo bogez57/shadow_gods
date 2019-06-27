@@ -104,8 +104,8 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             Bone* newBone = &newSkeleton.bones.At(boneIndex);
             newBone->name = Json_getString(currentJsonObject, "name", 0);
             newBone->parent.scale = v2f{1.0f, 1.0f};
-            newBone->parent.pos.x = Json_getFloat(currentJsonObject, "x", 0.0f);
-            newBone->parent.pos.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->parent.translation.x = Json_getFloat(currentJsonObject, "x", 0.0f);
+            newBone->parent.translation.y = Json_getFloat(currentJsonObject, "y", 0.0f);
             newBone->parent.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
             newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
@@ -143,8 +143,8 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
                     {
                         resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
                         resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
-                        resultRegionAttch.parent.pos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
-                        resultRegionAttch.parent.pos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
+                        resultRegionAttch.parent.translation.x = Json_getFloat(jsonAttachment, "x", 0.0f);
+                        resultRegionAttch.parent.translation.y = Json_getFloat(jsonAttachment, "y", 0.0f);
                         resultRegionAttch.parent.rotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
                         resultRegionAttch.parent.scale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
                         resultRegionAttch.parent.scale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
@@ -185,8 +185,8 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
 
     for (i32 boneIndex{}; boneIndex < skeleton.bones.size; ++boneIndex)
     {
-        skeleton.bones.At(boneIndex).parent.pos.x /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).parent.pos.y /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).parent.translation.x /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).parent.translation.y /= pixelsPerMeter;
         skeleton.bones.At(boneIndex).parent.rotation = Radians(skeleton.bones.At(boneIndex).parent.rotation);
         skeleton.bones.At(boneIndex).length /= pixelsPerMeter; 
     };
@@ -196,8 +196,8 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
         skeleton.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
         skeleton.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
         skeleton.slots.At(slotI).regionAttachment.parent.rotation = Radians(skeleton.slots.At(slotI).regionAttachment.parent.rotation);
-        skeleton.slots.At(slotI).regionAttachment.parent.pos.x /= pixelsPerMeter;
-        skeleton.slots.At(slotI).regionAttachment.parent.pos.y /= pixelsPerMeter;
+        skeleton.slots.At(slotI).regionAttachment.parent.translation.x /= pixelsPerMeter;
+        skeleton.slots.At(slotI).regionAttachment.parent.translation.y /= pixelsPerMeter;
     };
 };
 

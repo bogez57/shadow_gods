@@ -215,17 +215,17 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     Atlas* atlas;
     atlas = CreateAtlasFromFile(atlasFilePath, 0);
     fighter.skel = CreateSkeletonUsingJsonFile(*atlas, skelJsonFilePath);
-    fighter.world.pos = worldPosition;
+    fighter.world.translation = worldPosition;
     fighter.world.rotation = 0.0f;
     fighter.world.scale = {1.0f, 1.0f};
-    fighter.skel.worldPos = &fighter.world.pos;
+    fighter.skel.worldPos = &fighter.world.translation;
 };
 
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
     //With world space origin at 0, 0
     Coordinate_Space imageSpace{};
-    imageSpace.origin = parentTransform.pos;
+    imageSpace.origin = parentTransform.translation;
     imageSpace.xBasis = v2f{CosR(parentTransform.rotation), SinR(parentTransform.rotation)};
     imageSpace.yBasis = parentTransform.scale.y * PerpendicularOp(imageSpace.xBasis);
     imageSpace.xBasis *= parentTransform.scale.x;
@@ -262,7 +262,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(childBone->parent.pos, *childBone);
+            childBone->worldPos = WorldTransform_Bone(childBone->parent.translation, *childBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
@@ -275,8 +275,8 @@ void UpdateSkeletonBoneWorldPositions(Fighter&& player)
     Bone* root = &player.skel.bones[0];
     Bone* pelvis = &player.skel.bones[1];
 
-    root->worldPos = player.world.pos;
-    root->parent.pos = player.world.pos;
+    root->worldPos = player.world.translation;
+    root->parent.translation = player.world.translation;
     PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
@@ -344,7 +344,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->world.pos.x += .1f;
+        player->world.translation.x += .1f;
     };
 
     if(KeyHeld(keyboard->MoveUp))
@@ -361,7 +361,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-            v2f worldPosOfImage {ParentTransform_1Vector(currentSlot->regionAttachment.parent.pos, currentSlot->regionAttachment.parent)};
+            v2f worldPosOfImage {ParentTransform_1Vector(currentSlot->regionAttachment.parent.translation, currentSlot->regionAttachment.parent)};
             worldPosOfImage = ParentTransform_1Vector(worldPosOfImage, currentSlot->bone->parentBone->parent);
 
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, worldPosOfImage, player->world.scale, uvs2);

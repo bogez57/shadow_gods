@@ -5,7 +5,7 @@
 struct Transform
 {
     f32 rotation;
-    v2f pos;
+    v2f translation;
     v2f scale;
 };
 
