@@ -263,7 +263,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(childBone->parentLocalPos, *childBone);
+            childBone->worldPos = WorldTransform_Bone(*childBone->parentLocalPos, *childBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
@@ -345,8 +345,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos->x += .1f;
+        player->worldPos->x += .3f;
     };
+
+    if(KeyHeld(keyboard->MoveLeft))
+    {
+        *player->skel.bones.At(1).parentLocalRotation += .01f;
+    }
 
     if(KeyHeld(keyboard->MoveUp))
     {

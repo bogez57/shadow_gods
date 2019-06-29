@@ -33,7 +33,7 @@ struct Bone
     v2f worldPos;
     f32* parentLocalRotation;
     v2f* parentLocalScale;
-    v2f parentLocalPos;
+    v2f* parentLocalPos;
     Transform transform;
     f32 length;
     Bone* parentBone;
@@ -111,14 +111,14 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             newBone->transform.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
             newBone->parentLocalRotation = &newBone->transform.rotation;
             newBone->parentLocalScale = &newBone->transform.scale;
-            newBone->parentLocalPos.x = Json_getFloat(currentJsonObject, "x", 0.0f);
-            newBone->parentLocalPos.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->transform.translation.x = Json_getFloat(currentJsonObject, "x", 0.0f);
+            newBone->transform.translation.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->parentLocalPos = &newBone->transform.translation;
             newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
             {
                 newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0));
                 newBone->parentBone->childBones.PushBack(newBone);
-                newBone->transform.translation = newBone->parentLocalPos;
             };
         };
     };
@@ -192,8 +192,6 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
 
     for (i32 boneIndex{}; boneIndex < skeleton.bones.size; ++boneIndex)
     {
-        skeleton.bones.At(boneIndex).parentLocalPos.x /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).parentLocalPos.y /= pixelsPerMeter;
         skeleton.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
         skeleton.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
         skeleton.bones.At(boneIndex).transform.rotation = Radians(skeleton.bones.At(boneIndex).transform.rotation);
