@@ -280,6 +280,21 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 };
 
+f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
+{
+    rotation += *bone.parentLocalRotation;
+
+    if(NOT bone.parentBone)
+        return rotation;
+    else
+        return RecursivelyAddBoneRotations(rotation, *bone.parentBone);
+};
+
+f32 WorldRotation_Bone(Bone bone)
+{
+    return RecursivelyAddBoneRotations(*bone.parentLocalRotation, *bone.parentBone);
+};
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -366,8 +381,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
 
             v2f worldPosOfImage = WorldTransform_Bone(currentSlot->regionAttachment.parentBoneLocalPos, *currentSlot->bone);
+            f32 worldRotationOfBone = WorldRotation_Bone(*currentSlot->bone);
+            f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + worldRotationOfBone;
 
-            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, worldPosOfImage, player->world.scale, uvs2);
+            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, worldRotationOfImage, worldPosOfImage, player->world.scale, uvs2);
             //PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});
         };
     };
