@@ -362,12 +362,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        *player->skel.bones.At(1).parentLocalRotation += .02f;
+        *player->skel.bones.At(2).parentLocalRotation += .02f;
     }
 
     if(KeyHeld(keyboard->MoveUp))
     {
-        stage->camera.zoomFactor += .01f;
     };
 
     UpdateSkeletonBoneWorldPositions($(player->skel), *player->worldPos);

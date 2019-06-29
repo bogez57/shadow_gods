@@ -5,6 +5,16 @@
 #define BYTES_PER_PIXEL 4
 #endif
 
+/*
+
+    Current Renderer assumptions:
+    
+    1.) User sends only one vertex (in world coordinates) instead of a quad. The vertex should be based on the center point of texture or rect user wants to draw.
+    2.) Renderer expects all verts to be in meters and not pixels. 
+    3.) Y axis is going up and bottom left corner of rect is expected to be origin
+    
+*/
+
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
 struct Camera2D
 {
@@ -334,17 +344,17 @@ auto _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf Quad
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world)
 {
     //With world space origin at 0, 0
-    Coordinate_Space imageSpace{};
-    imageSpace.origin = transformInfo_world.pos;
-    imageSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
-    imageSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(imageSpace.xBasis);
-    imageSpace.xBasis *= transformInfo_world.scale.x;
+    Coordinate_Space localSpace{};
+    localSpace.origin = transformInfo_world.pos;
+    localSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
+    localSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(localSpace.xBasis);
+    localSpace.xBasis *= transformInfo_world.scale.x;
 
     Quadf transformedCoords{};
     for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
     {
         //This equation rotates first then moves to correct world position
-        transformedCoords.vertices.At(vertIndex) = imageSpace.origin + (localCoords.vertices.At(vertIndex).x * imageSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * imageSpace.yBasis);
+        transformedCoords.vertices.At(vertIndex) = localSpace.origin + (localCoords.vertices.At(vertIndex).x * localSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * localSpace.yBasis);
     };
 
     return transformedCoords;
@@ -353,18 +363,18 @@ Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world)
 Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformInfo_world)
 {
     //With world space origin at 0, 0
-    Coordinate_Space imageSpace{};
-    imageSpace.origin = transformInfo_world.pos;
-    imageSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
-    imageSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(imageSpace.xBasis);
-    imageSpace.xBasis *= transformInfo_world.scale.x;
+    Coordinate_Space localSpace{};
+    localSpace.origin = transformInfo_world.pos;
+    localSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
+    localSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(localSpace.xBasis);
+    localSpace.xBasis *= transformInfo_world.scale.x;
 
     Quadf transformedCoords{};
     for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
     {
-        localCoords.vertices.At(vertIndex) -= imageSpace.origin;
+        localCoords.vertices.At(vertIndex) -= localSpace.origin;
         //This equation rotates first then moves to correct world position
-        transformedCoords.vertices.At(vertIndex) = imageSpace.origin + (localCoords.vertices.At(vertIndex).x * imageSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * imageSpace.yBasis);
+        transformedCoords.vertices.At(vertIndex) = localSpace.origin + (localCoords.vertices.At(vertIndex).x * localSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * localSpace.yBasis);
     };
 
     return transformedCoords;

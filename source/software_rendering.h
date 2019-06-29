@@ -752,16 +752,15 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
 
-            //TODO: Need to fix how this is draw to screen. Think it might have some thing to do with world coords not being right? Add object transform to RectEntry?
             case EntryType_Rect:
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
                 ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
 
-                Quadf targetQuad = _ProduceQuadFromBottomMidPoint(v2f{0.0f, 0.0f}, rectEntry.dimensions.x, rectEntry.dimensions.y);
+                Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
 
-                Quadf targetQuad_world = WorldTransform(targetQuad, rectEntry.world);
+                Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
                 Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
 
                 DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color);
