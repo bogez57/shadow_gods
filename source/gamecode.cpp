@@ -358,14 +358,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateSkeletonBoneWorldPositions($(player->skel), *player->worldPos);
 
     {//Push images to renderer 
-        for(i32 slotIndex{0}; slotIndex < 1; ++slotIndex)
+        for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
         {
-            Slot* currentSlot = &player->skel.slots[player->skel.slots.size - 14];
+            Slot* currentSlot = &player->skel.slots[slotIndex];
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
 
-            v2f worldPosOfImage = WorldTransform_Bone(currentSlot->regionAttachment.parentBoneLocalPos, *currentSlot->bone->parentBone);
+            v2f worldPosOfImage = WorldTransform_Bone(currentSlot->regionAttachment.parentBoneLocalPos, *currentSlot->bone);
 
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, worldPosOfImage, player->world.scale, uvs2);
             //PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});
