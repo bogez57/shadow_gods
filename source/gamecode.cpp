@@ -342,12 +342,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos->x += .3f;
+        player->worldPos->x += .1f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        *player->skel.bones.At(1).parentLocalRotation += .01f;
+        *player->skel.bones.At(1).parentLocalRotation += .02f;
     }
 
     if(KeyHeld(keyboard->MoveUp))
@@ -360,15 +360,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {//Push images to renderer 
         for(i32 slotIndex{0}; slotIndex < 1; ++slotIndex)
         {
-            Slot* currentSlot = &player->skel.slots[player->skel.slots.size - 12];
+            Slot* currentSlot = &player->skel.slots[player->skel.slots.size - 14];
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-            v2f worldPosOfImage {ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneTransform.translation, currentSlot->regionAttachment.parentBoneTransform)};
-            worldPosOfImage = ParentTransform_1Vector(worldPosOfImage, currentSlot->bone->parentBone->transform);
+
+            v2f worldPosOfImage = WorldTransform_Bone(currentSlot->regionAttachment.parentBoneLocalPos, *currentSlot->bone->parentBone);
 
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, worldPosOfImage, player->world.scale, uvs2);
-            PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});
+            //PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});
         };
     };
 

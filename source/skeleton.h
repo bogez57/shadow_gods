@@ -31,9 +31,9 @@
 struct Bone
 {
     v2f worldPos;
-    f32* parentLocalRotation;
     v2f* parentLocalScale;
     v2f* parentLocalPos;
+    f32* parentLocalRotation;
     Transform transform;
     f32 length;
     Bone* parentBone;
@@ -44,7 +44,9 @@ struct Bone
 struct Region_Attachment
 {
     f32 width, height;
-    Transform parentBoneTransform;
+    v2f parentBoneLocalPos;
+    v2f parentBoneLocalScale;
+    f32 parentBoneLocalRotation;
     AtlasRegion region_image;
 };
 
@@ -150,11 +152,11 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
                     {
                         resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
                         resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
-                        resultRegionAttch.parentBoneTransform.translation.x = Json_getFloat(jsonAttachment, "x", 0.0f);
-                        resultRegionAttch.parentBoneTransform.translation.y = Json_getFloat(jsonAttachment, "y", 0.0f);
-                        resultRegionAttch.parentBoneTransform.rotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
-                        resultRegionAttch.parentBoneTransform.scale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
-                        resultRegionAttch.parentBoneTransform.scale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
+                        resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
+                        resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
+                        resultRegionAttch.parentBoneLocalRotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
+                        resultRegionAttch.parentBoneLocalScale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
+                        resultRegionAttch.parentBoneLocalScale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
                         resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
                         {
                             AtlasRegion resultAtlasRegion {};
@@ -202,9 +204,9 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
     {
         skeleton.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
         skeleton.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
-        skeleton.slots.At(slotI).regionAttachment.parentBoneTransform.rotation = Radians(skeleton.slots.At(slotI).regionAttachment.parentBoneTransform.rotation);
-        skeleton.slots.At(slotI).regionAttachment.parentBoneTransform.translation.x /= pixelsPerMeter;
-        skeleton.slots.At(slotI).regionAttachment.parentBoneTransform.translation.y /= pixelsPerMeter;
+        skeleton.slots.At(slotI).regionAttachment.parentBoneLocalRotation = Radians(skeleton.slots.At(slotI).regionAttachment.parentBoneLocalRotation);
+        skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
+        skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
     };
 };
 
