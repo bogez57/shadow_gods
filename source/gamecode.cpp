@@ -244,7 +244,7 @@ v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
     BGZ_ASSERT(mainBone.parentBone, "Expecting you to pass a bone chain, with parents and children, and not a single bone");
 
     Bone parentBone = *mainBone.parentBone;
-    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.parentTransform);
+    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.transform);
 
     if(NOT parentBone.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
     {
@@ -263,7 +263,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(childBone->parentTransform.translation, *childBone);
+            childBone->worldPos = WorldTransform_Bone(childBone->parentLocalPos, *childBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
@@ -277,7 +277,7 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     Bone* pelvis = &fighterSkel.bones[1];
 
     root->worldPos = fighterWorldPos;
-    root->parentTransform.translation = fighterWorldPos;
+    root->transform.translation = fighterWorldPos;
     PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
@@ -363,7 +363,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
             v2f worldPosOfImage {ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneTransform.translation, currentSlot->regionAttachment.parentBoneTransform)};
-            worldPosOfImage = ParentTransform_1Vector(worldPosOfImage, currentSlot->bone->parentBone->parentTransform);
+            worldPosOfImage = ParentTransform_1Vector(worldPosOfImage, currentSlot->bone->parentBone->transform);
 
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, player->world.rotation, worldPosOfImage, player->world.scale, uvs2);
             PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});

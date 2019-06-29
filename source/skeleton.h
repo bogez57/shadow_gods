@@ -24,6 +24,7 @@
 #ifndef SKELETON_INCLUDE_H
 #define SKELETON_INCLUDE_H
 
+#include <string.h>
 #include "json.h"
 #include "atlas.h"
 
@@ -33,7 +34,7 @@ struct Bone
     f32* parentLocalRotation;
     v2f* parentLocalScale;
     v2f parentLocalPos;
-    Transform parentTransform;
+    Transform transform;
     f32 length;
     Bone* parentBone;
     Dynam_Array<Bone*> childBones;
@@ -106,17 +107,22 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
         {
             Bone* newBone = &newSkeleton.bones.At(boneIndex);
             newBone->name = Json_getString(currentJsonObject, "name", 0);
-            newBone->parentTransform.scale = v2f{1.0f, 1.0f};
-            newBone->parentTransform.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
-            newBone->parentLocalRotation = &newBone->parentTransform.rotation;
-            newBone->parentLocalScale = &newBone->parentTransform.scale;
-            newBone->parentTransform.translation.x = Json_getFloat(currentJsonObject, "x", 0.0f);
-            newBone->parentTransform.translation.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->transform.scale = v2f{1.0f, 1.0f};
+            newBone->transform.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
+            newBone->parentLocalRotation = &newBone->transform.rotation;
+            newBone->parentLocalScale = &newBone->transform.scale;
+            newBone->parentLocalPos.x = Json_getFloat(currentJsonObject, "x", 0.0f);
+            newBone->parentLocalPos.y = Json_getFloat(currentJsonObject, "y", 0.0f);
             newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
             {
                 newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0));
                 newBone->parentBone->childBones.PushBack(newBone);
+                newBone->transform.translation = newBone->parentBone->parentLocalPos;
+
+                //First child after root needs to do this for it's translation
+                if(!strcmp(newBone->parentBone->name, "root"))
+                    newBone->transform.translation = newBone->parentLocalPos;
             };
         };
     };
@@ -190,9 +196,11 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
 
     for (i32 boneIndex{}; boneIndex < skeleton.bones.size; ++boneIndex)
     {
-        skeleton.bones.At(boneIndex).parentTransform.translation.x /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).parentTransform.translation.y /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).parentTransform.rotation = Radians(skeleton.bones.At(boneIndex).parentTransform.rotation);
+        skeleton.bones.At(boneIndex).parentLocalPos.x /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).parentLocalPos.y /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
+        skeleton.bones.At(boneIndex).transform.rotation = Radians(skeleton.bones.At(boneIndex).transform.rotation);
         skeleton.bones.At(boneIndex).length /= pixelsPerMeter; 
     };
 
