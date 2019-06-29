@@ -30,6 +30,9 @@
 struct Bone
 {
     v2f worldPos;
+    f32* parentLocalRotation;
+    v2f* parentLocalScale;
+    v2f parentLocalPos;
     Transform parentTransform;
     f32 length;
     Bone* parentBone;
@@ -104,9 +107,11 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             Bone* newBone = &newSkeleton.bones.At(boneIndex);
             newBone->name = Json_getString(currentJsonObject, "name", 0);
             newBone->parentTransform.scale = v2f{1.0f, 1.0f};
+            newBone->parentTransform.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
+            newBone->parentLocalRotation = &newBone->parentTransform.rotation;
+            newBone->parentLocalScale = &newBone->parentTransform.scale;
             newBone->parentTransform.translation.x = Json_getFloat(currentJsonObject, "x", 0.0f);
             newBone->parentTransform.translation.y = Json_getFloat(currentJsonObject, "y", 0.0f);
-            newBone->parentTransform.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
             newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
             {
