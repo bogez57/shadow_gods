@@ -118,11 +118,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             {
                 newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0));
                 newBone->parentBone->childBones.PushBack(newBone);
-                newBone->transform.translation = newBone->parentBone->parentLocalPos;
-
-                //First child after root needs to do this for it's translation
-                if(!strcmp(newBone->parentBone->name, "root"))
-                    newBone->transform.translation = newBone->parentLocalPos;
+                newBone->transform.translation = newBone->parentLocalPos;
             };
         };
     };
