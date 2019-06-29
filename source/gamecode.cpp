@@ -239,20 +239,17 @@ v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
     return transformedCoords;
 };
 
-v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone mainBone)
+v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone childsParentBone)
 {
-    BGZ_ASSERT(mainBone.parentBone, "Expecting you to pass a bone chain, with parents and children, and not a single bone");
+    v2f parentLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, childsParentBone.transform);
 
-    Bone parentBone = *mainBone.parentBone;
-    v2f pelvisLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, parentBone.transform);
-
-    if(NOT parentBone.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
+    if(NOT childsParentBone.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
     {
-        return pelvisLocalPos;
+        return parentLocalPos;
     }
     else
     {
-        return WorldTransform_Bone(pelvisLocalPos, parentBone);
+        return WorldTransform_Bone(parentLocalPos, *childsParentBone.parentBone);
     };
 };
 
@@ -263,7 +260,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for(i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(*childBone->parentLocalPos, *childBone);
+            childBone->worldPos = WorldTransform_Bone(*childBone->parentLocalPos, *childBone->parentBone);
             PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
