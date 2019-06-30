@@ -239,9 +239,9 @@ v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
     return transformedCoords;
 };
 
-v2f WorldTransform_Bone(v2f parentLocalPos, Bone boneToGrabTransformFrom)
+v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
 {
-    v2f parentLocalPos = ParentTransform_1Vector(parentLocalPos, boneToGrabTransformFrom.transform);
+    v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.transform);
 
     if(NOT boneToGrabTransformFrom.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
     {
