@@ -239,17 +239,17 @@ v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
     return transformedCoords;
 };
 
-v2f WorldTransform_Bone(v2f parentLocalPosOfChildBone, Bone childsParentBone)
+v2f WorldTransform_Bone(v2f parentLocalPos, Bone boneToGrabTransformFrom)
 {
-    v2f parentLocalPos = ParentTransform_1Vector(parentLocalPosOfChildBone, childsParentBone.transform);
+    v2f parentLocalPos = ParentTransform_1Vector(parentLocalPos, boneToGrabTransformFrom.transform);
 
-    if(NOT childsParentBone.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
+    if(NOT boneToGrabTransformFrom.parentBone)//If root bone has been hit then exit recursion by returning world pos of main bone
     {
         return parentLocalPos;
     }
     else
     {
-        return WorldTransform_Bone(parentLocalPos, *childsParentBone.parentBone);
+        return WorldTransform_Bone(parentLocalPos, *boneToGrabTransformFrom.parentBone);
     };
 };
 
@@ -275,7 +275,7 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
 
     root->worldPos = fighterWorldPos;
     root->transform.translation = fighterWorldPos;
-    PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
+    //PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 };
@@ -340,7 +340,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
         stage->camera.lookAt = viewDims / 2.0f;
         stage->camera.dilatePoint = v2f{0.0f, 0.0f};
-        stage->camera.zoomFactor = 1.0f;
+        stage->camera.zoomFactor = .4f;
 
         //Player Init
         v2f playerWorldPos = {1.2f, -2.5f};
@@ -384,7 +384,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + worldRotationOfBone;
 
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, worldRotationOfImage, worldPosOfImage, player->world.scale, uvs2);
-            //PushRect(global_renderingInfo, worldPosOfImage, 0.0f, v2f{1.0f, 1.0f}, v2f{.04f, .04f}, v3f{0.0f, 1.0f, 0.0f});
         };
     };
 
