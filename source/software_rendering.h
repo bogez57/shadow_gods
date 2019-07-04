@@ -124,8 +124,81 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 };
 #endif
 
-#include <immintrin.h>
+local_func void
+DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, v2f rectDims, v3f rectColor)
+{    
+    v2f origin = cameraCoords.bottomLeft;
+    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
+    v2f targetRectYAxis = cameraCoords.topLeft - origin;
 
+    ui32 pixelColor = {(0xFF << 24) |
+                       (RoundFloat32ToUInt32(rectColor.r * 255.0f) << 16) |
+                       (RoundFloat32ToUInt32(rectColor.g * 255.0f) << 8) |
+                       (RoundFloat32ToUInt32(rectColor.b * 255.0f) << 0)};
+
+    f32 widthMax = (f32)(colorBufferSize.width - 1);
+    f32 heightMax = (f32)(colorBufferSize.height - 1);
+    
+    f32 xMin = widthMax;
+    f32 xMax = 0.0f;
+    f32 yMin = heightMax;
+    f32 yMax = 0.0f;
+
+    {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
+        Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
+        for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
+        {
+            v2f testVec = vecs.At(vecIndex);
+            i32 flooredX = FloorF32ToI32(testVec.x);
+            i32 ceiledX = CeilF32ToI32(testVec.x);
+            i32 flooredY= FloorF32ToI32(testVec.y);
+            i32 ceiledY = CeilF32ToI32(testVec.y);
+
+            if(xMin > flooredX) {xMin = (f32)flooredX;}
+            if(yMin > flooredY) {yMin = (f32)flooredY;}
+            if(xMax < ceiledX) {xMax = (f32)ceiledX;}
+            if(yMax < ceiledY) {yMax = (f32)ceiledY;}
+        }
+
+        if(xMin < 0.0f) {xMin = 0.0f;}
+        if(yMin < 0.0f) {yMin = 0.0f;}
+        if(xMax > widthMax) {xMax = widthMax;}
+        if(yMax > heightMax) {yMax = heightMax;}
+    };
+
+    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
+    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
+
+    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
+    for(f32 screenY = yMin; screenY < yMax; ++screenY)
+    {
+        ui32* destPixel = (ui32*)currentRow;
+
+        for(f32 screenX = xMin; screenX < xMax; ++screenX)
+        {            
+            v2f screenPixelCoord{screenX, screenY};
+            v2f d {screenPixelCoord - origin};
+
+            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
+            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
+
+            //Used to decide, given what screen pixel were on, whether or not that screen pixel falls
+            //within the target rect's bounds or not
+            if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
+            {
+                *destPixel = pixelColor;
+            }
+
+            ++destPixel;
+        }
+        
+        currentRow += colorBufferPitch;
+    }
+};
+
+
+
+#include <immintrin.h>
 void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale) 
 {
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
@@ -217,6 +290,12 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
 
             __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 7, screenX + 6, screenX + 5, screenX + 4, screenX + 3, screenX + 2, screenX + 1, screenX + 0);
             __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
+            
+            __m256 uvRangeForTexture_u = _mm256_set1_ps(image.uvBounds.At(1).u - image.uvBounds.At(0).u);
+            __m256 uvRangeForTexture_v = _mm256_set1_ps(image.uvBounds.At(1).v - image.uvBounds.At(0).v);
+
+            __m256 minUVBounds_u = _mm256_set1_ps(image.uvBounds.At(0).u);
+            __m256 minUVBounds_v = _mm256_set1_ps(image.uvBounds.At(0).v);
 
             //Gather normalized coordinates (uv's) in order to find the correct texel position below
             __m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x);
@@ -235,8 +314,11 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
             Us = _mm256_min_ps(_mm256_max_ps(Us, zero), one);
             Vs = _mm256_min_ps(_mm256_max_ps(Vs, zero), one);
 
-            __m256 texelCoords_x = _mm256_add_ps(one, _mm256_mul_ps(Us, imgWidth));
-            __m256 texelCoords_y = _mm256_add_ps(one, _mm256_mul_ps(Vs, imgHeight));
+            __m256 textureUs = _mm256_add_ps(minUVBounds_u, _mm256_mul_ps(uvRangeForTexture_u, Us));
+            __m256 textureVs = _mm256_add_ps(minUVBounds_v, _mm256_mul_ps(uvRangeForTexture_v, Vs));
+
+            __m256 texelCoords_x = _mm256_mul_ps(textureUs, imgWidth);
+            __m256 texelCoords_y = _mm256_mul_ps(textureVs, imgHeight);
 
             __m256i sampleTexelAs{}, sampleTexelBs{}, sampleTexelCs{}, sampleTexelDs{};
             for(i32 index{}; index < 8; ++index)
@@ -424,78 +506,6 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
         currentRow += colorBufferPitch;
     };
 
-};
-
-local_func void
-DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, v2f rectDims, v3f rectColor)
-{    
-    v2f origin = cameraCoords.bottomLeft;
-    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
-    v2f targetRectYAxis = cameraCoords.topLeft - origin;
-
-    ui32 pixelColor = {(0xFF << 24) |
-                       (RoundFloat32ToUInt32(rectColor.r * 255.0f) << 16) |
-                       (RoundFloat32ToUInt32(rectColor.g * 255.0f) << 8) |
-                       (RoundFloat32ToUInt32(rectColor.b * 255.0f) << 0)};
-
-    f32 widthMax = (f32)(colorBufferSize.width - 1);
-    f32 heightMax = (f32)(colorBufferSize.height - 1);
-    
-    f32 xMin = widthMax;
-    f32 xMax = 0.0f;
-    f32 yMin = heightMax;
-    f32 yMax = 0.0f;
-
-    {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
-        Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
-        for(i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
-        {
-            v2f testVec = vecs.At(vecIndex);
-            i32 flooredX = FloorF32ToI32(testVec.x);
-            i32 ceiledX = CeilF32ToI32(testVec.x);
-            i32 flooredY= FloorF32ToI32(testVec.y);
-            i32 ceiledY = CeilF32ToI32(testVec.y);
-
-            if(xMin > flooredX) {xMin = (f32)flooredX;}
-            if(yMin > flooredY) {yMin = (f32)flooredY;}
-            if(xMax < ceiledX) {xMax = (f32)ceiledX;}
-            if(yMax < ceiledY) {yMax = (f32)ceiledY;}
-        }
-
-        if(xMin < 0.0f) {xMin = 0.0f;}
-        if(yMin < 0.0f) {yMin = 0.0f;}
-        if(xMax > widthMax) {xMax = widthMax;}
-        if(yMax > heightMax) {yMax = heightMax;}
-    };
-
-    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
-    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
-
-    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
-    for(f32 screenY = yMin; screenY < yMax; ++screenY)
-    {
-        ui32* destPixel = (ui32*)currentRow;
-
-        for(f32 screenX = xMin; screenX < xMax; ++screenX)
-        {            
-            v2f screenPixelCoord{screenX, screenY};
-            v2f d {screenPixelCoord - origin};
-
-            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
-            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
-
-            //Used to decide, given what screen pixel were on, whether or not that screen pixel falls
-            //within the target rect's bounds or not
-            if(u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
-            {
-                *destPixel = pixelColor;
-            }
-
-            ++destPixel;
-        }
-        
-        currentRow += colorBufferPitch;
-    }
 };
 
 //For images that move/rotate/scale - Assumes pre-multiplied alpha
@@ -747,7 +757,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
                 Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                DrawTextureSlowly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
+                DrawTextureQuickly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
