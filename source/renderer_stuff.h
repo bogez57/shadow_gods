@@ -20,34 +20,21 @@ struct Camera2D
 {
     v2f lookAt;
     v2f viewCenter;
-    v2f dilatePoint;
+    v2f dilatePoint_inScreenDims;
     f32 zoomFactor;
     v2f screenDimensions;
 };
 
-struct Game_Render_Cmd_Buffer
+struct Rectf
 {
-    ui8* baseAddress;
-    ui32 usedAmount;
-    ui32 size;
-    i32 entryCount;
+    v2f min;
+    v2f max;
 };
 
-struct Rendering_Info
+struct Recti
 {
-    Game_Render_Cmd_Buffer cmdBuffer;
-    Camera2D camera;
-    f32 pixelsPerMeter;
-};
-
-struct Image
-{
-    ui8* data;
-    f32 aspectRatio;
-    i32 width_pxls;
-    i32 height_pxls;
-    ui32 pitch;
-    f32 opacity {1.0f};
+    v2i min;
+    v2i max;
 };
 
 struct Quadf
@@ -80,17 +67,32 @@ struct Quadi
     };
 };
 
-struct Rectf
+struct Game_Render_Cmd_Buffer
 {
-    v2f min;
-    v2f max;
+    ui8* baseAddress;
+    ui32 usedAmount;
+    ui32 size;
+    i32 entryCount;
 };
 
-struct Recti
+struct Rendering_Info
 {
-    v2i min;
-    v2i max;
+    Game_Render_Cmd_Buffer cmdBuffer;
+    Camera2D camera;
+    f32 pixelsPerMeter;
+    Rectf clipRect_meters;
 };
+
+struct Image
+{
+    ui8* data;
+    f32 aspectRatio;
+    i32 width_pxls;
+    i32 height_pxls;
+    ui32 pitch;
+    f32 opacity {1.0f};
+};
+
 
 struct Coordinate_Space
 {
@@ -145,7 +147,7 @@ v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 //Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 objectHeight_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, v2f objectSize_meters, f32 worldRotation, v2f worldPos, v2f worldScale);
-void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint, f32 zoomFactor);
+void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenDims, f32 zoomFactor);
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
@@ -184,7 +186,7 @@ void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels,
     renderingInfo->camera.lookAt = cameraLookAtCoords_meters * pixelsPerMeter;
     renderingInfo->camera.screenDimensions = screenDimensions_pixels;
     renderingInfo->camera.viewCenter = screenDimensions_pixels / 2.0f;
-    renderingInfo->camera.dilatePoint = renderingInfo->camera.viewCenter;
+    renderingInfo->camera.dilatePoint_inScreenDims = renderingInfo->camera.viewCenter;
     renderingInfo->camera.zoomFactor = 1.0f;
 };
 
@@ -246,11 +248,12 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint)
+void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint_inScreenDims)
 {
+    //renderingInfo->clipRect_meters.min.x = (cameraLookAtCoords_meters.x * renderingInfo->pixelsPerMeter) - (renderingInfo->camera.screenDimensions.width / 2.0f); 
     renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
-    renderingInfo->camera.dilatePoint = dilatePoint * renderingInfo->pixelsPerMeter;
+    renderingInfo->camera.dilatePoint_inScreenDims = dilatePoint_inScreenDims * renderingInfo->pixelsPerMeter;
 };
 
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
@@ -398,7 +401,7 @@ Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
         worldCoords.vertices[vertIndex] += translationToCameraSpace;
     };
 
-    transformedCoords = _DilateAboutArbitraryPoint(camera.dilatePoint, camera.zoomFactor, worldCoords);
+    transformedCoords = _DilateAboutArbitraryPoint(camera.dilatePoint_inScreenDims, camera.zoomFactor, worldCoords);
 
     return transformedCoords;
 };

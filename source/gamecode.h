@@ -16,7 +16,7 @@ struct Fighter
 struct Game_Camera
 {
     v2f lookAt;
-    v2f dilatePoint;
+    v2f dilatePoint_inScreenDims;
     f32 zoomFactor;
 };
 

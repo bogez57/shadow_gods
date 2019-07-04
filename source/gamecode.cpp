@@ -363,13 +363,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Camera Init
         v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
-        stage->camera.lookAt = viewDims / 2.0f;
-        stage->camera.dilatePoint = stage->camera.lookAt;
+        stage->camera.lookAt = {10.0f, 10.0f};
+        stage->camera.dilatePoint_inScreenDims = viewDims/2.0f;
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
         v2f playerWorldPos = {1.0f, 0.0f};
-        InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, 2.0f);
+        InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/2.0f);
     };
 
     player->height = 2.0f;
@@ -383,6 +383,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     if(KeyHeld(keyboard->MoveRight))
     {
         player->worldPos->y -= .1f;
+        stage->camera.lookAt -= .2f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))
@@ -392,13 +393,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveUp))
     {
-        stage->camera.zoomFactor -= .01f;
+        stage->camera.zoomFactor += .02f;
     };
+
+    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
     UpdateSkeletonBoneWorldPositions($(player->skel), *player->worldPos);
 
     Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
-    PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
+    PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{stage->size.width/2.0f, stage->size.height/2.0f}, v2f{1.0f, 1.0f}, uvs);
 
     {//Push images to renderer 
         for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
@@ -415,8 +418,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, worldRotationOfImage, worldPosOfImage, player->world.scale, uvs2);
         };
     };
-
-    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
     //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
