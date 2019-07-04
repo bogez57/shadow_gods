@@ -80,7 +80,6 @@ struct Rendering_Info
     Game_Render_Cmd_Buffer cmdBuffer;
     Camera2D camera;
     f32 pixelsPerMeter;
-    Rectf clipRect_meters;
 };
 
 struct Image
@@ -250,7 +249,6 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
 
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint_inScreenDims)
 {
-    //renderingInfo->clipRect_meters.min.x = (cameraLookAtCoords_meters.x * renderingInfo->pixelsPerMeter) - (renderingInfo->camera.screenDimensions.width / 2.0f); 
     renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
     renderingInfo->camera.dilatePoint_inScreenDims = dilatePoint_inScreenDims * renderingInfo->pixelsPerMeter;
