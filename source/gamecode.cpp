@@ -339,8 +339,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Camera Init
         v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
         stage->camera.lookAt = viewDims / 2.0f;
-        stage->camera.dilatePoint = v2f{0.0f, 0.0f};
-        stage->camera.zoomFactor = .4f;
+        stage->camera.dilatePoint = stage->camera.lookAt;
+        stage->camera.zoomFactor = 1.0f;
 
         //Player Init
         v2f playerWorldPos = {1.2f, -2.5f};
@@ -367,9 +367,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveUp))
     {
+        stage->camera.zoomFactor -= .01f;
     };
 
     UpdateSkeletonBoneWorldPositions($(player->skel), *player->worldPos);
+
+    Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
+    PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
 
     {//Push images to renderer 
         for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
@@ -387,10 +391,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
     };
 
-    //Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
-    //PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}, uvs);
-
-    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor);
+    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
     //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};

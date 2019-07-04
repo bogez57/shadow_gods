@@ -246,6 +246,13 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
+void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint)
+{
+    renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
+    renderingInfo->camera.zoomFactor = zoomFactor;
+    renderingInfo->camera.dilatePoint = dilatePoint * renderingInfo->pixelsPerMeter;
+};
+
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
 {
     renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
