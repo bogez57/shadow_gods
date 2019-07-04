@@ -363,16 +363,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Camera Init
         v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
-        stage->camera.lookAt = {10.0f, 10.0f};
+        stage->camera.lookAt = {stage->size.width/2.0f, 3.0f};
         stage->camera.dilatePoint_inScreenDims = viewDims/2.0f;
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {1.0f, 0.0f};
+        v2f playerWorldPos = {(stage->size.width/2.0f) - 2.0f, 1.0f};
+        v2f enemyWorldPos = {(stage->size.width/2.0f) + 2.0f, 1.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/2.0f);
+        InitFighter($(*enemy), "data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/2.0f);
     };
-
-    player->height = 2.0f;
 
     if (globalPlatformServices->DLLJustReloaded)
     {
@@ -382,7 +382,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos->y -= .1f;
         stage->camera.lookAt -= .2f;
     };
 
@@ -399,14 +398,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
     UpdateSkeletonBoneWorldPositions($(player->skel), *player->worldPos);
+    UpdateSkeletonBoneWorldPositions($(enemy->skel), *enemy->worldPos);
 
     Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
     PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{stage->size.width/2.0f, stage->size.height/2.0f}, v2f{1.0f, 1.0f}, uvs);
 
+    auto DrawFighter = [](Fighter fighter) -> void
     {//Push images to renderer 
-        for(i32 slotIndex{0}; slotIndex < player->skel.slots.size; ++slotIndex)
+        for(i32 slotIndex{0}; slotIndex < fighter.skel.slots.size; ++slotIndex)
         {
-            Slot* currentSlot = &player->skel.slots[slotIndex];
+            Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
@@ -415,9 +416,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             f32 worldRotationOfBone = WorldRotation_Bone(*currentSlot->bone);
             f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + worldRotationOfBone;
 
-            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, worldRotationOfImage, worldPosOfImage, player->world.scale, uvs2);
+            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, worldRotationOfImage, worldPosOfImage, fighter.world.scale, uvs2);
         };
     };
+
+    DrawFighter(*player);
+    DrawFighter(*enemy);
 
     //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
     //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
