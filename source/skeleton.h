@@ -192,6 +192,9 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
 {
     f32 pixelsPerMeter{100.0f};
 
+    skeleton.width /= pixelsPerMeter;
+    skeleton.height /= pixelsPerMeter;
+
     for (i32 boneIndex{}; boneIndex < skeleton.bones.size; ++boneIndex)
     {
         skeleton.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;

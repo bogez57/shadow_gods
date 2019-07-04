@@ -210,7 +210,7 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
-void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJsonFilePath, v2f worldPosition)
+void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJsonFilePath, v2f worldPosition, f32 newFighterHeight)
 {
     Atlas* atlas;
     atlas = CreateAtlasFromFile(atlasFilePath, 0);
@@ -220,6 +220,31 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     fighter.world.scale = {1.0f, 1.0f};
     fighter.skel.worldPos = &fighter.world.translation;
     fighter.worldPos = &fighter.world.translation;
+
+    {//Change fighter height
+        f32 aspectRatio = fighter.skel.height / fighter.skel.width;
+        f32 scaleFactor = newFighterHeight / fighter.skel.height;
+
+        //New fighter height
+        fighter.skel.height = newFighterHeight;
+        fighter.skel.width = aspectRatio * newFighterHeight;
+
+
+        for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
+        {
+            fighter.skel.bones.At(boneIndex).transform.translation.x *= scaleFactor;
+            fighter.skel.bones.At(boneIndex).transform.translation.y *= scaleFactor;
+            fighter.skel.bones.At(boneIndex).length *= scaleFactor;
+        };
+
+        for (i32 slotI{}; slotI < fighter.skel.slots.size; ++slotI)
+        {
+            fighter.skel.slots.At(slotI).regionAttachment.height *= scaleFactor;
+            fighter.skel.slots.At(slotI).regionAttachment.width *= scaleFactor;
+            fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x *= scaleFactor;
+            fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y *= scaleFactor;
+        };
+    };
 };
 
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
@@ -330,7 +355,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
-        stage->size.height = 16.0f;
+        stage->size.height = 20.0f;
         stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
@@ -343,8 +368,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {1.2f, -2.5f};
-        InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos);
+        v2f playerWorldPos = {1.0f, 0.0f};
+        InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, 2.0f);
     };
 
     player->height = 2.0f;
@@ -357,7 +382,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos->x += .1f;
+        player->worldPos->y -= .1f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))
