@@ -742,9 +742,73 @@ namespace Win32
     }
 } // namespace Win32
 
+struct Work_Queue_Entry
+{
+    char* stringToPrint;
+};
+
+global_variable ui32 nextEntryToDo;
+global_variable ui32 entryCount;
+Work_Queue_Entry entries[256];
+
+void PushString(char* string)
+{
+    BGZ_ASSERT(entryCount < ArrayCount(entries), "AHHHH");
+
+    Work_Queue_Entry* entry = entries + entryCount++;
+    entry->stringToPrint = string;
+};
+
+struct Thread_Info
+{
+    i32 logicalThreadIndex;
+};
+
+DWORD WINAPI
+ThreadProc(LPVOID param)
+{
+    Thread_Info* info = (Thread_Info*)param;
+
+    while(1)
+    {
+        if(nextEntryToDo < entryCount)
+        {
+            i32 entryIndex = nextEntryToDo++;
+
+            Work_Queue_Entry* entry = entries + entryIndex;
+
+            BGZ_CONSOLE("Thread %u: %s\n", info->logicalThreadIndex, entry->stringToPrint);
+        };
+    };
+
+    return 0;
+};
+
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
     Win32::Dbg::UseConsole();
+
+    Thread_Info threadInfo[4] = {};
+    for(i32 threadIndex{}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
+    {
+
+        Thread_Info* info = threadInfo + threadIndex;
+        info->logicalThreadIndex = threadIndex;
+
+        DWORD threadID;
+        HANDLE myThread = CreateThread(0, 0, ThreadProc, info, 0, &threadID);
+    };
+
+    PushString("String 0");
+    PushString("String 1");
+    PushString("String 2");
+    PushString("String 3");
+    PushString("String 4");
+    PushString("String 5");
+    PushString("String 6");
+    PushString("String 7");
+    PushString("String 8");
+    PushString("String 9");
 
     //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;

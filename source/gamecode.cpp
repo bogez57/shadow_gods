@@ -363,7 +363,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Camera Init
         v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
-        stage->camera.lookAt = {stage->size.width/2.0f, 3.0f};
+        stage->camera.lookAt = {stage->size.width/2.0f, 4.0f};
         stage->camera.dilatePoint_inScreenDims = viewDims/2.0f;
         stage->camera.zoomFactor = 1.0f;
 
