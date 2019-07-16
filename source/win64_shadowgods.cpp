@@ -742,25 +742,36 @@ namespace Win32
     }
 } // namespace Win32
 
+#define DontDoWritesBelowUntilWritesAboveAreCompleted _WriteBarrier(); _mm_sfence()
+#define Compiler_DontMoveBelowReadsAboveThisPoint _ReadBarrier()
+
 struct Work_Queue_Entry
 {
     char* stringToPrint;
 };
 
-global_variable ui32 nextEntryToDo;
-global_variable ui32 entryCount;
+global_variable ui32 volatile entryCompletionCount;
+global_variable ui32 volatile nextEntryToDo;
+global_variable ui32 volatile entryCount;
 Work_Queue_Entry entries[256];
 
-void PushString(char* string)
+void PushString(HANDLE semaphoreHandle, char* string)
 {
     BGZ_ASSERT(entryCount < ArrayCount(entries), "AHHHH");
 
-    Work_Queue_Entry* entry = entries + entryCount++;
+    Work_Queue_Entry* entry = entries + entryCount;
     entry->stringToPrint = string;
+
+    DontDoWritesBelowUntilWritesAboveAreCompleted;
+
+    ++entryCount;
+
+    ReleaseSemaphore(semaphoreHandle, 1, 0);
 };
 
 struct Thread_Info
 {
+    HANDLE semaphoreHandle;
     i32 logicalThreadIndex;
 };
 
@@ -773,11 +784,16 @@ ThreadProc(LPVOID param)
     {
         if(nextEntryToDo < entryCount)
         {
-            i32 entryIndex = nextEntryToDo++;
-
+            i32 entryIndex = _InterlockedIncrement((LONG volatile*) &nextEntryToDo);
+            Compiler_DontMoveBelowReadsAboveThisPoint; 
             Work_Queue_Entry* entry = entries + entryIndex;
 
             BGZ_CONSOLE("Thread %u: %s\n", info->logicalThreadIndex, entry->stringToPrint);
+            _InterlockedIncrement((LONG volatile*) &entryCompletionCount);
+        }
+        else
+        {
+            WaitForSingleObjectEx(info->semaphoreHandle, INFINITE, FALSE);
         };
     };
 
@@ -788,27 +804,49 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 {
     Win32::Dbg::UseConsole();
 
-    Thread_Info threadInfo[4] = {};
+    Thread_Info threadInfo[8] = {};
+    ui32 threadCount = ArrayCount(threadInfo);
+
+    ui32 initialCount = 0;
+    HANDLE semaphoreHandle = CreateSemaphoreExA(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+
     for(i32 threadIndex{}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
     {
 
         Thread_Info* info = threadInfo + threadIndex;
+        info->semaphoreHandle = semaphoreHandle;
         info->logicalThreadIndex = threadIndex;
 
         DWORD threadID;
         HANDLE myThread = CreateThread(0, 0, ThreadProc, info, 0, &threadID);
     };
 
-    PushString("String 0");
-    PushString("String 1");
-    PushString("String 2");
-    PushString("String 3");
-    PushString("String 4");
-    PushString("String 5");
-    PushString("String 6");
-    PushString("String 7");
-    PushString("String 8");
-    PushString("String 9");
+    PushString(semaphoreHandle, "String 0");
+    PushString(semaphoreHandle, "String 1");
+    PushString(semaphoreHandle, "String 2");
+    PushString(semaphoreHandle, "String 3");
+    PushString(semaphoreHandle, "String 4");
+    PushString(semaphoreHandle, "String 5");
+    PushString(semaphoreHandle, "String 6");
+    PushString(semaphoreHandle, "String 7");
+    PushString(semaphoreHandle, "String 8");
+    PushString(semaphoreHandle, "String 9");
+
+    Sleep(5000);
+
+    PushString(semaphoreHandle, "String B0");
+    PushString(semaphoreHandle, "String B1");
+    PushString(semaphoreHandle, "String B2");
+    PushString(semaphoreHandle, "String B3");
+    PushString(semaphoreHandle, "String b4");
+    PushString(semaphoreHandle, "String b5");
+    PushString(semaphoreHandle, "String b6");
+    PushString(semaphoreHandle, "String b7");
+    PushString(semaphoreHandle, "String b8");
+    PushString(semaphoreHandle, "String b9");
+
+
+    while(entryCount != entryCompletionCount);
 
     //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;
