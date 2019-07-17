@@ -424,7 +424,7 @@ namespace Win32
         }
         else
         {
-            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch);
+            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch); 
 
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
@@ -831,20 +831,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     PushString(semaphoreHandle, "String 7");
     PushString(semaphoreHandle, "String 8");
     PushString(semaphoreHandle, "String 9");
-
-    Sleep(5000);
-
-    PushString(semaphoreHandle, "String B0");
-    PushString(semaphoreHandle, "String B1");
-    PushString(semaphoreHandle, "String B2");
-    PushString(semaphoreHandle, "String B3");
-    PushString(semaphoreHandle, "String b4");
-    PushString(semaphoreHandle, "String b5");
-    PushString(semaphoreHandle, "String b6");
-    PushString(semaphoreHandle, "String b7");
-    PushString(semaphoreHandle, "String b8");
-    PushString(semaphoreHandle, "String b9");
-
 
     while(entryCount != entryCompletionCount);
 

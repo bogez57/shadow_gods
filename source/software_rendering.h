@@ -125,7 +125,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 #endif
 
 local_func void
-DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, v2f rectDims, v3f rectColor)
+DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, v2f rectDims, v3f rectColor, Rectf clipRect)
 {    
     v2f origin = cameraCoords.bottomLeft;
     v2f targetRectXAxis = cameraCoords.bottomRight - origin;
@@ -136,13 +136,13 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
                        (RoundFloat32ToUInt32(rectColor.g * 255.0f) << 8) |
                        (RoundFloat32ToUInt32(rectColor.b * 255.0f) << 0)};
 
-    f32 widthMax = (f32)(colorBufferSize.width - 1);
-    f32 heightMax = (f32)(colorBufferSize.height - 1);
+    f32 widthMax = clipRect.max.x;
+    f32 heightMax = clipRect.max.y;
     
     f32 xMin = widthMax;
-    f32 xMax = 0.0f;
+    f32 xMax = clipRect.min.x;
     f32 yMin = heightMax;
-    f32 yMax = 0.0f;
+    f32 yMax = clipRect.min.y;
 
     {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
         Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
@@ -160,8 +160,8 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
             if(yMax < ceiledY) {yMax = (f32)ceiledY;}
         }
 
-        if(xMin < 0.0f) {xMin = 0.0f;}
-        if(yMin < 0.0f) {yMin = 0.0f;}
+        if(xMin < clipRect.min.x) {xMin = clipRect.min.x;}
+        if(yMin < clipRect.min.y) {yMin = clipRect.min.y;}
         if(xMax > widthMax) {xMax = widthMax;}
         if(yMax > heightMax) {yMax = heightMax;}
     };
@@ -199,7 +199,7 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
 
 
 #include <immintrin.h>
-void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale) 
+void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Rectf clipRect) 
 {
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
     {
@@ -232,13 +232,13 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
     v2f targetRectXAxis = cameraCoords.bottomRight - origin;
     v2f targetRectYAxis = cameraCoords.topLeft - origin;
 
-    f32 widthMax = (f32)(colorBufferSize.width - 1);
-    f32 heightMax = (f32)(colorBufferSize.height - 1);
+    f32 widthMax = clipRect.max.x;
+    f32 heightMax = clipRect.max.y;
     
     f32 xMin = widthMax;
-    f32 xMax = 0.0f;
+    f32 xMax = clipRect.min.x;
     f32 yMin = heightMax;
-    f32 yMax = 0.0f;
+    f32 yMax = clipRect.min.y;
 
     {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
         Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
@@ -256,8 +256,8 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
             if(yMax < ceiledY) {yMax = (f32)ceiledY;}
         }
 
-        if(xMin < 0.0f) {xMin = 0.0f;}
-        if(yMin < 0.0f) {yMin = 0.0f;}
+        if(xMin < clipRect.min.x) {xMin = clipRect.min.x;}
+        if(yMin < clipRect.min.y) {yMin = clipRect.min.y;}
         if(xMax > widthMax) {xMax = widthMax;}
         if(yMax > heightMax) {yMax = heightMax;}
     };
@@ -738,47 +738,65 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
 
 void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch)
 {
-    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &renderingInfo.camera;
+    f32 screenRegionCount_x = 4.0f;
+    f32 screenRegionCount_y = 4.0f;
 
-    for(i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+    f32 singleScreenRegion_width = colorBufferSize.width / screenRegionCount_x;
+    f32 singleScreenRegion_height = colorBufferSize.height / screenRegionCount_y;
+
+    for(ui32 screenRegion_y{}; screenRegion_y < screenRegionCount_y; ++screenRegion_y)
     {
-        RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
-        switch(entryHeader->type)
+        for(ui32 screenRegion_x{}; screenRegion_x < screenRegionCount_x; ++screenRegion_x)
         {
-            case EntryType_Texture:
-            {
-                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+            v2f screenRegion_min = v2f{screenRegion_x * singleScreenRegion_width, screenRegion_y * singleScreenRegion_height};
+            v2f screenRegion_max = v2f{screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height};
+            Rectf screenRegionCoords{screenRegion_min, screenRegion_max};
+                               
+            {//Draw region
+                ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
+                Camera2D* camera = &renderingInfo.camera;
 
-                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+                for(i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+                {
+                    RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
+                    switch(entryHeader->type)
+                    {
+                        case EntryType_Texture:
+                        {
+                            RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-                Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
+                            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
-                Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
-                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+                            Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
-                DrawTextureQuickly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale);
+                            Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
+                            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
-            }break;
+                            DrawTextureQuickly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, screenRegionCoords);
 
-            case EntryType_Rect:
-            {
-                RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+                            currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+                        }break;
 
-                ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
+                        case EntryType_Rect:
+                        {
+                            RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
-                Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
+                            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
 
-                Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
-                Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+                            Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
 
-                DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color);
-                currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-            }break;
+                            Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
+                            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
 
-            InvalidDefaultCase;
-        }
+                            DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, screenRegionCoords);
+                            currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+                        }break;
+
+                        InvalidDefaultCase;
+                    };
+                };
+            };
+        };
     };
 
     renderingInfo.cmdBuffer.entryCount = 0; 

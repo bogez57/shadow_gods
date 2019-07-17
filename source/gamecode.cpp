@@ -382,7 +382,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        stage->camera.lookAt -= .2f;
+        player->worldPos->x -= .1f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))
