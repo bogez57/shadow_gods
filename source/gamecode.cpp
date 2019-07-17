@@ -286,7 +286,6 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
             childBone->worldPos = WorldTransform_Bone(*childBone->parentLocalPos, *childBone->parentBone);
-            PushRect(global_renderingInfo, childBone->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{1.0f, 0.0f, 0.0f});
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
         };
@@ -300,7 +299,6 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
 
     root->worldPos = fighterWorldPos;
     root->transform.translation = fighterWorldPos;
-    //PushRect(global_renderingInfo, root->worldPos, 0.0f, v2f{1.0f, 1.0f}, v2f{.03f, .03f}, v3f{0.0f, 0.0f, 1.0f});
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 };
