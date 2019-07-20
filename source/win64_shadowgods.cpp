@@ -415,7 +415,7 @@ namespace Win32
     }
 
     local_func void
-    DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight)
+    DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
         b renderThroughHardware{false};
         if(renderThroughHardware)
@@ -424,7 +424,7 @@ namespace Win32
         }
         else
         {
-            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch); 
+            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch, &platformServices); 
 
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
@@ -747,32 +747,51 @@ namespace Win32
 
 struct Work_Queue_Entry
 {
-    char* stringToPrint;
+    platform_work_queue_callback* callback;
+    void* data;
 };
 
-global_variable ui32 volatile entryCompletionCount;
-global_variable ui32 volatile nextEntryToDo;
-global_variable ui32 volatile entryCount;
-Work_Queue_Entry entries[256];
+struct Work_Queue
+{
+    ui32 volatile entryCompletionCount;
+    ui32 volatile nextEntryToDo;
+    ui32 volatile entryCount;
+    Work_Queue_Entry entries[256]; 
+};
 
+global_variable Work_Queue globalWorkQueue;
+
+#if 0
 void PushString(HANDLE semaphoreHandle, char* string)
 {
-    BGZ_ASSERT(entryCount < ArrayCount(entries), "AHHHH");
+    BGZ_ASSERT(globalWorkQueue.entryCount < ArrayCount(globalWorkQueue.entries), "AHHHH");
 
-    Work_Queue_Entry* entry = entries + entryCount;
+    Work_Queue_Entry* entry = globalWorkQueue.entries + globalWorkQueue.entryCount;
     entry->stringToPrint = string;
 
     DontDoWritesBelowUntilWritesAboveAreCompleted;
 
-    ++entryCount;
-
-    ReleaseSemaphore(semaphoreHandle, 1, 0);
+    ++globalWorkQueue.entryCount;
 };
+#endif 
 
 struct Thread_Info
 {
     HANDLE semaphoreHandle;
     i32 logicalThreadIndex;
+};
+
+void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
+{
+    Work_Queue_Entry entry{callback, data};
+    globalWorkQueue.entries[globalWorkQueue.entryCount] = entry;
+    ++globalWorkQueue.entryCount;
+    ReleaseSemaphore(semaphoreHandle, 1, 0);
+};
+
+void FinishAllWork()
+{
+
 };
 
 DWORD WINAPI
@@ -782,14 +801,14 @@ ThreadProc(LPVOID param)
 
     while(1)
     {
-        if(nextEntryToDo < entryCount)
+        if(globalWorkQueue.nextEntryToDo < globalWorkQueue.entryCount)
         {
-            i32 entryIndex = _InterlockedIncrement((LONG volatile*) &nextEntryToDo);
+            i32 entryIndex = _InterlockedIncrement((LONG volatile*) &globalWorkQueue.nextEntryToDo);
             Compiler_DontMoveBelowReadsAboveThisPoint; 
-            Work_Queue_Entry* entry = entries + entryIndex;
+            Work_Queue_Entry* entry = globalWorkQueue.entries + entryIndex;
 
-            BGZ_CONSOLE("Thread %u: %s\n", info->logicalThreadIndex, entry->stringToPrint);
-            _InterlockedIncrement((LONG volatile*) &entryCompletionCount);
+            //BGZ_CONSOLE("Thread %u: %s\n", info->logicalThreadIndex, entry->stringToPrint);
+            _InterlockedIncrement((LONG volatile*) &globalWorkQueue.entryCompletionCount);
         }
         else
         {
@@ -807,8 +826,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     Thread_Info threadInfo[8] = {};
     ui32 threadCount = ArrayCount(threadInfo);
 
-    ui32 initialCount = 0;
-    HANDLE semaphoreHandle = CreateSemaphoreExA(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+    ui32 initialThreadCount = 0;
+    HANDLE semaphoreHandle = CreateSemaphoreExA(0, initialThreadCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
 
     for(i32 threadIndex{}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
     {
@@ -821,6 +840,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         HANDLE myThread = CreateThread(0, 0, ThreadProc, info, 0, &threadID);
     };
 
+#if 0
     PushString(semaphoreHandle, "String 0");
     PushString(semaphoreHandle, "String 1");
     PushString(semaphoreHandle, "String 2");
@@ -831,8 +851,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     PushString(semaphoreHandle, "String 7");
     PushString(semaphoreHandle, "String 8");
     PushString(semaphoreHandle, "String 9");
+#endif
 
-    while(entryCount != entryCompletionCount);
+    while(globalWorkQueue.entryCount != globalWorkQueue.entryCompletionCount);
 
     //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;
@@ -904,6 +925,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.Calloc = &Win32::Dbg::Calloc;
                 platformServices.Realloc = &Win32::Dbg::Realloc;
                 platformServices.Free = &Win32::Dbg::Free;
+                platformServices.AddWorkQueueEntry = &AddToWorkQueue;
             }
 
             ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();
@@ -1073,7 +1095,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 Win32::Window_Dimension dimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
-                Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, dimension.width, dimension.height);
+                Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, dimension.width, dimension.height, platformServices);
                 ReleaseDC(window, deviceContext);
 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();

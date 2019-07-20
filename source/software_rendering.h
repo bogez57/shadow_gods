@@ -2,6 +2,7 @@
 #define SOFTWARE_RENDERING_INCLUDE_H
 
 #include "renderer_stuff.h"
+#include "shared.h"
 
 /*
     TODO:
@@ -736,25 +737,67 @@ void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea)
     //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
-void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch)
+struct Screen_Region_Render_Work
 {
-    f32 screenRegionCount_x = 4.0f;
-    f32 screenRegionCount_y = 4.0f;
+    Rendering_Info renderingInfo;
+    void* colorBufferData;
+    v2i colorBufferSize;
+    i32 colorBufferPitch;
+    Rectf screenRegionCoords;
+};
 
-    f32 singleScreenRegion_width = colorBufferSize.width / screenRegionCount_x;
-    f32 singleScreenRegion_height = colorBufferSize.height / screenRegionCount_y;
+PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
+{
+    Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
 
-    for(ui32 screenRegion_y{}; screenRegion_y < screenRegionCount_y; ++screenRegion_y)
-    {
-        for(ui32 screenRegion_x{}; screenRegion_x < screenRegionCount_x; ++screenRegion_x)
-        {
-            v2f screenRegion_min = v2f{screenRegion_x * singleScreenRegion_width, screenRegion_y * singleScreenRegion_height};
-            v2f screenRegion_max = v2f{screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height};
-            Rectf screenRegionCoords{screenRegion_min, screenRegion_max};
-                               
-            {//Draw region
-                ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
-                Camera2D* camera = &renderingInfo.camera;
+    ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
+    Camera2D* camera = &work->renderingInfo.camera;
+
+                for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+                {
+                    RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
+                    switch(entryHeader->type)
+                    {
+                        case EntryType_Texture:
+                        {
+                            RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+
+                            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+
+                            Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
+
+                            Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
+                            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+
+                            DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+
+                            currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+                        }break;
+
+                        case EntryType_Rect:
+                        {
+                            RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+
+                            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
+
+                            Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
+
+                            Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
+                            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+
+                            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
+                            currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+                        }break;
+
+                        InvalidDefaultCase;
+                    };
+                };
+};
+
+void DrawScreenRegionSingleThreaded(Rendering_Info renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Rectf screenRegionCoords)
+{
+    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
+    Camera2D* camera = &renderingInfo.camera;
 
                 for(i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
                 {
@@ -795,7 +838,39 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
                         InvalidDefaultCase;
                     };
                 };
-            };
+};
+
+struct Platform_Services;
+void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
+{
+    f32 const screenRegionCount_x = 4.0f;
+    f32 const screenRegionCount_y = 4.0f;
+    Array<Screen_Region_Render_Work, (i64)(screenRegionCount_x*screenRegionCount_y)> workArray{};
+
+    f32 singleScreenRegion_width = colorBufferSize.width / screenRegionCount_x;
+    f32 singleScreenRegion_height = colorBufferSize.height / screenRegionCount_y;
+
+    for(ui32 screenRegion_y{}; screenRegion_y < screenRegionCount_y; ++screenRegion_y)
+    {
+        for(ui32 screenRegion_x{}; screenRegion_x < screenRegionCount_x; ++screenRegion_x)
+        {
+            v2f screenRegion_min = v2f{screenRegion_x * singleScreenRegion_width, screenRegion_y * singleScreenRegion_height};
+            v2f screenRegion_max = v2f{screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height};
+            Rectf screenRegionCoords{screenRegion_min, screenRegion_max};
+
+            Screen_Region_Render_Work* renderWork = &workArray.At(screenRegion_x + screenRegion_y);
+
+            renderWork->renderingInfo = renderingInfo;
+            renderWork->colorBufferData = colorBufferData;
+            renderWork->colorBufferSize = colorBufferSize;
+            renderWork->colorBufferPitch = colorBufferPitch;
+            renderWork->screenRegionCoords = screenRegionCoords;
+
+#if 0
+            platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
+#else
+            DrawScreenRegionSingleThreaded(renderingInfo, colorBufferData, colorBufferSize, colorBufferPitch, screenRegionCoords);
+#endif
         };
     };
 

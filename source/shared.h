@@ -83,11 +83,15 @@ struct Platform_Services
     void* (*Calloc)(sizet, sizet);
     void* (*Realloc)(void*, sizet);
     void (*Free)(void*);
+    void (*AddWorkQueueEntry)(void);
     b DLLJustReloaded { false };
     f32 prevFrameTimeInSecs {};
     f32 targetFrameTimeInSecs {};
     f32 realLifeTimeInSecs {};
 };
+
+#define PLATFORM_WORK_QUEUE_CALLBACK(name) void name(void *data)
+typedef PLATFORM_WORK_QUEUE_CALLBACK(platform_work_queue_callback);
 
 enum ChannelType
 {
