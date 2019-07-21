@@ -73,6 +73,9 @@ struct Game_Offscreen_Buffer
     i32 pitch;
 };
 
+#define PLATFORM_WORK_QUEUE_CALLBACK(name) void name(void *data)
+typedef PLATFORM_WORK_QUEUE_CALLBACK(platform_work_queue_callback);
+
 struct Platform_Services
 {
     char* (*ReadEntireFile)(i32&&, const char*);
@@ -83,15 +86,13 @@ struct Platform_Services
     void* (*Calloc)(sizet, sizet);
     void* (*Realloc)(void*, sizet);
     void (*Free)(void*);
-    void (*AddWorkQueueEntry)(void);
+    void (*AddWorkQueueEntry)(platform_work_queue_callback, void*);
+    void (*FinishAllWork)(void);
     b DLLJustReloaded { false };
     f32 prevFrameTimeInSecs {};
     f32 targetFrameTimeInSecs {};
     f32 realLifeTimeInSecs {};
 };
-
-#define PLATFORM_WORK_QUEUE_CALLBACK(name) void name(void *data)
-typedef PLATFORM_WORK_QUEUE_CALLBACK(platform_work_queue_callback);
 
 enum ChannelType
 {

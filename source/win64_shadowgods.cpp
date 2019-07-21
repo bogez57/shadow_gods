@@ -753,6 +753,7 @@ struct Work_Queue_Entry
 
 struct Work_Queue
 {
+    HANDLE semaphoreHandle;
     ui32 volatile entryCompletionCount;
     ui32 volatile nextEntryToDo;
     ui32 volatile entryCount;
@@ -777,7 +778,6 @@ void PushString(HANDLE semaphoreHandle, char* string)
 
 struct Thread_Info
 {
-    HANDLE semaphoreHandle;
     i32 logicalThreadIndex;
 };
 
@@ -786,12 +786,49 @@ void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
     Work_Queue_Entry entry{callback, data};
     globalWorkQueue.entries[globalWorkQueue.entryCount] = entry;
     ++globalWorkQueue.entryCount;
-    ReleaseSemaphore(semaphoreHandle, 1, 0);
+    ReleaseSemaphore(globalWorkQueue.semaphoreHandle, 1, 0);
 };
 
+b DoWork();
 void FinishAllWork()
 {
+    while(globalWorkQueue.entryCount != globalWorkQueue.entryCompletionCount)
+    {
+        DoWork();
+    };
 
+    globalWorkQueue.entryCount = 0;
+    globalWorkQueue.entryCompletionCount = 0;
+    globalWorkQueue.nextEntryToDo = 0;
+};
+
+b DoWork()
+{
+    b isThereStillWork{};
+
+    ui32 originalNextEntryToDo = globalWorkQueue.nextEntryToDo;
+    if(globalWorkQueue.nextEntryToDo < globalWorkQueue.entryCount)
+    {
+        i32 entryIndex = _InterlockedCompareExchange((LONG volatile*) &globalWorkQueue.nextEntryToDo, originalNextEntryToDo + 1, originalNextEntryToDo);
+        Compiler_DontMoveBelowReadsAboveThisPoint; 
+
+        if(entryIndex == originalNextEntryToDo)
+        {
+            Work_Queue_Entry entry = globalWorkQueue.entries[entryIndex];
+            entry.callback(entry.data);
+            _InterlockedIncrement((LONG volatile*) &globalWorkQueue.entryCompletionCount);
+        };
+
+        //BGZ_CONSOLE("Thread %u: %s\n", info->logicalThreadIndex, entry->stringToPrint);
+
+        isThereStillWork = true;
+    }
+    else
+    {
+        isThereStillWork = false;
+    }
+
+    return isThereStillWork;
 };
 
 DWORD WINAPI
@@ -801,19 +838,14 @@ ThreadProc(LPVOID param)
 
     while(1)
     {
-        if(globalWorkQueue.nextEntryToDo < globalWorkQueue.entryCount)
+        if(DoWork()) 
         {
-            i32 entryIndex = _InterlockedIncrement((LONG volatile*) &globalWorkQueue.nextEntryToDo);
-            Compiler_DontMoveBelowReadsAboveThisPoint; 
-            Work_Queue_Entry* entry = globalWorkQueue.entries + entryIndex;
-
-            //BGZ_CONSOLE("Thread %u: %s\n", info->logicalThreadIndex, entry->stringToPrint);
-            _InterlockedIncrement((LONG volatile*) &globalWorkQueue.entryCompletionCount);
+            //Keep doing work
         }
         else
         {
-            WaitForSingleObjectEx(info->semaphoreHandle, INFINITE, FALSE);
-        };
+            WaitForSingleObjectEx(globalWorkQueue.semaphoreHandle, INFINITE, FALSE);
+        }
     };
 
     return 0;
@@ -827,13 +859,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     ui32 threadCount = ArrayCount(threadInfo);
 
     ui32 initialThreadCount = 0;
-    HANDLE semaphoreHandle = CreateSemaphoreExA(0, initialThreadCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+    globalWorkQueue.semaphoreHandle = CreateSemaphoreExA(0, initialThreadCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
 
     for(i32 threadIndex{}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
     {
 
         Thread_Info* info = threadInfo + threadIndex;
-        info->semaphoreHandle = semaphoreHandle;
         info->logicalThreadIndex = threadIndex;
 
         DWORD threadID;
@@ -852,8 +883,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     PushString(semaphoreHandle, "String 8");
     PushString(semaphoreHandle, "String 9");
 #endif
-
-    while(globalWorkQueue.entryCount != globalWorkQueue.entryCompletionCount);
 
     //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;
@@ -926,6 +955,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.Realloc = &Win32::Dbg::Realloc;
                 platformServices.Free = &Win32::Dbg::Free;
                 platformServices.AddWorkQueueEntry = &AddToWorkQueue;
+                platformServices.FinishAllWork = &FinishAllWork;
             }
 
             ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();

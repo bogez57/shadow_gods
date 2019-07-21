@@ -866,13 +866,15 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             renderWork->colorBufferPitch = colorBufferPitch;
             renderWork->screenRegionCoords = screenRegionCoords;
 
-#if 0
+#if 1
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else
             DrawScreenRegionSingleThreaded(renderingInfo, colorBufferData, colorBufferSize, colorBufferPitch, screenRegionCoords);
 #endif
         };
     };
+
+    platformServices->FinishAllWork();
 
     renderingInfo.cmdBuffer.entryCount = 0; 
 };
