@@ -840,6 +840,54 @@ void DrawScreenRegionSingleThreaded(Rendering_Info renderingInfo, void* colorBuf
                 };
 };
 
+void DoRenderWork(void* data)
+{
+    Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
+
+    ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
+    Camera2D* camera = &work->renderingInfo.camera;
+
+                for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+                {
+                    RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
+                    switch(entryHeader->type)
+                    {
+                        case EntryType_Texture:
+                        {
+                            RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+
+                            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+
+                            Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
+
+                            Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
+                            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+
+                            DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+
+                            currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+                        }break;
+
+                        case EntryType_Rect:
+                        {
+                            RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+
+                            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
+
+                            Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
+
+                            Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
+                            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+
+                            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
+                            currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+                        }break;
+
+                        InvalidDefaultCase;
+                    };
+                };
+};
+
 struct Platform_Services;
 void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
 {
@@ -869,7 +917,12 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
 #if 1
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else
-            DrawScreenRegionSingleThreaded(renderingInfo, colorBufferData, colorBufferSize, colorBufferPitch, screenRegionCoords);
+            //DrawScreenRegionSingleThreaded(renderingInfo, colorBufferData, colorBufferSize, colorBufferPitch, screenRegionCoords);
+            for(i32 workIndex{}; workIndex < workArray.Size(); ++workIndex)
+            {
+                Screen_Region_Render_Work* work = &workArray.At(workIndex);
+                DoRenderWork(work);
+            };
 #endif
         };
     };

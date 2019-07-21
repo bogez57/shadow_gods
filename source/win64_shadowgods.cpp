@@ -785,6 +785,8 @@ void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
 {
     Work_Queue_Entry entry{callback, data};
     globalWorkQueue.entries[globalWorkQueue.entryCount] = entry;
+    _WriteBarrier();
+    _mm_sfence();
     ++globalWorkQueue.entryCount;
     ReleaseSemaphore(globalWorkQueue.semaphoreHandle, 1, 0);
 };
@@ -855,7 +857,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 {
     Win32::Dbg::UseConsole();
 
-    Thread_Info threadInfo[8] = {};
+    Thread_Info threadInfo[4] = {};
     ui32 threadCount = ArrayCount(threadInfo);
 
     ui32 initialThreadCount = 0;
