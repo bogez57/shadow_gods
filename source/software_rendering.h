@@ -893,6 +893,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
 {
     f32 const screenRegionCount_x = 4.0f;
     f32 const screenRegionCount_y = 4.0f;
+    i32 workIndex{};
     Array<Screen_Region_Render_Work, (i64)(screenRegionCount_x*screenRegionCount_y)> workArray{};
 
     f32 singleScreenRegion_width = colorBufferSize.width / screenRegionCount_x;
@@ -906,7 +907,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             v2f screenRegion_max = v2f{screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height};
             Rectf screenRegionCoords{screenRegion_min, screenRegion_max};
 
-            Screen_Region_Render_Work* renderWork = &workArray.At(screenRegion_x + screenRegion_y);
+            Screen_Region_Render_Work* renderWork = &workArray.At(workIndex++);
 
             renderWork->renderingInfo = renderingInfo;
             renderWork->colorBufferData = colorBufferData;
@@ -918,14 +919,18 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else
             //DrawScreenRegionSingleThreaded(renderingInfo, colorBufferData, colorBufferSize, colorBufferPitch, screenRegionCoords);
-            for(i32 workIndex{}; workIndex < workArray.Size(); ++workIndex)
-            {
-                Screen_Region_Render_Work* work = &workArray.At(workIndex);
-                DoRenderWork(work);
-            };
+            
 #endif
         };
     };
+
+/*
+    for(i32 workIndex{}; workIndex < workArray.Size(); ++workIndex)
+    {
+        Screen_Region_Render_Work* work = &workArray.At(workIndex);
+        DoRenderWork(work);
+    };
+    */
 
     platformServices->FinishAllWork();
 
