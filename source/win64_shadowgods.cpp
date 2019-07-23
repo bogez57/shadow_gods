@@ -754,27 +754,14 @@ struct Work_Queue_Entry
 struct Work_Queue
 {
     HANDLE semaphoreHandle;
+    ui32 volatile entryCompletionGoal;
     ui32 volatile entryCompletionCount;
-    ui32 volatile nextEntryToDo;
-    ui32 volatile entryCount;
+    ui32 volatile nextEntryToWrite;
+    ui32 volatile nextEntryToRead;
     Work_Queue_Entry entries[256]; 
 };
 
 global_variable Work_Queue globalWorkQueue;
-
-#if 0
-void PushString(HANDLE semaphoreHandle, char* string)
-{
-    BGZ_ASSERT(globalWorkQueue.entryCount < ArrayCount(globalWorkQueue.entries), "AHHHH");
-
-    Work_Queue_Entry* entry = globalWorkQueue.entries + globalWorkQueue.entryCount;
-    entry->stringToPrint = string;
-
-    DontDoWritesBelowUntilWritesAboveAreCompleted;
-
-    ++globalWorkQueue.entryCount;
-};
-#endif 
 
 struct Thread_Info
 {
@@ -783,38 +770,44 @@ struct Thread_Info
 
 void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
 {
+    ui32 newNextEntryToWrite = (globalWorkQueue.nextEntryToWrite + 1) % ArrayCount(globalWorkQueue.entries);
+    Assert(newNextEntryToWrite != globalWorkQueue.nextEntryToRead);
+
     Work_Queue_Entry entry{callback, data};
-    globalWorkQueue.entries[globalWorkQueue.entryCount] = entry;
+    globalWorkQueue.entries[globalWorkQueue.nextEntryToWrite] = entry;
+    ++globalWorkQueue.entryCompletionGoal;
+
     _WriteBarrier();
     _mm_sfence();
-    ++globalWorkQueue.entryCount;
+
+    ++globalWorkQueue.nextEntryToWrite = newNextEntryToWrite;
     ReleaseSemaphore(globalWorkQueue.semaphoreHandle, 1, 0);
 };
 
 b DoWork();
 void FinishAllWork()
 {
-    while(globalWorkQueue.entryCount != globalWorkQueue.entryCompletionCount)
+    while(globalWorkQueue.entryCompletionGoal != globalWorkQueue.entryCompletionCount)
     {
         DoWork();
     };
 
-    globalWorkQueue.entryCount = 0;
     globalWorkQueue.entryCompletionCount = 0;
-    globalWorkQueue.nextEntryToDo = 0;
+    globalWorkQueue.entryCompletionGoal = 0;
 };
 
 b DoWork()
 {
     b isThereStillWork{};
 
-    ui32 originalNextEntryToDo = globalWorkQueue.nextEntryToDo;
-    if(globalWorkQueue.nextEntryToDo < globalWorkQueue.entryCount)
+    ui32 originalNextEntryToRead = globalWorkQueue.nextEntryToRead;
+    ui32 newNextEntryToRead = (originalNextEntryToRead + 1) % ArrayCount(globalWorkQueue.entries);
+    if(originalNextEntryToRead != globalWorkQueue.nextEntryToWrite)
     {
-        i32 entryIndex = _InterlockedCompareExchange((LONG volatile*) &globalWorkQueue.nextEntryToDo, originalNextEntryToDo + 1, originalNextEntryToDo);
+        i32 entryIndex = _InterlockedCompareExchange((LONG volatile*) &globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
         Compiler_DontMoveBelowReadsAboveThisPoint; 
 
-        if(entryIndex == originalNextEntryToDo)
+        if(entryIndex == originalNextEntryToRead)
         {
             Work_Queue_Entry entry = globalWorkQueue.entries[entryIndex];
             entry.callback(entry.data);
