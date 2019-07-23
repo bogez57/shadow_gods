@@ -746,6 +746,7 @@ struct Screen_Region_Render_Work
     Rectf screenRegionCoords;
 };
 
+//Multi-threaded
 PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 {
     Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
@@ -794,52 +795,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
                 };
 };
 
-void DrawScreenRegionSingleThreaded(Rendering_Info renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Rectf screenRegionCoords)
-{
-    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &renderingInfo.camera;
-
-                for(i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
-                {
-                    RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
-                    switch(entryHeader->type)
-                    {
-                        case EntryType_Texture:
-                        {
-                            RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
-
-                            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
-
-                            Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
-
-                            Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
-                            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
-
-                            DrawTextureQuickly((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, screenRegionCoords);
-
-                            currentRenderBufferEntry += sizeof(RenderEntry_Texture);
-                        }break;
-
-                        case EntryType_Rect:
-                        {
-                            RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
-
-                            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
-
-                            Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
-
-                            Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
-                            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
-
-                            DrawRectangle((ui32*)colorBufferData, colorBufferSize, colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, screenRegionCoords);
-                            currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-                        }break;
-
-                        InvalidDefaultCase;
-                    };
-                };
-};
-
+//Single Threaded
 void DoRenderWork(void* data)
 {
     Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
@@ -891,8 +847,8 @@ void DoRenderWork(void* data)
 struct Platform_Services;
 void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
 {
-    f32 const screenRegionCount_x = 4.0f;
-    f32 const screenRegionCount_y = 4.0f;
+    f32 const screenRegionCount_x = 5.0f;
+    f32 const screenRegionCount_y = 5.0f;
     i32 workIndex{};
     Array<Screen_Region_Render_Work, (i64)(screenRegionCount_x*screenRegionCount_y)> workArray{};
 
@@ -907,7 +863,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             v2f screenRegion_max = v2f{screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height};
             Rectf screenRegionCoords{screenRegion_min, screenRegion_max};
 
-            Screen_Region_Render_Work* renderWork = &workArray.At(workIndex++);
+            Screen_Region_Render_Work* renderWork = &workArray.At(workIndex);
 
             renderWork->renderingInfo = renderingInfo;
             renderWork->colorBufferData = colorBufferData;
@@ -915,22 +871,16 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             renderWork->colorBufferPitch = colorBufferPitch;
             renderWork->screenRegionCoords = screenRegionCoords;
 
-#if 1
+#if 1 //Multi-Threaded
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
-#else
-            //DrawScreenRegionSingleThreaded(renderingInfo, colorBufferData, colorBufferSize, colorBufferPitch, screenRegionCoords);
-            
+#else //Single Threaded
+            Screen_Region_Render_Work* work = &workArray.At(workIndex);
+            DoRenderWork(work);
 #endif
+
+            workIndex++;
         };
     };
-
-/*
-    for(i32 workIndex{}; workIndex < workArray.Size(); ++workIndex)
-    {
-        Screen_Region_Render_Work* work = &workArray.At(workIndex);
-        DoRenderWork(work);
-    };
-    */
 
     platformServices->FinishAllWork();
 

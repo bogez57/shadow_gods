@@ -857,7 +857,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 {
     Win32::Dbg::UseConsole();
 
-    Thread_Info threadInfo[4] = {};
+    Thread_Info threadInfo[8] = {};
     ui32 threadCount = ArrayCount(threadInfo);
 
     ui32 initialThreadCount = 0;
