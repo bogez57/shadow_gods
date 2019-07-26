@@ -366,8 +366,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         //Player Init
-        v2f playerWorldPos = {(stage->size.width/2.0f) - 2.0f, 1.0f};
-        v2f enemyWorldPos = {(stage->size.width/2.0f) + 2.0f, 1.0f};
+        v2f playerWorldPos = {(stage->size.width/2.0f) - 2.0f, 3.0f};
+        v2f enemyWorldPos = {(stage->size.width/2.0f) + 2.0f, 3.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/2.0f);
         InitFighter($(*enemy), "data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/2.0f);
     };
@@ -380,17 +380,22 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos->x -= .1f;
+        player->worldPos->x += .1f;
     };
 
     if(KeyHeld(keyboard->MoveLeft))
     {
-        *player->skel.bones.At(2).parentLocalRotation += .02f;
+        player->worldPos->x -= .1f;
     }
 
     if(KeyHeld(keyboard->MoveUp))
     {
         stage->camera.zoomFactor += .02f;
+    };
+
+    if(KeyHeld(keyboard->MoveDown))
+    {
+        stage->camera.zoomFactor -= .02f;
     };
 
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);

@@ -847,8 +847,8 @@ void DoRenderWork(void* data)
 struct Platform_Services;
 void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
 {
-    f32 const screenRegionCount_x = 5.0f;
-    f32 const screenRegionCount_y = 5.0f;
+    f32 const screenRegionCount_x = 8.0f;
+    f32 const screenRegionCount_y = 8.0f;
     i32 workIndex{};
     Array<Screen_Region_Render_Work, (i64)(screenRegionCount_x*screenRegionCount_y)> workArray{};
 
