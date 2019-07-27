@@ -442,9 +442,8 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
 
                 *(__m256i*)destPixel = maskedOut;
             };
-#endif
 
-#if __AVX__
+#elif __AVX__
             {//Convert and Pack into dest pixels to write out
                 __m256i finalBlendedColori_r = _mm256_cvtps_epi32(finalBlendedColor_r);
                 __m256i finalBlendedColori_g = _mm256_cvtps_epi32(finalBlendedColor_g);
@@ -871,7 +870,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             renderWork->colorBufferPitch = colorBufferPitch;
             renderWork->screenRegionCoords = screenRegionCoords;
 
-#if 1 //Multi-Threaded
+#if 0 //Multi-Threaded
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else //Single Threaded
             Screen_Region_Render_Work* work = &workArray.At(workIndex);
