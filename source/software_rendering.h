@@ -264,10 +264,12 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    //Align to 32-byte boundry for SIMD code since
-    if((xMin % 32) != 0)
+    i32 simdWidth_inBytes = 8;
+
+    //Align to 8-byte boundry 
+    if((xMin % simdWidth_inBytes) != 0)
     {
-        xMin = (i32)RoundDown((sizet)xMin, 32);
+        xMin = (i32)RoundDown((sizet)xMin, simdWidth_inBytes);
     };
 
     //Pre calcuations for optimization
@@ -278,11 +280,12 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
     v2f normalizedXAxis = invertedXAxisSqd * targetRectXAxis;
     v2f normalizedYAxis = invertedYAxisSqd * targetRectYAxis;
 
-    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
+    i32 sizeOfPixel_inBytes = 4;
+    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * sizeOfPixel_inBytes + (i32)yMin * colorBufferPitch; 
     for(i32 screenY = yMin; screenY < yMax; ++screenY)
     {
         ui32* destPixel = (ui32*)currentRow;
-        for(i32 screenX = xMin; screenX < xMax; screenX += 8)
+        for(i32 screenX = xMin; screenX < xMax; screenX += simdWidth_inBytes)
         {            
             //Initial setup variables for SIMD code
             __m256 one = _mm256_set1_ps(1.0f);
@@ -322,10 +325,10 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
 
             //See how much final 8 pixel wide dest buffer will expand past the max boundry of screen region (if at all)
             //and adjust it
-            if(screenX > ((i32)widthMax - 8))
+            if(screenX > ((i32)widthMax - simdWidth_inBytes))
             {
                 i32 diff = (i32)widthMax - (i32)screenX;
-                i32 amountOfScreenOverflow = 8 - diff;
+                i32 amountOfScreenOverflow = simdWidth_inBytes - diff;
 
                 i32 index{7};
                 while(amountOfScreenOverflow)
@@ -891,6 +894,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
 {
     BGZ_ASSERT(((uintptr)colorBufferData & 63) == 0, "Color buffer memory coming in not aligned to 32 byte boundry!");
 
+    //TODO: If these numbers change then you might need to think about aligning your regions to 8 byte boundarys 
     f32 const screenRegionCount_x = 8.0f;
     f32 const screenRegionCount_y = 8.0f;
     i32 workIndex{};

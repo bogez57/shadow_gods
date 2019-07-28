@@ -33,6 +33,8 @@ typedef double f64;
 #define $(var) std::move(var) //Use this for compiler enforced out parameter
 #define NOT !
 
+#define Align16(Value) ((Value + 15) & ~15)
+
 struct v2f
 {
     v2f() = default;
