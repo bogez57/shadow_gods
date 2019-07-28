@@ -404,7 +404,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateSkeletonBoneWorldPositions($(enemy->skel), *enemy->worldPos);
 
     Array<v2f, 2> uvs = {v2f{0.0f, 0.0f}, v2f{1.0f, 1.0f}};
-    PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{stage->size.width/2.0f, stage->size.height/2.0f}, v2f{1.0f, 1.0f}, uvs);
+    PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{stage->size.width/2.0f, stage->size.height/2.0f}, v2f{1.0f, 1.0f}, uvs, "background");
 
     auto DrawFighter = [](Fighter fighter) -> void
     {//Push images to renderer 
@@ -419,7 +419,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             f32 worldRotationOfBone = WorldRotation_Bone(*currentSlot->bone);
             f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + worldRotationOfBone;
 
-            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, worldRotationOfImage, worldPosOfImage, fighter.world.scale, uvs2);
+            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{currentSlot->regionAttachment.width, currentSlot->regionAttachment.height}, worldRotationOfImage, worldPosOfImage, fighter.world.scale, uvs2, region->name);
         };
     };
 

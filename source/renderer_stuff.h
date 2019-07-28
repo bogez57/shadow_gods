@@ -130,6 +130,7 @@ struct RenderEntry_Rect
 struct RenderEntry_Texture
 {
     RenderEntry_Header header;
+    const char* name;
     Object_Transform world;
     ui8* colorData;
     v2i size;
@@ -144,8 +145,8 @@ f32 BitmapWidth_meters(Image bitmap);
 v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
-void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 objectHeight_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale);
-void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, v2f objectSize_meters, f32 worldRotation, v2f worldPos, v2f worldScale);
+void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 objectHeight_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale, const char* name);
+void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, v2f objectSize_meters, f32 worldRotation, v2f worldPos, v2f worldScale, const char* name);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenDims, f32 zoomFactor);
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
@@ -203,7 +204,7 @@ void PushRect(Rendering_Info* renderingInfo, v2f worldPos, f32 rotation, v2f sca
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs)
+void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs, const char* name)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
@@ -211,6 +212,7 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_met
     f32 desiredHeight_pixels = objectSize_meters.height * renderingInfo->pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
+    textureEntry->name = name;
     textureEntry->world.rotation = rotation;
     textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter;
     textureEntry->world.scale = scale;
@@ -226,7 +228,7 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_met
 
 //TODO: Consider not having overloaded function here? The reason this is here is to support current 
 //skeleton drawing with regions 
-void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs)
+void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_meters, f32 rotation, v2f pos, v2f scale, Array<v2f, 2> uvs, const char* name)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
@@ -234,6 +236,7 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     f32 desiredHeight_pixels = objectHeight_meters * renderingInfo->pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
+    textureEntry->name = name;
     textureEntry->world.rotation = rotation;
     textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter;
     textureEntry->world.scale = scale;

@@ -2,6 +2,7 @@
 #define SOFTWARE_RENDERING_INCLUDE_H
 
 #include "renderer_stuff.h"
+#include <string.h>
 #include "shared.h"
 
 /*
@@ -440,7 +441,15 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 __m256i maskedOut = _mm256_or_si256(_mm256_and_si256(writeMask, out),
                                                 _mm256_andnot_si256(writeMask, backGroundPixels));
 
-                *(__m256i*)destPixel = maskedOut;
+
+                if(screenX > 1270)
+                {
+                    *(__m256i*)destPixel = backGroundPixels;
+                }
+                else
+                {
+                    *(__m256i*)destPixel = maskedOut;
+                };
             };
 
 #elif __AVX__
@@ -811,6 +820,11 @@ void DoRenderWork(void* data)
                         {
                             RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
+                            if(!strcmp(textureEntry.name, "left-hand") && (work->screenRegionCoords.min.x > 1000.0f))
+                            {
+                                int x {4};
+                            };
+
                             ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
                             Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
@@ -870,7 +884,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             renderWork->colorBufferPitch = colorBufferPitch;
             renderWork->screenRegionCoords = screenRegionCoords;
 
-#if 0 //Multi-Threaded
+#if 1 //Multi-Threaded
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else //Single Threaded
             Screen_Region_Render_Work* work = &workArray.At(workIndex);
