@@ -314,9 +314,11 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
 
             __m256i clipMask = _mm256_set1_epi32(0xFFFFFFFF);
 
-            if(screenX > (colorBufferSize.x - 8))
+            //See how much final 8 pixel wide dest buffer will expand past the max boundry of screen region (if at all)
+            //and adjust it
+            if(screenX > ((i32)widthMax - 8))
             {
-                i32 diff = colorBufferSize.x - (i32)screenX;
+                i32 diff = (i32)widthMax - (i32)screenX;
                 i32 amountOfScreenOverflow = 8 - diff;
 
                 i32 index{7};
@@ -495,6 +497,8 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 __m128i backgroundPixelSet2_a = _mm256_extractf128_si256(backgroundColorsi_a, 1);
                 __m128i writeMaskSet1 = _mm256_extractf128_si256(writeMask, 0);
                 __m128i writeMaskSet2 = _mm256_extractf128_si256(writeMask, 1);
+                __m128i clipMaskSet1 = _mm256_extractf128_si256(clipMask, 0);
+                __m128i clipMaskSet2 = _mm256_extractf128_si256(clipMask, 1);
 
                 //Move pixels (through bitwise operations and shifting) from RRRR GGGG ... format to expected BGRA format
                 __m128i pixels1Through4 = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(pixelSet1_r, 16), _mm_slli_epi32(pixelSet1_g, 8)), pixelSet1_b), _mm_slli_epi32(pixelSet1_a, 24));
@@ -505,13 +509,21 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 //Use write mask in order to correctly fill 8 wide pixel lane (properly writing either the texel color or 
                 //the background color)
                 __m128i maskedOutSet1 = _mm_or_si128(_mm_and_si128(writeMaskSet1, pixels1Through4),
-                                                    _mm_andnot_si128(writeMaskSet1, backgroundPixels1Through4));
+                                                     _mm_andnot_si128(writeMaskSet1, backgroundPixels1Through4));
+
                 __m128i maskedOutSet2 = _mm_or_si128(_mm_and_si128(writeMaskSet2, pixels5Through8),
-                                                    _mm_andnot_si128(writeMaskSet2, backgroundPixels5Through8));
+                                                     _mm_andnot_si128(writeMaskSet2, backgroundPixels5Through8));
+
+                maskedOutSet1 = _mm_or_si128(_mm_and_si128(clipMaskSet1, maskedOutSet1),
+                                             _mm_andnot_si128(clipMaskSet1, *(__m128i*)destPixel));
+
+                maskedOutSet2 = _mm_or_si128(_mm_and_si128(clipMaskSet2, maskedOutSet2),
+                                             _mm_andnot_si128(clipMaskSet2, _mm256_extractf128_si256(*(__m256i*)destPixel, 1)));
 
                 //Pack 128 bit pixel values back into 256 bit values to write out
                 __m256i maskedOut = _mm256_castsi128_si256(maskedOutSet1);
                 maskedOut = _mm256_insertf128_si256(maskedOut, maskedOutSet2, 1);
+
 
                 *(__m256i*)destPixel = maskedOut;
             };
