@@ -889,7 +889,7 @@ void DoRenderWork(void* data)
 struct Platform_Services;
 void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
 {
-    BGZ_ASSERT(((uintptr)colorBufferData & 15) == 0, "Color buffer memory coming in not aligned to 4 byte boundry!");
+    BGZ_ASSERT(((uintptr)colorBufferData & 63) == 0, "Color buffer memory coming in not aligned to 32 byte boundry!");
 
     f32 const screenRegionCount_x = 8.0f;
     f32 const screenRegionCount_y = 8.0f;
