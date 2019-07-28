@@ -234,13 +234,13 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
     v2f targetRectXAxis = cameraCoords.bottomRight - origin;
     v2f targetRectYAxis = cameraCoords.topLeft - origin;
 
-    f32 widthMax = clipRect.max.x;
-    f32 heightMax = clipRect.max.y;
+    i32 widthMax = (i32)clipRect.max.x;
+    i32 heightMax = (i32)clipRect.max.y;
     
-    f32 xMin = widthMax;
-    f32 xMax = clipRect.min.x;
-    f32 yMin = heightMax;
-    f32 yMax = clipRect.min.y;
+    i32 xMin = widthMax;
+    i32 xMax = (i32)clipRect.min.x;
+    i32 yMin = heightMax;
+    i32 yMax = (i32)clipRect.min.y;
 
     {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
         Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
@@ -252,16 +252,21 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
             i32 flooredY= FloorF32ToI32(testVec.y);
             i32 ceiledY = CeilF32ToI32(testVec.y);
 
-            if(xMin > flooredX) {xMin = (f32)flooredX;}
-            if(yMin > flooredY) {yMin = (f32)flooredY;}
-            if(xMax < ceiledX) {xMax = (f32)ceiledX;}
-            if(yMax < ceiledY) {yMax = (f32)ceiledY;}
+            if(xMin > flooredX) {xMin = flooredX;}
+            if(yMin > flooredY) {yMin = flooredY;}
+            if(xMax < ceiledX) {xMax = ceiledX;}
+            if(yMax < ceiledY) {yMax = ceiledY;}
         }
 
-        if(xMin < clipRect.min.x) {xMin = clipRect.min.x;}
-        if(yMin < clipRect.min.y) {yMin = clipRect.min.y;}
+        if(xMin < (i32)clipRect.min.x) {xMin = (i32)clipRect.min.x;}
+        if(yMin < clipRect.min.y) {yMin = (i32)clipRect.min.y;}
         if(xMax > widthMax) {xMax = widthMax;}
         if(yMax > heightMax) {yMax = heightMax;}
+    };
+
+    if((xMin % 4) != 0)
+    {
+        xMin = (i32)RoundDown((sizet)xMin, 4);
     };
 
     //Pre calcuations for optimization
@@ -273,10 +278,10 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
     v2f normalizedYAxis = invertedYAxisSqd * targetRectYAxis;
 
     ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4+ (i32)yMin * colorBufferPitch; 
-    for(f32 screenY = yMin; screenY < yMax; ++screenY)
+    for(i32 screenY = yMin; screenY < yMax; ++screenY)
     {
         ui32* destPixel = (ui32*)currentRow;
-        for(f32 screenX = xMin; screenX < xMax; screenX += 8)
+        for(i32 screenX = xMin; screenX < xMax; screenX += 8)
         {            
             //Initial setup variables for SIMD code
             __m256 one = _mm256_set1_ps(1.0f);
@@ -290,8 +295,8 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
             __m256 targetRectOrigin_x = _mm256_set1_ps(origin.x);
             __m256 targetRectOrigin_y = _mm256_set1_ps(origin.y);
 
-            __m256 screenPixelCoords_x = _mm256_set_ps(screenX + 7, screenX + 6, screenX + 5, screenX + 4, screenX + 3, screenX + 2, screenX + 1, screenX + 0);
-            __m256 screenPixelCoords_y = _mm256_set1_ps(screenY);
+            __m256 screenPixelCoords_x = _mm256_set_ps((f32)(screenX + 7), (f32)(screenX + 6), (f32)(screenX + 5), (f32)(screenX + 4), (f32)(screenX + 3), (f32)(screenX + 2), (f32)(screenX + 1), (f32)(screenX + 0));
+            __m256 screenPixelCoords_y = _mm256_set1_ps((f32)screenY);
             
             __m256 uvRangeForTexture_u = _mm256_set1_ps(image.uvBounds.At(1).u - image.uvBounds.At(0).u);
             __m256 uvRangeForTexture_v = _mm256_set1_ps(image.uvBounds.At(1).v - image.uvBounds.At(0).v);
@@ -883,6 +888,8 @@ void DoRenderWork(void* data)
 struct Platform_Services;
 void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
 {
+    BGZ_ASSERT(((uintptr)colorBufferData & 15) == 0, "Color buffer memory coming in not aligned to 4 byte boundry!");
+
     f32 const screenRegionCount_x = 8.0f;
     f32 const screenRegionCount_y = 8.0f;
     i32 workIndex{};
