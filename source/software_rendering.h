@@ -264,9 +264,10 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
         if(yMax > heightMax) {yMax = heightMax;}
     };
 
-    if((xMin % 4) != 0)
+    //Align to 32-byte boundry for SIMD code since
+    if((xMin % 32) != 0)
     {
-        xMin = (i32)RoundDown((sizet)xMin, 4);
+        xMin = (i32)RoundDown((sizet)xMin, 32);
     };
 
     //Pre calcuations for optimization
