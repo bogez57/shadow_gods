@@ -312,6 +312,22 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                                                                   _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
                                                                                 _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
 
+            __m256i clipMask = _mm256_set1_epi32(0xFFFFFFFF);
+
+            if(screenX > (colorBufferSize.x - 8))
+            {
+                i32 diff = colorBufferSize.x - (i32)screenX;
+                i32 amountOfScreenOverflow = 8 - diff;
+
+                i32 index{7};
+                while(amountOfScreenOverflow)
+                {
+                    clipMask.m256i_u32[index] = 0;
+                    index -= 1;
+                    --amountOfScreenOverflow;
+                };
+            };
+
             //Clamp UVs to prevent accessing memory that is invalid 
             Us = _mm256_min_ps(_mm256_max_ps(Us, zero), one);
             Vs = _mm256_min_ps(_mm256_max_ps(Vs, zero), one);
@@ -439,17 +455,12 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 //Use write mask in order to correctly fill 8 wide pixel lane (properly writing either the texel color or 
                 //the background color)
                 __m256i maskedOut = _mm256_or_si256(_mm256_and_si256(writeMask, out),
-                                                _mm256_andnot_si256(writeMask, backGroundPixels));
+                                                    _mm256_andnot_si256(writeMask, backGroundPixels));
 
+                maskedOut = _mm256_or_si256(_mm256_and_si256(clipMask, maskedOut),
+                                            _mm256_andnot_si256(clipMask, *(__m256i*)destPixel));
 
-                if(screenX > 1270)
-                {
-                    *(__m256i*)destPixel = backGroundPixels;
-                }
-                else
-                {
-                    *(__m256i*)destPixel = maskedOut;
-                };
+                *(__m256i*)destPixel = maskedOut;
             };
 
 #elif __AVX__
