@@ -742,9 +742,6 @@ namespace Win32
     }
 } // namespace Win32
 
-#define DontDoWritesBelowUntilWritesAboveAreCompleted _WriteBarrier(); _mm_sfence()
-#define Compiler_DontMoveBelowReadsAboveThisPoint _ReadBarrier()
-
 struct Work_Queue_Entry
 {
     platform_work_queue_callback* callback;
@@ -805,7 +802,7 @@ b DoWork()
     if(originalNextEntryToRead != globalWorkQueue.nextEntryToWrite)
     {
         i32 entryIndex = _InterlockedCompareExchange((LONG volatile*) &globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
-        Compiler_DontMoveBelowReadsAboveThisPoint; 
+        _ReadBarrier();
 
         if(entryIndex == originalNextEntryToRead)
         {
@@ -813,8 +810,6 @@ b DoWork()
             entry.callback(entry.data);
             _InterlockedIncrement((LONG volatile*) &globalWorkQueue.entryCompletionCount);
         };
-
-        //BGZ_CONSOLE("Thread %u: %s\n", info->logicalThreadIndex, entry->stringToPrint);
 
         isThereStillWork = true;
     }
@@ -865,19 +860,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         DWORD threadID;
         HANDLE myThread = CreateThread(0, 0, ThreadProc, info, 0, &threadID);
     };
-
-#if 0
-    PushString(semaphoreHandle, "String 0");
-    PushString(semaphoreHandle, "String 1");
-    PushString(semaphoreHandle, "String 2");
-    PushString(semaphoreHandle, "String 3");
-    PushString(semaphoreHandle, "String 4");
-    PushString(semaphoreHandle, "String 5");
-    PushString(semaphoreHandle, "String 6");
-    PushString(semaphoreHandle, "String 7");
-    PushString(semaphoreHandle, "String 8");
-    PushString(semaphoreHandle, "String 9");
-#endif
 
     //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;

@@ -794,45 +794,45 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
 
-                for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
-                {
-                    RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
-                    switch(entryHeader->type)
-                    {
-                        case EntryType_Texture:
-                        {
-                            RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+    for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+    {
+        RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
+        switch(entryHeader->type)
+        {
+            case EntryType_Texture:
+            {
+                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-                            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
-                            Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
+                Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
-                            Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
-                            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+                Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
+                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                            DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+                DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
-                            currentRenderBufferEntry += sizeof(RenderEntry_Texture);
-                        }break;
+                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+            }break;
 
-                        case EntryType_Rect:
-                        {
-                            RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+            case EntryType_Rect:
+            {
+                RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
-                            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
+                ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
 
-                            Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
+                Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
 
-                            Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
-                            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+                Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
+                Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
 
-                            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
-                            currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-                        }break;
+                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
+                currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+            }break;
 
-                        InvalidDefaultCase;
-                    };
-                };
+            InvalidDefaultCase;
+        };
+    };
 };
 
 //Single Threaded
@@ -843,50 +843,45 @@ void DoRenderWork(void* data)
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
 
-                for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
-                {
-                    RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
-                    switch(entryHeader->type)
-                    {
-                        case EntryType_Texture:
-                        {
-                            RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+    for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+    {
+        RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
+        switch(entryHeader->type)
+        {
+            case EntryType_Texture:
+            {
+                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-                            if(!strcmp(textureEntry.name, "left-hand") && (work->screenRegionCoords.min.x > 1000.0f))
-                            {
-                                int x {4};
-                            };
+                ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
-                            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+                Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
-                            Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
+                Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
+                Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                            Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
-                            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+                DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
-                            DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+            }break;
 
-                            currentRenderBufferEntry += sizeof(RenderEntry_Texture);
-                        }break;
+            case EntryType_Rect:
+            {
+                RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
-                        case EntryType_Rect:
-                        {
-                            RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+                ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
 
-                            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
+                Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
 
-                            Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
+                Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
+                Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
 
-                            Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
-                            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
+                currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+            }break;
 
-                            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
-                            currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-                        }break;
-
-                        InvalidDefaultCase;
-                    };
-                };
+            InvalidDefaultCase;
+        };
+    };
 };
 
 struct Platform_Services;

@@ -407,7 +407,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{stage->size.width/2.0f, stage->size.height/2.0f}, v2f{1.0f, 1.0f}, uvs, "background");
 
     auto DrawFighter = [](Fighter fighter) -> void
-    {//Push images to renderer 
+    {
         for(i32 slotIndex{0}; slotIndex < fighter.skel.slots.size; ++slotIndex)
         {
             Slot* currentSlot = &fighter.skel.slots[slotIndex];
@@ -425,9 +425,5 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     DrawFighter(*player);
     DrawFighter(*enemy);
-
-    //AtlasRegion* region = &player->skel.slots[0].regionAttachment.region_image;
-    //Array<v2f, 2> uvs2 = {v2f{region->u, region->v}, v2f{region->u2, region->v2}};
-    //PushTexture(global_renderingInfo, region->page->rendererObject, player->height, player->world.rotation, player->world.pos, player->world.scale, uvs2);
 };
 
