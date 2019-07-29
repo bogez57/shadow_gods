@@ -62,6 +62,8 @@ global_variable i32 renderBuffer;
 #include "atlas.h"
 #define SKELETON_IMPL
 #include "skeleton.h"
+#define ANIMATION_IMPL
+#include "animation.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
 
@@ -364,6 +366,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.lookAt = {stage->size.width/2.0f, 4.0f};
         stage->camera.dilatePoint_inScreenDims = viewDims/2.0f;
         stage->camera.zoomFactor = 1.0f;
+
+        CreateAnimationFromJsonFile($(player->anim), "data/yellow_god.json");
 
         //Player Init
         v2f playerWorldPos = {(stage->size.width/2.0f) - 2.0f, 3.0f};

@@ -4,6 +4,7 @@
 #include "shared.h"
 #include "collisions.h"
 #include "skeleton.h"
+#include "animation.h"
 
 struct Fighter
 {
@@ -11,6 +12,7 @@ struct Fighter
     Transform world;
     f32 height;
     Skeleton skel;
+    Animation anim;
 };
 
 struct Game_Camera
