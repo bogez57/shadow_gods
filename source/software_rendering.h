@@ -198,38 +198,9 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
     }
 };
 
-
-
 #include <immintrin.h>
-void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Rectf clipRect) 
+void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Rectf clipRect) 
 {
-    auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
-    {
-        v4ui32 result{};
-
-        result.x = *(ui32*)(pixelToSampleFrom);
-        result.y = *(ui32*)(pixelToSampleFrom + sizeof(ui32));
-        result.z = *(ui32*)(pixelToSampleFrom + pitch);
-        result.w = *(ui32*)(pixelToSampleFrom + pitch + sizeof(ui32));
-
-        return result;
-    };
-
-    auto BiLinearLerp = [](v4ui32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f
-    {
-        v4f newBlendedValue {};
-        v4f texelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
-        v4f texelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
-        v4f texelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
-        v4f texelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
-
-        v4f ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
-        v4f CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
-        newBlendedValue = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
-
-        return newBlendedValue;
-    };
-
     v2f origin = cameraCoords.bottomLeft;
     v2f targetRectXAxis = cameraCoords.bottomRight - origin;
     v2f targetRectYAxis = cameraCoords.topLeft - origin;
@@ -549,11 +520,9 @@ void DrawTextureQuickly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
 
 };
 
-//For images that move/rotate/scale - Assumes pre-multiplied alpha
-//Also involves lighting calcuation
-//TODO: Will eventually be removed entirely/combine with DrawTextureQuickly
+//TODO: Will eventually be removed 
 local_func void
-DrawTextureSlowly(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
+DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
     {
@@ -810,7 +779,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
                 Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
@@ -859,7 +828,7 @@ void DoRenderWork(void* data)
                 Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
 
-                DrawTextureQuickly((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
