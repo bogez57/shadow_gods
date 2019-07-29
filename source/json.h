@@ -34,6 +34,9 @@ struct Json
     const char* name; /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
 };
 
+Json* Json_create(const char* value);
+Json* Json_getItem(Json* object, const char* string);
+
 #endif
 
 #ifdef JSON_IMPL
