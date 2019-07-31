@@ -86,7 +86,6 @@ public:
         this->memPartitionID = memPartitionID_dynamic;
         *this = ResizeArray<Type>(*this, initialSize);
         memset(this->elements, 0, initialSize); //Initializes elements as well
-        this->size = initialSize;
     };
 
     void Insert(Type element, ui32 AtIndex)

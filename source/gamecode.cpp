@@ -19,6 +19,9 @@
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
+
+global_variable i32 heap;
+
 #include "memory_handling.h"
 #include "array.h"
 #include "dynamic_array.h"
@@ -36,7 +39,6 @@ global_variable Platform_Services* globalPlatformServices;
 global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
-global_variable i32 heap;
 global_variable i32 renderBuffer;
 
 //Third Party source

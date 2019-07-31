@@ -7,8 +7,9 @@
 struct Animation
 {
     char* name;
-    i32 time;
-    f32 angle;
+    char* boneName;
+    Dynam_Array<f32> times;
+    Dynam_Array<f32> angles;
 };
 
 #endif
@@ -25,8 +26,40 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root {};
     root = Json_create(jsonFile);
 
+    anim.times.Init(3, heap);
+    anim.angles.Init(3, heap);
+
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* test = Json_getItem(animations, "test");
+
+#if 0
+    for(Json* currentAnimation = animations->child; currentAnimation != nullptr; currentAnimation = currentAnimation->next)
+    {
+        Json* bonesOfAnimation = currentAnimation->child;
+        for(Json* currentBone = bonesOfAnimation->child; currentBone != nullptr; currentBone = currentBone->next)
+        {
+            Json* rotate = Json_getItem(currentBone, "rotate");
+
+            i32 animDataIndex{};
+            for(Json* animData = rotate->child; animData != nullptr; animData = animData->next, ++animDataIndex)
+            {
+                anim.times.PushBack(Json_getFloat(animData, "time", 0.0f));
+                anim.angles.PushBack(Json_getFloat(animData, "angle", 0.0f));
+            };
+        };
+    };
+#endif 
+
+    Json* testAnim = Json_getItem(animations, "test");
+    Json* bones = Json_getItem(testAnim, "bones");
+    Json* currentBone = Json_getItem(bones, "right-forearm");
+    Json* rotate = currentBone->child;
+
+    i32 stopCondition{};
+    for(Json* animDataSet = rotate->child; stopCondition < 3; animDataSet = animDataSet->next, ++stopCondition)
+    {
+        anim.times.PushBack(Json_getFloat(animDataSet, "time", 0.0f));
+        anim.angles.PushBack(Json_getFloat(animDataSet, "angle", 0.0f));
+    };
 };
 
 #endif //ANIMATION_IMPL
