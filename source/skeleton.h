@@ -31,6 +31,7 @@
 struct Bone
 {
     v2f worldPos;
+    f32 originalParentLocalRotation;
     v2f* parentLocalScale;
     v2f* parentLocalPos;
     f32* parentLocalRotation;
@@ -115,6 +116,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             newBone->parentLocalScale = &newBone->transform.scale;
             newBone->transform.translation.x = Json_getFloat(currentJsonObject, "x", 0.0f);
             newBone->transform.translation.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->originalParentLocalRotation = *newBone->parentLocalRotation;
             newBone->parentLocalPos = &newBone->transform.translation;
             newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
             if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
@@ -200,6 +202,7 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
         skeleton.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
         skeleton.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
         skeleton.bones.At(boneIndex).transform.rotation = Radians(skeleton.bones.At(boneIndex).transform.rotation);
+        skeleton.bones.At(boneIndex).originalParentLocalRotation = Radians(skeleton.bones.At(boneIndex).originalParentLocalRotation);
         skeleton.bones.At(boneIndex).length /= pixelsPerMeter; 
     };
 
@@ -230,6 +233,17 @@ Skeleton CreateSkeletonUsingJsonFile(Atlas atlas, const char* skeletonJsonFilePa
     _TranslateSkelPropertiesToGameUnits($(newSkeleton));
 
     return newSkeleton;
+};
+
+Bone* FindBone(Skeleton* skel, const char* boneName)
+{
+    for(i32 i = 0; i < skel->bones.size; ++i)
+    {
+        if(strcmp(skel->bones.At(i).name, boneName) == 0)
+            return &skel->bones.At(i);
+    };
+
+    return nullptr;
 };
 
 #endif //SKELETON_IMPL

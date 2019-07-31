@@ -85,6 +85,7 @@ public:
     {
         this->memPartitionID = memPartitionID_dynamic;
         *this = ResizeArray<Type>(*this, initialSize);
+        this->size = initialSize;
         memset(this->elements, 0, initialSize); //Initializes elements as well
     };
 
@@ -92,7 +93,7 @@ public:
     {
         ((this->capacity <= (i64)(AtIndex) ? (this->capacity = this->size = (AtIndex) + 1,
                                                  Roundup32(this->capacity),
-                                                 this->elements = (Type*)ReAllocSize(this->memPartitionID, ->elements, sizeof(Type) * this->capacity),
+                                                 this->elements = (Type*)ReAllocSize(this->memPartitionID, this->elements, sizeof(Type) * this->capacity),
                                                  0)
                                            : this->size <= (i64)(AtIndex) ? this->size = (AtIndex) + 1 : 0),
             this->elements[(AtIndex)])
