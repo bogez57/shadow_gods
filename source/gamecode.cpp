@@ -403,8 +403,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         stage->camera.zoomFactor -= .02f;
     };
+
+    if(KeyPressed(keyboard->ActionRight))
+    {
+        StartAnimation($(player->anim));
+    };
     
-    UpdateSkeletonAnimation($(player->skel), player->anim);
+    UpdateSkeletonAnimation($(player->skel), $(player->anim), deltaT);
+    BGZ_CONSOLE("time: %f\n", player->anim.time);
 
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
