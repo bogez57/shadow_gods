@@ -96,35 +96,50 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
         anim.count = 0;
         anim.time = 0.0f;
         anim.startAnimation = false;
-        firstTime = true;
     }
 
     f32 t{};
     f32 lerpedRotation{};
     if(anim.times.At(0) <= anim.time)
     {
-        t = anim.time / anim.times.At(anim.count + 1);
+#if 0
+        f32 diff = anim.times.At(1) - anim.times.At(0);
+
+        f32 twenty% = anim.times.At(0) + (diff * .20f);
+        f32 forty% = anim.times.At(0) + (diff * .40f);
+        f32 sixty% = anim.times.At(0) + (diff * .60f);
+        f32 eighty% = anim.times.At(0) + (diff * .80f);
+        f32 oneHundred% = anim.times.At(0) + diff;
+#endif
+
+        f32 diff = anim.times.At(1) - anim.times.At(0);
+        f32 diff1 = anim.time - anim.times.At(0);
+
+        t = diff1 / diff;
+
+        //t = anim.time / anim.times.At(anim.count + 1);
         lerpedRotation = Lerp(rotation0, rotation1, t);
     };
 
     if(anim.times.At(1) <= anim.time)
     {
-        if(firstTime)
-        {
-            t = 1.0f;
-            lerpedRotation = Lerp(rotation0, rotation1, t);
-            firstTime = false;
-        }
-        else
-        {
-            t = anim.time / anim.times.At(anim.count + 2);
-            lerpedRotation = Lerp(rotation1, rotation2, t);
-        }
+        f32 diff = anim.times.At(2) - anim.times.At(1);
+        f32 diff1 = anim.time - anim.times.At(1);
+
+        t = diff1 / diff;
+
+        //t = anim.time / anim.times.At(anim.count + 2);
+        lerpedRotation = Lerp(rotation1, rotation2, t);
     };
 
     if(anim.times.At(2) <= anim.time)
     {
-        t = anim.time / anim.times.At(anim.count + 3);
+        f32 diff = anim.times.At(3) - anim.times.At(2);
+        f32 diff1 = anim.time - anim.times.At(2);
+
+        t = diff1 / diff;
+
+        //t = anim.time / anim.times.At(anim.count + 3);
         lerpedRotation = Lerp(rotation2, rotation3, t);
     };
 
