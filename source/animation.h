@@ -57,7 +57,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 
     Json* testAnim = Json_getItem(animations, "test");
     Json* bones = Json_getItem(testAnim, "bones");
-    Json* currentBone = Json_getItem(bones, "right-forearm");
+    Json* currentBone = Json_getItem(bones, "right-shoulder");
     anim.boneName = currentBone->name;
     Json* rotate = currentBone->child;
 
@@ -102,22 +102,11 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
     f32 lerpedRotation{};
     if(anim.times.At(0) <= anim.time)
     {
-#if 0
-        f32 diff = anim.times.At(1) - anim.times.At(0);
-
-        f32 twenty% = anim.times.At(0) + (diff * .20f);
-        f32 forty% = anim.times.At(0) + (diff * .40f);
-        f32 sixty% = anim.times.At(0) + (diff * .60f);
-        f32 eighty% = anim.times.At(0) + (diff * .80f);
-        f32 oneHundred% = anim.times.At(0) + diff;
-#endif
-
         f32 diff = anim.times.At(1) - anim.times.At(0);
         f32 diff1 = anim.time - anim.times.At(0);
 
         t = diff1 / diff;
 
-        //t = anim.time / anim.times.At(anim.count + 1);
         lerpedRotation = Lerp(rotation0, rotation1, t);
     };
 
@@ -128,7 +117,6 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
         t = diff1 / diff;
 
-        //t = anim.time / anim.times.At(anim.count + 2);
         lerpedRotation = Lerp(rotation1, rotation2, t);
     };
 
@@ -139,7 +127,6 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
         t = diff1 / diff;
 
-        //t = anim.time / anim.times.At(anim.count + 3);
         lerpedRotation = Lerp(rotation2, rotation3, t);
     };
 
