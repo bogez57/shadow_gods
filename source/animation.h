@@ -12,15 +12,46 @@
     3. Should you call rotate, translate, scale timelines? 
 */
 
+class Keyframe
+{
+public:
+    f32 time;
+    char* curve;
+};
+
+class Keyframe_Rotation : public Keyframe
+{
+
+};
+
+class Keyframe_Translation : public Keyframe
+{
+
+};
+
+class Keyframe_Scale : public Keyframe
+{
+
+};
+
+struct Timeline
+{
+    Dynam_Array<Keyframe> keyFrames;
+};
+
 struct Animation
 {
     const char* name;
-    const char* boneName;
-    Dynam_Array<f32> times;
-    Dynam_Array<f32> angles;
+    Dynam_Array<const char*> boneNames;
+    Dynam_Array<Timeline> timelines;
     f32 time;
     i32 count;
     b startAnimation{false};
+};
+
+struct AnimationQueue
+{
+
 };
 
 void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath);
@@ -36,26 +67,26 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
+    anim.boneNames.Init(20, heap);
+    anim.timelines.Init(20, heap);
+
     Json* root {};
     root = Json_create(jsonFile);
-
-    anim.times.Init(4, heap);
-    anim.angles.Init(4, heap);
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
 
     for(Json* currentAnimation = animations ? animations->child : 0; currentAnimation; currentAnimation = currentAnimation->next)
     {
-        Json* bonesOfAnimation = currentAnimation->child;
-        for(Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next)
+        Json* bonesOfAnimation = currentAnimation->child; i32 boneIndex{};
+        for(Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
         {
-            Json* rotate = Json_getItem(currentBone, "rotate");
+            anim.boneNames.Insert(currentBone->name, boneIndex);
 
-            i32 animDataIndex{};
-            for(Json* animData = rotate ? rotate->child : 0; animData; animData = animData->next, ++animDataIndex)
+            Json* rotateTimeline = Json_getItem(currentBone, "rotate");
+
+            i32 keyFrameIndex{};
+            for(Json* keyFrame = rotateTimeline ? rotateTimeline->child : 0; keyFrame; keyFrame = keyFrame->next, ++keyFrameIndex)
             {
-                anim.times.Insert(Json_getFloat(animData, "time", 0.0f), animDataIndex);
-                anim.angles.Insert(Json_getFloat(animData, "angle", 0.0f), animDataIndex);
             };
         };
     };
@@ -84,6 +115,7 @@ void StartAnimation(Animation&& anim)
     anim.startAnimation = true;
 };
 
+#if 0
 void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 {
     if(anim.startAnimation)
@@ -139,5 +171,6 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
     *bone->parentLocalRotation = lerpedRotation;
 };
+#endif
 
 #endif //ANIMATION_IMPL
