@@ -25,6 +25,7 @@ global_variable i32 heap;
 #include "memory_handling.h"
 #include "array.h"
 #include "dynamic_array.h"
+#include "unordered_map.h"
 #include "ring_buffer.h"
 #include "linked_list.h"
 #include <utility>

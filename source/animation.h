@@ -12,26 +12,10 @@
     3. Should you call rotate, translate, scale timelines? 
 */
 
-class Keyframe
+struct Keyframe
 {
-public:
     f32 time;
     char* curve;
-};
-
-class Keyframe_Rotation : public Keyframe
-{
-
-};
-
-class Keyframe_Translation : public Keyframe
-{
-
-};
-
-class Keyframe_Scale : public Keyframe
-{
-
 };
 
 struct Timeline
@@ -39,11 +23,18 @@ struct Timeline
     Dynam_Array<Keyframe> keyFrames;
 };
 
+struct TimelineSet
+{
+    Timeline rotationTimeline;
+    Timeline translationTimeline;
+    Timeline scaleTimeline;
+};
+
 struct Animation
 {
     const char* name;
     Dynam_Array<const char*> boneNames;
-    Dynam_Array<Timeline> timelines;
+    Dynam_Array<Timeline> timelines;//use map here Map<boneNames, timelineSet> 
     f32 time;
     i32 count;
     b startAnimation{false};
