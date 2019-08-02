@@ -5,6 +5,13 @@
 #include "skeleton.h"
 #include "json.h"
 
+/*
+    API ideas:
+    1. QueueAnimaiton() and PlayAnimationImmediately() funcitons
+    2. Each Json object under rotate, translate, scale is a keyframe so call it that? 
+    3. Should you call rotate, translate, scale timelines? 
+*/
+
 struct Animation
 {
     const char* name;
@@ -37,24 +44,23 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
 
-#if 0
-    for(Json* currentAnimation = animations->child; currentAnimation != nullptr; currentAnimation = currentAnimation->next)
+    for(Json* currentAnimation = animations ? animations->child : 0; currentAnimation; currentAnimation = currentAnimation->next)
     {
         Json* bonesOfAnimation = currentAnimation->child;
-        for(Json* currentBone = bonesOfAnimation->child; currentBone != nullptr; currentBone = currentBone->next)
+        for(Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next)
         {
             Json* rotate = Json_getItem(currentBone, "rotate");
 
             i32 animDataIndex{};
-            for(Json* animData = rotate->child; animData != nullptr; animData = animData->next, ++animDataIndex)
+            for(Json* animData = rotate ? rotate->child : 0; animData; animData = animData->next, ++animDataIndex)
             {
-                anim.times.PushBack(Json_getFloat(animData, "time", 0.0f));
-                anim.angles.PushBack(Json_getFloat(animData, "angle", 0.0f));
+                anim.times.Insert(Json_getFloat(animData, "time", 0.0f), animDataIndex);
+                anim.angles.Insert(Json_getFloat(animData, "angle", 0.0f), animDataIndex);
             };
         };
     };
-#endif 
 
+#if 0
     Json* testAnim = Json_getItem(animations, "test");
     Json* bones = Json_getItem(testAnim, "bones");
     Json* currentBone = Json_getItem(bones, "right-shoulder");
@@ -70,6 +76,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
         //Translate to game units
         anim.angles.At(index) = Radians(anim.angles.At(index));
     };
+#endif
 };
 
 void StartAnimation(Animation&& anim)
