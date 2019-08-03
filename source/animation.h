@@ -15,6 +15,7 @@
 struct Keyframe
 {
     f32 time;
+    f32 angle;
     char* curve;
 };
 
@@ -33,8 +34,8 @@ struct TimelineSet
 struct Animation
 {
     const char* name;
-    Dynam_Array<const char*> boneNames;
-    Dynam_Array<Timeline> timelines;//use map here Map<boneNames, timelineSet> 
+    //UnorderedMap<const char*, TimelineSet> timelineSet;
+    //UnorderedMap<i32, TimelineSet> timelineSet;
     f32 time;
     i32 count;
     b startAnimation{false};
@@ -58,9 +59,6 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
-    anim.boneNames.Init(20, heap);
-    anim.timelines.Init(20, heap);
-
     Json* root {};
     root = Json_create(jsonFile);
 
@@ -71,13 +69,21 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
         Json* bonesOfAnimation = currentAnimation->child; i32 boneIndex{};
         for(Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
         {
-            anim.boneNames.Insert(currentBone->name, boneIndex);
+            //anim.timelineSet.Insert(currentBone->name);
 
             Json* rotateTimeline = Json_getItem(currentBone, "rotate");
 
             i32 keyFrameIndex{};
-            for(Json* keyFrame = rotateTimeline ? rotateTimeline->child : 0; keyFrame; keyFrame = keyFrame->next, ++keyFrameIndex)
+            for(Json* jsonKeyFrame = rotateTimeline ? rotateTimeline->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
             {
+                #if 0
+                Keyframe keyFrame;
+
+                keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
+                keyFrame.angle = Json_getFloat(jsonKeyFrame, "angle", 0.0f);
+
+                anim.timelineSet.At(currentBone->name).rotationTimeline.keyFrames.PushBack(keyFrame);
+                #endif
             };
         };
     };

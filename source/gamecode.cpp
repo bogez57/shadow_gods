@@ -70,6 +70,11 @@ global_variable i32 renderBuffer;
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
 
+struct Thing
+{
+    UnorderedMap<i32, TimelineSet> blah;
+};
+
 //Move out to Renderer eventually
 #if 0
 local_func
@@ -409,7 +414,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         StartAnimation($(player->anim));
     };
-    
+
     //UpdateSkeletonAnimation($(player->skel), $(player->anim), deltaT);
     BGZ_CONSOLE("time: %f\n", player->anim.time);
 

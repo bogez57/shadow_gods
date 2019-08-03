@@ -1,11 +1,25 @@
-#include <unordered_map>
+#include <map>
 
 template <typename Key, typename Value>
 class UnorderedMap
 {
 public:
     UnorderedMap() = default;
+    UnorderedMap(Key key, Value val = {})
+    {
+        map.insert(std::pair<Key, Value>(key, val));
+    };
+
+    void Insert(Key key, Value val = {})
+    {
+        map.insert(std::pair<Key, Value>(key, val));
+    };
+
+    Value At(Key key)
+    {
+        return map.at(key);
+    };
 
 private:
-    std::unordered_map<Key, Value> map;
+    std::map<Key, Value> map;
 };
