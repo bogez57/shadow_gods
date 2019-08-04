@@ -31,17 +31,12 @@ struct TimelineSet
     Timeline scaleTimeline;
 };
 
-/////HashMap_Str stuff///////////////////////////////////////////////////
-
-/////HashMap_Str Stuff///////////////////////////////////////////////
-
-
 struct Animation
 {
     const char* name;
     f32 time;
     i32 count;
-    HashMap_Str<TimelineSet> map;
+    HashMap_Str<TimelineSet> timelineSets;
     b startAnimation{false};
 };
 
@@ -68,62 +63,38 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root {};
     root = Json_create(jsonFile);
 
-    Init($(anim.map));
-
-    TimelineSet timeline{};
-
-    KeyFrame keyFrame{23.0f, 11.0f};
-    timeline.rotationTimeline.keyFrames.PushBack(keyFrame);
-    Insert<TimelineSet>($(anim.map), "hello", timeline);
-
-    TimelineSet timeline2{};
-    timeline2 = Get<TimelineSet>(anim.map, "hello");
-
-
+    Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
 
     for(Json* currentAnimation = animations ? animations->child : 0; currentAnimation; currentAnimation = currentAnimation->next)
     {
+        anim.name = currentAnimation->name;
+
         Json* bonesOfAnimation = currentAnimation->child; i32 boneIndex{};
         for(Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
         {
-            //anim.timelineSet.Insert(currentBone->name);
+            Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
 
-            Json* rotateTimeline = Json_getItem(currentBone, "rotate");
-
-            i32 keyFrameIndex{};
-            for(Json* jsonKeyFrame = rotateTimeline ? rotateTimeline->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+            if(rotateTimeline_json)
             {
-                #if 0
-                KeyFrame keyFrame;
+                i32 keyFrameIndex{}; Timeline rotationTimeline{};
+                rotationTimeline.keyFrames.Init(rotateTimeline_json->size, heap);
+                for(Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+                {
+                    KeyFrame keyFrame;
 
-                keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                keyFrame.angle = Json_getFloat(jsonKeyFrame, "angle", 0.0f);
+                    keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
+                    keyFrame.angle = Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f));
 
-                anim.timelineSet.At(currentBone->name).rotationTimeline.keyFrames.PushBack(keyFrame);
-                #endif
+                    rotationTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+                };
+
+                TimelineSet set{rotationTimeline};
+                Insert<TimelineSet>($(anim.timelineSets), currentBone->name, set);
             };
         };
     };
-
-#if 0
-    Json* testAnim = Json_getItem(animations, "test");
-    Json* bones = Json_getItem(testAnim, "bones");
-    Json* currentBone = Json_getItem(bones, "right-shoulder");
-    anim.boneName = currentBone->name;
-    Json* rotate = currentBone->child;
-
-    i32 index{};
-    for(Json* animDataSet = rotate->child; index < 4; animDataSet = animDataSet->next, ++index)
-    {
-        anim.times.At(index) = Json_getFloat(animDataSet, "time", 0.0f);
-        anim.angles.At(index) = Json_getFloat(animDataSet, "angle", 0.0f);
-
-        //Translate to game units
-        anim.angles.At(index) = Radians(anim.angles.At(index));
-    };
-#endif
 };
 
 void StartAnimation(Animation&& anim)
@@ -131,22 +102,24 @@ void StartAnimation(Animation&& anim)
     anim.startAnimation = true;
 };
 
-#if 0
 void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 {
     if(anim.startAnimation)
         anim.time += prevFrameDT;
 
-    Bone* bone = FindBone(&skel, anim.boneName);
+    Bone* bone = FindBone(&skel, "right-shoulder");
 
-    f32 rotation0 = bone->originalParentLocalRotation + anim.angles.At(0);
-    f32 rotation1 = bone->originalParentLocalRotation + anim.angles.At(1);
-    f32 rotation2 = bone->originalParentLocalRotation + anim.angles.At(2);
-    f32 rotation3 = bone->originalParentLocalRotation + anim.angles.At(3);
+    TimelineSet timelineSet = Get<TimelineSet>(anim.timelineSets, bone->name);
+    Timeline rotationTimeline = timelineSet.rotationTimeline;
+
+    f32 rotation0 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
+    f32 rotation1 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(1).angle;
+    f32 rotation2 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(2).angle;
+    f32 rotation3 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(3).angle;
 
     local_persist b firstTime;
 
-    if(anim.time > anim.times.At(3))
+    if(anim.time > rotationTimeline.keyFrames.At(3).time)
     {
         anim.count = 0;
         anim.time = 0.0f;
@@ -155,30 +128,30 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
     f32 t{};
     f32 lerpedRotation{};
-    if(anim.times.At(0) <= anim.time)
+    if(rotationTimeline.keyFrames.At(0).time <= anim.time)
     {
-        f32 diff = anim.times.At(1) - anim.times.At(0);
-        f32 diff1 = anim.time - anim.times.At(0);
+        f32 diff = rotationTimeline.keyFrames.At(1).time - rotationTimeline.keyFrames.At(0).time;
+        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(0).time;
 
         t = diff1 / diff;
 
         lerpedRotation = Lerp(rotation0, rotation1, t);
     };
 
-    if(anim.times.At(1) <= anim.time)
+    if(rotationTimeline.keyFrames.At(1).time <= anim.time)
     {
-        f32 diff = anim.times.At(2) - anim.times.At(1);
-        f32 diff1 = anim.time - anim.times.At(1);
+        f32 diff = rotationTimeline.keyFrames.At(2).time - rotationTimeline.keyFrames.At(1).time;
+        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(1).time;
 
         t = diff1 / diff;
 
         lerpedRotation = Lerp(rotation1, rotation2, t);
     };
 
-    if(anim.times.At(2) <= anim.time)
+    if(rotationTimeline.keyFrames.At(2).time <= anim.time)
     {
-        f32 diff = anim.times.At(3) - anim.times.At(2);
-        f32 diff1 = anim.time - anim.times.At(2);
+        f32 diff = rotationTimeline.keyFrames.At(3).time - rotationTimeline.keyFrames.At(2).time;
+        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(2).time;
 
         t = diff1 / diff;
 
@@ -187,6 +160,5 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
     *bone->parentLocalRotation = lerpedRotation;
 };
-#endif
 
 #endif //ANIMATION_IMPL
