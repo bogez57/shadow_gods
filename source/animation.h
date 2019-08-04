@@ -115,17 +115,18 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
     local_persist b firstTime;
 
-    if(anim.count == (rotationTimeline.keyFrames.size - 1))
-    {
-        anim.count = 0;
-        anim.time = 0.0f;
-        anim.startAnimation = false;
-    }
-    else if(rotationTimeline.keyFrames.At(anim.count).time <= anim.time)
+    if(rotationTimeline.keyFrames.At(anim.count).time <= anim.time)
     {
         if(rotationTimeline.keyFrames.At(anim.count + 1).time <= anim.time)
         {
             ++anim.count;
+
+            if(anim.count == (rotationTimeline.keyFrames.size - 1))
+            {
+                anim.count = 0;
+                anim.time = 0.0f;
+                anim.startAnimation = false;
+            };
         };
 
         f32 rotation0 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count).angle;
