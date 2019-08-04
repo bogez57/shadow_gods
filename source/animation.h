@@ -10,6 +10,7 @@
     1. QueueAnimaiton() and PlayAnimationImmediately() funcitons
     2. Each Json object under rotate, translate, scale is a keyframe so call it that? 
     3. Should you call rotate, translate, scale timelines? 
+    4. Organize data in more of a SOA fashion?
 */
 
 struct KeyFrame
@@ -112,53 +113,32 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
     TimelineSet timelineSet = Get<TimelineSet>(anim.timelineSets, bone->name);
     Timeline rotationTimeline = timelineSet.rotationTimeline;
 
-    f32 rotation0 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
-    f32 rotation1 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(1).angle;
-    f32 rotation2 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(2).angle;
-    f32 rotation3 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(3).angle;
-
     local_persist b firstTime;
 
-    if(anim.time > rotationTimeline.keyFrames.At(3).time)
+    if(anim.count == (rotationTimeline.keyFrames.size - 1))
     {
         anim.count = 0;
         anim.time = 0.0f;
         anim.startAnimation = false;
     }
-
-    f32 t{};
-    f32 lerpedRotation{};
-    if(rotationTimeline.keyFrames.At(0).time <= anim.time)
+    else if(rotationTimeline.keyFrames.At(anim.count).time <= anim.time)
     {
-        f32 diff = rotationTimeline.keyFrames.At(1).time - rotationTimeline.keyFrames.At(0).time;
-        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(0).time;
+        if(rotationTimeline.keyFrames.At(anim.count + 1).time <= anim.time)
+        {
+            ++anim.count;
+        };
 
-        t = diff1 / diff;
+        f32 rotation0 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count).angle;
+        f32 rotation1 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count + 1).angle;
 
-        lerpedRotation = Lerp(rotation0, rotation1, t);
+        f32 diff = rotationTimeline.keyFrames.At(anim.count + 1).time - rotationTimeline.keyFrames.At(anim.count).time;
+        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(anim.count).time;
+
+        f32 t = diff1 / diff;
+        f32 lerpedRotation = Lerp(rotation0, rotation1, t);
+
+        *bone->parentLocalRotation = lerpedRotation;
     };
-
-    if(rotationTimeline.keyFrames.At(1).time <= anim.time)
-    {
-        f32 diff = rotationTimeline.keyFrames.At(2).time - rotationTimeline.keyFrames.At(1).time;
-        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(1).time;
-
-        t = diff1 / diff;
-
-        lerpedRotation = Lerp(rotation1, rotation2, t);
-    };
-
-    if(rotationTimeline.keyFrames.At(2).time <= anim.time)
-    {
-        f32 diff = rotationTimeline.keyFrames.At(3).time - rotationTimeline.keyFrames.At(2).time;
-        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(2).time;
-
-        t = diff1 / diff;
-
-        lerpedRotation = Lerp(rotation2, rotation3, t);
-    };
-
-    *bone->parentLocalRotation = lerpedRotation;
 };
 
 #endif //ANIMATION_IMPL
