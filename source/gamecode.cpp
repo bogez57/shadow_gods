@@ -25,7 +25,7 @@ global_variable i32 heap;
 #include "memory_handling.h"
 #include "array.h"
 #include "dynamic_array.h"
-#include "unordered_map.h"
+#include "hashmap_str.h"
 #include "ring_buffer.h"
 #include "linked_list.h"
 #include <utility>
@@ -70,10 +70,6 @@ global_variable i32 renderBuffer;
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
 
-struct Thing
-{
-    UnorderedMap<i32, TimelineSet> blah;
-};
 
 //Move out to Renderer eventually
 #if 0

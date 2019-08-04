@@ -31,50 +31,9 @@ struct TimelineSet
     Timeline scaleTimeline;
 };
 
-/////Hash stuff///////////////////////////////////////////////////
-struct KeyInfo
-{
-    i32 originalInfo;
-    TimelineSet timelineSet;
-};
+/////HashMap_Str stuff///////////////////////////////////////////////////
 
-struct HashTable
-{
-    Dynam_Array<KeyInfo> keyInfos;
-};
-
-void Init(HashTable&& table)
-{
-    table.keyInfos.Init(4096, heap);
-};
-
-void Insert(HashTable&& table, const char* key, TimelineSet value)
-{
-    i32 indexIntoHash{};
-    for(i32 i{}; key[i] != 0; ++i)
-    {
-        char singleChar = key[i];
-        indexIntoHash += singleChar;
-    };
-
-    KeyInfo info{indexIntoHash, value};
-    table.keyInfos.Insert(info, indexIntoHash);
-};
-
-TimelineSet Get(HashTable table, const char* key)
-{
-    TimelineSet result{};
-
-    i32 indexIntoHash{};
-    for(i32 i{}; key[i] != 0; ++i)
-    {
-        indexIntoHash += key[i];
-    };
-
-    result = table.keyInfos.At(indexIntoHash).timelineSet;
-    return result;
-};
-/////Hash Stuff///////////////////////////////////////////////
+/////HashMap_Str Stuff///////////////////////////////////////////////
 
 
 struct Animation
@@ -82,7 +41,7 @@ struct Animation
     const char* name;
     f32 time;
     i32 count;
-    HashTable table;
+    HashMap_Str<TimelineSet> map;
     b startAnimation{false};
 };
 
@@ -109,15 +68,16 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root {};
     root = Json_create(jsonFile);
 
-    Init($(anim.table));
+    Init($(anim.map));
 
     TimelineSet timeline{};
 
     KeyFrame keyFrame{23.0f, 11.0f};
     timeline.rotationTimeline.keyFrames.PushBack(keyFrame);
-    Insert($(anim.table), "hello", timeline);
+    Insert<TimelineSet>($(anim.map), "hello", timeline);
+
     TimelineSet timeline2{};
-    timeline2 = Get(anim.table, "hello");
+    timeline2 = Get<TimelineSet>(anim.map, "hello");
 
 
 
