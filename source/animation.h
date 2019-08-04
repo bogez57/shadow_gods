@@ -12,7 +12,7 @@
     3. Should you call rotate, translate, scale timelines? 
 */
 
-struct Keyframe
+struct KeyFrame
 {
     f32 time;
     f32 angle;
@@ -21,7 +21,7 @@ struct Keyframe
 
 struct Timeline
 {
-    Dynam_Array<Keyframe> keyFrames;
+    Dynam_Array<KeyFrame> keyFrames;
 };
 
 struct TimelineSet
@@ -31,13 +31,58 @@ struct TimelineSet
     Timeline scaleTimeline;
 };
 
+/////Hash stuff///////////////////////////////////////////////////
+struct KeyInfo
+{
+    i32 originalInfo;
+    TimelineSet timelineSet;
+};
+
+struct HashTable
+{
+    Dynam_Array<KeyInfo> keyInfos;
+};
+
+void Init(HashTable&& table)
+{
+    table.keyInfos.Init(4096, heap);
+};
+
+void Insert(HashTable&& table, const char* key, TimelineSet value)
+{
+    i32 indexIntoHash{};
+    for(i32 i{}; key[i] != 0; ++i)
+    {
+        char singleChar = key[i];
+        indexIntoHash += singleChar;
+    };
+
+    KeyInfo info{indexIntoHash, value};
+    table.keyInfos.Insert(info, indexIntoHash);
+};
+
+TimelineSet Get(HashTable table, const char* key)
+{
+    TimelineSet result{};
+
+    i32 indexIntoHash{};
+    for(i32 i{}; key[i] != 0; ++i)
+    {
+        indexIntoHash += key[i];
+    };
+
+    result = table.keyInfos.At(indexIntoHash).timelineSet;
+    return result;
+};
+/////Hash Stuff///////////////////////////////////////////////
+
+
 struct Animation
 {
     const char* name;
-    //UnorderedMap<const char*, TimelineSet> timelineSet;
-    //UnorderedMap<i32, TimelineSet> timelineSet;
     f32 time;
     i32 count;
+    HashTable table;
     b startAnimation{false};
 };
 
@@ -45,6 +90,8 @@ struct AnimationQueue
 {
 
 };
+
+
 
 void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath);
 void UpdateSkeletonAnimation();
@@ -62,6 +109,18 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root {};
     root = Json_create(jsonFile);
 
+    Init($(anim.table));
+
+    TimelineSet timeline{};
+
+    KeyFrame keyFrame{23.0f, 11.0f};
+    timeline.rotationTimeline.keyFrames.PushBack(keyFrame);
+    Insert($(anim.table), "hello", timeline);
+    TimelineSet timeline2{};
+    timeline2 = Get(anim.table, "hello");
+
+
+
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
 
     for(Json* currentAnimation = animations ? animations->child : 0; currentAnimation; currentAnimation = currentAnimation->next)
@@ -77,7 +136,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
             for(Json* jsonKeyFrame = rotateTimeline ? rotateTimeline->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
             {
                 #if 0
-                Keyframe keyFrame;
+                KeyFrame keyFrame;
 
                 keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
                 keyFrame.angle = Json_getFloat(jsonKeyFrame, "angle", 0.0f);
