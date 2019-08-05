@@ -48,6 +48,13 @@ ValueType Get(HashMap_Str<ValueType> map, const char* key)
         indexIntoHash += key[i];
     };
 
+    b hashFound{false};
+    for(i32 keyInfoIndex{}; keyInfoIndex < map.keyInfos.size; ++keyInfoIndex)
+    {
+        if(map.keyInfos.At(keyInfoIndex).originalInfo == indexIntoHash)
+            hashFound = true;
+    };
+
     result = map.keyInfos.At(indexIntoHash).value;
     return result;
 };

@@ -110,35 +110,38 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
     Bone* bone = FindBone(&skel, "right-shoulder");
 
-    TimelineSet timelineSet = Get<TimelineSet>(anim.timelineSets, bone->name);
-    Timeline rotationTimeline = timelineSet.rotationTimeline;
-
-    local_persist b firstTime;
-
-    if(rotationTimeline.keyFrames.At(anim.count).time <= anim.time)
+    for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
     {
-        if(rotationTimeline.keyFrames.At(anim.count + 1).time <= anim.time)
+        TimelineSet timelineSet = Get<TimelineSet>(anim.timelineSets, skel.bones.At(boneIndex).name);
+        Timeline rotationTimeline = timelineSet.rotationTimeline;
+
+        local_persist b firstTime;
+
+        if(rotationTimeline.keyFrames.At(anim.count).time <= anim.time)
         {
-            ++anim.count;
-
-            if(anim.count == (rotationTimeline.keyFrames.size - 1))
+            if(rotationTimeline.keyFrames.At(anim.count + 1).time <= anim.time)
             {
-                anim.count = 0;
-                anim.time = 0.0f;
-                anim.startAnimation = false;
+                ++anim.count;
+
+                if(anim.count == (rotationTimeline.keyFrames.size - 1))
+                {
+                    anim.count = 0;
+                    anim.time = 0.0f;
+                    anim.startAnimation = false;
+                };
             };
+
+            f32 rotation0 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count).angle;
+            f32 rotation1 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count + 1).angle;
+
+            f32 diff = rotationTimeline.keyFrames.At(anim.count + 1).time - rotationTimeline.keyFrames.At(anim.count).time;
+            f32 diff1 = anim.time - rotationTimeline.keyFrames.At(anim.count).time;
+
+            f32 t = diff1 / diff;
+            f32 lerpedRotation = Lerp(rotation0, rotation1, t);
+
+            *bone->parentLocalRotation = lerpedRotation;
         };
-
-        f32 rotation0 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count).angle;
-        f32 rotation1 = bone->originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count + 1).angle;
-
-        f32 diff = rotationTimeline.keyFrames.At(anim.count + 1).time - rotationTimeline.keyFrames.At(anim.count).time;
-        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(anim.count).time;
-
-        f32 t = diff1 / diff;
-        f32 lerpedRotation = Lerp(rotation0, rotation1, t);
-
-        *bone->parentLocalRotation = lerpedRotation;
     };
 };
 
