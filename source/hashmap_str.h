@@ -4,7 +4,7 @@ template <typename Type>
 class KeyInfo
 {
 public:
-    i32 originalInfo;
+    i32 originalInfo{0};
     Type value;
 };
 
@@ -38,23 +38,23 @@ void Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 };
 
 template <typename ValueType>
-ValueType Get(HashMap_Str<ValueType> map, const char* key)
+i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 {
-    ValueType result{};
-
     i32 indexIntoHash{};
     for(i32 i{}; key[i] != 0; ++i)
     {
         indexIntoHash += key[i];
     };
 
-    b hashFound{false};
-    for(i32 keyInfoIndex{}; keyInfoIndex < map.keyInfos.size; ++keyInfoIndex)
-    {
-        if(map.keyInfos.At(keyInfoIndex).originalInfo == indexIntoHash)
-            hashFound = true;
-    };
+    i32 result{-1};
+    if(map.keyInfos.At(indexIntoHash).originalInfo != 0)
+        result = indexIntoHash;
 
-    result = map.keyInfos.At(indexIntoHash).value;
     return result;
+};
+
+template<typename ValueType>
+ValueType GetVal(HashMap_Str<ValueType> map, i32 hashIndex)
+{
+    return map.keyInfos.At(hashIndex).value;
 };
