@@ -378,6 +378,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f enemyWorldPos = {(stage->size.width/2.0f) + 2.0f, 3.0f};
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/2.0f);
         InitFighter($(*enemy), "data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/2.0f);
+
+        SetToSetupPose($(player->skel), player->anim);
     };
 
     if (globalPlatformServices->DLLJustReloaded)

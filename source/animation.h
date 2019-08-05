@@ -47,13 +47,29 @@ struct AnimationQueue
 };
 
 
-
+void SetToSetupPose(Skeleton&& skel, Animation anim);
 void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath);
-void UpdateSkeletonAnimation();
+void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT);
 
 #endif
 
 #ifdef ANIMATION_IMPL
+
+void SetToSetupPose(Skeleton&& skel, Animation anim)
+{
+    for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+    {
+        i32 hashIndex = GetHashIndex(anim.timelineSets, skel.bones.At(boneIndex).name);
+
+        if(hashIndex != -1)
+        {
+            TimelineSet timelineSet =  GetVal(anim.timelineSets, hashIndex);
+            Timeline rotationTimeline = timelineSet.rotationTimeline;
+
+            *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
+        };
+    };    
+};
 
 void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 {
@@ -112,19 +128,13 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
         if(hashIndex != -1)
         {
+#if 0
             TimelineSet timelineSet =  GetVal(anim.timelineSets, hashIndex);
             Timeline rotationTimeline = timelineSet.rotationTimeline;
 
             local_persist b firstTime;
 
-            if(rotationTimeline.keyFrames.At(anim.count).time <= anim.time)
-            {
-                if(rotationTimeline.keyFrames.size == 1)
-                {
-                    anim.time = 0.0f;
-                    anim.startAnimation = false;
-                }
-                else if(rotationTimeline.keyFrames.At(anim.count + 1).time <= anim.time)
+                if(rotationTimeline.keyFrames.At(anim.count + 1).time <= anim.time)
                 {
                     ++anim.count;
 
@@ -134,7 +144,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
                         anim.time = 0.0f;
                         anim.startAnimation = false;
                     };
-                };
+                }
 
                 f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count).angle;
                 f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count + 1).angle;
@@ -146,7 +156,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
                 f32 lerpedRotation = Lerp(rotation0, rotation1, t);
 
                 *skel.bones.At(boneIndex).parentLocalRotation = lerpedRotation;
-            };
+#endif
         };
     };
 };

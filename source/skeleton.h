@@ -27,7 +27,6 @@
 #include <string.h>
 #include "json.h"
 #include "atlas.h"
-#include "animation.h"
 
 struct Bone
 {
