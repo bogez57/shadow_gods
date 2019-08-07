@@ -117,46 +117,57 @@ void StartAnimation(Animation&& anim)
     anim.startAnimation = true;
 };
 
+f32 recursiveTest(f32 originalBoneRotation, Timeline rotationTimeline, Animation&& anim, i32 count)
+{
+    f32 lerpedRotation{0.0f};
+    if(count == 0)
+    {
+        //do nothing
+    }
+    else if(rotationTimeline.keyFrames.At(count).time <= anim.time)
+    {
+        f32 rotation0 = originalBoneRotation + rotationTimeline.keyFrames.At(count - 1).angle;
+        f32 rotation1 = originalBoneRotation + rotationTimeline.keyFrames.At(count).angle;
+
+        f32 diff = rotationTimeline.keyFrames.At(count).time - rotationTimeline.keyFrames.At(count - 1).time;
+        f32 diff1 = anim.time - rotationTimeline.keyFrames.At(count - 1).time;
+
+        f32 t = diff1 / diff;
+        lerpedRotation = Lerp(rotation0, rotation1, t);
+
+        if(count == 3)
+        {
+            anim.time = 0.0f;
+            anim.startAnimation = false;
+        }
+    }
+    else
+    {
+        lerpedRotation = recursiveTest(originalBoneRotation, rotationTimeline, $(anim), count - 1);
+    };
+
+    return lerpedRotation;
+};
+
 void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 {
     if(anim.startAnimation)
+    {
         anim.time += prevFrameDT;
 
-    for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
-    {
-        i32 hashIndex = GetHashIndex(anim.timelineSets, skel.bones.At(boneIndex).name);
-
-        if(hashIndex != -1)
+        for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
         {
-#if 0
-            TimelineSet timelineSet =  GetVal(anim.timelineSets, hashIndex);
-            Timeline rotationTimeline = timelineSet.rotationTimeline;
+            i32 hashIndex = GetHashIndex(anim.timelineSets, skel.bones.At(boneIndex).name);
 
-            local_persist b firstTime;
+            if(hashIndex != -1)
+            {
+                TimelineSet boneTimelineSet = GetVal(anim.timelineSets, hashIndex);
+                Timeline rotationTimeline = boneTimelineSet.rotationTimeline;
 
-                if(rotationTimeline.keyFrames.At(anim.count + 1).time <= anim.time)
-                {
-                    ++anim.count;
-
-                    if(anim.count == (rotationTimeline.keyFrames.size - 1))
-                    {
-                        anim.count = 0;
-                        anim.time = 0.0f;
-                        anim.startAnimation = false;
-                    };
-                }
-
-                f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count).angle;
-                f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(anim.count + 1).angle;
-
-                f32 diff = rotationTimeline.keyFrames.At(anim.count + 1).time - rotationTimeline.keyFrames.At(anim.count).time;
-                f32 diff1 = anim.time - rotationTimeline.keyFrames.At(anim.count).time;
-
-                f32 t = diff1 / diff;
-                f32 lerpedRotation = Lerp(rotation0, rotation1, t);
+                f32 lerpedRotation = recursiveTest(skel.bones.At(boneIndex).originalParentLocalRotation, rotationTimeline, $(anim), (i32)rotationTimeline.keyFrames.size - 1);
 
                 *skel.bones.At(boneIndex).parentLocalRotation = lerpedRotation;
-#endif
+            };
         };
     };
 };
