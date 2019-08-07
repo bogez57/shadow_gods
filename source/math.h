@@ -324,3 +324,19 @@ Normalize(v3f&& a)
 {
     a *= (1.0f / Magnitude(a));
 };
+
+local_func
+void ConvertNegativeToPositiveAngle_Radians(f32&& radianAngle)
+{
+    f32 circumferenceInRadians = 2*PI;
+    radianAngle = Mod(radianAngle, circumferenceInRadians);
+    if (radianAngle < 0) radianAngle += circumferenceInRadians;
+};
+
+local_func
+void ConvertToCorrectPositiveRadian(f32&& angle)
+{
+    f32 unitCircleCircumferenceInRadians = 2*PI;
+    angle = Mod(angle, unitCircleCircumferenceInRadians);
+};
+

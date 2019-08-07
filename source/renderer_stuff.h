@@ -5,6 +5,8 @@
 #define BYTES_PER_PIXEL 4
 #endif
 
+#include "math.h"
+
 /*
 
     Current Renderer assumptions:
@@ -152,7 +154,7 @@ void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
 
-void ConvertNegativeAngleToRadians(f32&& angle);
+void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
 //void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
@@ -493,21 +495,6 @@ Quadf _ProduceQuadFromBottomLeftPoint(v2f originPoint, f32 width, f32 height)
     Result.topLeft = { originPoint.x, originPoint.y + height };
 
     return Result;
-};
-
-local_func
-void ConvertNegativeAngleToRadians(f32&& angle)
-{
-    f32 circumferenceInRadians = 2*PI;
-    angle = Mod(angle, circumferenceInRadians);
-    if (angle < 0) angle += circumferenceInRadians;
-};
-
-local_func
-void ConvertToCorrectPositiveRadian(f32&& angle)
-{
-    f32 unitCircleCircumferenceInRadians = 2*PI;
-    angle = Mod(angle, unitCircleCircumferenceInRadians);
 };
 
 #endif //PLATFORM_RENDERER_STUFF_IMPL

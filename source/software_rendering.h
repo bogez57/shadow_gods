@@ -696,7 +696,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                                 else if((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
                                 {
                                     normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                                    ConvertNegativeAngleToRadians($(normalAngle));
+                                    ConvertNegativeToPositiveAngle_Radians($(normalAngle));
                                 }
                             };
 
