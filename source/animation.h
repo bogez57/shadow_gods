@@ -184,7 +184,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
     f32 t{};
     f32 lerpedRotation{bone->originalParentLocalRotation};
-    if(rotationTimeline.keyFrames.At(0).time < anim.time)
+    if(rotationTimeline.keyFrames.At(0).time < anim.time && rotationTimeline.keyFrames.size != 1)
     {
         f32 diff = rotationTimeline.keyFrames.At(1).time - rotationTimeline.keyFrames.At(0).time;
         f32 diff1 = anim.time - rotationTimeline.keyFrames.At(0).time;
@@ -194,7 +194,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
         lerpedRotation = Lerp(rotation0, rotation1, t);
     };
 
-    if(rotationTimeline.keyFrames.At(1).time < anim.time)
+    if(rotationTimeline.keyFrames.At(1).time < anim.time && rotationTimeline.keyFrames.size != 1)
     {
         f32 diff = rotationTimeline.keyFrames.At(2).time - rotationTimeline.keyFrames.At(1).time;
         f32 diff1 = anim.time - rotationTimeline.keyFrames.At(1).time;
@@ -204,7 +204,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
         lerpedRotation = Lerp(rotation1, rotation2, t);
     };
 
-    if(rotationTimeline.keyFrames.At(2).time < anim.time)
+    if(rotationTimeline.keyFrames.At(2).time < anim.time && rotationTimeline.keyFrames.size != 1)
     {
         f32 diff = rotationTimeline.keyFrames.At(3).time - rotationTimeline.keyFrames.At(2).time;
         f32 diff1 = anim.time - rotationTimeline.keyFrames.At(2).time;
