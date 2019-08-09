@@ -83,7 +83,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = animations->child;
+    Json* currentAnimation = Json_getItem(animations, "high_kick");
 
     anim.name = currentAnimation->name;
 
@@ -139,11 +139,22 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.keyFrames.At(count - 1).time < anim.time && rotationTimelineOfBone.keyFrames.size != 1)
                 {
+                    if(!strcmp(skel.bones.At(boneIndex).name, "right-leg"))
+                    {
+                        int x = 3;
+                    }
+
                     f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count - 1).angle;
                     f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count).angle;
 
-                    ConvertNegativeToPositiveAngle_Radians($(rotation0));
-                    ConvertNegativeToPositiveAngle_Radians($(rotation1));
+                   if(rotation0 > (2*PI))
+                    {
+                        ConvertNegativeToPositiveAngle_Radians($(rotation0));
+                    }
+                    if(rotation1 > (2*PI))
+                    {
+                        ConvertNegativeToPositiveAngle_Radians($(rotation1));
+                    }
 
                     f32 diff = rotationTimelineOfBone.keyFrames.At(count).time - rotationTimelineOfBone.keyFrames.At(count - 1).time;
                     f32 diff1 = anim.time - rotationTimelineOfBone.keyFrames.At(count - 1).time;
