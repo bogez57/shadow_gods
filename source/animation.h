@@ -83,7 +83,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "high_kick");
+    Json* currentAnimation = Json_getItem(animations, "low_kick");
 
     anim.name = currentAnimation->name;
 
@@ -139,7 +139,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.keyFrames.At(count - 1).time < anim.time && rotationTimelineOfBone.keyFrames.size != 1)
                 {
-                    if(!strcmp(skel.bones.At(boneIndex).name, "right-leg"))
+                    if(!strcmp(skel.bones.At(boneIndex).name, "left-shoulder"))
                     {
                         int x = 3;
                     }
@@ -147,14 +147,8 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
                     f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count - 1).angle;
                     f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count).angle;
 
-                    if(rotation0 > (2*PI))
-                    {
-                        ConvertNegativeToPositiveAngle_Radians($(rotation0));
-                    }
-                    if(rotation1 > (2*PI))
-                    {
-                        ConvertNegativeToPositiveAngle_Radians($(rotation1));
-                    }
+                    ConvertNegativeToPositiveAngle_Radians($(rotation0));
+                    ConvertNegativeToPositiveAngle_Radians($(rotation1));
 
                     v2f boneVector_frame0{}, boneVector_frame1{};
                     boneVector_frame0.x = skel.bones.At(boneIndex).length * CosR(rotation0);
@@ -169,7 +163,30 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
                     f32 t = diff1 / diff;
 
-                    lerpedRotation = Lerp(rotation0, rotation1, t);
+                    if(directionOfRotation > 0) //Rotate counter-clockwise
+                    {
+                        if(rotation0 < rotation1)
+                        {
+                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                        }
+                        else
+                        {
+                            ConvertPositiveToNegativeAngle_Radians($(rotation0));
+                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                        }
+                    }
+                    else //Rotate clockwise
+                    {
+                        if(rotation0 < rotation1)
+                        {
+                            ConvertPositiveToNegativeAngle_Radians($(rotation1));
+                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                        }
+                        else
+                        {
+                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                        }
+                    }
 
                     count = 0;
                 }

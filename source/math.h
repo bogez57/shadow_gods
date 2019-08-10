@@ -268,7 +268,7 @@ Hadamard(v3f a, v3f b)
 }
 
 inline f32
-CrossProduct(v2f a, v2f a)
+CrossProduct(v2f a, v2f b)
 {
     return a.x * b.y - a.y * b.x;
 }
@@ -337,6 +337,14 @@ void ConvertNegativeToPositiveAngle_Radians(f32&& radianAngle)
     f32 circumferenceInRadians = 2*PI;
     radianAngle = Mod(radianAngle, circumferenceInRadians);
     if (radianAngle < 0) radianAngle += circumferenceInRadians;
+};
+
+local_func
+void ConvertPositiveToNegativeAngle_Radians(f32&& radianAngle)
+{
+    f32 unitCircleCircumferenceInRadians = 2*PI;
+    radianAngle = Mod(radianAngle, unitCircleCircumferenceInRadians);
+    if (radianAngle > 0) radianAngle -= unitCircleCircumferenceInRadians;
 };
 
 local_func
