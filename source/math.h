@@ -267,6 +267,12 @@ Hadamard(v3f a, v3f b)
     return(result);
 }
 
+inline f32
+CrossProduct(v2f a, v2f a)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
 inline f32 
 MagnitudeSqd(v2f a)
 {

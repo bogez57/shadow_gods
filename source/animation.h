@@ -147,7 +147,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
                     f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count - 1).angle;
                     f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count).angle;
 
-                   if(rotation0 > (2*PI))
+                    if(rotation0 > (2*PI))
                     {
                         ConvertNegativeToPositiveAngle_Radians($(rotation0));
                     }
@@ -155,6 +155,14 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
                     {
                         ConvertNegativeToPositiveAngle_Radians($(rotation1));
                     }
+
+                    v2f boneVector_frame0{}, boneVector_frame1{};
+                    boneVector_frame0.x = skel.bones.At(boneIndex).length * CosR(rotation0);
+                    boneVector_frame0.y = skel.bones.At(boneIndex).length * SinR(rotation0);
+                    boneVector_frame1.x = skel.bones.At(boneIndex).length * CosR(rotation1);
+                    boneVector_frame1.y = skel.bones.At(boneIndex).length * SinR(rotation1);
+
+                    f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
 
                     f32 diff = rotationTimelineOfBone.keyFrames.At(count).time - rotationTimelineOfBone.keyFrames.At(count - 1).time;
                     f32 diff1 = anim.time - rotationTimelineOfBone.keyFrames.At(count - 1).time;
