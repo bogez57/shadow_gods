@@ -4,7 +4,7 @@ template <typename Type>
 class KeyInfo
 {
 public:
-    ui8 uniqueID{0};
+    ui16 uniqueID;
     Type value;
 };
 
@@ -22,7 +22,7 @@ void Init(HashMap_Str<ValueType>&& map)
 };
 
 template <typename ValueType>
-void Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
+ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 {
     KeyInfo<ValueType> info{};
     info.value = value;
@@ -46,12 +46,16 @@ void Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
     };
 
     ui16 indexIntoHashArr{};
-    ui16 mask{0x0FFF};
-    for(i32 i{}; i < 2; ++i)
-    {
-        indexIntoHashArr = (ui16)bitStorage;
-        indexIntoHashArr = indexIntoHashArr & mask;
-    };
+    ui16 mask_clearNibble{0x0FFF};
+    ui16 descriptor{0xF000};
+
+    indexIntoHashArr = (ui16)bitStorage;
+    indexIntoHashArr = indexIntoHashArr & mask_clearNibble;
+    info.uniqueID = indexIntoHashArr | descriptor;
+
+    map.keyInfos.Insert(info, indexIntoHashArr);
+
+    return indexIntoHashArr;
 };
 
 template <typename ValueType>
