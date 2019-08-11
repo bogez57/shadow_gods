@@ -63,7 +63,7 @@ void SetToSetupPose(Skeleton&& skel, Animation anim)
 
         if(hashIndex != -1)
         {
-            TimelineSet timelineSet =  GetVal(anim.timelineSets, hashIndex);
+            TimelineSet timelineSet =  GetVal(anim.timelineSets, hashIndex, skel.bones.At(boneIndex).name);
             Timeline rotationTimeline = timelineSet.rotationTimeline;
 
             *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
@@ -130,7 +130,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
         if(hashIndex != -1)
         {
-            TimelineSet timelineSet = GetVal<TimelineSet>(anim.timelineSets, hashIndex);
+            TimelineSet timelineSet = GetVal<TimelineSet>(anim.timelineSets, hashIndex, skel.bones.At(boneIndex).name);
             Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
 
             i32 count = (i32)rotationTimelineOfBone.keyFrames.size - 1;
