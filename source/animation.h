@@ -80,6 +80,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root {};
     root = Json_create(jsonFile);
 
+    i32 size{100};
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
