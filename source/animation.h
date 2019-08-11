@@ -84,13 +84,18 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "low_kick");
+    Json* currentAnimation = Json_getItem(animations, "high_kick");
 
     anim.name = currentAnimation->name;
 
         Json* bonesOfAnimation = currentAnimation->child; i32 boneIndex{};
         for(Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
         {
+            if(!strcmp(currentBone->name, "left-shoulder"))
+            {
+                int x{34};
+            };
+
             Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
 
             if(rotateTimeline_json)

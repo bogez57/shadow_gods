@@ -41,6 +41,7 @@ template <typename Type>
 class KeyInfo
 {
 public:
+    const char* string;
     ui16 uniqueID{0};
     ui16 somethingElse;
     Type value;
@@ -70,6 +71,7 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 	};
 
     KeyInfo<ValueType> info{};
+    info.string = key;
     info.value = value;
     info.uniqueID = ProduceUniqueIDForString(key);
 
@@ -130,17 +132,17 @@ i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 template<typename ValueType>
 ValueType GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
 {
-    ui16 uniqueKeyID = ProduceUniqueIDForString(key);
-    KeyInfo<ValueType> keyInfo = map.keyInfos.At(hashIndex);
     ValueType result{};
 
+    ui16 uniqueKeyID = ProduceUniqueIDForString(key);
+
     b run{true};
-    KeyInfo<ValueType>* nextKey{&keyInfo};
+    KeyInfo<ValueType>* nextKey{&map.keyInfos.At(hashIndex)};
     while(run)
     {
         if(nextKey->uniqueID == uniqueKeyID)
         {
-            result = keyInfo.value;   
+            result = nextKey->value;   
             run = false;
         }
         else
