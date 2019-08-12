@@ -84,7 +84,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "high_kick");
+    Json* currentAnimation = Json_getItem(animations, "punch_flurry");
 
     anim.name = currentAnimation->name;
 
@@ -118,6 +118,8 @@ void StartAnimation(Animation&& anim)
     anim.startAnimation = true;
 };
 
+//Do not handle 'animation clean up' option in spine which, when it is checked in spine, doesn't export
+//duplicate keys. This function needs to know every key from animation in order to work properly
 void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 {
     if(anim.startAnimation)
