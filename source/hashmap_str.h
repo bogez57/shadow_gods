@@ -4,44 +4,11 @@
     Duplicates are overwritten
 */
 
-ui64 CombineFirst8BytesOfString(const char* key)
-{
-    ui64 bitStorage {};
-    i32 numTimesToIterate{};
-
-    for(i32 i{}; key[i] != 0; ++i)
-        ++numTimesToIterate;
-
-    if(numTimesToIterate > 8)
-        numTimesToIterate = 8;
-
-    ui8* pointerToBitStorage {(ui8*)&bitStorage};
-    for(i32 i{}; i < numTimesToIterate; ++i)
-    {
-        char singleChar = key[i];
-        *pointerToBitStorage = singleChar;
-        pointerToBitStorage += 1;
-    };
-
-    return bitStorage;
-};
-
-i32 ProduceUniqueIDForString(const char* key)
-{
-    i32 uniqueID{};
-    for(i32 i{}; key[i] != 0; ++i)
-    {
-        uniqueID += key[i];
-    };
-
-    return uniqueID;
-};
-
 template <typename Type>
 class KeyInfo
 {
 public:
-    const char* string;
+    const char* originalString;
     ui32 uniqueID{0};
     Type value;
     KeyInfo<Type>* nextInfo;
@@ -61,27 +28,39 @@ void Init(HashMap_Str<ValueType>&& map)
     map.keyInfos.Init(4096, heap);
 };
 
+i32 _ProduceUniqueIDForString(const char* key)
+{
+    i32 uniqueID{};
+    for(i32 i{}; key[i] != 0; ++i)
+    {
+        uniqueID += key[i];
+    };
+
+    return uniqueID;
+};
+
+ui16 _HashFunction(i32 numberToCondense)
+{
+    BGZ_ASSERT(numberToCondense < 0xFFFF, "Key originalString was too big!");
+
+    ui16 indexIntoHashArr{};
+    ui16 mask_clearNibble{0x0FFF};
+
+    indexIntoHashArr = (ui16)numberToCondense;
+    indexIntoHashArr = indexIntoHashArr & mask_clearNibble;
+
+    return indexIntoHashArr;
+};
+
 template <typename ValueType>
 ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 {
-	if (!strcmp(key, "left-shoulder"))
-	{
-		int x{ 3 };
-	};
-
     KeyInfo<ValueType> info{};
-    info.string = key;
+    info.originalString = key;
     info.value = value;
-    info.uniqueID = ProduceUniqueIDForString(key);
+    info.uniqueID = _ProduceUniqueIDForString(key);
 
-    BGZ_ASSERT(info.uniqueID < 0xFFFF, "Key string was too big!");
-
-    ui16 indexIntoHashArr{};
-
-    ui16 mask_clearNibble{0x0FFF};
-
-    indexIntoHashArr = (ui16)info.uniqueID;
-    indexIntoHashArr = indexIntoHashArr & mask_clearNibble;
+    ui16 indexIntoHashArr = _HashFunction(info.uniqueID);
 
     if(NOT map.keyInfos.At(indexIntoHashArr).uniqueID)
     {
@@ -96,6 +75,7 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
         };
 
         BGZ_ASSERT(map.numOfCollisions < (map.keyInfos.size - 2) / 2, "Hash Table contains too many collisions!");
+
         *nextInfo = &map.keyInfos.At((map.keyInfos.size - 1) - map.numOfCollisions);
         **nextInfo = info;
         ++map.numOfCollisions;
@@ -107,15 +87,13 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 template <typename ValueType>
 i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 {
-    ui16 uniqueKeyID = ProduceUniqueIDForString(key);
+    ui16 uniqueKeyID = _ProduceUniqueIDForString(key);
 
     ui16 mask_clearNibble{0x0FFF};
 
     i32 indexIntoHashArr{-1};
 
-    i32 tempIndex = (ui16)uniqueKeyID;
-    tempIndex = tempIndex & mask_clearNibble;
-
+    i32 tempIndex = _HashFunction(uniqueKeyID);
     if(map.keyInfos.At(tempIndex).uniqueID)
         indexIntoHashArr = tempIndex;
     
@@ -127,7 +105,7 @@ ValueType GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
 {
     ValueType result{};
 
-    ui16 uniqueKeyID = ProduceUniqueIDForString(key);
+    ui16 uniqueKeyID = _ProduceUniqueIDForString(key);
 
     b run{true};
     KeyInfo<ValueType>* nextKey{&map.keyInfos.At(hashIndex)};

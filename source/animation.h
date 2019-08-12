@@ -84,18 +84,13 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "high_kick");
+    Json* currentAnimation = Json_getItem(animations, "punch_flurry");
 
     anim.name = currentAnimation->name;
 
         Json* bonesOfAnimation = currentAnimation->child; i32 boneIndex{};
         for(Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
         {
-            if(!strcmp(currentBone->name, "left-shoulder"))
-            {
-                int x{34};
-            };
-
             Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
 
             if(rotateTimeline_json)
@@ -145,11 +140,6 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.keyFrames.At(count - 1).time < anim.time && rotationTimelineOfBone.keyFrames.size != 1)
                 {
-                    if(!strcmp(skel.bones.At(boneIndex).name, "left-shoulder"))
-                    {
-                        int x = 3;
-                    }
-
                     f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count - 1).angle;
                     f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count).angle;
 
