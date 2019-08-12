@@ -84,7 +84,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "punch_flurry");
+    Json* currentAnimation = Json_getItem(animations, "high_kick");
 
     anim.name = currentAnimation->name;
 
@@ -125,6 +125,9 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
     if(anim.startAnimation)
         anim.time += prevFrameDT;
 
+    if(anim.time > .25)
+        int x {3};
+
     f32 maxTimeOfAnimation{};
     for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
     {
@@ -132,6 +135,9 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
 
         if(hashIndex != -1)
         {
+            if(!strcmp(skel.bones.At(boneIndex).name, "left-forearm"))
+                int x {32};
+
             TimelineSet timelineSet = GetVal<TimelineSet>(anim.timelineSets, hashIndex, skel.bones.At(boneIndex).name);
             Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
 
@@ -140,7 +146,9 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
             f32 lerpedRotation{*skel.bones.At(boneIndex).parentLocalRotation};
             while(count)
             {
-                if(rotationTimelineOfBone.keyFrames.At(count - 1).time < anim.time && rotationTimelineOfBone.keyFrames.size != 1)
+                if(rotationTimelineOfBone.keyFrames.At(count - 1).time < anim.time && 
+                   rotationTimelineOfBone.keyFrames.At(count).time > anim.time && 
+                   rotationTimelineOfBone.keyFrames.size != 1)
                 {
                     f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count - 1).angle;
                     f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count).angle;
