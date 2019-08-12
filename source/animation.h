@@ -84,7 +84,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "punch_flurry");
+    Json* currentAnimation = Json_getItem(animations, "high_kick");
 
     anim.name = currentAnimation->name;
 

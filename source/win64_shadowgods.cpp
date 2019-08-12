@@ -980,6 +980,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     GameCode = Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll");
                 }
 
+#if (DEVELOPMENT_BUILD)
+	            //helps to prevent overly large detlatimes from getting passed when using debugger and breakpoints
+	            if (platformServices.prevFrameTimeInSecs > 1.0f)
+	                platformServices.prevFrameTimeInSecs = 1.0f/60.0f;
+#endif
+
                 //TODO: Should we poll more frequently?
                 auto [UpdatedInput, UpdatedReplayState] = [](Game_Input Input, Win32::Dbg::Game_Replay_State GameReplayState) -> auto
                 {
