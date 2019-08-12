@@ -42,8 +42,7 @@ class KeyInfo
 {
 public:
     const char* string;
-    ui16 uniqueID{0};
-    ui16 somethingElse;
+    ui32 uniqueID{0};
     Type value;
     KeyInfo<Type>* nextInfo;
 };
@@ -75,15 +74,14 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
     info.value = value;
     info.uniqueID = ProduceUniqueIDForString(key);
 
-    ui64 stringOfEightBytes = CombineFirst8BytesOfString(key);
+    BGZ_ASSERT(info.uniqueID < 0xFFFF, "Key string was too big!");
 
     ui16 indexIntoHashArr{};
-    ui16 mask_clearNibble{0x0FFF};
-    ui16 descriptor{0xF000};
 
-    indexIntoHashArr = (ui16)stringOfEightBytes;
+    ui16 mask_clearNibble{0x0FFF};
+
+    indexIntoHashArr = (ui16)info.uniqueID;
     indexIntoHashArr = indexIntoHashArr & mask_clearNibble;
-    info.somethingElse = indexIntoHashArr | descriptor;
 
     if(NOT map.keyInfos.At(indexIntoHashArr).uniqueID)
     {
@@ -110,21 +108,16 @@ template <typename ValueType>
 i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 {
     ui16 uniqueKeyID = ProduceUniqueIDForString(key);
-    ui64 stringOfEightBytes = CombineFirst8BytesOfString(key);
+
+    ui16 mask_clearNibble{0x0FFF};
 
     i32 indexIntoHashArr{-1};
-    ui16 mask_clearNibble{0x0FFF};
-    ui16 descriptor{0xF000};
 
-    for(i32 i{}; i < map.keyInfos.size; ++i)
-    {
-        if(map.keyInfos.At(i).uniqueID == uniqueKeyID)
-        {
-            indexIntoHashArr = (ui16)stringOfEightBytes;
-            indexIntoHashArr = indexIntoHashArr & mask_clearNibble;
-            break;
-        }
-    };
+    i32 tempIndex = (ui16)uniqueKeyID;
+    tempIndex = tempIndex & mask_clearNibble;
+
+    if(map.keyInfos.At(tempIndex).uniqueID)
+        indexIntoHashArr = tempIndex;
     
     return indexIntoHashArr;
 };
