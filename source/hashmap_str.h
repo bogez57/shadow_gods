@@ -9,7 +9,7 @@ class KeyInfo
 {
 public:
     const char* originalString;
-    ui32 uniqueID{0};
+    ui32 uniqueID{ 0 };
     Type value;
     KeyInfo<Type>* nextInfo;
 };
@@ -31,7 +31,7 @@ void Init(HashMap_Str<ValueType>&& map)
 i32 _ProduceUniqueIDForString(const char* key)
 {
     i32 uniqueID{};
-    for(i32 i{}; key[i] != 0; ++i)
+    for (i32 i{}; key[i] != 0; ++i)
     {
         uniqueID += key[i];
     };
@@ -44,7 +44,7 @@ ui16 _HashFunction(i32 numberToCondense)
     BGZ_ASSERT(numberToCondense < 0xFFFF, "Key originalString was too big!");
 
     ui16 indexIntoHashArr{};
-    ui16 mask_clearNibble{0x0FFF};
+    ui16 mask_clearNibble{ 0x0FFF };
 
     indexIntoHashArr = (ui16)numberToCondense;
     indexIntoHashArr = indexIntoHashArr & mask_clearNibble;
@@ -62,23 +62,37 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 
     ui16 indexIntoHashArr = _HashFunction(info.uniqueID);
 
-    if(NOT map.keyInfos.At(indexIntoHashArr).uniqueID)
+    if (NOT map.keyInfos.At(indexIntoHashArr).uniqueID || map.keyInfos.At(indexIntoHashArr).uniqueID == info.uniqueID)
     {
         map.keyInfos.Insert(info, indexIntoHashArr);
     }
     else
     {
         KeyInfo<ValueType>** nextInfo = &map.keyInfos.At(indexIntoHashArr).nextInfo;
-        while(*nextInfo)
+
+        if ((*nextInfo)->uniqueID == info.uniqueID)
         {
-            nextInfo = &(*nextInfo)->nextInfo;
+        }
+        else
+        {
+            while (*nextInfo)
+            {
+                if ((*nextInfo)->uniqueID == info.uniqueID)
+                {
+                    break;
+                }
+                else
+                {
+                    nextInfo = &(*nextInfo)->nextInfo;
+                };
+            };
+
+            BGZ_ASSERT(map.numOfCollisions < (map.keyInfos.size - 2) / 2, "Hash Table contains too many collisions! Reached end of space allocated for collision entries");
+
+            *nextInfo = &map.keyInfos.At((map.keyInfos.size - 1) - map.numOfCollisions);
+            **nextInfo = info;
+            ++map.numOfCollisions;
         };
-
-        BGZ_ASSERT(map.numOfCollisions < (map.keyInfos.size - 2) / 2, "Hash Table contains too many collisions!");
-
-        *nextInfo = &map.keyInfos.At((map.keyInfos.size - 1) - map.numOfCollisions);
-        **nextInfo = info;
-        ++map.numOfCollisions;
     };
 
     return indexIntoHashArr;
@@ -89,31 +103,31 @@ i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 {
     ui16 uniqueKeyID = _ProduceUniqueIDForString(key);
 
-    ui16 mask_clearNibble{0x0FFF};
+    ui16 mask_clearNibble{ 0x0FFF };
 
-    i32 indexIntoHashArr{-1};
+    i32 indexIntoHashArr{ -1 };
 
     i32 tempIndex = _HashFunction(uniqueKeyID);
-    if(map.keyInfos.At(tempIndex).uniqueID)
+    if (map.keyInfos.At(tempIndex).uniqueID)
         indexIntoHashArr = tempIndex;
-    
+
     return indexIntoHashArr;
 };
 
-template<typename ValueType>
+template <typename ValueType>
 ValueType GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
 {
     ValueType result{};
 
     ui16 uniqueKeyID = _ProduceUniqueIDForString(key);
 
-    b run{true};
-    KeyInfo<ValueType>* nextKey{&map.keyInfos.At(hashIndex)};
-    while(run)
+    b run{ true };
+    KeyInfo<ValueType>* nextKey{ &map.keyInfos.At(hashIndex) };
+    while (run)
     {
-        if(nextKey->uniqueID == uniqueKeyID)
+        if (nextKey->uniqueID == uniqueKeyID)
         {
-            result = nextKey->value;   
+            result = nextKey->value;
             run = false;
         }
         else

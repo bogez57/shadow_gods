@@ -47,7 +47,7 @@ struct AnimationQueue
 
 void SetToSetupPose(Skeleton&& skel, Animation anim);
 void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath);
-void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT);
+void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFrameDT);
 
 #endif
 
@@ -118,23 +118,21 @@ void StartAnimation(Animation&& anim)
     anim.startAnimation = true;
 };
 
-//Do not handle 'animation clean up' option in spine which, when it is checked in spine, doesn't export
-//duplicate keys. This function needs to know every key from animation in order to work properly
-void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT)
+void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFrameDT)
 {
     if (anim.startAnimation)
         anim.time += prevFrameDT;
 
     f32 maxTimeOfAnimation{};
-    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+    for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
     {
-        i32 hashIndex = GetHashIndex<TimelineSet>(anim.timelineSets, skel.bones.At(boneIndex).name);
+        i32 hashIndex = GetHashIndex<TimelineSet>(anim.timelineSets, bones->At(boneIndex).name);
 
         if (hashIndex != -1)
         {
-            TimelineSet timelineSet = GetVal<TimelineSet>(anim.timelineSets, hashIndex, skel.bones.At(boneIndex).name);
+            TimelineSet timelineSet = GetVal<TimelineSet>(anim.timelineSets, hashIndex, bones->At(boneIndex).name);
             Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
-            Bone* bone = &skel.bones.At(boneIndex);
+            Bone* bone = &bones->At(boneIndex);
 
             i32 keyFrameCount = (i32)rotationTimelineOfBone.keyFrames.size - 1;
 
@@ -157,8 +155,8 @@ void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT)
                     f32 diff1 = anim.time - keyFrame0.time;
                     f32 percentToLerp = diff1 / diff;
 
-                    v2f boneVector_frame0 = {bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0)};
-                    v2f boneVector_frame1 = {bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1)};
+                    v2f boneVector_frame0 = { bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0) };
+                    v2f boneVector_frame1 = { bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1) };
                     f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
 
                     if (directionOfRotation > 0) //Rotate counter-clockwise
@@ -211,8 +209,7 @@ void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT)
     };
 };
 
-void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
-{
+void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim){
 
 };
 
