@@ -36,7 +36,6 @@ struct Animation
 {
     const char* name;
     f32 time;
-    i32 count;
     HashMap_Str<TimelineSet> timelineSets;
     b startAnimation{ false };
 };
@@ -47,7 +46,7 @@ struct AnimationQueue
 
 void SetToSetupPose(Skeleton&& skel, Animation anim);
 void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath);
-void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT);
+void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT);
 
 #endif
 
@@ -78,7 +77,6 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root{};
     root = Json_create(jsonFile);
 
-    i32 size{ 100 };
     Init($(anim.timelineSets));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
@@ -120,7 +118,7 @@ void StartAnimation(Animation&& anim)
 
 //Do not handle 'animation clean up' option in spine which, when it is checked in spine, doesn't export
 //duplicate keys. This function needs to know every key from animation in order to work properly
-void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
+void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT)
 {
     if (anim.startAnimation)
         anim.time += prevFrameDT;
@@ -134,63 +132,63 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
         {
             TimelineSet timelineSet = GetVal<TimelineSet>(anim.timelineSets, hashIndex, skel.bones.At(boneIndex).name);
             Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
+            Bone* bone = &skel.bones.At(boneIndex);
 
-            i32 count = (i32)rotationTimelineOfBone.keyFrames.size - 1;
+            i32 keyFrameCount = (i32)rotationTimelineOfBone.keyFrames.size - 1;
 
-            f32 lerpedRotation{ skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle };
-            while (count)
+            f32 lerpedRotation{ bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle };
+            while (keyFrameCount)
             {
-                if (rotationTimelineOfBone.keyFrames.At(count - 1).time < anim.time && rotationTimelineOfBone.keyFrames.At(count).time > anim.time && rotationTimelineOfBone.keyFrames.size != 1)
+                KeyFrame keyFrame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1);
+                KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount);
+
+                if (keyFrame0.time < anim.time && keyFrame1.time > anim.time && rotationTimelineOfBone.keyFrames.size != 1)
                 {
-                    f32 rotation0 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count - 1).angle;
-                    f32 rotation1 = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(count).angle;
+                    f32 rotationAngle0 = bone->originalParentLocalRotation + keyFrame0.angle;
+                    f32 rotationAngle1 = bone->originalParentLocalRotation + keyFrame1.angle;
 
-                    ConvertNegativeToPositiveAngle_Radians($(rotation0));
-                    ConvertNegativeToPositiveAngle_Radians($(rotation1));
+                    ConvertNegativeToPositiveAngle_Radians($(rotationAngle0));
+                    ConvertNegativeToPositiveAngle_Radians($(rotationAngle1));
 
-                    v2f boneVector_frame0{}, boneVector_frame1{};
-                    boneVector_frame0.x = skel.bones.At(boneIndex).length * CosR(rotation0);
-                    boneVector_frame0.y = skel.bones.At(boneIndex).length * SinR(rotation0);
-                    boneVector_frame1.x = skel.bones.At(boneIndex).length * CosR(rotation1);
-                    boneVector_frame1.y = skel.bones.At(boneIndex).length * SinR(rotation1);
+                    //Find percent to lerp
+                    f32 diff = keyFrame1.time - keyFrame0.time;
+                    f32 diff1 = anim.time - keyFrame0.time;
+                    f32 percentToLerp = diff1 / diff;
 
+                    v2f boneVector_frame0 = {bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0)};
+                    v2f boneVector_frame1 = {bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1)};
                     f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
-
-                    f32 diff = rotationTimelineOfBone.keyFrames.At(count).time - rotationTimelineOfBone.keyFrames.At(count - 1).time;
-                    f32 diff1 = anim.time - rotationTimelineOfBone.keyFrames.At(count - 1).time;
-
-                    f32 t = diff1 / diff;
 
                     if (directionOfRotation > 0) //Rotate counter-clockwise
                     {
-                        if (rotation0 < rotation1)
+                        if (rotationAngle0 < rotationAngle1)
                         {
-                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
                         }
                         else
                         {
-                            ConvertPositiveToNegativeAngle_Radians($(rotation0));
-                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                            ConvertPositiveToNegativeAngle_Radians($(rotationAngle0));
+                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
                         }
                     }
                     else //Rotate clockwise
                     {
-                        if (rotation0 < rotation1)
+                        if (rotationAngle0 < rotationAngle1)
                         {
-                            ConvertPositiveToNegativeAngle_Radians($(rotation1));
-                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                            ConvertPositiveToNegativeAngle_Radians($(rotationAngle1));
+                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
                         }
                         else
                         {
-                            lerpedRotation = Lerp(rotation0, rotation1, t);
+                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
                         }
                     }
 
-                    count = 0;
+                    keyFrameCount = 0;
                 }
                 else
                 {
-                    --count;
+                    --keyFrameCount;
                 }
             };
 
@@ -199,7 +197,7 @@ void UpdateSkeletonAnimation(Skeleton&& skel, Animation&& anim, f32 prevFrameDT)
             if (currentMaxTime > maxTimeOfAnimation)
                 maxTimeOfAnimation = currentMaxTime;
 
-            *skel.bones.At(boneIndex).parentLocalRotation = lerpedRotation;
+            *bone->parentLocalRotation = lerpedRotation;
         };
     };
 
