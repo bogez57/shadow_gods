@@ -37,6 +37,7 @@ struct Animation
     const char* name;
     f32 time;
     HashMap_Str<TimelineSet> timelineSets;
+    HashMap_Str<f32> boneRotations;
     b startAnimation{ false };
 };
 
@@ -78,6 +79,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     root = Json_create(jsonFile);
 
     Init($(anim.timelineSets));
+    Init($(anim.boneRotations));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
     Json* currentAnimation = Json_getItem(animations, "high_kick");
@@ -198,6 +200,7 @@ void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT)
                 maxTimeOfAnimation = currentMaxTime;
 
             *bone->parentLocalRotation = lerpedRotation;
+            Insert<f32>($(anim.boneRotations), bone->name, lerpedRotation);
         };
     };
 
@@ -206,6 +209,11 @@ void UpdateAnimationState(Skeleton skel, Animation&& anim, f32 prevFrameDT)
         anim.time = 0.0f;
         anim.startAnimation = false;
     };
+};
+
+void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
+{
+
 };
 
 #endif //ANIMATION_IMPL
