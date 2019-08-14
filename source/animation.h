@@ -17,6 +17,7 @@ struct KeyFrame
 {
     f32 time;
     f32 angle;
+    v2f translation;
     char* curve;
 };
 
@@ -73,14 +74,13 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 {
     i32 length;
 
+    Init($(anim.boneTimelineSets));
+    Init($(anim.boneRotations));
+
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
     Json* root{};
     root = Json_create(jsonFile);
-
-    Init($(anim.boneTimelineSets));
-    Init($(anim.boneRotations));
-
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
     Json* currentAnimation = Json_getItem(animations, "high_kick");
 
@@ -91,6 +91,8 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
     {
         Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
+        Json* translateTimeline_json = Json_getItem(currentBone, "translate");
+        TimelineSet timeLineSet{};
 
         if (rotateTimeline_json)
         {
@@ -107,9 +109,29 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
                 rotationTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
             };
 
-            TimelineSet set{ rotationTimeline };
-            Insert<TimelineSet>($(anim.boneTimelineSets), currentBone->name, set);
+            timeLineSet.rotationTimeline = rotationTimeline;
         };
+
+        if (translateTimeline_json)
+        {
+            i32 keyFrameIndex{};
+            Timeline translateTimeline{};
+            translateTimeline.keyFrames.Init(rotateTimeline_json->size, heap);
+            for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+            {
+                KeyFrame keyFrame;
+
+                keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
+                keyFrame.translation.x = Json_getFloat(jsonKeyFrame, "x", 0.0f);
+                keyFrame.translation.y = Json_getFloat(jsonKeyFrame, "y", 0.0f);
+
+                translateTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+            };
+
+            timeLineSet.translationTimeline = translateTimeline;
+        };
+
+        Insert<TimelineSet>($(anim.boneTimelineSets), currentBone->name, timeLineSet);
     };
 };
 
