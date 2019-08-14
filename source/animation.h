@@ -197,7 +197,6 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
             if (currentMaxTime > maxTimeOfAnimation)
                 maxTimeOfAnimation = currentMaxTime;
 
-            *bone->parentLocalRotation = lerpedRotation;
             Insert<f32>($(anim.boneRotations), bone->name, lerpedRotation);
         };
     };
@@ -209,8 +208,18 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
     };
 };
 
-void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim){
+void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
+{
+    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+    {
+        i32 hashIndex = GetHashIndex(anim.boneRotations, skel.bones.At(boneIndex).name);
 
+        if (hashIndex != HASH_DOES_NOT_EXIST)
+        {
+            f32 boneRotation = GetVal(anim.boneRotations, hashIndex, skel.bones.At(boneIndex).name);
+            *skel.bones.At(boneIndex).parentLocalRotation = boneRotation;
+        };
+    };
 };
 
 #endif //ANIMATION_IMPL
