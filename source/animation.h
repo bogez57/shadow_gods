@@ -23,6 +23,7 @@ struct KeyFrame
 
 struct Timeline
 {
+    b exists{false};
     Dynam_Array<KeyFrame> keyFrames;
 };
 
@@ -54,22 +55,6 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
 
 #ifdef ANIMATION_IMPL
 
-void SetToSetupPose(Skeleton&& skel, Animation anim)
-{
-    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
-    {
-        i32 hashIndex = GetHashIndex(anim.boneTimelineSets, skel.bones.At(boneIndex).name);
-
-        if (hashIndex != HASH_DOES_NOT_EXIST)
-        {
-            TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, skel.bones.At(boneIndex).name);
-            Timeline rotationTimeline = timelineSet.rotationTimeline;
-
-            *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
-        };
-    };
-};
-
 void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 {
     i32 length;
@@ -99,6 +84,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
             i32 keyFrameIndex{};
             Timeline rotationTimeline{};
             rotationTimeline.keyFrames.Init(rotateTimeline_json->size, heap);
+            rotationTimeline.exists = true;
             for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
             {
                 KeyFrame keyFrame;
@@ -116,14 +102,16 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
         {
             i32 keyFrameIndex{};
             Timeline translateTimeline{};
-            translateTimeline.keyFrames.Init(rotateTimeline_json->size, heap);
+            translateTimeline.keyFrames.Init(translateTimeline_json->size, heap);
+            translateTimeline.exists = true;
             for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
             {
                 KeyFrame keyFrame;
 
+                f32 pixelsPerMeter{100.0f};
                 keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                keyFrame.translation.x = Json_getFloat(jsonKeyFrame, "x", 0.0f);
-                keyFrame.translation.y = Json_getFloat(jsonKeyFrame, "y", 0.0f);
+                keyFrame.translation.x = Json_getFloat(jsonKeyFrame, "x", 0.0f) / pixelsPerMeter;
+                keyFrame.translation.y = Json_getFloat(jsonKeyFrame, "y", 0.0f) / pixelsPerMeter;
 
                 translateTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
             };
@@ -132,6 +120,26 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
         };
 
         Insert<TimelineSet>($(anim.boneTimelineSets), currentBone->name, timeLineSet);
+    };
+};
+
+void SetToSetupPose(Skeleton&& skel, Animation anim)
+{
+    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+    {
+        i32 hashIndex = GetHashIndex(anim.boneTimelineSets, skel.bones.At(boneIndex).name);
+
+        if (hashIndex != HASH_DOES_NOT_EXIST)
+        {
+            TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, skel.bones.At(boneIndex).name);
+            Timeline rotationTimeline = timelineSet.rotationTimeline;
+            Timeline translateTimeline = timelineSet.translationTimeline;
+
+            if(rotationTimeline.exists)
+                *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
+            if(translateTimeline.exists)
+                *skel.bones.At(boneIndex).parentLocalPos += translateTimeline.keyFrames.At(0).translation;
+        };
     };
 };
 
@@ -152,74 +160,78 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
 
         if (hashIndex != HASH_DOES_NOT_EXIST)
         {
-            TimelineSet timelineSet = GetVal<TimelineSet>(anim.boneTimelineSets, hashIndex, bones->At(boneIndex).name);
-            Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
             Bone* bone = &bones->At(boneIndex);
 
-            i32 keyFrameCount = (i32)rotationTimelineOfBone.keyFrames.size - 1;
+            TimelineSet timelineSet = GetVal<TimelineSet>(anim.boneTimelineSets, hashIndex, bones->At(boneIndex).name);
 
-            f32 lerpedRotation{ bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle };
-            while (keyFrameCount)
+            Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
+            if(rotationTimelineOfBone.exists)
             {
-                KeyFrame keyFrame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1);
-                KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount);
+                i32 keyFrameCount = (i32)rotationTimelineOfBone.keyFrames.size - 1;
 
-                if (keyFrame0.time < anim.time && keyFrame1.time > anim.time && rotationTimelineOfBone.keyFrames.size != 1)
+                f32 lerpedRotation{ bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle };
+                while (keyFrameCount)
                 {
-                    f32 rotationAngle0 = bone->originalParentLocalRotation + keyFrame0.angle;
-                    f32 rotationAngle1 = bone->originalParentLocalRotation + keyFrame1.angle;
+                    KeyFrame keyFrame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1);
+                    KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount);
 
-                    ConvertNegativeToPositiveAngle_Radians($(rotationAngle0));
-                    ConvertNegativeToPositiveAngle_Radians($(rotationAngle1));
-
-                    //Find percent to lerp
-                    f32 diff = keyFrame1.time - keyFrame0.time;
-                    f32 diff1 = anim.time - keyFrame0.time;
-                    f32 percentToLerp = diff1 / diff;
-
-                    v2f boneVector_frame0 = { bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0) };
-                    v2f boneVector_frame1 = { bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1) };
-                    f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
-
-                    if (directionOfRotation > 0) //Rotate counter-clockwise
+                    if (keyFrame0.time < anim.time && keyFrame1.time > anim.time && rotationTimelineOfBone.keyFrames.size != 1)
                     {
-                        if (rotationAngle0 < rotationAngle1)
-                        {
-                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
-                        }
-                        else
-                        {
-                            ConvertPositiveToNegativeAngle_Radians($(rotationAngle0));
-                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
-                        }
-                    }
-                    else //Rotate clockwise
-                    {
-                        if (rotationAngle0 < rotationAngle1)
-                        {
-                            ConvertPositiveToNegativeAngle_Radians($(rotationAngle1));
-                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
-                        }
-                        else
-                        {
-                            lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
-                        }
-                    }
+                        f32 rotationAngle0 = bone->originalParentLocalRotation + keyFrame0.angle;
+                        f32 rotationAngle1 = bone->originalParentLocalRotation + keyFrame1.angle;
 
-                    keyFrameCount = 0;
-                }
-                else
-                {
-                    --keyFrameCount;
-                }
+                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle0));
+                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle1));
+
+                        //Find percent to lerp
+                        f32 diff = keyFrame1.time - keyFrame0.time;
+                        f32 diff1 = anim.time - keyFrame0.time;
+                        f32 percentToLerp = diff1 / diff;
+
+                        v2f boneVector_frame0 = { bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0) };
+                        v2f boneVector_frame1 = { bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1) };
+                        f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
+
+                        if (directionOfRotation > 0) //Rotate counter-clockwise
+                        {
+                            if (rotationAngle0 < rotationAngle1)
+                            {
+                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                            }
+                            else
+                            {
+                                ConvertPositiveToNegativeAngle_Radians($(rotationAngle0));
+                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                            }
+                        }
+                        else //Rotate clockwise
+                        {
+                            if (rotationAngle0 < rotationAngle1)
+                            {
+                                ConvertPositiveToNegativeAngle_Radians($(rotationAngle1));
+                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                            }
+                            else
+                            {
+                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                            }
+                        }
+
+                        keyFrameCount = 0;
+                    }
+                    else
+                    {
+                        --keyFrameCount;
+                    }
+                };
+
+                f32 currentMaxTime = rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time;
+
+                if (currentMaxTime > maxTimeOfAnimation)
+                    maxTimeOfAnimation = currentMaxTime;
+
+                Insert<f32>($(anim.boneRotations), bone->name, lerpedRotation);
             };
-
-            f32 currentMaxTime = rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time;
-
-            if (currentMaxTime > maxTimeOfAnimation)
-                maxTimeOfAnimation = currentMaxTime;
-
-            Insert<f32>($(anim.boneRotations), bone->name, lerpedRotation);
         };
     };
 
