@@ -36,7 +36,7 @@ struct Animation
 {
     const char* name;
     f32 time;
-    HashMap_Str<TimelineSet> timelineSets;
+    HashMap_Str<TimelineSet> boneTimelineSets;
     HashMap_Str<f32> boneRotations;
     b startAnimation{ false };
 };
@@ -57,11 +57,11 @@ void SetToSetupPose(Skeleton&& skel, Animation anim)
 {
     for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
     {
-        i32 hashIndex = GetHashIndex(anim.timelineSets, skel.bones.At(boneIndex).name);
+        i32 hashIndex = GetHashIndex(anim.boneTimelineSets, skel.bones.At(boneIndex).name);
 
-        if (hashIndex != -1)
+        if (hashIndex != HASH_DOES_NOT_EXIST)
         {
-            TimelineSet timelineSet = GetVal(anim.timelineSets, hashIndex, skel.bones.At(boneIndex).name);
+            TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, skel.bones.At(boneIndex).name);
             Timeline rotationTimeline = timelineSet.rotationTimeline;
 
             *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
@@ -78,7 +78,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root{};
     root = Json_create(jsonFile);
 
-    Init($(anim.timelineSets));
+    Init($(anim.boneTimelineSets));
     Init($(anim.boneRotations));
 
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
@@ -108,7 +108,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
             };
 
             TimelineSet set{ rotationTimeline };
-            Insert<TimelineSet>($(anim.timelineSets), currentBone->name, set);
+            Insert<TimelineSet>($(anim.boneTimelineSets), currentBone->name, set);
         };
     };
 };
@@ -126,11 +126,11 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
     f32 maxTimeOfAnimation{};
     for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
     {
-        i32 hashIndex = GetHashIndex<TimelineSet>(anim.timelineSets, bones->At(boneIndex).name);
+        i32 hashIndex = GetHashIndex<TimelineSet>(anim.boneTimelineSets, bones->At(boneIndex).name);
 
-        if (hashIndex != -1)
+        if (hashIndex != HASH_DOES_NOT_EXIST)
         {
-            TimelineSet timelineSet = GetVal<TimelineSet>(anim.timelineSets, hashIndex, bones->At(boneIndex).name);
+            TimelineSet timelineSet = GetVal<TimelineSet>(anim.boneTimelineSets, hashIndex, bones->At(boneIndex).name);
             Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
             Bone* bone = &bones->At(boneIndex);
 

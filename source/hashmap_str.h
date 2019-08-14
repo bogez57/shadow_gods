@@ -4,6 +4,11 @@
     Duplicates are overwritten
 */
 
+enum Error
+{
+    HASH_DOES_NOT_EXIST = -1
+};
+
 template <typename Type>
 class KeyInfo
 {
@@ -70,29 +75,19 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
     {
         KeyInfo<ValueType>** nextInfo = &map.keyInfos.At(indexIntoHashArr).nextInfo;
 
-        if ((*nextInfo)->uniqueID == info.uniqueID)
+        while (*nextInfo)
         {
-        }
-        else
-        {
-            while (*nextInfo)
-            {
-                if ((*nextInfo)->uniqueID == info.uniqueID)
-                {
-                    break;
-                }
-                else
-                {
-                    nextInfo = &(*nextInfo)->nextInfo;
-                };
-            };
-
-            BGZ_ASSERT(map.numOfCollisions < (map.keyInfos.size - 2) / 2, "Hash Table contains too many collisions! Reached end of space allocated for collision entries");
-
-            *nextInfo = &map.keyInfos.At((map.keyInfos.size - 1) - map.numOfCollisions);
-            **nextInfo = info;
-            ++map.numOfCollisions;
+            if ((*nextInfo)->uniqueID == info.uniqueID)
+               break;
+            else
+                nextInfo = &(*nextInfo)->nextInfo;
         };
+
+        BGZ_ASSERT(map.numOfCollisions < (map.keyInfos.size - 2) / 2, "Hash Table contains too many collisions! Reached end of space allocated for collision entries");
+
+        *nextInfo = &map.keyInfos.At((map.keyInfos.size - 1) - map.numOfCollisions);
+        **nextInfo = info;
+        ++map.numOfCollisions;
     };
 
     return indexIntoHashArr;
@@ -105,7 +100,7 @@ i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 
     ui16 mask_clearNibble{ 0x0FFF };
 
-    i32 indexIntoHashArr{ -1 };
+    i32 indexIntoHashArr{ Error::HASH_DOES_NOT_EXIST };
 
     i32 tempIndex = _HashFunction(uniqueKeyID);
     if (map.keyInfos.At(tempIndex).uniqueID)
