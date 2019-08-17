@@ -1,6 +1,7 @@
 /*
     TODO List:
     1.) Figure out if stb_image has a way to modify how images are read (so I can have all reads go through my platform services struct)
+    2.) Figure out a way to remove pixelsPerMeter constant that I have strune about in my skeleton and animaiton intialization code
 */
 
 #if (DEVELOPMENT_BUILD)
@@ -387,8 +388,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         CreateAnimationFromJsonFile($(enemy->anim), "data/yellow_god.json");
 
         //Player Init
-        v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f };
-        v2f enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
+        v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f);
         InitFighter($(*enemy), "data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f);
 
