@@ -319,6 +319,14 @@ Lerp(v4f a, v4f b, f32 t)
     return(result);
 }
 
+inline v2f
+Lerp(v2f a, v2f b, f32 t)
+{
+    v2f result = (1.0f - t)*a + t*b;
+
+    return(result);
+}
+
 inline void
 Normalize(v2f&& a)
 {

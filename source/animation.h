@@ -248,6 +248,15 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
 
                     if (keyFrame0.time < anim.time && keyFrame1.time > anim.time && translationTimeLineOfBone.keyFrames.size != 1)                        
                     {
+                        v2f translation0 = bone->originalParentLocalPos + keyFrame0.translation;
+                        v2f translation1 = bone->originalParentLocalPos + keyFrame1.translation;
+
+                        //Find percent to lerp
+                        f32 diff = keyFrame1.time - keyFrame0.time;
+                        f32 diff1 = anim.time - keyFrame0.time;
+                        f32 percentToLerp = diff1 / diff;
+
+                        newTranslation = Lerp(translation0, translation1, percentToLerp);
 
                         keyFrameCount = 0;
                     }
