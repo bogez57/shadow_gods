@@ -264,7 +264,12 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
                 Timeline translateTimeline = timelineSet.translationTimeline;
 
                 if(translateTimeline.exists)
-                    translateTimeline.keyFrames.At(0).translation *= scaleFactor;
+                {
+                    for(i32 i{}; i < translateTimeline.keyFrames.size; ++i)
+                    {
+                        translateTimeline.keyFrames.At(i).translation *= scaleFactor;
+                    };
+                };
             };
         };
     };

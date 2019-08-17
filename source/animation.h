@@ -69,7 +69,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     Json* root{};
     root = Json_create(jsonFile);
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "high_kick");
+    Json* currentAnimation = Json_getItem(animations, "right_cross");
 
     anim.name = currentAnimation->name;
 
