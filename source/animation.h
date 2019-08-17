@@ -37,11 +37,12 @@ struct TimelineSet
 struct Animation
 {
     const char* name;
-    f32 time;
+    f32 currentTime;
     HashMap_Str<TimelineSet> boneTimelineSets;
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     b startAnimation{ false };
+    f32 totalTime;
 };
 
 struct AnimationQueue
@@ -74,7 +75,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
     anim.name = currentAnimation->name;
 
     Json* bonesOfAnimation = currentAnimation->child;
-    i32 boneIndex{};
+    i32 boneIndex{}; f32 maxTimeOfAnimation{};
     for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
     {
         Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
@@ -98,6 +99,11 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
             };
 
             timeLineSet.rotationTimeline = rotationTimeline;
+
+            f32 maxTimeOfRotationTimeline = rotationTimeline.keyFrames.At(rotationTimeline.keyFrames.size - 1).time;
+        
+            if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
+                maxTimeOfAnimation = maxTimeOfRotationTimeline;
         };
 
         if (translateTimeline_json)
@@ -119,8 +125,14 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
             };
 
             timeLineSet.translationTimeline = translateTimeline;
+
+            f32 maxTimeOfTranslationTimeline = translateTimeline.keyFrames.At(translateTimeline.keyFrames.size - 1).time;
+        
+            if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
+                maxTimeOfAnimation = maxTimeOfTranslationTimeline;
         };
 
+        anim.totalTime = maxTimeOfAnimation;
         Insert<TimelineSet>($(anim.boneTimelineSets), currentBone->name, timeLineSet);
     };
 };
@@ -150,6 +162,7 @@ void StartAnimation(Animation&& anim)
     anim.startAnimation = true;
 };
 
+//Returns higher keyFrame (if range is between 0 - 1 then keyFrame number 1 is returned)
 i32 ActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 {
     i32 keyFrameCount = (i32)timelineOfBone.keyFrames.size - 1;
@@ -175,7 +188,7 @@ i32 ActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFrameDT)
 {
     if (anim.startAnimation)
-        anim.time += prevFrameDT;
+        anim.currentTime += prevFrameDT;
 
     f32 maxTimeOfAnimation{};
     for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
@@ -193,7 +206,7 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
             if(rotationTimelineOfBone.exists)
             {
                 f32 lerpedRotation{bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle};
-                i32 keyFrameCount = ActiveKeyFrame(rotationTimelineOfBone, anim.time);
+                i32 keyFrameCount = ActiveKeyFrame(rotationTimelineOfBone, anim.currentTime);
                 if (keyFrameCount) 
                 {
                     f32 rotationAngle0 = bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).angle;
@@ -204,7 +217,7 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
 
                     //Find percent to lerp
                     f32 diff = rotationTimelineOfBone.keyFrames.At(keyFrameCount).time - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                    f32 diff1 = anim.time - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                    f32 diff1 = anim.currentTime - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
                     f32 percentToLerp = diff1 / diff;
 
                     v2f boneVector_frame0 = { bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0) };
@@ -237,11 +250,6 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
                     }
                 };
 
-                f32 maxTimeOfRotationTimeline = rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time;
-
-                if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
-                    maxTimeOfAnimation = maxTimeOfRotationTimeline;
-
                 Insert<f32>($(anim.boneRotations), bone->name, lerpedRotation);
             };
 
@@ -249,7 +257,7 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
             if(translationTimeLineOfBone.exists)
             {
                 v2f newTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
-                i32 keyFrameCount = ActiveKeyFrame(translationTimeLineOfBone, anim.time);
+                i32 keyFrameCount = ActiveKeyFrame(translationTimeLineOfBone, anim.currentTime);
                 if (keyFrameCount) 
                 {
                     v2f translation0 = bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).translation;
@@ -257,25 +265,20 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
 
                     //Find percent to lerp
                     f32 diff = translationTimeLineOfBone.keyFrames.At(keyFrameCount).time - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                    f32 diff1 = anim.time - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                    f32 diff1 = anim.currentTime - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
                     f32 percentToLerp = diff1 / diff;
 
                     newTranslation = Lerp(translation0, translation1, percentToLerp);
                 };
-
-                f32 maxTimeOfTranslationTimeline = translationTimeLineOfBone.keyFrames.At(translationTimeLineOfBone.keyFrames.size - 1).time;
-
-                if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
-                    maxTimeOfAnimation = maxTimeOfTranslationTimeline;
 
                 Insert<v2f>($(anim.boneTranslations), bone->name, newTranslation);
             };
         };
     };
 
-    if (anim.time > maxTimeOfAnimation)
+    if (anim.currentTime > anim.totalTime)
     {
-        anim.time = 0.0f;
+        anim.currentTime = 0.0f;
         anim.startAnimation = false;
     };
 };
