@@ -40,6 +40,7 @@ struct Animation
     f32 time;
     HashMap_Str<TimelineSet> boneTimelineSets;
     HashMap_Str<f32> boneRotations;
+    HashMap_Str<v2f> boneTranslations;
     b startAnimation{ false };
 };
 
@@ -61,6 +62,7 @@ void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
 
     Init($(anim.boneTimelineSets));
     Init($(anim.boneRotations));
+    Init($(anim.boneTranslations));
 
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
@@ -231,6 +233,36 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
                     maxTimeOfAnimation = currentMaxTime;
 
                 Insert<f32>($(anim.boneRotations), bone->name, lerpedRotation);
+            };
+
+            Timeline translationTimeLineOfBone = timelineSet.translationTimeline;
+            if(translationTimeLineOfBone.exists)
+            {
+                i32 keyFrameCount = (i32)translationTimeLineOfBone.keyFrames.size - 1;
+
+                v2f newTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
+                while(keyFrameCount)
+                {
+                    KeyFrame keyFrame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1);
+                    KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount);
+
+                    if (keyFrame0.time < anim.time && keyFrame1.time > anim.time && rotationTimelineOfBone.keyFrames.size != 1)                        
+                    {
+
+                        keyFrameCount = 0;
+                    }
+                    else
+                    {
+                        --keyFrameCount;
+                    }
+                };
+
+                f32 currentMaxTime = rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time;
+
+                if (currentMaxTime > maxTimeOfAnimation)
+                    maxTimeOfAnimation = currentMaxTime;
+
+                Insert<v2f>($(anim.boneTranslations), bone->name, newTranslation);
             };
         };
     };

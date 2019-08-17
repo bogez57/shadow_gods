@@ -237,8 +237,12 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
 
         for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
         {
+            if(!strcmp(fighter.skel.bones.At(boneIndex).name, "left-shoulder"))
+                int x{3};
+
             fighter.skel.bones.At(boneIndex).transform.translation.x *= scaleFactor;
             fighter.skel.bones.At(boneIndex).transform.translation.y *= scaleFactor;
+            fighter.skel.bones.At(boneIndex).originalParentLocalPos *= scaleFactor;
             fighter.skel.bones.At(boneIndex).length *= scaleFactor;
         };
 
