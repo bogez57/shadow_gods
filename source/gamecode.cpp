@@ -248,6 +248,20 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
             fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x *= scaleFactor;
             fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y *= scaleFactor;
         };
+
+        for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
+        {
+            i32 hashIndex = GetHashIndex(fighter.anim.boneTimelineSets, fighter.skel.bones.At(boneIndex).name);
+
+            if (hashIndex != HASH_DOES_NOT_EXIST)
+            {
+                TimelineSet timelineSet = GetVal(fighter.anim.boneTimelineSets, hashIndex, fighter.skel.bones.At(boneIndex).name);
+                Timeline translateTimeline = timelineSet.translationTimeline;
+
+                if(translateTimeline.exists)
+                    translateTimeline.keyFrames.At(0).translation *= scaleFactor;
+            };
+        };
     };
 };
 
@@ -370,6 +384,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         CreateAnimationFromJsonFile($(player->anim), "data/yellow_god.json");
+        CreateAnimationFromJsonFile($(enemy->anim), "data/yellow_god.json");
 
         //Player Init
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f };
