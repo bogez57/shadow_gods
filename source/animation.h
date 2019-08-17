@@ -243,10 +243,10 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
                 v2f newTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
                 while(keyFrameCount)
                 {
-                    KeyFrame keyFrame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1);
-                    KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount);
+                    KeyFrame keyFrame0 = translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1);
+                    KeyFrame keyFrame1 = translationTimeLineOfBone.keyFrames.At(keyFrameCount);
 
-                    if (keyFrame0.time < anim.time && keyFrame1.time > anim.time && rotationTimelineOfBone.keyFrames.size != 1)                        
+                    if (keyFrame0.time < anim.time && keyFrame1.time > anim.time && translationTimeLineOfBone.keyFrames.size != 1)                        
                     {
 
                         keyFrameCount = 0;
@@ -257,7 +257,7 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
                     }
                 };
 
-                f32 currentMaxTime = rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time;
+                f32 currentMaxTime = translationTimeLineOfBone.keyFrames.At(translationTimeLineOfBone.keyFrames.size - 1).time;
 
                 if (currentMaxTime > maxTimeOfAnimation)
                     maxTimeOfAnimation = currentMaxTime;
@@ -282,8 +282,16 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
 
         if (hashIndex != HASH_DOES_NOT_EXIST)
         {
-            f32 boneRotation = GetVal(anim.boneRotations, hashIndex, skel.bones.At(boneIndex).name);
-            *skel.bones.At(boneIndex).parentLocalRotation = boneRotation;
+            f32 newBoneRotation = GetVal(anim.boneRotations, hashIndex, skel.bones.At(boneIndex).name);
+            *skel.bones.At(boneIndex).parentLocalRotation = newBoneRotation;
+        };
+
+        hashIndex = GetHashIndex(anim.boneTranslations, skel.bones.At(boneIndex).name);
+
+        if (hashIndex != HASH_DOES_NOT_EXIST)
+        {
+            v2f newBoneTranslation = GetVal(anim.boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
+            *skel.bones.At(boneIndex).parentLocalPos = newBoneTranslation;
         };
     };
 };
