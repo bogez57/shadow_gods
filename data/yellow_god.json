@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "q+smUfGh4EoJVMO0SKR4r4/WpyA", "spine": "3.7.87", "width": 235.24, "height": 986.06, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "NxU3th20n+XUwC4SN6gxj2sW7Nk", "spine": "3.7.87", "width": 235.24, "height": 986.06, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -13.25, "y": 489.02 },
@@ -49,15 +49,7 @@
 			"head": { "x": 32.18, "y": -10.89, "rotation": -79.56, "width": 123, "height": 126 }
 		},
 		"left-bicep": {
-			"left-bicep": {
-				"x": 31.93,
-				"y": 5.43,
-				"scaleX": -1.011,
-				"scaleY": -1.011,
-				"rotation": -96.25,
-				"width": 72,
-				"height": 87
-			}
+			"left-bicep": { "x": 30.7, "y": 4.91, "rotation": 81.36, "width": 72, "height": 87 }
 		},
 		"left-foot": {
 			"left-foot": { "x": 41.67, "y": 1.31, "rotation": 19.09, "width": 171, "height": 69 }
@@ -1005,6 +997,11 @@
 				"rotate": [
 					{ "time": 0, "angle": 0 },
 					{ "time": 0.5, "angle": 162.09 }
+				],
+				"translate": [
+					{ "time": 0, "x": -7.94, "y": -50.71 },
+					{ "time": 0.1667, "x": -15.1, "y": 54.6 },
+					{ "time": 0.3333, "x": -161.15, "y": 75.13 }
 				]
 			},
 			"left-shoulder": {
