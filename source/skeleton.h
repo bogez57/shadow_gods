@@ -21,6 +21,10 @@
  THE SOFTWARE.
  */
 
+/*
+    Note: Currently slots and bones have to have the same names in order for parsing to work
+*/
+
 #ifndef SKELETON_INCLUDE_H
 #define SKELETON_INCLUDE_H
 
@@ -107,26 +111,26 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
         Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
         newSkeleton.bones.Init(jsonBones->size, heap);
         i32 boneIndex {};
-        for (Json* currentJsonObject = jsonBones->child; boneIndex < newSkeleton.bones.size; currentJsonObject = currentJsonObject->next, ++boneIndex)
+        for (Json* currentBone_json = jsonBones->child; boneIndex < newSkeleton.bones.size; currentBone_json = currentBone_json->next, ++boneIndex)
         {
             Bone* newBone = &newSkeleton.bones.At(boneIndex);
-            newBone->name = Json_getString(currentJsonObject, "name", 0);
+            newBone->name = Json_getString(currentBone_json, "name", 0);
             newBone->transform.scale = v2f{1.0f, 1.0f};
             newBone->parentLocalScale = &newBone->transform.scale;
 
-            newBone->transform.rotation = Json_getFloat(currentJsonObject, "rotation", 0.0f);
+            newBone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
             newBone->parentLocalRotation = &newBone->transform.rotation;
             newBone->originalParentLocalRotation = *newBone->parentLocalRotation;
 
-            newBone->transform.translation.x = Json_getFloat(currentJsonObject, "x", 0.0f);
-            newBone->transform.translation.y = Json_getFloat(currentJsonObject, "y", 0.0f);
+            newBone->transform.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
+            newBone->transform.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
             newBone->parentLocalPos = &newBone->transform.translation;
             newBone->originalParentLocalPos = *newBone->parentLocalPos;
 
-            newBone->length = Json_getFloat(currentJsonObject, "length", 0.0f);
-            if (Json_getString(currentJsonObject, "parent", 0)) //If no parent then skip
+            newBone->length = Json_getFloat(currentBone_json, "length", 0.0f);
+            if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
             {
-                newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "parent", 0));
+                newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentBone_json, "parent", 0));
                 newBone->parentBone->childBones.PushBack(newBone);
             };
         };
@@ -136,24 +140,24 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
         Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
         newSkeleton.slots.Init(jsonSlots->size, heap);
         i32 slotIndex {};
-        for (Json* currentJsonObject = jsonSlots->child; slotIndex < newSkeleton.slots.size; currentJsonObject = currentJsonObject->next, ++slotIndex)
+        for (Json* currentSlot_json = jsonSlots->child; slotIndex < newSkeleton.slots.size; currentSlot_json = currentSlot_json->next, ++slotIndex)
         {
             //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
             Slot* slot = &newSkeleton.slots.At(slotIndex);
-            slot->name = (char*)Json_getString(currentJsonObject, "name", 0);
-            slot->bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentJsonObject, "bone", 0));
-            slot->regionAttachment = [currentJsonObject, root, atlas]() -> Region_Attachment 
+            slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
+            slot->bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentSlot_json, "bone", 0));
+            slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
             {
                 Region_Attachment resultRegionAttch {};
 
-                const char* attachmentName = Json_getString(currentJsonObject, "attachment", 0);
+                const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
                 Json* jsonSkin = Json_getItem(root, "skins");
                 Json* jsonDefaultSkin = Json_getItem(jsonSkin, "default");
 
                 i32 attachmentCounter {};
-                for (Json* currentJsonObject = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentJsonObject = currentJsonObject->next, ++attachmentCounter)
+                for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)
                 {
-                    Json* jsonAttachment = currentJsonObject->child;
+                    Json* jsonAttachment = currentBodyPartOfSkin_json->child;
 
                     if (strcmp(jsonAttachment->name, attachmentName) == 0)
                     {
