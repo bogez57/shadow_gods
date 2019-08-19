@@ -191,6 +191,12 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
 
     if(anim)
     {
+        if (anim->currentTime > anim->totalTime)
+        {
+            anim->currentTime = 0.0f;
+            anim->startAnimation = false;
+        };
+
         if (anim->startAnimation)
             anim->currentTime += prevFrameDT;
 
@@ -281,14 +287,10 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
         };
     };
 
-    if (anim->currentTime > anim->totalTime)
-    {
-        anim->currentTime = 0.0f;
-        anim->startAnimation = false;
-    };
+    
 };
 
-void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue animQueue)
+void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 {
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
 
@@ -312,11 +314,11 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue animQueue)
                 *skel.bones.At(boneIndex).parentLocalPos = newBoneTranslation;
             };
         };
-    };
 
-    if(anim->startAnimation == false)
-    {
-        animQueue.queuedAnimations.RemoveElem();
+        if(anim->startAnimation == false)
+        {
+            animQueue.queuedAnimations.RemoveElem();
+        };
     };
 };
 

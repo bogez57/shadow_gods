@@ -46,9 +46,9 @@ public:
 
         BGZ_ASSERT(NOT this->Empty(), "Trying to access an element from an empty ring buffer container!");
 
-        auto value = buffer[tail];
-        full = false;
-        tail = (tail + 1) % maxSize;
+        auto value = buffer[this->tail];
+        this->full = false;
+        this->tail = (this->tail + 1) % maxSize;
 
         return value;
     };
@@ -57,39 +57,39 @@ public:
     {
         BGZ_ASSERT(NOT this->Empty(), "Trying to remove an element from an empty ring buffer container!");
 
-        full = false;
-        tail = (tail + 1) % maxSize;
+        this->full = false;
+        this->tail = (this->tail + 1) % this->maxSize;
     };
 
     b Empty()
     {
-        return (!full && (head == tail));
+        return (!this->full && (this->head == this->tail));
     };
 
     b Full()
     {
-        return full;
+        return this->full;
     };
 
     void Reset()
     {
-        head = tail;
-        full = false;
+        this->head = this->tail;
+        this->full = false;
     };
 
     i64 Size()
     {
-        i64 size = maxSize;
+        i64 size = this->maxSize;
 
-        if (NOT full)
+        if (NOT this->full)
         {
-            if (head >= tail)
+            if (this->head >= this->tail)
             {
-                size = head - tail;
+                size = this->head - this->tail;
             }
             else
             {
-                size = maxSize + head - tail;
+                size = this->maxSize + this->head - this->tail;
             };
         };
 

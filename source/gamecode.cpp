@@ -449,7 +449,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
-    ApplyAnimationToSkeleton($(player->skel), player->animQueue);
+    ApplyAnimationToSkeleton($(player->skel), $(player->animQueue));
 
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
