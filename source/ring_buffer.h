@@ -6,15 +6,12 @@ public:
     Ring_Buffer() = default;
     Ring_Buffer(i64 size, i32 memPartitionID_dynamic)
         : maxSize(size)
-        , allocator(allocator)
-
     {
         this->buffer = (Type*)MallocSize(memPartitionID_dynamic, size);
     };
 
     void Init(i64 size, i32 memPartitionID_dynamic)
     {
-        this->allocator = allocator;
         this->maxSize = size;
         this->buffer = (Type*)MallocSize(memPartitionID_dynamic, size);
     };
@@ -32,14 +29,14 @@ public:
         this->full = this->head == this->tail;
     };
 
-    Type GetFirstElem()
+    Type* GetFirstElem()
     {
         if (this->Empty())
         {
-            return Type();
+            return nullptr; 
         }
 
-        auto value = buffer[tail];
+        auto* value = &buffer[tail];
 
         return value;
     };

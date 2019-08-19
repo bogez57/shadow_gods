@@ -13,6 +13,7 @@ struct Fighter
     f32 height;
     Skeleton skel;
     Animation anim;
+    AnimationQueue animQueue;
     AnimationData animData;
 };
 

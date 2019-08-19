@@ -257,20 +257,20 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     };
 
     {//Adjust animations to new height standards
-        //TODO: Very stupid, move out or change
+        //TODO: Very stupid, move out or change. Also, why does this work? Doesn't GetVal return a copy?
         for(i32 animIndex{}; animIndex < fighter.animData.animations.keyInfos.size; ++animIndex)
         {
-            Animation* anim = (Animation*)&fighter.animData.animations.keyInfos.At(animIndex).value;
+            Animation anim = (Animation)fighter.animData.animations.keyInfos.At(animIndex).value;
 
-            if(anim->name)
+            if(anim.name)
             {
                 for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
                 {
-                    i32 hashIndex = GetHashIndex(anim->boneTimelineSets, fighter.skel.bones.At(boneIndex).name);
+                    i32 hashIndex = GetHashIndex(anim.boneTimelineSets, fighter.skel.bones.At(boneIndex).name);
 
                     if (hashIndex != HASH_DOES_NOT_EXIST)
                     {
-                        TimelineSet timelineSet = GetVal(anim->boneTimelineSets, hashIndex, fighter.skel.bones.At(boneIndex).name);
+                        TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, fighter.skel.bones.At(boneIndex).name);
                         Timeline translateTimeline = timelineSet.translationTimeline;
 
                         if(translateTimeline.exists)
@@ -405,6 +405,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePoint_inScreenDims = viewDims / 2.0f;
         stage->camera.zoomFactor = 1.0f;
 
+        player->animQueue.queuedAnimations.Init(20, heap);
         CreateAnimationsFromJsonFile($(player->animData), "data/yellow_god.json");
         CreateAnimationsFromJsonFile($(enemy->animData), "data/yellow_god.json");
 
@@ -413,7 +414,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f);
         InitFighter($(*enemy), "data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f);
 
-        player->anim = StartAnimation(player->animData, "idle");
+        QueueAnimation($(player->animQueue), player->animData, "idle");
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -444,11 +445,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        player->anim = StartAnimation(player->animData, "left_jab");
+        QueueAnimation($(player->animQueue), player->animData, "left_jab");
     };
 
-    UpdateAnimationState($(player->anim), &player->skel.bones, deltaT);
-    ApplyAnimationToSkeleton($(player->skel), player->anim);
+    UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
+    ApplyAnimationToSkeleton($(player->skel), player->animQueue);
 
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
