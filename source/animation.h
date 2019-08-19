@@ -45,125 +45,124 @@ struct Animation
     f32 totalTime;
 };
 
+struct AnimationData
+{
+    HashMap_Str<Animation> animations;
+};
+
 struct AnimationQueue
 {
 };
 
 void SetToSetupPose(Skeleton&& skel, Animation anim);
-void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath);
+void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
 void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFrameDT);
 
 #endif
 
 #ifdef ANIMATION_IMPL
 
-void CreateAnimationFromJsonFile(Animation&& anim, const char* jsonFilePath)
+void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath)
 {
     i32 length;
 
-    Init($(anim.boneTimelineSets));
-    Init($(anim.boneRotations));
-    Init($(anim.boneTranslations));
+    Init($(animData.animations));
 
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
     Json* root{};
     root = Json_create(jsonFile);
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-    Json* currentAnimation = Json_getItem(animations, "left_jab");
 
-    anim.name = currentAnimation->name;
-
-    Json* bonesOfAnimation = currentAnimation->child;
-    i32 boneIndex{}; f32 maxTimeOfAnimation{};
-    for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
+    i32 animIndex{};
+    for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {
-        Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
-        Json* translateTimeline_json = Json_getItem(currentBone, "translate");
-        TimelineSet timeLineSet{};
+        Animation animation{};
 
-        if (rotateTimeline_json)
+        Init($(animation.boneTimelineSets));
+        Init($(animation.boneRotations));
+        Init($(animation.boneTranslations));
+        animation.name = currentAnimation_json->name;
+
+        Json* bonesOfAnimation = currentAnimation_json->child;
+        i32 boneIndex{}; f32 maxTimeOfAnimation{};
+        for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
         {
-            i32 keyFrameIndex{};
-            Timeline rotationTimeline{};
-            rotationTimeline.keyFrames.Init(rotateTimeline_json->size, heap);
-            rotationTimeline.exists = true;
-            for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+            Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
+            Json* translateTimeline_json = Json_getItem(currentBone, "translate");
+            TimelineSet timeLineSet{};
+
+            if (rotateTimeline_json)
             {
-                KeyFrame keyFrame;
+                i32 keyFrameIndex{};
+                Timeline rotationTimeline{};
+                rotationTimeline.keyFrames.Init(rotateTimeline_json->size, heap);
+                rotationTimeline.exists = true;
+                for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+                {
+                    KeyFrame keyFrame;
 
-                keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                keyFrame.angle = Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f));
+                    keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
+                    keyFrame.angle = Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f));
 
-                rotationTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+                    rotationTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+                };
+
+                timeLineSet.rotationTimeline = rotationTimeline;
+
+                f32 maxTimeOfRotationTimeline = rotationTimeline.keyFrames.At(rotationTimeline.keyFrames.size - 1).time;
+            
+                if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
+                    maxTimeOfAnimation = maxTimeOfRotationTimeline;
             };
 
-            timeLineSet.rotationTimeline = rotationTimeline;
-
-            f32 maxTimeOfRotationTimeline = rotationTimeline.keyFrames.At(rotationTimeline.keyFrames.size - 1).time;
-        
-            if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
-                maxTimeOfAnimation = maxTimeOfRotationTimeline;
-        };
-
-        if (translateTimeline_json)
-        {
-            i32 keyFrameIndex{};
-            Timeline translateTimeline{};
-            translateTimeline.keyFrames.Init(translateTimeline_json->size, heap);
-            translateTimeline.exists = true;
-            for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+            if (translateTimeline_json)
             {
-                KeyFrame keyFrame;
+                i32 keyFrameIndex{};
+                Timeline translateTimeline{};
+                translateTimeline.keyFrames.Init(translateTimeline_json->size, heap);
+                translateTimeline.exists = true;
+                for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+                {
+                    KeyFrame keyFrame;
 
-                f32 pixelsPerMeter{100.0f};
-                keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                keyFrame.translation.x = Json_getFloat(jsonKeyFrame, "x", 0.0f) / pixelsPerMeter;
-                keyFrame.translation.y = Json_getFloat(jsonKeyFrame, "y", 0.0f) / pixelsPerMeter;
+                    f32 pixelsPerMeter{100.0f};
+                    keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
+                    keyFrame.translation.x = Json_getFloat(jsonKeyFrame, "x", 0.0f) / pixelsPerMeter;
+                    keyFrame.translation.y = Json_getFloat(jsonKeyFrame, "y", 0.0f) / pixelsPerMeter;
 
-                translateTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+                    translateTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+                };
+
+                timeLineSet.translationTimeline = translateTimeline;
+
+                f32 maxTimeOfTranslationTimeline = translateTimeline.keyFrames.At(translateTimeline.keyFrames.size - 1).time;
+            
+                if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
+                    maxTimeOfAnimation = maxTimeOfTranslationTimeline;
             };
 
-            timeLineSet.translationTimeline = translateTimeline;
-
-            f32 maxTimeOfTranslationTimeline = translateTimeline.keyFrames.At(translateTimeline.keyFrames.size - 1).time;
-        
-            if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
-                maxTimeOfAnimation = maxTimeOfTranslationTimeline;
+            animation.totalTime = maxTimeOfAnimation;
+            Insert<TimelineSet>($(animation.boneTimelineSets), currentBone->name, timeLineSet);
         };
 
-        anim.totalTime = maxTimeOfAnimation;
-        Insert<TimelineSet>($(anim.boneTimelineSets), currentBone->name, timeLineSet);
+        Insert<Animation>($(animData.animations), animation.name, animation);
     };
 };
 
-void SetToSetupPose(Skeleton&& skel, Animation anim)
+Animation StartAnimation(AnimationData animData, const char* animName)
 {
-    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
-    {
-        i32 hashIndex = GetHashIndex(anim.boneTimelineSets, skel.bones.At(boneIndex).name);
+    i32 index = GetHashIndex<Animation>(animData.animations, animName);
+    BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
-        if (hashIndex != HASH_DOES_NOT_EXIST)
-        {
-            TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, skel.bones.At(boneIndex).name);
-            Timeline rotationTimeline = timelineSet.rotationTimeline;
-            Timeline translateTimeline = timelineSet.translationTimeline;
-
-            if(rotationTimeline.exists)
-                *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation + rotationTimeline.keyFrames.At(0).angle;
-            if(translateTimeline.exists)
-                *skel.bones.At(boneIndex).parentLocalPos += translateTimeline.keyFrames.At(0).translation;
-        };
-    };
-};
-
-void StartAnimation(Animation&& anim)
-{
+    Animation anim = GetVal<Animation>(animData.animations, index, animName);
     anim.startAnimation = true;
+
+    return anim;
 };
 
 //Returns higher keyFrame (if range is between 0 - 1 then keyFrame number 1 is returned)
-i32 ActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
+i32 _ActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 {
     i32 keyFrameCount = (i32)timelineOfBone.keyFrames.size - 1;
 
@@ -206,7 +205,7 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
             if(rotationTimelineOfBone.exists)
             {
                 f32 lerpedRotation{bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle};
-                i32 keyFrameCount = ActiveKeyFrame(rotationTimelineOfBone, anim.currentTime);
+                i32 keyFrameCount = _ActiveKeyFrame(rotationTimelineOfBone, anim.currentTime);
                 if (keyFrameCount) 
                 {
                     f32 rotationAngle0 = bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).angle;
@@ -257,7 +256,7 @@ void UpdateAnimationState(Animation&& anim, Dynam_Array<Bone>* bones, f32 prevFr
             if(translationTimeLineOfBone.exists)
             {
                 v2f newTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
-                i32 keyFrameCount = ActiveKeyFrame(translationTimeLineOfBone, anim.currentTime);
+                i32 keyFrameCount = _ActiveKeyFrame(translationTimeLineOfBone, anim.currentTime);
                 if (keyFrameCount) 
                 {
                     v2f translation0 = bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).translation;

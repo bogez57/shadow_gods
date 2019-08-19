@@ -227,9 +227,10 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
     fighter.skel.worldPos = &fighter.world.translation;
     fighter.worldPos = &fighter.world.translation;
 
+    f32 scaleFactor{};
     { //Change fighter height
         f32 aspectRatio = fighter.skel.height / fighter.skel.width;
-        f32 scaleFactor = newFighterHeight / fighter.skel.height;
+        scaleFactor = newFighterHeight / fighter.skel.height;
 
         //New fighter height
         fighter.skel.height = newFighterHeight;
@@ -253,21 +254,32 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
             fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x *= scaleFactor;
             fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y *= scaleFactor;
         };
+    };
 
-        for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
+    {//Adjust animations to new height standards
+        //TODO: Very stupid, move out or change
+        for(i32 animIndex{}; animIndex < fighter.animData.animations.keyInfos.size; ++animIndex)
         {
-            i32 hashIndex = GetHashIndex(fighter.anim.boneTimelineSets, fighter.skel.bones.At(boneIndex).name);
+            Animation* anim = (Animation*)&fighter.animData.animations.keyInfos.At(animIndex).value;
 
-            if (hashIndex != HASH_DOES_NOT_EXIST)
+            if(anim->name)
             {
-                TimelineSet timelineSet = GetVal(fighter.anim.boneTimelineSets, hashIndex, fighter.skel.bones.At(boneIndex).name);
-                Timeline translateTimeline = timelineSet.translationTimeline;
-
-                if(translateTimeline.exists)
+                for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
                 {
-                    for(i32 i{}; i < translateTimeline.keyFrames.size; ++i)
+                    i32 hashIndex = GetHashIndex(anim->boneTimelineSets, fighter.skel.bones.At(boneIndex).name);
+
+                    if (hashIndex != HASH_DOES_NOT_EXIST)
                     {
-                        translateTimeline.keyFrames.At(i).translation *= scaleFactor;
+                        TimelineSet timelineSet = GetVal(anim->boneTimelineSets, hashIndex, fighter.skel.bones.At(boneIndex).name);
+                        Timeline translateTimeline = timelineSet.translationTimeline;
+
+                        if(translateTimeline.exists)
+                        {
+                            for(i32 i{}; i < translateTimeline.keyFrames.size; ++i)
+                            {
+                                translateTimeline.keyFrames.At(i).translation *= scaleFactor;
+                            };
+                        };
                     };
                 };
             };
@@ -393,15 +405,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePoint_inScreenDims = viewDims / 2.0f;
         stage->camera.zoomFactor = 1.0f;
 
-        CreateAnimationFromJsonFile($(player->anim), "data/yellow_god.json");
-        CreateAnimationFromJsonFile($(enemy->anim), "data/yellow_god.json");
+        CreateAnimationsFromJsonFile($(player->animData), "data/yellow_god.json");
+        CreateAnimationsFromJsonFile($(enemy->animData), "data/yellow_god.json");
 
         //Player Init
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
         InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f);
         InitFighter($(*enemy), "data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f);
 
-        SetToSetupPose($(player->skel), player->anim);
+        player->anim = StartAnimation(player->animData, "idle");
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -432,7 +444,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        StartAnimation($(player->anim));
+        player->anim = StartAnimation(player->animData, "left_jab");
     };
 
     UpdateAnimationState($(player->anim), &player->skel.bones, deltaT);
