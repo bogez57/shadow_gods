@@ -383,13 +383,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
         gameMemory->Initialized = true;
-        *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
         { //Initialize memory/allocator stuff
             InitApplicationMemory(gameMemory);
-            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(200), DYNAMIC);
+            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(500), DYNAMIC);
             InitDynamAllocator(heap);
         };
+
+        *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");

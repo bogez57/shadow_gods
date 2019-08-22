@@ -24,7 +24,7 @@ struct KeyFrame
 struct Timeline
 {
     b exists{false};
-    Dynam_Array<KeyFrame> keyFrames;
+    Dynam_Array<KeyFrame> keyFrames{50, heap};
 };
 
 struct TimelineSet
@@ -38,16 +38,16 @@ struct Animation
 {
     const char* name;
     f32 currentTime;
-    HashMap_Str<TimelineSet> boneTimelineSets;
-    HashMap_Str<f32> boneRotations;
-    HashMap_Str<v2f> boneTranslations;
+    HashMap_Str<TimelineSet> boneTimelineSets { heap }; 
+    HashMap_Str<f32> boneRotations { heap };
+    HashMap_Str<v2f> boneTranslations { heap };
     b startAnimation{ false };
     f32 totalTime;
 };
 
 struct AnimationData
 {
-    HashMap_Str<Animation> animations;
+    HashMap_Str<Animation> animations { heap };
 };
 
 struct AnimationQueue
@@ -67,8 +67,6 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
 {
     i32 length;
 
-    Init($(animData.animations));
-
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
     Json* root{};
@@ -80,9 +78,6 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
     {
         Animation animation{};
 
-        Init($(animation.boneTimelineSets));
-        Init($(animation.boneRotations));
-        Init($(animation.boneTranslations));
         animation.name = currentAnimation_json->name;
 
         Json* bonesOfAnimation = currentAnimation_json->child;
@@ -97,7 +92,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
             {
                 i32 keyFrameIndex{};
                 Timeline rotationTimeline{};
-                rotationTimeline.keyFrames.Init(rotateTimeline_json->size, heap);
+                rotationTimeline.keyFrames = { rotateTimeline_json->size, heap };
                 rotationTimeline.exists = true;
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
@@ -121,7 +116,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
             {
                 i32 keyFrameIndex{};
                 Timeline translateTimeline{};
-                translateTimeline.keyFrames.Init(translateTimeline_json->size, heap);
+                translateTimeline.keyFrames = { translateTimeline_json->size, heap };
                 translateTimeline.exists = true;
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
@@ -208,6 +203,9 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
                 Bone* bone = &bones->At(boneIndex);
+
+                if(!strcmp(bone->name, "Pelvis"))
+                    int x{3};
 
                 TimelineSet timelineSet = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bones->At(boneIndex).name);
 

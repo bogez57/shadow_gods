@@ -23,14 +23,13 @@ template <typename ValueType>
 class HashMap_Str
 {
 public:
-    Dynam_Array<KeyInfo<ValueType>> keyInfos;
-    i32 numOfCollisions;
-};
+    HashMap_Str() = default;
+    HashMap_Str(i32 memParitionID) 
+    { 
+    };
 
-template <typename ValueType>
-void Init(HashMap_Str<ValueType>&& map)
-{
-    map.keyInfos.Init(4096, heap);
+    Dynam_Array<KeyInfo<ValueType>> keyInfos{4096, heap};
+    i32 numOfCollisions;
 };
 
 i32 _ProduceUniqueIDForString(const char* key)

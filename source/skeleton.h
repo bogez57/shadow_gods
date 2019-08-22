@@ -40,10 +40,10 @@ struct Bone
     v2f* parentLocalScale;
     v2f* parentLocalPos;
     f32* parentLocalRotation;
-    Transform transform;
+    Transform transform{};
     f32 length;
     Bone* parentBone;
-    Dynam_Array<Bone*> childBones;
+    Dynam_Array<Bone*> childBones {10, heap};
     const char* name;
 };
 
@@ -53,20 +53,20 @@ struct Region_Attachment
     v2f parentBoneLocalPos;
     v2f parentBoneLocalScale;
     f32 parentBoneLocalRotation;
-    AtlasRegion region_image;
+    AtlasRegion region_image{};
 };
 
 struct Slot
 {
     char* name;
     Bone* bone;
-    Region_Attachment regionAttachment;
+    Region_Attachment regionAttachment{};
 };
 
 struct Skeleton
 {
-    Dynam_Array<Bone> bones;
-    Dynam_Array<Slot> slots;
+    Dynam_Array<Bone> bones {20, heap};
+    Dynam_Array<Slot> slots {20, heap};
     f32 width, height;
     v2f* worldPos;
 };
@@ -109,7 +109,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
 
     { //Create Bones
         Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
-        newSkeleton.bones.Init(jsonBones->size, heap);
+        newSkeleton.bones = { jsonBones->size, heap };
         i32 boneIndex {};
         for (Json* currentBone_json = jsonBones->child; boneIndex < newSkeleton.bones.size; currentBone_json = currentBone_json->next, ++boneIndex)
         {
@@ -131,6 +131,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
             {
                 newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentBone_json, "parent", 0));
+                newBone->parentBone->childBones = { 0, heap };
                 newBone->parentBone->childBones.PushBack(newBone);
             };
         };
@@ -138,7 +139,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
 
     { //Create Slots
         Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
-        newSkeleton.slots.Init(jsonSlots->size, heap);
+        newSkeleton.slots = { jsonSlots->size, heap };
         i32 slotIndex {};
         for (Json* currentSlot_json = jsonSlots->child; slotIndex < newSkeleton.slots.size; currentSlot_json = currentSlot_json->next, ++slotIndex)
         {

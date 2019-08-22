@@ -28,6 +28,9 @@ void _DeAlloc(i32, void**);
     TODO: 
     1.) Maybe get rid of Blocks linked list data structure and use array instead?
     2.) Alignment?
+    3.) delete the multiple dynamica allocators part, don't think I need that. 
+    4.) Instaed of needing the implicit knowledge that a nextBlock = nullptr is suppose to mean end of the block chain, make somehting
+    more explicit. E.g. if(block->nextBlock != END_OF_BL0CK_CHAIN) or if(block->notTail)
 */
 
 struct _Memory_Block
@@ -152,13 +155,14 @@ void _FreeBlockAndMergeIfNecessary(_Memory_Block* blockToFree, i32 memRegionIden
                 blockToFree->Size += blockToFree->nextBlock->Size;
                 blockToFree->nextBlock->Size = 0;
 
-                if (blockToFree->nextBlock->nextBlock)
+                if (blockToFree->nextBlock != dynamAllocators[memRegionIdentifier].tail)
                 {
                     blockToFree->nextBlock = blockToFree->nextBlock->nextBlock;
                 }
                 else
                 {
                     blockToFree->nextBlock = nullptr;
+                    dynamAllocators[memRegionIdentifier].tail = blockToFree;
                 };
 
                 --dynamAllocators[memRegionIdentifier].AmountOfBlocks;
@@ -168,13 +172,14 @@ void _FreeBlockAndMergeIfNecessary(_Memory_Block* blockToFree, i32 memRegionIden
             {
                 blockToFree->prevBlock->Size += blockToFree->Size;
 
-                if (blockToFree->nextBlock)
+                if (blockToFree != dynamAllocators[memRegionIdentifier].tail)
                 {
                     blockToFree->prevBlock->nextBlock = blockToFree->nextBlock;
                 }
                 else
                 {
                     blockToFree->prevBlock->nextBlock = nullptr;
+                    dynamAllocators[memRegionIdentifier].tail = blockToFree->prevBlock;
                 };
 
                 blockToFree->Size = 0;
@@ -205,6 +210,7 @@ _Memory_Block* _AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
 
     NewBlock->prevBlock = dynamAllocators[memRegionIdentifier].tail;
     NewBlock->nextBlock = nullptr;
+
     dynamAllocators[memRegionIdentifier].tail->nextBlock = NewBlock;
     dynamAllocators[memRegionIdentifier].tail = NewBlock;
 

@@ -7,13 +7,13 @@ public:
     Ring_Buffer(i64 size, i32 memPartitionID_dynamic)
         : maxSize(size)
     {
-        this->buffer = (Type*)MallocSize(memPartitionID_dynamic, size);
+        this->buffer = MallocType(memPartitionID_dynamic, Type, size);
     };
 
     void Init(i64 size, i32 memPartitionID_dynamic)
     {
         this->maxSize = size;
-        this->buffer = (Type*)MallocSize(memPartitionID_dynamic, size);
+        this->buffer = MallocType(memPartitionID_dynamic, Type, size);
     };
 
     void PushBack(Type elem)
