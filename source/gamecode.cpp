@@ -407,6 +407,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = 1.0f;
 
         player->skel = {20, 20, heap};
+        enemy->skel = {20, 20, heap};
         player->animQueue.queuedAnimations.Init(20, heap);
         player->animData = {Init::_};
         enemy->animData = {Init::_};

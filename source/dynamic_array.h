@@ -56,12 +56,25 @@ class Dynam_Array
 {
 public:
     Dynam_Array() = default;
+    Dynam_Array(i64 initialSize, const Type& type, i32 memPartitionID_dynamic)
+        : capacity(initialSize)
+        , memPartitionID(memPartitionID_dynamic)
+    {
+        *this = ResizeArray<Type>(*this, initialSize);
+        memset(this->elements, 0, initialSize); 
+        this->size = initialSize;
+
+        for(i32 i{}; i < this->size; ++i)
+        {
+            this->elements[i] = type;
+        };
+    };
     Dynam_Array(i64 initialSize, i32 memPartitionID_dynamic)
         : capacity(initialSize)
         , memPartitionID(memPartitionID_dynamic)
     {
         *this = ResizeArray<Type>(*this, initialSize);
-        memset(this->elements, 0, initialSize); //Initializes elements as well.
+        memset(this->elements, 0, initialSize); 
         this->size = initialSize;
     };
 

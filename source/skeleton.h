@@ -36,7 +36,7 @@ struct Bone
 {
     Bone() = default;
     Bone(Init) :
-        childBones{10, heap}
+        childBones{0, heap}
     {}
 
     v2f worldPos;
@@ -72,7 +72,7 @@ struct Skeleton
 {
     Skeleton() = default;
     Skeleton(i32 numOfBones, i32 numOfSlots, i32 memParitionID) : 
-        bones{numOfBones, memParitionID},
+        bones{numOfBones, Bone{Init::_}, memParitionID},
         slots{numOfSlots, memParitionID}
     {}
 
@@ -142,7 +142,6 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
             {
                 newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentBone_json, "parent", 0));
-                newBone->parentBone->childBones = { 0, heap };
                 newBone->parentBone->childBones.PushBack(newBone);
             };
         };
