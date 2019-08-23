@@ -23,12 +23,24 @@ struct KeyFrame
 
 struct Timeline
 {
+    Timeline() = default;
+    Timeline(Init) :
+        keyFrames{0, heap}
+    {}
+
     b exists{false};
-    Dynam_Array<KeyFrame> keyFrames{50, heap};
+    Dynam_Array<KeyFrame> keyFrames;
 };
 
 struct TimelineSet
 {
+    TimelineSet() = default;
+    TimelineSet(Init init) :
+        rotationTimeline{init},
+        translationTimeline{init},
+        scaleTimeline{init}
+    {};
+
     Timeline rotationTimeline;
     Timeline translationTimeline;
     Timeline scaleTimeline;
@@ -36,18 +48,31 @@ struct TimelineSet
 
 struct Animation
 {
+    Animation() = default;
+    Animation(Init) :
+        boneTimelineSets{heap},
+        boneRotations{heap},
+        boneTranslations{heap},
+        startAnimation{false}
+    {};
+
     const char* name;
     f32 currentTime;
-    HashMap_Str<TimelineSet> boneTimelineSets { heap }; 
-    HashMap_Str<f32> boneRotations { heap };
-    HashMap_Str<v2f> boneTranslations { heap };
-    b startAnimation{ false };
+    HashMap_Str<TimelineSet> boneTimelineSets; 
+    HashMap_Str<f32> boneRotations;
+    HashMap_Str<v2f> boneTranslations;
+    b startAnimation;
     f32 totalTime;
 };
 
 struct AnimationData
 {
-    HashMap_Str<Animation> animations { heap };
+    AnimationData() = default;
+    AnimationData(Init) :
+        animations{heap}
+    {}
+
+    HashMap_Str<Animation> animations;
 };
 
 struct AnimationQueue
@@ -76,7 +101,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
     i32 animIndex{};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {
-        Animation animation{};
+        Animation animation{Init::_};
 
         animation.name = currentAnimation_json->name;
 
@@ -86,7 +111,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
         {
             Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
             Json* translateTimeline_json = Json_getItem(currentBone, "translate");
-            TimelineSet timeLineSet{};
+            TimelineSet timeLineSet{Init::_};
 
             if (rotateTimeline_json)
             {
@@ -115,7 +140,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
             if (translateTimeline_json)
             {
                 i32 keyFrameIndex{};
-                Timeline translateTimeline{};
+                Timeline translateTimeline{Init::_};
                 translateTimeline.keyFrames = { translateTimeline_json->size, heap };
                 translateTimeline.exists = true;
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
@@ -151,7 +176,7 @@ void QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const ch
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
-    Animation anim = GetVal<Animation>(animData.animations, index, animName);
+    Animation anim { GetVal<Animation>(animData.animations, index, animName) };
     anim.startAnimation = true;
 
     animQueue.queuedAnimations.PushBack(anim);

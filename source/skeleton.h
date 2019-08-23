@@ -34,6 +34,11 @@
 
 struct Bone
 {
+    Bone() = default;
+    Bone(Init) :
+        childBones{10, heap}
+    {}
+
     v2f worldPos;
     f32 originalParentLocalRotation;
     v2f originalParentLocalPos;
@@ -43,7 +48,7 @@ struct Bone
     Transform transform{};
     f32 length;
     Bone* parentBone;
-    Dynam_Array<Bone*> childBones {10, heap};
+    Dynam_Array<Bone*> childBones; 
     const char* name;
 };
 
@@ -65,8 +70,14 @@ struct Slot
 
 struct Skeleton
 {
-    Dynam_Array<Bone> bones {20, heap};
-    Dynam_Array<Slot> slots {20, heap};
+    Skeleton() = default;
+    Skeleton(i32 numOfBones, i32 numOfSlots, i32 memParitionID) : 
+        bones{numOfBones, memParitionID},
+        slots{numOfSlots, memParitionID}
+    {}
+
+    Dynam_Array<Bone> bones; 
+    Dynam_Array<Slot> slots;
     f32 width, height;
     v2f* worldPos;
 };
@@ -102,14 +113,14 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
     root = Json_create(skeletonJson);
 
     Json* jsonSkeleton = Json_getItem(root, "skeleton"); /* clang-format off */BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!"); /* clang-format on */
+    Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
+    Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
 
-    Skeleton newSkeleton {};
+    Skeleton newSkeleton {jsonBones->size, jsonSlots->size, heap};
     newSkeleton.width = Json_getFloat(jsonSkeleton, "width", 0.0f);
     newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0.0f);
 
     { //Create Bones
-        Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
-        newSkeleton.bones = { jsonBones->size, heap };
         i32 boneIndex {};
         for (Json* currentBone_json = jsonBones->child; boneIndex < newSkeleton.bones.size; currentBone_json = currentBone_json->next, ++boneIndex)
         {
@@ -138,8 +149,6 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
     };
 
     { //Create Slots
-        Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
-        newSkeleton.slots = { jsonSlots->size, heap };
         i32 slotIndex {};
         for (Json* currentSlot_json = jsonSlots->child; slotIndex < newSkeleton.slots.size; currentSlot_json = currentSlot_json->next, ++slotIndex)
         {

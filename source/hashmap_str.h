@@ -14,7 +14,7 @@ class KeyInfo
 {
 public:
     const char* originalString;
-    ui32 uniqueID{ 0 };
+    ui32 uniqueID;
     Type value;
     KeyInfo<Type>* nextInfo;
 };
@@ -24,11 +24,11 @@ class HashMap_Str
 {
 public:
     HashMap_Str() = default;
-    HashMap_Str(i32 memParitionID) 
-    { 
-    };
+    HashMap_Str(i32 memParitionID) :
+        keyInfos{4096, memParitionID}
+    {};
 
-    Dynam_Array<KeyInfo<ValueType>> keyInfos{4096, heap};
+    Dynam_Array<KeyInfo<ValueType>> keyInfos;
     i32 numOfCollisions;
 };
 

@@ -12,7 +12,6 @@ struct Fighter
     Transform world;
     f32 height;
     Skeleton skel;
-    Animation anim;
     AnimationQueue animQueue;
     AnimationData animData;
 };

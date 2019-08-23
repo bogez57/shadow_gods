@@ -406,7 +406,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePoint_inScreenDims = viewDims / 2.0f;
         stage->camera.zoomFactor = 1.0f;
 
+        player->skel = {20, 20, heap};
         player->animQueue.queuedAnimations.Init(20, heap);
+        player->animData = {Init::_};
+        enemy->animData = {Init::_};
         CreateAnimationsFromJsonFile($(player->animData), "data/yellow_god.json");
         CreateAnimationsFromJsonFile($(enemy->animData), "data/yellow_god.json");
 
