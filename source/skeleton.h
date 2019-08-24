@@ -35,9 +35,11 @@
 struct Bone
 {
     Bone() = default;
-    Bone(Init) :
-        childBones{0, heap}
-    {}
+    Bone(Init)
+        : childBones{heap}
+    {
+        childBones.Reserve(10);
+    };
 
     v2f worldPos;
     f32 originalParentLocalRotation;

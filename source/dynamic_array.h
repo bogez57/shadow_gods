@@ -56,6 +56,9 @@ class Dynam_Array
 {
 public:
     Dynam_Array() = default;
+    Dynam_Array(i32 memPartitionID_dynamic) 
+        : memPartitionID(memPartitionID_dynamic)
+    {}
     Dynam_Array(i64 initialSize, const Type& type, i32 memPartitionID_dynamic)
         : capacity(initialSize)
         , memPartitionID(memPartitionID_dynamic)
@@ -90,6 +93,12 @@ public:
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which exceeds capacity - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which exceeds current array size - current max array size: %i", index, size);
         return *(this->elements + index);
+    };
+
+    void Reserve(ui32 numItems)
+    {
+        i64 newSize = this->capacity + numItems;
+        *this = ResizeArray<Type>(*this, newSize);
     };
 
     void Insert(Type element, ui32 AtIndex)
