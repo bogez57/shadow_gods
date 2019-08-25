@@ -26,11 +26,10 @@ void _DeAlloc(i32, void**);
 
 /*
     TODO: 
-    1.) Maybe get rid of Blocks linked list data structure and use array instead?
-    2.) Alignment?
-    3.) delete the multiple dynamica allocators part, don't think I need that. 
-    4.) Instaed of needing the implicit knowledge that a nextBlock = nullptr is suppose to mean end of the block chain, make somehting
-    more explicit. E.g. if(block->nextBlock != END_OF_BL0CK_CHAIN) or if(block->notTail)
+    1.) Logic is pretty broken. Need to do proper testing before use
+    2.) Maybe get rid of Blocks linked list data structure and use array instead?
+    3.) Alignment?
+    4.) delete the multiple dynamica allocators part, don't think I need that. 
 */
 
 struct _Memory_Block
@@ -127,7 +126,7 @@ _Memory_Block* _GetFirstFreeBlockOfSize(i32 memRegionIdentifier, i64 Size)
     {
         for (ui32 BlockIndex { 0 }; BlockIndex < dynamAllocators[memRegionIdentifier].AmountOfBlocks; ++BlockIndex)
         {
-			if (BlockIndex == 3710)
+			if (BlockIndex == 11590)
 				int x{ 3 };
             if (MemBlock->IsFree && MemBlock->Size >= Size)
             {
@@ -161,6 +160,7 @@ void _FreeBlockAndMergeIfNecessary(_Memory_Block* blockToFree, i32 memRegionIden
 
                 if (blockToFree->nextBlock != dynamAllocators[memRegionIdentifier].tail)
                 {
+                    blockToFree->nextBlock->nextBlock->prevBlock = blockToFree;
                     blockToFree->nextBlock = blockToFree->nextBlock->nextBlock;
                 }
                 else
@@ -179,6 +179,7 @@ void _FreeBlockAndMergeIfNecessary(_Memory_Block* blockToFree, i32 memRegionIden
                 if (blockToFree != dynamAllocators[memRegionIdentifier].tail)
                 {
                     blockToFree->prevBlock->nextBlock = blockToFree->nextBlock;
+                    blockToFree->nextBlock->prevBlock = blockToFree->prevBlock;
                 }
                 else
                 {

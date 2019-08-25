@@ -45,9 +45,11 @@ global_variable i32 renderBuffer;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
+#if 0
 #define STBI_MALLOC(sz) MallocSize(heap, sz)
 #define STBI_REALLOC(p, newsz) ReAllocSize(heap, p, newsz)
 #define STBI_FREE(p) DeAlloc(heap, p)
+#endif
 #include <stb/stb_image.h>
 #include <boagz/error_context.cpp>
 
@@ -422,8 +424,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         QueueAnimation($(player->animQueue), player->animData, "idle");
     };
-
-    
 
     if (globalPlatformServices->DLLJustReloaded)
     {
