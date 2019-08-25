@@ -51,6 +51,7 @@ struct Bone
     f32 length;
     Bone* parentBone;
     Dynam_Array<Bone*> childBones; 
+    b isRoot{false};
     const char* name;
 };
 
@@ -128,6 +129,8 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
         {
             Bone* newBone = &newSkeleton.bones.At(boneIndex);
             newBone->name = Json_getString(currentBone_json, "name", 0);
+            if(!strcmp(newBone->name, "root"))
+                newBone->isRoot = true;
             newBone->transform.scale = v2f{1.0f, 1.0f};
             newBone->parentLocalScale = &newBone->transform.scale;
 

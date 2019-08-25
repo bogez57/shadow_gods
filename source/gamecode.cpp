@@ -271,15 +271,16 @@ void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJ
                     if (hashIndex != HASH_DOES_NOT_EXIST)
                     {
                         TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, fighter.skel.bones.At(boneIndex).name);
-                        Timeline translateTimeline = timelineSet.translationTimeline;
 
-                        if(translateTimeline.exists)
+                        if(timelineSet.translationTimeline.exists)
                         {
-                            for(i32 i{}; i < translateTimeline.keyFrames.size; ++i)
+                            for(i32 i{}; i < timelineSet.translationTimeline.keyFrames.size; ++i)
                             {
-                                translateTimeline.keyFrames.At(i).translation *= scaleFactor;
+                                timelineSet.translationTimeline.keyFrames.At(i).translation *= scaleFactor;
                             };
                         };
+
+                        Insert<TimelineSet>($(anim.boneTimelineSets), fighter.skel.bones.At(boneIndex).name, timelineSet);
                     };
                 };
             };
@@ -308,7 +309,7 @@ v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
 {
     v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.transform);
 
-    if (NOT boneToGrabTransformFrom.parentBone) //If root bone has been hit then exit recursion by returning world pos of main bone
+    if (boneToGrabTransformFrom.isRoot) //If root bone has been hit then exit recursion by returning world pos of main bone
     {
         return parentLocalPos;
     }
@@ -347,7 +348,7 @@ f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
 {
     rotation += *bone.parentLocalRotation;
 
-    if (NOT bone.parentBone)
+    if (bone.isRoot)
         return rotation;
     else
         return RecursivelyAddBoneRotations(rotation, *bone.parentBone);
@@ -386,7 +387,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         { //Initialize memory/allocator stuff
             InitApplicationMemory(gameMemory);
-            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(500), DYNAMIC);
+            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(800), DYNAMIC);
             InitDynamAllocator(heap);
         };
 
@@ -421,6 +422,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         QueueAnimation($(player->animQueue), player->animData, "idle");
     };
+
+    
 
     if (globalPlatformServices->DLLJustReloaded)
     {
@@ -468,6 +471,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         for (i32 slotIndex{ 0 }; slotIndex < fighter.skel.slots.size; ++slotIndex)
         {
             Slot* currentSlot = &fighter.skel.slots[slotIndex];
+
+			Bone* bone = FindBone(&fighter.skel, "root");
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };

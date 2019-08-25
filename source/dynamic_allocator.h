@@ -84,7 +84,6 @@ _Memory_Block* _ConvertDataToMemoryBlock(void* Ptr)
 {
     _Memory_Block* BlockHeader {};
     BlockHeader = (_Memory_Block*)(((ui8*)Ptr) - (sizeof(_Memory_Block)));
-    BlockHeader->data = Ptr;
 
     return BlockHeader;
 };
@@ -100,6 +99,7 @@ _Memory_Block* _SplitBlock(i32 memRegionIdentifier, _Memory_Block* BlockToSplit,
     NewBlock->data = _GetDataFromBlock(NewBlock);
     NewBlock->prevBlock = BlockToSplit;
     NewBlock->nextBlock = BlockToSplit->nextBlock;
+    BlockToSplit->nextBlock->prevBlock = NewBlock;
     BlockToSplit->nextBlock = NewBlock;
 
     ++dynamAllocators[memRegionIdentifier].AmountOfBlocks;
@@ -127,6 +127,8 @@ _Memory_Block* _GetFirstFreeBlockOfSize(i32 memRegionIdentifier, i64 Size)
     {
         for (ui32 BlockIndex { 0 }; BlockIndex < dynamAllocators[memRegionIdentifier].AmountOfBlocks; ++BlockIndex)
         {
+			if (BlockIndex == 3710)
+				int x{ 3 };
             if (MemBlock->IsFree && MemBlock->Size >= Size)
             {
                 Result = MemBlock;
@@ -134,6 +136,8 @@ _Memory_Block* _GetFirstFreeBlockOfSize(i32 memRegionIdentifier, i64 Size)
             }
             else
             {
+                if(!MemBlock->nextBlock)
+                    return nullptr;
                 MemBlock = MemBlock->nextBlock;
             }
         };

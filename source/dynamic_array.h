@@ -63,7 +63,7 @@ public:
         : capacity(initialSize)
         , memPartitionID(memPartitionID_dynamic)
     {
-        *this = ResizeArray<Type>(*this, initialSize);
+        ResizeArray<Type>($(*this), initialSize);
         memset(this->elements, 0, initialSize); 
         this->size = initialSize;
 
@@ -76,9 +76,32 @@ public:
         : capacity(initialSize)
         , memPartitionID(memPartitionID_dynamic)
     {
-        *this = ResizeArray<Type>(*this, initialSize);
+        ResizeArray<Type>($(*this), initialSize);
         memset(this->elements, 0, initialSize); 
         this->size = initialSize;
+    };
+    Dynam_Array(const Dynam_Array<Type>& other)
+    {
+        this->memPartitionID = other.memPartitionID;
+        this->capacity = other.capacity;
+        this->size = other.size;
+        ResizeArray<Type>($(*this), other.capacity);
+        memcpy(this->elements, other.elements, sizeof(Type) * other.size);
+    };
+    Dynam_Array<Type>& operator=(const Dynam_Array<Type>& other)
+    {
+        this->memPartitionID = other.memPartitionID;
+        this->capacity = other.capacity;
+        this->size = other.size;
+		sizet thing = sizeof(Type) * other.size;
+        ResizeArray<Type>($(*this), other.capacity);
+        memcpy(this->elements, other.elements, sizeof(Type) * other.size);
+
+        return *this;
+    };
+    ~Dynam_Array()
+    {
+        Destroy();
     };
 
     Type& operator[](i64 index)
@@ -98,7 +121,7 @@ public:
     void Reserve(ui32 numItems)
     {
         i64 newSize = this->capacity + numItems;
-        *this = ResizeArray<Type>(*this, newSize);
+        ResizeArray<Type>($(*this), newSize);
     };
 
     void Insert(Type element, ui32 AtIndex)
@@ -150,11 +173,9 @@ public:
 };
 
 template <typename Type>
-Dynam_Array<Type> ResizeArray(Dynam_Array<Type> arrayToResize, i64 size)
+void ResizeArray(Dynam_Array<Type>&& arrayToResize, i64 size)
 {
     (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)ReAllocSize(arrayToResize.memPartitionID, arrayToResize.elements, (sizeof(Type) * arrayToResize.capacity)));
-
-    return arrayToResize;
 };
 
 template <typename Type>
