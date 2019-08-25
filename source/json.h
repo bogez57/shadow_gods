@@ -87,7 +87,7 @@ static int Json_strcasecmp(const char* s1, const char* s2)
 /* Internal constructor. */
 static Json* Json_new(void)
 {
-    return CallocType(0, Json, 1);
+    return CallocType(heap, Json, 1);
 }
 
 /* Delete a Json structure. */

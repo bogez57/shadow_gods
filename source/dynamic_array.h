@@ -80,42 +80,19 @@ public:
         memset(this->elements, 0, initialSize); 
         this->size = initialSize;
     };
-    Dynam_Array(const Dynam_Array<Type>& other)
-    {
-        this->memPartitionID = other.memPartitionID;
-        this->capacity = other.capacity;
-        this->size = other.size;
-        ResizeArray<Type>($(*this), other.capacity);
-        memcpy(this->elements, other.elements, sizeof(Type) * other.size);
-    };
-    Dynam_Array<Type>& operator=(const Dynam_Array<Type>& other)
-    {
-        this->memPartitionID = other.memPartitionID;
-        this->capacity = other.capacity;
-        this->size = other.size;
-		sizet thing = sizeof(Type) * other.size;
-        ResizeArray<Type>($(*this), other.capacity);
-        memcpy(this->elements, other.elements, sizeof(Type) * other.size);
-
-        return *this;
-    };
-    ~Dynam_Array()
-    {
-        Destroy();
-    };
 
     Type& operator[](i64 index)
     {
         BGZ_ASSERT(index < this->capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which is out of current dynam array bounds - current max array size: %i", index, size);
-        return *(this->elements + index);
+        return (this->elements[index]);
     };
 
     Type& At(i64 index)
     {
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which exceeds capacity - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which exceeds current array size - current max array size: %i", index, size);
-        return *(this->elements + index);
+        return (this->elements[index]);
     };
 
     void Reserve(ui32 numItems)
