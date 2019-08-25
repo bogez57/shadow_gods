@@ -53,16 +53,18 @@ struct Animation
         boneTimelineSets{heap},
         boneRotations{heap},
         boneTranslations{heap},
-        startAnimation{false}
+        startAnimation{false},
+        totalTime{0},
+        currentTime{0}
     {};
 
     const char* name;
+    f32 totalTime;
     f32 currentTime;
     HashMap_Str<TimelineSet> boneTimelineSets; 
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     b startAnimation;
-    f32 totalTime;
 };
 
 struct AnimationData

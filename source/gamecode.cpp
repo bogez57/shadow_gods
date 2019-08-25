@@ -45,9 +45,9 @@ global_variable i32 renderBuffer;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz) globalPlatformServices->Malloc(sz)
-#define STBI_REALLOC(p, newsz) globalPlatformServices->Realloc(p, newsz)
-#define STBI_FREE(p) globalPlatformServices->Free(p)
+#define STBI_MALLOC(sz) MallocSize(heap, sz) 
+#define STBI_REALLOC(p, newsz) ReAllocSize(heap, p, newsz) 
+#define STBI_FREE(p) DeAlloc(heap, p) 
 #include <stb/stb_image.h>
 #include <boagz/error_context.cpp>
 
