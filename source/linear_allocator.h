@@ -1,7 +1,6 @@
 #ifndef LINEAR_ALLOCATOR_H 
 #define LINEAR_ALLOCATOR_H 
 
-#include "allocator.h"
 #include "boagz/error_handling.h"
 
 void* _PushSize(i32 memPartitionID, i64 size);

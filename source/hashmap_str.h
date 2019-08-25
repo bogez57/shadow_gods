@@ -68,7 +68,7 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 
     if (NOT map.keyInfos.At(indexIntoHashArr).uniqueID || map.keyInfos.At(indexIntoHashArr).uniqueID == info.uniqueID)
     {
-        map.keyInfos.Insert(info, indexIntoHashArr);
+        Insert($(map.keyInfos), info, indexIntoHashArr);
     }
     else
     {

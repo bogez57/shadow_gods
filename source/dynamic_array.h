@@ -95,58 +95,65 @@ public:
         return (this->elements[index]);
     };
 
-    void Reserve(ui32 numItems)
-    {
-        i64 newSize = this->capacity + numItems;
-        ResizeArray<Type>($(*this), newSize);
-    };
-
-    void Insert(Type element, ui32 AtIndex)
-    {
-        ((this->capacity <= (i64)(AtIndex) ? (this->capacity = this->size = (AtIndex) + 1,
-                                                 Roundup32(this->capacity),
-                                                 this->elements = (Type*)ReAllocSize(this->memPartitionID, this->elements, sizeof(Type) * this->capacity),
-                                                 0)
-                                           : this->size <= (i64)(AtIndex) ? this->size = (AtIndex) + 1 : 0),
-            this->elements[(AtIndex)])
-            = element;
-    };
-
-    //Resize array if appending over bounds
-    void PushBack(Type element)
-    {
-        if (this->size == this->capacity)
-        {
-            this->capacity = this->capacity ? this->capacity << 1 : 2;
-            this->elements = (Type*)ReAllocSize(this->memPartitionID, this->elements, sizeof(Type) * this->capacity);
-        }
-        this->elements[this->size++] = (element);
-    };
-
-    void PopBack()
-    {
-        BGZ_ASSERT(this->size > 0, "Cannot pop off an empty dynamic array!");
-        this->elements[this->size - 1] = {};
-        this->elements[--this->size];
-    };
-
-    void Destroy()
-    {
-        DeAlloc(memPartitionID, this->elements);
-        this->size = 0;
-        this->capacity = 0;
-        hasArrayBeenDestroyed = true;
-    };
-
-    b Empty()
-    {
-        return (size == 0) ? true : false;
-    };
-
     i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
     i32 memPartitionID;
+};
+
+template <typename Type>
+void PopBack(Dynam_Array<Type>&& arr)
+{
+    BGZ_ASSERT(arr.size > 0, "Cannot pop off an empty dynamic array!");
+    arr.elements[arr.size - 1] = {};
+    arr.elements[--arr.size];
+};
+
+//Resize array if appending over bounds
+template <typename Type>
+void PushBack(Dynam_Array<Type>&& arr, Type element)
+{
+    if (arr.size == arr.capacity)
+    {
+        arr.capacity = arr.capacity ? arr.capacity << 1 : 2;
+        arr.elements = (Type*)ReAllocSize(arr.memPartitionID, arr.elements, sizeof(Type) * arr.capacity);
+    }
+
+    arr.elements[arr.size++] = (element);
+};
+
+template <typename Type>
+void Insert(Dynam_Array<Type>&& arr, Type element, ui32 AtIndex)
+{
+    ((arr.capacity <= (i64)(AtIndex) ? (arr.capacity = arr.size = (AtIndex) + 1,
+                                            Roundup32(arr.capacity),
+                                            arr.elements = (Type*)ReAllocSize(arr.memPartitionID, arr.elements, sizeof(Type) * arr.capacity),
+                                            0)
+                                            : arr.size <= (i64)(AtIndex) ? arr.size = (AtIndex) + 1 : 0),
+            arr.elements[(AtIndex)])
+            = element;
+};
+
+template <typename Type>
+void Reserve(Dynam_Array<Type>&& arr, ui32 numItems)
+{
+    i64 newSize = arr.capacity + numItems;
+    ResizeArray<Type>($(arr), newSize);
+};
+
+template <typename Type>
+void Destroy(Dynam_Array<Type>&& arr)
+{
+    DeAlloc(memPartitionID, arr.elements);
+    arr.size = 0;
+    arr.capacity = 0;
+    hasArrayBeenDestroyed = true;
+};
+
+template <typename Type>
+b IsEmpty(Dynam_Array<Type>&& arr)
+{
+    return (arr.size == 0) ? true : false;
 };
 
 template <typename Type>

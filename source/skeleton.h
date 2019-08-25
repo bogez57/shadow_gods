@@ -38,7 +38,7 @@ struct Bone
     Bone(Init)
         : childBones{heap}
     {
-        childBones.Reserve(10);
+        Reserve($(childBones), 10);
     };
 
     v2f worldPos;
@@ -147,7 +147,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
             {
                 newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentBone_json, "parent", 0));
-                newBone->parentBone->childBones.PushBack(newBone);
+                PushBack($(newBone->parentBone->childBones), newBone);
             };
         };
     };

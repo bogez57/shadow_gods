@@ -128,7 +128,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
                     keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
                     keyFrame.angle = Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f));
 
-                    rotationTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+                    Insert($(rotationTimeline.keyFrames), keyFrame, keyFrameIndex);
                 };
 
                 timeLineSet.rotationTimeline = rotationTimeline;
@@ -154,7 +154,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
                     keyFrame.translation.x = Json_getFloat(jsonKeyFrame, "x", 0.0f) / pixelsPerMeter;
                     keyFrame.translation.y = Json_getFloat(jsonKeyFrame, "y", 0.0f) / pixelsPerMeter;
 
-                    translateTimeline.keyFrames.Insert(keyFrame, keyFrameIndex);
+                    Insert($(translateTimeline.keyFrames), keyFrame, keyFrameIndex);
                 };
 
                 timeLineSet.translationTimeline = translateTimeline;
