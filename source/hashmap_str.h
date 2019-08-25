@@ -13,8 +13,8 @@ template <typename Type>
 class KeyInfo
 {
 public:
-    const char* originalString;
-    ui32 uniqueID;
+    const char* originalString{nullptr};
+    ui32 uniqueID{};
     Type value;
     KeyInfo<Type>* nextInfo;
 };
@@ -29,7 +29,7 @@ public:
     {};
 
     Dynam_Array<KeyInfo<ValueType>> keyInfos;
-    i32 numOfCollisions;
+    i32 numOfCollisions{};
 };
 
 i32 _ProduceUniqueIDForString(const char* key)

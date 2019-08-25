@@ -98,7 +98,7 @@ public:
     i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
-    i32 memPartitionID;
+    i32 memPartitionID{};
 };
 
 template <typename Type>

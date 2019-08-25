@@ -41,33 +41,33 @@ struct Bone
         Reserve($(childBones), 10);
     };
 
-    v2f worldPos;
-    f32 originalParentLocalRotation;
-    v2f originalParentLocalPos;
-    v2f* parentLocalScale;
-    v2f* parentLocalPos;
-    f32* parentLocalRotation;
-    Transform transform{};
-    f32 length;
-    Bone* parentBone;
+    v2f worldPos{};
+    f32 originalParentLocalRotation{};
+    v2f originalParentLocalPos{};
+    v2f* parentLocalScale{nullptr};
+    v2f* parentLocalPos{nullptr};
+    f32* parentLocalRotation{nullptr};
+    Transform transform;
+    f32 length{};
+    Bone* parentBone{nullptr};
     Dynam_Array<Bone*> childBones; 
     b isRoot{false};
-    const char* name;
+    const char* name{nullptr};
 };
 
 struct Region_Attachment
 {
-    f32 width, height;
-    v2f parentBoneLocalPos;
-    v2f parentBoneLocalScale;
-    f32 parentBoneLocalRotation;
-    AtlasRegion region_image{};
+    f32 width, height{};
+    v2f parentBoneLocalPos{};
+    v2f parentBoneLocalScale{};
+    f32 parentBoneLocalRotation{};
+    AtlasRegion region_image;
 };
 
 struct Slot
 {
-    char* name;
-    Bone* bone;
+    char* name{nullptr};
+    Bone* bone{nullptr};
     Region_Attachment regionAttachment{};
 };
 
@@ -81,8 +81,8 @@ struct Skeleton
 
     Dynam_Array<Bone> bones; 
     Dynam_Array<Slot> slots;
-    f32 width, height;
-    v2f* worldPos;
+    f32 width{}, height{};
+    v2f* worldPos{nullptr};
 };
 
 Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath);

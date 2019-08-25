@@ -15,10 +15,10 @@
 
 struct KeyFrame
 {
-    f32 time;
-    f32 angle;
-    v2f translation;
-    char* curve;
+    f32 time{};
+    f32 angle{};
+    v2f translation{};
+    char* curve{nullptr};
 };
 
 struct Timeline
@@ -53,18 +53,16 @@ struct Animation
         boneTimelineSets{heap},
         boneRotations{heap},
         boneTranslations{heap},
-        startAnimation{false},
-        totalTime{0},
-        currentTime{0}
+        startAnimation{false}
     {};
 
-    const char* name;
-    f32 totalTime;
-    f32 currentTime;
+    const char* name{nullptr};
+    f32 totalTime{};
+    f32 currentTime{};
     HashMap_Str<TimelineSet> boneTimelineSets; 
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
-    b startAnimation;
+    b startAnimation{false};
 };
 
 struct AnimationData

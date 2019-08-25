@@ -35,7 +35,7 @@ void _DeAlloc(i32, void**);
 struct _Memory_Block
 {
     b IsFree { true };
-    i64 Size { 0 };
+    i64 Size {};
     void* data { nullptr };
     _Memory_Block* nextBlock { nullptr };
     _Memory_Block* prevBlock { nullptr };

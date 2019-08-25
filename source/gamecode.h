@@ -8,9 +8,9 @@
 
 struct Fighter
 {
-    v2f* worldPos;
+    v2f* worldPos{nullptr};
     Transform world;
-    f32 height;
+    f32 height{};
     Skeleton skel;
     AnimationQueue animQueue;
     AnimationData animData;
@@ -18,16 +18,16 @@ struct Fighter
 
 struct Game_Camera
 {
-    v2f lookAt;
-    v2f dilatePoint_inScreenDims;
-    f32 zoomFactor;
+    v2f lookAt{};
+    v2f dilatePoint_inScreenDims{};
+    f32 zoomFactor{};
 };
 
 struct Stage_Data
 {
     Image backgroundImg;
-    v2f size;
-    v2f centerPoint;
+    v2f size{};
+    v2f centerPoint{};
     Fighter player;
     Fighter enemy;
     Fighter enemy2;
@@ -39,7 +39,7 @@ struct Game_State
     Image composite;
     Image normalMap;
     Atlas* atlas;
-    f32 lightAngle;
-    f32 lightThreshold;
+    f32 lightAngle{};
+    f32 lightThreshold{};
     Stage_Data stage;
 };

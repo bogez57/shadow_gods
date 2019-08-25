@@ -20,23 +20,23 @@
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
 struct Camera2D
 {
-    v2f lookAt;
-    v2f viewCenter;
-    v2f dilatePoint_inScreenDims;
-    f32 zoomFactor;
-    v2f screenDimensions;
+    v2f lookAt{};
+    v2f viewCenter{};
+    v2f dilatePoint_inScreenDims{};
+    f32 zoomFactor{};
+    v2f screenDimensions{};
 };
 
 struct Rectf
 {
-    v2f min;
-    v2f max;
+    v2f min{};
+    v2f max{};
 };
 
 struct Recti
 {
-    v2i min;
-    v2i max;
+    v2i min{};
+    v2i max{};
 };
 
 struct Quadf
@@ -71,42 +71,42 @@ struct Quadi
 
 struct Game_Render_Cmd_Buffer
 {
-    ui8* baseAddress;
-    ui32 usedAmount;
-    ui32 size;
-    i32 entryCount;
+    ui8* baseAddress{nullptr};
+    ui32 usedAmount{};
+    ui32 size{};
+    i32 entryCount{};
 };
 
 struct Rendering_Info
 {
     Game_Render_Cmd_Buffer cmdBuffer;
     Camera2D camera;
-    f32 pixelsPerMeter;
+    f32 pixelsPerMeter{};
 };
 
 struct Image
 {
-    ui8* data;
-    f32 aspectRatio;
-    i32 width_pxls;
-    i32 height_pxls;
-    ui32 pitch;
+    ui8* data{nullptr};
+    f32 aspectRatio{};
+    i32 width_pxls{};
+    i32 height_pxls{};
+    ui32 pitch{};
     f32 opacity {1.0f};
 };
 
 
 struct Coordinate_Space
 {
-    v2f origin;
-    v2f xBasis;
-    v2f yBasis;
+    v2f origin{};
+    v2f xBasis{};
+    v2f yBasis{};
 };
 
 struct Object_Transform
 {
-    f32 rotation;
-    v2f pos;
-    v2f scale;
+    f32 rotation{};
+    v2f pos{};
+    v2f scale{};
 };
 
 enum Render_Entry_Type
@@ -123,10 +123,10 @@ struct RenderEntry_Header
 struct RenderEntry_Rect
 {
     RenderEntry_Header header;
-    v2f dimensions;
-    v3f color;
+    v2f dimensions{};
+    v3f color{};
     Object_Transform world;
-    v2i targetRectSize;
+    v2i targetRectSize{};
 };
 
 struct RenderEntry_Texture
@@ -134,10 +134,10 @@ struct RenderEntry_Texture
     RenderEntry_Header header;
     const char* name;
     Object_Transform world;
-    ui8* colorData;
-    v2i size;
-    ui32 pitch;
-    v2i targetRectSize;
+    ui8* colorData{nullptr};
+    v2i size{};
+    ui32 pitch{};
+    v2i targetRectSize{};
     Array<v2f, 2> uvBounds;
 };
 
