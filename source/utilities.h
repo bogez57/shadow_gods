@@ -4,9 +4,16 @@
 
 struct Transform
 {
-    f32 rotation;
-    v2f translation;
-    v2f scale;
+    Transform() = default;
+    Transform(f32 rotation, v2f translation, v2f scale) :
+        rotation{rotation},
+        translation{translation},
+        scale{scale}
+    {}
+
+    f32 rotation{};
+    v2f translation{};
+    v2f scale{};
 };
 
 inline ui32

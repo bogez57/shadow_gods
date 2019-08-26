@@ -218,13 +218,10 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
-void InitFighter(Fighter&& fighter, v2f worldPosition, f32 newFighterHeight)
+void InitFighter(Fighter&& fighter, f32 newFighterHeight)
 {
-    fighter.world.translation = worldPosition;
-    fighter.world.rotation = 0.0f;
-    fighter.world.scale = { 1.0f, 1.0f };
-    fighter.skel.worldPos = &fighter.world.translation;
-    fighter.worldPos = &fighter.world.translation;
+    fighter.skel.worldPos = &fighter.world.translation;//Why the fuck does removing this cause issues
+    fighter.worldPos = &fighter.world.translation;//Why the fuck does removing this cause issues
 
     f32 scaleFactor{};
     { //Change fighter height
@@ -406,13 +403,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePoint_inScreenDims = viewDims / 2.0f;
         stage->camera.zoomFactor = 1.0f;
 
-        *player = {"data/yellow_god.atlas", "data/yellow_god.json"};
-        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json"};
+        v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
+        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos};
+        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos};
 
         //Player Init
-        v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        InitFighter($(*player), playerWorldPos, /*player height*/ 2.0f);
-        InitFighter($(*enemy), enemyWorldPos, /*enemy height*/ 2.0f);
+        InitFighter($(*player), /*player height*/ 2.0f);
+        InitFighter($(*enemy), /*enemy height*/ 2.0f);
 
         QueueAnimation($(player->animQueue), player->animData, "idle");
     };
