@@ -5,16 +5,7 @@
 #include "collisions.h"
 #include "skeleton.h"
 #include "animation.h"
-
-struct Fighter
-{
-    v2f* worldPos{nullptr};
-    Transform world;
-    f32 height{};
-    Skeleton skel;
-    AnimationQueue animQueue;
-    AnimationData animData;
-};
+#include "fighter.h"
 
 struct Game_Camera
 {

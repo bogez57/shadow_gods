@@ -1,5 +1,5 @@
-#ifndef JSON_INCLUDE_H
-#define JSON_INCLUDE_H
+#ifndef JSON_INCLUDE
+#define JSON_INCLUDE
 
 /* Json Types: */
 #define Json_False 0

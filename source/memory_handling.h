@@ -1,5 +1,5 @@
-#ifndef MEMHANDLING_INCLUDE_H
-#define MEMHANDLING_INCLUDE_H
+#ifndef MEMHANDLING_INCLUDE
+#define MEMHANDLING_INCLUDE
 
 #include <stdint.h>
 #include <assert.h>

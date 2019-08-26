@@ -68,6 +68,8 @@ global_variable i32 renderBuffer;
 #include "skeleton.h"
 #define ANIMATION_IMPL
 #include "animation.h"
+#define FIGHTER_IMPL
+#include "fighter.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
 
@@ -216,11 +218,8 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
-void InitFighter(Fighter&& fighter, const char* atlasFilePath, const char* skelJsonFilePath, v2f worldPosition, f32 newFighterHeight)
+void InitFighter(Fighter&& fighter, v2f worldPosition, f32 newFighterHeight)
 {
-    Atlas* atlas;
-    atlas = CreateAtlasFromFile(atlasFilePath, 0);
-    fighter.skel = CreateSkeletonUsingJsonFile(*atlas, skelJsonFilePath);
     fighter.world.translation = worldPosition;
     fighter.world.rotation = 0.0f;
     fighter.world.scale = { 1.0f, 1.0f };
@@ -407,18 +406,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePoint_inScreenDims = viewDims / 2.0f;
         stage->camera.zoomFactor = 1.0f;
 
-        player->skel = {20, 20, heap};
-        enemy->skel = {20, 20, heap};
-        player->animQueue.queuedAnimations.Init(20, heap);
-        player->animData = {Init::_};
-        enemy->animData = {Init::_};
-        CreateAnimationsFromJsonFile($(player->animData), "data/yellow_god.json");
-        CreateAnimationsFromJsonFile($(enemy->animData), "data/yellow_god.json");
+        *player = {"data/yellow_god.atlas", "data/yellow_god.json"};
+        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json"};
 
         //Player Init
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        InitFighter($(*player), "data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f);
-        InitFighter($(*enemy), "data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f);
+        InitFighter($(*player), playerWorldPos, /*player height*/ 2.0f);
+        InitFighter($(*enemy), enemyWorldPos, /*enemy height*/ 2.0f);
 
         QueueAnimation($(player->animQueue), player->animData, "idle");
     };

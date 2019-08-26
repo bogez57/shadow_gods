@@ -1,5 +1,5 @@
-#ifndef ANIMATION_INCLUDE_H
-#define ANIMATION_INCLUDE_H
+#ifndef ANIMATION_INCLUDE
+#define ANIMATION_INCLUDE
 
 #include <string.h>
 #include "skeleton.h"
@@ -68,15 +68,18 @@ struct Animation
 struct AnimationData
 {
     AnimationData() = default;
-    AnimationData(Init) :
-        animations{heap}
-    {}
+    AnimationData(const char* animDataJsonFilePath);
 
     HashMap_Str<Animation> animations;
 };
 
 struct AnimationQueue
 {
+    AnimationQueue() = default;
+    AnimationQueue(Init) :
+        queuedAnimations{20, heap}
+    {}
+
     Ring_Buffer<Animation> queuedAnimations;
 };
 
@@ -88,11 +91,11 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
 
 #ifdef ANIMATION_IMPL
 
-void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath)
+AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
 {
     i32 length;
 
-    const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
+    const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), animJsonFilePath);
 
     Json* root{};
     root = Json_create(jsonFile);
@@ -167,7 +170,7 @@ void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFile
             Insert<TimelineSet>($(animation.boneTimelineSets), currentBone->name, timeLineSet);
         };
 
-        Insert<Animation>($(animData.animations), animation.name, animation);
+        Insert<Animation>($(this->animations), animation.name, animation);
     };
 };
 

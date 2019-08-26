@@ -25,8 +25,8 @@
     Note: Currently slots and bones have to have the same names in order for parsing to work
 */
 
-#ifndef SKELETON_INCLUDE_H
-#define SKELETON_INCLUDE_H
+#ifndef SKELETON_INCLUDE
+#define SKELETON_INCLUDE
 
 #include <string.h>
 #include "json.h"
@@ -74,10 +74,7 @@ struct Slot
 struct Skeleton
 {
     Skeleton() = default;
-    Skeleton(i32 numOfBones, i32 numOfSlots, i32 memParitionID) : 
-        bones{numOfBones, Bone{Init::_}, memParitionID},
-        slots{numOfSlots, memParitionID}
-    {}
+    Skeleton(const char* atlasFilePath, const char* jsonFilepath, i32 numOfBones, i32 numOfSlots, i32 memParitionID);
 
     Dynam_Array<Bone> bones; 
     Dynam_Array<Slot> slots;
@@ -85,12 +82,33 @@ struct Skeleton
     v2f* worldPos{nullptr};
 };
 
-Skeleton CreateSkeletonUsingJsonFile(Atlas* atlas, const char* skeletonJsonFilePath);
 Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
 
 #endif
 
 #ifdef SKELETON_IMPL
+
+void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson);
+void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton);
+Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 numBones, i32 numSlots, i32 memParitionID) :
+        bones{numBones, Bone{Init::_}, memParitionID},
+        slots{numSlots, memParitionID}
+{
+    i32 length;
+
+    const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
+
+    Atlas* atlas = CreateAtlasFromFile(atlasFilePath, 0);
+
+    if (skeletonJson)
+        _CreateSkeleton($(*this), *atlas, skeletonJson);
+    else
+        InvalidCodePath;
+
+    globalPlatformServices->Free((void*)skeletonJson);
+
+    _TranslateSkelPropertiesToGameUnits($(*this));
+};
 
 Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
 {
@@ -110,7 +128,7 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
     return bone;
 };
 
-Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
+void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson)
 {
     Json* root {};
     root = Json_create(skeletonJson);
@@ -119,15 +137,14 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
     Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
     Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
 
-    Skeleton newSkeleton {jsonBones->size, jsonSlots->size, heap};
-    newSkeleton.width = Json_getFloat(jsonSkeleton, "width", 0.0f);
-    newSkeleton.height = Json_getFloat(jsonSkeleton, "height", 0.0f);
+    skel.width = Json_getFloat(jsonSkeleton, "width", 0.0f);
+    skel.height = Json_getFloat(jsonSkeleton, "height", 0.0f);
 
     { //Create Bones
         i32 boneIndex {};
-        for (Json* currentBone_json = jsonBones->child; boneIndex < newSkeleton.bones.size; currentBone_json = currentBone_json->next, ++boneIndex)
+        for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
         {
-            Bone* newBone = &newSkeleton.bones.At(boneIndex);
+            Bone* newBone = &skel.bones.At(boneIndex);
             newBone->name = Json_getString(currentBone_json, "name", 0);
             if(!strcmp(newBone->name, "root"))
                 newBone->isRoot = true;
@@ -146,7 +163,7 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             newBone->length = Json_getFloat(currentBone_json, "length", 0.0f);
             if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
             {
-                newBone->parentBone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentBone_json, "parent", 0));
+                newBone->parentBone = GetBoneFromSkeleton(skel, (char*)Json_getString(currentBone_json, "parent", 0));
                 PushBack($(newBone->parentBone->childBones), newBone);
             };
         };
@@ -154,12 +171,12 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
 
     { //Create Slots
         i32 slotIndex {};
-        for (Json* currentSlot_json = jsonSlots->child; slotIndex < newSkeleton.slots.size; currentSlot_json = currentSlot_json->next, ++slotIndex)
+        for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
         {
             //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
-            Slot* slot = &newSkeleton.slots.At(slotIndex);
+            Slot* slot = &skel.slots.At(slotIndex);
             slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
-            slot->bone = GetBoneFromSkeleton(newSkeleton, (char*)Json_getString(currentSlot_json, "bone", 0));
+            slot->bone = GetBoneFromSkeleton(skel, (char*)Json_getString(currentSlot_json, "bone", 0));
             slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
             {
                 Region_Attachment resultRegionAttch {};
@@ -209,8 +226,6 @@ Skeleton _CreateSkeleton(Atlas atlas, const char* skeletonJson)
             }();
         };
     };
-
-    return newSkeleton;
 };
 
 void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
@@ -241,25 +256,6 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
         skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
         skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
     };
-};
-
-Skeleton CreateSkeletonUsingJsonFile(Atlas atlas, const char* skeletonJsonFilePath)
-{
-    i32 length;
-    Skeleton newSkeleton;
-
-    const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), skeletonJsonFilePath);
-
-    if (skeletonJson)
-        newSkeleton = _CreateSkeleton(atlas, skeletonJson);
-    else
-        InvalidCodePath;
-
-    globalPlatformServices->Free((void*)skeletonJson);
-
-    _TranslateSkelPropertiesToGameUnits($(newSkeleton));
-
-    return newSkeleton;
 };
 
 Bone* FindBone(Skeleton* skel, const char* boneName)

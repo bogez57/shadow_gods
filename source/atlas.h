@@ -83,11 +83,11 @@ void AtlasPage_dispose(AtlasPage* self);
 struct AtlasRegion
 {
     const char* name;
-    i32 x{0}, y{0}, width{0}, height{0};
-    f32 u{0}, v{0}, u2{0}, v2{0};
-    i32 offsetX{0}, offsetY{0};
-    i32 originalWidth{0}, originalHeight{0};
-    i32 index{0};
+    i32 x{}, y{}, width{}, height{};
+    f32 u{}, v{}, u2{}, v2{};
+    i32 offsetX{}, offsetY{};
+    i32 originalWidth{}, originalHeight{};
+    i32 index{};
     b32 rotate{false};
     b32 flip{false};
     i32* splits{nullptr};
