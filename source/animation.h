@@ -114,7 +114,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
         {
             Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
             Json* translateTimeline_json = Json_getItem(currentBone, "translate");
-            TimelineSet timeLineSet{Init::_};
+            TimelineSet timelineSet{Init::_};
 
             if (rotateTimeline_json)
             {
@@ -132,7 +132,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
                     Insert($(rotationTimeline.keyFrames), keyFrame, keyFrameIndex);
                 };
 
-                timeLineSet.rotationTimeline = rotationTimeline;
+                timelineSet.rotationTimeline = rotationTimeline;
 
                 f32 maxTimeOfRotationTimeline = rotationTimeline.keyFrames.At(rotationTimeline.keyFrames.size - 1).time;
             
@@ -158,7 +158,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
                     Insert($(translateTimeline.keyFrames), keyFrame, keyFrameIndex);
                 };
 
-                timeLineSet.translationTimeline = translateTimeline;
+                timelineSet.translationTimeline = translateTimeline;
 
                 f32 maxTimeOfTranslationTimeline = translateTimeline.keyFrames.At(translateTimeline.keyFrames.size - 1).time;
             
@@ -167,7 +167,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
             };
 
             animation.totalTime = maxTimeOfAnimation;
-            Insert<TimelineSet>($(animation.boneTimelineSets), currentBone->name, timeLineSet);
+            Insert<TimelineSet>($(animation.boneTimelineSets), currentBone->name, timelineSet);
         };
 
         Insert<Animation>($(this->animations), animation.name, animation);
@@ -179,7 +179,8 @@ void QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const ch
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
-    Animation anim { GetVal<Animation>(animData.animations, index, animName) };
+    Animation anim {Init::_};
+    anim = *GetVal<Animation>(animData.animations, index, animName);
     anim.startAnimation = true;
 
     animQueue.queuedAnimations.PushBack(anim);
@@ -235,9 +236,9 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(!strcmp(bone->name, "Pelvis"))
                     int x{3};
 
-                TimelineSet timelineSet = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bones->At(boneIndex).name);
+                TimelineSet* timelineSet = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bones->At(boneIndex).name);
 
-                Timeline rotationTimelineOfBone = timelineSet.rotationTimeline;
+                Timeline rotationTimelineOfBone = timelineSet->rotationTimeline;
                 i32 keyFrameCount{};
                 if(rotationTimelineOfBone.exists)
                 {
@@ -289,7 +290,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                     Insert<f32>($(anim->boneRotations), bone->name, lerpedRotation);
                 };
 
-                Timeline translationTimeLineOfBone = timelineSet.translationTimeline;
+                Timeline translationTimeLineOfBone = timelineSet->translationTimeline;
                 if(translationTimeLineOfBone.exists)
                 {
                     v2f newTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
@@ -328,7 +329,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
-                f32 newBoneRotation = GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
+                f32 newBoneRotation = *GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
                 *skel.bones.At(boneIndex).parentLocalRotation = newBoneRotation;
             };
 
@@ -336,7 +337,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
-                v2f newBoneTranslation = GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
+                v2f newBoneTranslation = *GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
                 *skel.bones.At(boneIndex).parentLocalPos = newBoneTranslation;
             };
         };

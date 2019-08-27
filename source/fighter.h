@@ -70,17 +70,15 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
 
                     if (hashIndex != HASH_DOES_NOT_EXIST)
                     {
-                        TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, this->skel.bones.At(boneIndex).name);
+                        TimelineSet* timelineSet = GetVal(anim.boneTimelineSets, hashIndex, this->skel.bones.At(boneIndex).name);
 
-                        if(timelineSet.translationTimeline.exists)
+                        if(timelineSet->translationTimeline.exists)
                         {
-                            for(i32 i{}; i < timelineSet.translationTimeline.keyFrames.size; ++i)
+                            for(i32 i{}; i < timelineSet->translationTimeline.keyFrames.size; ++i)
                             {
-                                timelineSet.translationTimeline.keyFrames.At(i).translation *= scaleFactor;
+                                timelineSet->translationTimeline.keyFrames.At(i).translation *= scaleFactor;
                             };
                         };
-
-                        Insert<TimelineSet>($(anim.boneTimelineSets), this->skel.bones.At(boneIndex).name, timelineSet);
                     };
                 };
             };

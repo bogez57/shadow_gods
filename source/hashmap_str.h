@@ -109,9 +109,9 @@ i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 };
 
 template <typename ValueType>
-ValueType GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
+ValueType* GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
 {
-    ValueType result{};
+    ValueType* result{};
 
     ui16 uniqueKeyID = _ProduceUniqueIDForString(key);
 
@@ -121,7 +121,7 @@ ValueType GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
     {
         if (nextKey->uniqueID == uniqueKeyID)
         {
-            result = nextKey->value;
+            result = &nextKey->value;
             run = false;
         }
         else
