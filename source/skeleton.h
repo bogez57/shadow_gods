@@ -79,7 +79,6 @@ struct Skeleton
     Dynam_Array<Bone> bones; 
     Dynam_Array<Slot> slots;
     f32 width{}, height{};
-    v2f* worldPos{nullptr};
 };
 
 Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);

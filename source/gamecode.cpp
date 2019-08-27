@@ -218,72 +218,6 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
-void InitFighter(Fighter&& fighter, f32 newFighterHeight)
-{
-    fighter.skel.worldPos = &fighter.world.translation;//Why the fuck does removing this cause issues
-    fighter.worldPos = &fighter.world.translation;//Why the fuck does removing this cause issues
-
-    f32 scaleFactor{};
-    { //Change fighter height
-        f32 aspectRatio = fighter.skel.height / fighter.skel.width;
-        scaleFactor = newFighterHeight / fighter.skel.height;
-
-        //New fighter height
-        fighter.skel.height = newFighterHeight;
-        fighter.skel.width = aspectRatio * newFighterHeight;
-
-        for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
-        {
-            if(!strcmp(fighter.skel.bones.At(boneIndex).name, "left-shoulder"))
-                int x{3};
-
-            fighter.skel.bones.At(boneIndex).transform.translation.x *= scaleFactor;
-            fighter.skel.bones.At(boneIndex).transform.translation.y *= scaleFactor;
-            fighter.skel.bones.At(boneIndex).originalParentLocalPos *= scaleFactor;
-            fighter.skel.bones.At(boneIndex).length *= scaleFactor;
-        };
-
-        for (i32 slotI{}; slotI < fighter.skel.slots.size; ++slotI)
-        {
-            fighter.skel.slots.At(slotI).regionAttachment.height *= scaleFactor;
-            fighter.skel.slots.At(slotI).regionAttachment.width *= scaleFactor;
-            fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x *= scaleFactor;
-            fighter.skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y *= scaleFactor;
-        };
-    };
-
-    {//Adjust animations to new height standards
-        //TODO: Very stupid, move out or change. Also, why does this work? Doesn't GetVal return a copy?
-        for(i32 animIndex{}; animIndex < fighter.animData.animations.keyInfos.size; ++animIndex)
-        {
-            Animation anim = (Animation)fighter.animData.animations.keyInfos.At(animIndex).value;
-
-            if(anim.name)
-            {
-                for (i32 boneIndex{}; boneIndex < fighter.skel.bones.size; ++boneIndex)
-                {
-                    i32 hashIndex = GetHashIndex(anim.boneTimelineSets, fighter.skel.bones.At(boneIndex).name);
-
-                    if (hashIndex != HASH_DOES_NOT_EXIST)
-                    {
-                        TimelineSet timelineSet = GetVal(anim.boneTimelineSets, hashIndex, fighter.skel.bones.At(boneIndex).name);
-
-                        if(timelineSet.translationTimeline.exists)
-                        {
-                            for(i32 i{}; i < timelineSet.translationTimeline.keyFrames.size; ++i)
-                            {
-                                timelineSet.translationTimeline.keyFrames.At(i).translation *= scaleFactor;
-                            };
-                        };
-
-                        Insert<TimelineSet>($(anim.boneTimelineSets), fighter.skel.bones.At(boneIndex).name, timelineSet);
-                    };
-                };
-            };
-        };
-    };
-};
-
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
     //With world space origin at 0, 0
@@ -403,13 +337,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePoint_inScreenDims = viewDims / 2.0f;
         stage->camera.zoomFactor = 1.0f;
 
+        //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos};
-        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos};
-
-        //Player Init
-        InitFighter($(*player), /*player height*/ 2.0f);
-        InitFighter($(*enemy), /*enemy height*/ 2.0f);
+        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f};
+        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
 
         QueueAnimation($(player->animQueue), player->animData, "idle");
     };
@@ -422,12 +353,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos->x += .1f;
+        player->world.translation.x += .1f;
     };
 
     if (KeyHeld(keyboard->MoveLeft))
     {
-        player->worldPos->x -= .1f;
+        player->world.translation.x -= .1f;
     }
 
     if (KeyHeld(keyboard->MoveUp))
@@ -450,8 +381,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
-    UpdateSkeletonBoneWorldPositions($(player->skel), *player->worldPos);
-    UpdateSkeletonBoneWorldPositions($(enemy->skel), *enemy->worldPos);
+    UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
+    UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
     Array<v2f, 2> uvs = { v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f } };
     PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{ stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f{ 1.0f, 1.0f }, uvs, "background");
