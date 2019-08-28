@@ -57,7 +57,7 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
     };
 
     {//Adjust animations to new height standards
-        //TODO: Very stupid, move out or change. Also, why does this work? Doesn't GetVal return a copy?
+        //TODO: Very stupid, move out or change as I'm currently iterating over ALL keyInfos for which there are a lot in my current hashMap_Str class
         for(i32 animIndex{}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
         {
             Animation anim = (Animation)this->animData.animations.keyInfos.At(animIndex).value;
