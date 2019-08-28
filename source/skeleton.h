@@ -91,12 +91,12 @@ void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson);
 void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton);
 Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID) :
         bones{memParitionID},
-        slots{19, memParitionID}
+        slots{memParitionID}
 {
     i32 length;
 
     Reserve($(this->bones), 20);
-    //Reserve($(this->slots), 20);
+    Reserve($(this->slots), 20);
 
     const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
@@ -180,7 +180,10 @@ void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson)
         for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
         {
             //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
-            Slot* slot = &skel.slots.At(slotIndex);
+            Slot newSlot{};
+            PushBack($(skel.slots), newSlot);
+            Slot* slot = GetLastElem(skel.slots);
+
             slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
             slot->bone = GetBoneFromSkeleton(skel, (char*)Json_getString(currentSlot_json, "bone", 0));
             slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
