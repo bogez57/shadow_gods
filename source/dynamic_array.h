@@ -157,6 +157,16 @@ b IsEmpty(Dynam_Array<Type>&& arr)
 };
 
 template <typename Type>
+Type* GetLastElem(Dynam_Array<Type> arr) 
+{
+    BGZ_ASSERT(arr.size != 0, "Nothing has been pushed or insereted onto array");
+
+    Type* lastElem = &arr.elements[arr.size - 1];
+
+    return lastElem;
+};
+
+template <typename Type>
 void ResizeArray(Dynam_Array<Type>&& arrayToResize, i64 size)
 {
     (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)ReAllocSize(arrayToResize.memPartitionID, arrayToResize.elements, (sizeof(Type) * arrayToResize.capacity)));

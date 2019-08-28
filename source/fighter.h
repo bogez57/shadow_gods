@@ -22,7 +22,7 @@ struct Fighter
 
 Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight) :
     animData{jsonFilePath},
-    skel{atlasFilePath, jsonFilePath, 20, 19, heap},
+    skel{atlasFilePath, jsonFilePath, heap},
     animQueue{Init::_},
     world{0.0f, worldPos, {1.0f, 1.0f}},
     height{fighterHeight}

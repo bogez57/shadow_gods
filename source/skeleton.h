@@ -74,7 +74,7 @@ struct Slot
 struct Skeleton
 {
     Skeleton() = default;
-    Skeleton(const char* atlasFilePath, const char* jsonFilepath, i32 numOfBones, i32 numOfSlots, i32 memParitionID);
+    Skeleton(const char* atlasFilePath, const char* jsonFilepath, i32 memParitionID);
 
     Dynam_Array<Bone> bones; 
     Dynam_Array<Slot> slots;
@@ -89,11 +89,14 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
 
 void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson);
 void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton);
-Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 numBones, i32 numSlots, i32 memParitionID) :
-        bones{numBones, Bone{Init::_}, memParitionID},
-        slots{numSlots, memParitionID}
+Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID) :
+        bones{memParitionID},
+        slots{19, memParitionID}
 {
     i32 length;
+
+    Reserve($(this->bones), 20);
+    //Reserve($(this->slots), 20);
 
     const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
@@ -143,27 +146,31 @@ void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson)
         i32 boneIndex {};
         for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
         {
-            Bone* newBone = &skel.bones.At(boneIndex);
-            newBone->name = Json_getString(currentBone_json, "name", 0);
-            if(!strcmp(newBone->name, "root"))
-                newBone->isRoot = true;
-            newBone->transform.scale = v2f{1.0f, 1.0f};
-            newBone->parentLocalScale = &newBone->transform.scale;
+            Bone newBone{Init::_};
+            PushBack($(skel.bones), newBone);
+            Bone* bone = GetLastElem(skel.bones);
 
-            newBone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
-            newBone->parentLocalRotation = &newBone->transform.rotation;
-            newBone->originalParentLocalRotation = *newBone->parentLocalRotation;
+            bone->name = Json_getString(currentBone_json, "name", 0);
+            if(!strcmp(bone->name, "root"))
+                bone->isRoot = true;
+            bone->transform.scale = v2f{1.0f, 1.0f};
+            bone->parentLocalScale = &bone->transform.scale;
 
-            newBone->transform.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
-            newBone->transform.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
-            newBone->parentLocalPos = &newBone->transform.translation;
-            newBone->originalParentLocalPos = *newBone->parentLocalPos;
+            bone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
+            bone->parentLocalRotation = &bone->transform.rotation;
+            bone->originalParentLocalRotation = *bone->parentLocalRotation;
 
-            newBone->length = Json_getFloat(currentBone_json, "length", 0.0f);
+            bone->transform.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
+            bone->transform.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
+            bone->parentLocalPos = &bone->transform.translation;
+            bone->originalParentLocalPos = *bone->parentLocalPos;
+
+            bone->length = Json_getFloat(currentBone_json, "length", 0.0f);
+
             if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
             {
-                newBone->parentBone = GetBoneFromSkeleton(skel, (char*)Json_getString(currentBone_json, "parent", 0));
-                PushBack($(newBone->parentBone->childBones), newBone);
+                bone->parentBone = GetBoneFromSkeleton(skel, (char*)Json_getString(currentBone_json, "parent", 0));
+                PushBack($(bone->parentBone->childBones), bone); 
             };
         };
     };
