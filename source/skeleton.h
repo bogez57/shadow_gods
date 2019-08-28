@@ -87,7 +87,6 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
 
 #ifdef SKELETON_IMPL
 
-void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson);
 void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton);
 Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID) :
         bones{memParitionID},
@@ -103,9 +102,115 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
     Atlas* atlas = CreateAtlasFromFile(atlasFilePath, 0);
 
     if (skeletonJson)
-        _CreateSkeleton($(*this), *atlas, skeletonJson);
+    {
+        Json* root {};
+        root = Json_create(skeletonJson);
+
+        Json* jsonSkeleton = Json_getItem(root, "skeleton"); /* clang-format off */BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!"); /* clang-format on */
+        Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
+        Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
+
+        this->width = Json_getFloat(jsonSkeleton, "width", 0.0f);
+        this->height = Json_getFloat(jsonSkeleton, "height", 0.0f);
+
+        { //Create Bones
+            i32 boneIndex {};
+            for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
+            {
+                Bone newBone{Init::_};
+                PushBack($(this->bones), newBone);
+                Bone* bone = GetLastElem(this->bones);
+
+                bone->name = Json_getString(currentBone_json, "name", 0);
+                if(!strcmp(bone->name, "root"))
+                    bone->isRoot = true;
+                bone->transform.scale = v2f{1.0f, 1.0f};
+                bone->parentLocalScale = &bone->transform.scale;
+
+                bone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
+                bone->parentLocalRotation = &bone->transform.rotation;
+                bone->originalParentLocalRotation = *bone->parentLocalRotation;
+
+                bone->transform.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
+                bone->transform.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
+                bone->parentLocalPos = &bone->transform.translation;
+                bone->originalParentLocalPos = *bone->parentLocalPos;
+
+                bone->length = Json_getFloat(currentBone_json, "length", 0.0f);
+
+                if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
+                {
+                    bone->parentBone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentBone_json, "parent", 0));
+                    PushBack($(bone->parentBone->childBones), bone); 
+                };
+            };
+        };
+
+        { //Create Slots
+            i32 slotIndex {};
+            for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
+            {
+                //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
+                Slot newSlot{};
+                PushBack($(this->slots), newSlot);
+                Slot* slot = GetLastElem(this->slots);
+
+                slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
+                slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
+                slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
+                {
+                    Region_Attachment resultRegionAttch {};
+
+                    const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
+                    Json* jsonSkin = Json_getItem(root, "skins");
+                    Json* jsonDefaultSkin = Json_getItem(jsonSkin, "default");
+
+                    i32 attachmentCounter {};
+                    for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)
+                    {
+                        Json* jsonAttachment = currentBodyPartOfSkin_json->child;
+
+                        if (strcmp(jsonAttachment->name, attachmentName) == 0)
+                        {
+                            resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
+                            resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
+                            resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
+                            resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
+                            resultRegionAttch.parentBoneLocalRotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
+                            resultRegionAttch.parentBoneLocalScale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
+                            resultRegionAttch.parentBoneLocalScale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
+                            resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
+                            {
+                                AtlasRegion resultAtlasRegion {};
+                                AtlasRegion* region = atlas->regions;
+
+                                while (region)
+                                {
+                                    if (strcmp(region->name, attachmentName) == 0)
+                                    {
+                                        resultAtlasRegion = *region;
+                                        break;
+                                    };
+
+                                    region = region->next;
+                                };
+
+                                return resultAtlasRegion;
+                            }();
+
+                            break;
+                        };
+                    };
+
+                    return resultRegionAttch;
+                }();
+            };
+        };   
+    }
     else
+    {
         InvalidCodePath;
+    };
 
     globalPlatformServices->Free((void*)skeletonJson);
 
@@ -130,116 +235,9 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
     return bone;
 };
 
-void _CreateSkeleton(Skeleton&& skel, Atlas atlas, const char* skeletonJson)
-{
-    Json* root {};
-    root = Json_create(skeletonJson);
-
-    Json* jsonSkeleton = Json_getItem(root, "skeleton"); /* clang-format off */BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!"); /* clang-format on */
-    Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
-    Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
-
-    skel.width = Json_getFloat(jsonSkeleton, "width", 0.0f);
-    skel.height = Json_getFloat(jsonSkeleton, "height", 0.0f);
-
-    { //Create Bones
-        i32 boneIndex {};
-        for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
-        {
-            Bone newBone{Init::_};
-            PushBack($(skel.bones), newBone);
-            Bone* bone = GetLastElem(skel.bones);
-
-            bone->name = Json_getString(currentBone_json, "name", 0);
-            if(!strcmp(bone->name, "root"))
-                bone->isRoot = true;
-            bone->transform.scale = v2f{1.0f, 1.0f};
-            bone->parentLocalScale = &bone->transform.scale;
-
-            bone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
-            bone->parentLocalRotation = &bone->transform.rotation;
-            bone->originalParentLocalRotation = *bone->parentLocalRotation;
-
-            bone->transform.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
-            bone->transform.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
-            bone->parentLocalPos = &bone->transform.translation;
-            bone->originalParentLocalPos = *bone->parentLocalPos;
-
-            bone->length = Json_getFloat(currentBone_json, "length", 0.0f);
-
-            if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
-            {
-                bone->parentBone = GetBoneFromSkeleton(skel, (char*)Json_getString(currentBone_json, "parent", 0));
-                PushBack($(bone->parentBone->childBones), bone); 
-            };
-        };
-    };
-
-    { //Create Slots
-        i32 slotIndex {};
-        for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
-        {
-            //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
-            Slot newSlot{};
-            PushBack($(skel.slots), newSlot);
-            Slot* slot = GetLastElem(skel.slots);
-
-            slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
-            slot->bone = GetBoneFromSkeleton(skel, (char*)Json_getString(currentSlot_json, "bone", 0));
-            slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
-            {
-                Region_Attachment resultRegionAttch {};
-
-                const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
-                Json* jsonSkin = Json_getItem(root, "skins");
-                Json* jsonDefaultSkin = Json_getItem(jsonSkin, "default");
-
-                i32 attachmentCounter {};
-                for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)
-                {
-                    Json* jsonAttachment = currentBodyPartOfSkin_json->child;
-
-                    if (strcmp(jsonAttachment->name, attachmentName) == 0)
-                    {
-                        resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
-                        resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
-                        resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
-                        resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
-                        resultRegionAttch.parentBoneLocalRotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
-                        resultRegionAttch.parentBoneLocalScale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
-                        resultRegionAttch.parentBoneLocalScale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
-                        resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
-                        {
-                            AtlasRegion resultAtlasRegion {};
-                            AtlasRegion* region = atlas.regions;
-
-                            while (region)
-                            {
-                                if (strcmp(region->name, attachmentName) == 0)
-                                {
-                                    resultAtlasRegion = *region;
-                                    break;
-                                };
-
-                                region = region->next;
-                            };
-
-                            return resultAtlasRegion;
-                        }();
-
-                        break;
-                    };
-                };
-
-                return resultRegionAttch;
-            }();
-        };
-    };
-};
-
 void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
 {
-    f32 pixelsPerMeter{100.0f};
+    f32 pixelsPerMeter{100.0f};//TODO: Remove the need for this???
 
     skeleton.width /= pixelsPerMeter;
     skeleton.height /= pixelsPerMeter;
@@ -265,17 +263,6 @@ void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
         skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
         skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
     };
-};
-
-Bone* FindBone(Skeleton* skel, const char* boneName)
-{
-    for(i32 i = 0; i < skel->bones.size; ++i)
-    {
-        if(strcmp(skel->bones.At(i).name, boneName) == 0)
-            return &skel->bones.At(i);
-    };
-
-    return nullptr;
 };
 
 #endif //SKELETON_IMPL

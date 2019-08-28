@@ -164,6 +164,7 @@ namespace Win32::Dbg
 
         data = (char*)malloc(length);
         fread(data, 1, length, file);
+
         fclose(file);
 
         return data;

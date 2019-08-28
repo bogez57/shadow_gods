@@ -392,7 +392,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         {
             Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
-			Bone* bone = FindBone(&fighter.skel, "root");
+			Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
 
             AtlasRegion* region = &currentSlot->regionAttachment.region_image;
             Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };

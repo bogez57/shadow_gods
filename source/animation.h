@@ -186,7 +186,7 @@ void QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const ch
     animQueue.queuedAnimations.PushBack(anim);
 };
 
-//Returns higher keyFrame (if range is between 0 - 1 then keyFrame number 1 is returned)
+//Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)
 i32 _ActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 {
     i32 keyFrameCount = (i32)timelineOfBone.keyFrames.size - 1;
