@@ -49,7 +49,8 @@ struct TimelineSet
 enum PlayBackOptions
 {
     FIRE_ONCE,
-    REPEAT
+    REPEAT,
+    IMMEDIATE
 };
 
 struct Animation
@@ -200,7 +201,7 @@ i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
     return &animQueue.queuedAnimations.GetLastElem()->playBackStatus;
 };
 
-i32* PlayAnimationImmediately(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
+void PlayAnimationImmediately(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
 {
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
@@ -215,8 +216,7 @@ i32* PlayAnimationImmediately(AnimationQueue&& animQueue, const AnimationData an
     
     animQueue.queuedAnimations.Reset();
     animQueue.queuedAnimations.PushBack(destAnim);
-
-    return &animQueue.queuedAnimations.GetLastElem()->playBackStatus;
+    animQueue.queuedAnimations.GetLastElem()->playBackStatus = IMMEDIATE;
 };
 
 //Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)
@@ -257,7 +257,9 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
         };
 
         if (anim->startAnimation)
+        {
             anim->currentTime += prevFrameDT;
+        };
 
         f32 maxTimeOfAnimation{};
         for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
@@ -358,6 +360,18 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 
     if(anim)
     {
+        if(anim->playBackStatus == IMMEDIATE)
+        {
+            for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+            {
+                *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation;
+                *skel.bones.At(boneIndex).parentLocalPos = skel.bones.At(boneIndex).originalParentLocalPos;
+            };
+
+            anim->playBackStatus = FIRE_ONCE;
+        };
+
+
         for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
         {
             i32 hashIndex = GetHashIndex(anim->boneRotations, skel.bones.At(boneIndex).name);
