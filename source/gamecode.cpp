@@ -374,6 +374,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     if (KeyPressed(keyboard->ActionRight))
     {
         QueueAnimation($(player->animQueue), player->animData, "left_jab");
+        QueueAnimation($(player->animQueue), player->animData, "high_kick");
+        QueueAnimation($(player->animQueue), player->animData, "punch_flurry");
+        QueueAnimation($(player->animQueue), player->animData, "idle");
     };
 
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);

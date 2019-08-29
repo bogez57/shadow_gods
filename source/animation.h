@@ -187,8 +187,6 @@ void QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const ch
     CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
     CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
     
-    destAnim.startAnimation = true;
-
     animQueue.queuedAnimations.PushBack(destAnim);
 };
 
@@ -221,6 +219,8 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
 
     if(anim)
     {
+        anim->startAnimation = true;
+
         if (anim->currentTime > anim->totalTime)
         {
             anim->currentTime = 0.0f;
