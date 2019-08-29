@@ -46,6 +46,12 @@ struct TimelineSet
     Timeline scaleTimeline;
 };
 
+enum PlayBackOptions
+{
+    FIRE_ONCE,
+    REPEAT
+};
+
 struct Animation
 {
     Animation() = default;
@@ -63,6 +69,7 @@ struct Animation
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     b startAnimation{false};
+    i32 playBackStatus{FIRE_ONCE};
 };
 
 struct AnimationData
@@ -174,7 +181,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
     };
 };
 
-void QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const char* animName)
+i32* QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const char* animName)
 {
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
@@ -188,6 +195,8 @@ void QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const ch
     CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
     
     animQueue.queuedAnimations.PushBack(destAnim);
+
+    return &animQueue.queuedAnimations.GetLastElem()->playBackStatus;
 };
 
 //Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)

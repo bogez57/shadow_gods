@@ -32,13 +32,19 @@ public:
     Type* GetFirstElem()
     {
         if (this->Empty())
-        {
             return nullptr; 
-        }
 
-        auto* value = &buffer[tail];
+        auto* value = &this->buffer[this->tail];
 
         return value;
+    };
+
+    Type* GetLastElem()
+    {
+        if (this->Empty())
+            return nullptr; 
+
+        return &this->buffer[this->head];
     };
 
     Type GetFirstElemAndRemove()
@@ -46,7 +52,7 @@ public:
 
         BGZ_ASSERT(NOT this->Empty(), "Trying to access an element from an empty ring buffer container!");
 
-        auto value = buffer[this->tail];
+        auto value = this->buffer[this->tail];
         this->full = false;
         this->tail = (this->tail + 1) % maxSize;
 

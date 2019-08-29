@@ -342,7 +342,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f};
         *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
 
-        QueueAnimation($(player->animQueue), player->animData, "idle");
+        i32* playBakcStatus = QueueAnimation($(player->animQueue), player->animData, "idle");
+        *playBakcStatus = REPEAT;
     };
 
     if (globalPlatformServices->DLLJustReloaded)
