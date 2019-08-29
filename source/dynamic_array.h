@@ -173,17 +173,15 @@ void ResizeArray(Dynam_Array<Type>&& arrayToResize, i64 size)
 };
 
 template <typename Type>
-Dynam_Array<Type> CopyArray(Dynam_Array<Type> sourceArray, Dynam_Array<Type> destinationArray)
+void CopyArray(Dynam_Array<Type> sourceArray, Dynam_Array<Type>&& destinationArray)
 {
     if (destinationArray.capacity < sourceArray.capacity)
     {
-        ResizeArray<Type>(destinationArray, sourceArray.size);
+        ResizeArray<Type>($(destinationArray), sourceArray.size);
     };
 
     destinationArray.size = sourceArray.size;
     memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.size);
-
-    return destinationArray;
 };
 
 template <typename Type>

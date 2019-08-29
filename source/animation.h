@@ -179,11 +179,17 @@ void QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const ch
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
-    Animation anim {Init::_};
-    anim = *GetVal<Animation>(animData.animations, index, animName);
-    anim.startAnimation = true;
+    Animation sourceAnim {Init::_};
+    sourceAnim = *GetVal<Animation>(animData.animations, index, animName);
 
-    animQueue.queuedAnimations.PushBack(anim);
+    Animation destAnim = sourceAnim;
+    CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
+    CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
+    CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
+    
+    destAnim.startAnimation = true;
+
+    animQueue.queuedAnimations.PushBack(destAnim);
 };
 
 //Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)
