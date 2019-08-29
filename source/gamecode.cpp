@@ -379,6 +379,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         QueueAnimation($(player->animQueue), player->animData, "punch_flurry");
     };
 
+    if (KeyPressed(keyboard->ActionLeft))
+    {
+        PlayAnimationImmediately($(player->animQueue), player->animData, "low_kick");
+    };
+
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
     ApplyAnimationToSkeleton($(player->skel), $(player->animQueue));
 

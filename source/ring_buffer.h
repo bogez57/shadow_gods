@@ -1,3 +1,4 @@
+//TODO: don't use member functions
 
 template <typename Type>
 class Ring_Buffer

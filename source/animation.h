@@ -93,6 +93,7 @@ struct AnimationQueue
 void SetToSetupPose(Skeleton&& skel, Animation anim);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
 void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
+i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 
 #endif
 
@@ -181,7 +182,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
     };
 };
 
-i32* QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const char* animName)
+i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
 {
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
@@ -194,6 +195,25 @@ i32* QueueAnimation(AnimationQueue&& animQueue, AnimationData animData, const ch
     CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
     CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
     
+    animQueue.queuedAnimations.PushBack(destAnim);
+
+    return &animQueue.queuedAnimations.GetLastElem()->playBackStatus;
+};
+
+i32* PlayAnimationImmediately(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
+{
+    i32 index = GetHashIndex<Animation>(animData.animations, animName);
+    BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
+
+    Animation sourceAnim {Init::_};
+    sourceAnim = *GetVal<Animation>(animData.animations, index, animName);
+
+    Animation destAnim = sourceAnim;
+    CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
+    CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
+    CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
+    
+    animQueue.queuedAnimations.Reset();
     animQueue.queuedAnimations.PushBack(destAnim);
 
     return &animQueue.queuedAnimations.GetLastElem()->playBackStatus;
