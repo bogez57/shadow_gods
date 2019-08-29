@@ -360,6 +360,11 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
         if(anim->startAnimation == false)
         {
             animQueue.queuedAnimations.RemoveElem();
+
+            if(anim->playBackStatus == REPEAT)
+            {
+                animQueue.queuedAnimations.PushBack(*anim);
+            };
         };
     };
 };

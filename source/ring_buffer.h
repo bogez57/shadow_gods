@@ -44,7 +44,7 @@ public:
         if (this->Empty())
             return nullptr; 
 
-        return &this->buffer[this->head];
+        return &this->buffer[this->head - 1];
     };
 
     Type GetFirstElemAndRemove()
