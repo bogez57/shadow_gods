@@ -283,12 +283,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
 
     if(anim)
     {
-        anim->startAnimation = true;
-
-        if (anim->startAnimation)
-        {
-            anim->currentTime += prevFrameDT;
-        };
+        anim->currentTime += prevFrameDT;
 
         f32 maxTimeOfAnimation{};
         for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
@@ -389,6 +384,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
     {
         if(anim->status == PlayBackStatus::IMMEDIATE)
         {
+            //Reset bones to setup position 
             for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
             {
                 *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation;
@@ -396,12 +392,6 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
             };
 
             anim->status = PlayBackStatus::DEFAULT;
-        };
-
-        if (anim->currentTime > anim->totalTime)
-        {
-            anim->currentTime = 0.0f;
-            anim->startAnimation = false;
         };
 
         for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
@@ -423,14 +413,14 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
             };
         };
 
-        if(anim->startAnimation == false)
+        if (anim->currentTime > anim->totalTime)
         {
+            anim->currentTime = 0.0f;
+
             animQueue.queuedAnimations.RemoveElem();
 
             if(animQueue.queuedAnimations.Empty())
-            {
                 animQueue.queuedAnimations.PushBack(animQueue.idleAnim);
-            };
         };
     };
 };
