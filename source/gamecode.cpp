@@ -381,7 +381,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionLeft))
     {
-        PlayAnimationImmediately($(player->animQueue), player->animData, "low_kick");
+        PlaceAnimationNextInLine($(player->animQueue), player->animData, "low_kick");
     };
 
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);

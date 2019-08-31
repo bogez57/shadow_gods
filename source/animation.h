@@ -219,6 +219,32 @@ void PlayAnimationImmediately(AnimationQueue&& animQueue, const AnimationData an
     animQueue.queuedAnimations.GetLastElem()->playBackStatus = IMMEDIATE;
 };
 
+void PlaceAnimationNextInLine(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
+{
+    i32 index = GetHashIndex<Animation>(animData.animations, animName);
+    BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
+
+    Animation sourceAnim {Init::_};
+    sourceAnim = *GetVal<Animation>(animData.animations, index, animName);
+
+    Animation destAnim = sourceAnim;
+    CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
+    CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
+    CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
+    
+    {//Clear out animations not currently playing and insert new animation to play next
+        if(NOT animQueue.queuedAnimations.Empty())
+        {
+            animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
+            animQueue.queuedAnimations.PushBack(destAnim);
+        }
+        else
+        {
+            animQueue.queuedAnimations.PushBack(destAnim);
+        }
+    }
+};
+
 //Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)
 i32 _ActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 {
@@ -249,12 +275,6 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
     if(anim)
     {
         anim->startAnimation = true;
-
-        if (anim->currentTime > anim->totalTime)
-        {
-            anim->currentTime = 0.0f;
-            anim->startAnimation = false;
-        };
 
         if (anim->startAnimation)
         {
@@ -350,8 +370,6 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
             };
         };
     };
-
-    
 };
 
 void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
@@ -371,6 +389,11 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
             anim->playBackStatus = FIRE_ONCE;
         };
 
+        if (anim->currentTime > anim->totalTime)
+        {
+            anim->currentTime = 0.0f;
+            anim->startAnimation = false;
+        };
 
         for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
         {
