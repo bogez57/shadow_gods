@@ -46,11 +46,21 @@ struct TimelineSet
     Timeline scaleTimeline;
 };
 
+//TODO: Remove once PlayBackStatus is implemented
 enum PlayBackOptions
 {
     FIRE_ONCE,
     REPEAT,
     IMMEDIATE
+};
+
+enum class PlayBackStatus
+{
+    DEFAULT,
+    IDLE,
+    IMMEDIATE,
+    NEXT,
+    REPEATED
 };
 
 struct Animation
@@ -71,6 +81,7 @@ struct Animation
     HashMap_Str<v2f> boneTranslations;
     b startAnimation{false};
     i32 playBackStatus{FIRE_ONCE};
+    PlayBackStatus status{PlayBackStatus::DEFAULT};
 };
 
 struct AnimationData
@@ -94,7 +105,7 @@ struct AnimationQueue
 void SetToSetupPose(Skeleton&& skel, Animation anim);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
 void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
-i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
+i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status);
 
 #endif
 
@@ -183,7 +194,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
     };
 };
 
-i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
+i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status)
 {
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
