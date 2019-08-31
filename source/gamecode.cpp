@@ -342,7 +342,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f};
         *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
 
-        QueueAnimation($(player->animQueue), player->animData, "idle", PlayBackStatus::IDLE);
+        SetIdleAnimation($(player->animQueue), player->animData, "idle");
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -373,12 +373,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        PlayAnimationImmediately($(player->animQueue), player->animData, "high_kick");
+        QueueAnimation($(player->animQueue), player->animData, "high_kick", PlayBackStatus::IMMEDIATE);
     };
 
     if (KeyPressed(keyboard->ActionLeft))
     {
-        PlaceAnimationNextInLine($(player->animQueue), player->animData, "low_kick");
+        QueueAnimation($(player->animQueue), player->animData, "low_kick", PlayBackStatus::NEXT);
     };
 
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);

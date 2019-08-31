@@ -46,21 +46,12 @@ struct TimelineSet
     Timeline scaleTimeline;
 };
 
-//TODO: Remove once PlayBackStatus is implemented
-enum PlayBackOptions
-{
-    FIRE_ONCE,
-    REPEAT,
-    IMMEDIATE
-};
-
 enum class PlayBackStatus
 {
     DEFAULT,
     IDLE,
     IMMEDIATE,
-    NEXT,
-    REPEATED
+    NEXT
 };
 
 struct Animation
@@ -80,7 +71,6 @@ struct Animation
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     b startAnimation{false};
-    i32 playBackStatus{FIRE_ONCE};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
 };
 
@@ -96,16 +86,20 @@ struct AnimationQueue
 {
     AnimationQueue() = default;
     AnimationQueue(Init) :
-        queuedAnimations{20, heap}
+        queuedAnimations{20, heap},
+        idleAnim{Init::_}
     {}
 
     Ring_Buffer<Animation> queuedAnimations;
+    b hasIdleAnim{false};
+    Animation idleAnim;
 };
 
 void SetToSetupPose(Skeleton&& skel, Animation anim);
+void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
 void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
-i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status);
+void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status);
 
 #endif
 
@@ -194,7 +188,7 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
     };
 };
 
-i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status)
+void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
 {
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
@@ -206,14 +200,16 @@ i32* QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
     CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
     CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
     CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
-    
-    animQueue.queuedAnimations.PushBack(destAnim);
+    destAnim.status = PlayBackStatus::IDLE;
+    animQueue.idleAnim = destAnim;
 
-    return &animQueue.queuedAnimations.GetLastElem()->playBackStatus;
+    animQueue.queuedAnimations.PushBack(destAnim);
 };
 
-void PlayAnimationImmediately(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
+void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus playBackStatus)
 {
+    BGZ_ASSERT(playBackStatus != PlayBackStatus::IDLE, "Not suppose to set an IDLE status");
+
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
@@ -224,36 +220,38 @@ void PlayAnimationImmediately(AnimationQueue&& animQueue, const AnimationData an
     CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
     CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
     CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
-    
-    animQueue.queuedAnimations.Reset();
-    animQueue.queuedAnimations.PushBack(destAnim);
-    animQueue.queuedAnimations.GetLastElem()->playBackStatus = IMMEDIATE;
-};
+    destAnim.status = playBackStatus;
 
-void PlaceAnimationNextInLine(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
-{
-    i32 index = GetHashIndex<Animation>(animData.animations, animName);
-    BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
-
-    Animation sourceAnim {Init::_};
-    sourceAnim = *GetVal<Animation>(animData.animations, index, animName);
-
-    Animation destAnim = sourceAnim;
-    CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
-    CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
-    CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
-    
-    {//Clear out animations not currently playing and insert new animation to play next
-        if(NOT animQueue.queuedAnimations.Empty())
-        {
-            animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
-            animQueue.queuedAnimations.PushBack(destAnim);
-        }
-        else
+    switch(playBackStatus)
+    {
+        case PlayBackStatus::DEFAULT:
         {
             animQueue.queuedAnimations.PushBack(destAnim);
-        }
-    }
+        }break;
+
+        case PlayBackStatus::IMMEDIATE:
+        {
+            animQueue.queuedAnimations.Reset();
+            animQueue.queuedAnimations.PushBack(destAnim);
+        }break;
+
+        case PlayBackStatus::NEXT:
+        {
+            {//Clear out animations not currently playing and insert new animation to play next
+                if(NOT animQueue.queuedAnimations.Empty())
+                {
+                    animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
+                    animQueue.queuedAnimations.PushBack(destAnim);
+                }
+                else
+                {
+                    animQueue.queuedAnimations.PushBack(destAnim);
+                }
+            }
+        }break;
+
+        InvalidDefaultCase;
+    };
 };
 
 //Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)
@@ -389,7 +387,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 
     if(anim)
     {
-        if(anim->playBackStatus == IMMEDIATE)
+        if(anim->status == PlayBackStatus::IMMEDIATE)
         {
             for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
             {
@@ -397,7 +395,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
                 *skel.bones.At(boneIndex).parentLocalPos = skel.bones.At(boneIndex).originalParentLocalPos;
             };
 
-            anim->playBackStatus = FIRE_ONCE;
+            anim->status = PlayBackStatus::DEFAULT;
         };
 
         if (anim->currentTime > anim->totalTime)
@@ -429,9 +427,9 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
         {
             animQueue.queuedAnimations.RemoveElem();
 
-            if(anim->playBackStatus == REPEAT)
+            if(animQueue.queuedAnimations.Empty())
             {
-                animQueue.queuedAnimations.PushBack(*anim);
+                animQueue.queuedAnimations.PushBack(animQueue.idleAnim);
             };
         };
     };
