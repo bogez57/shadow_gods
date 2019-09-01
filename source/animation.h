@@ -273,7 +273,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 
         if (keyFrame0.time < currentAnimRuntime && keyFrame1.time > currentAnimRuntime && timelineOfBone.keyFrames.size != 1)                        
         {
-            return keyFrameCount;
+            return keyFrameCount - 1;
         }
         else
         {
@@ -281,7 +281,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
         }
     };
 
-    return keyFrameCount;
+    return 0;
 };
 
 void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
@@ -311,27 +311,31 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(rotationTimelineOfBone.exists)
                 {
                     f32 amountOfRotation{0.0f};
-                    i32 keyFrameCount = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
-                    if (keyFrameCount) 
+                    if (anim->currentTime > 0.0f && anim->currentTime < anim->totalTime) 
                     {
-                        f32 rotationAngle_frame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).angle;
-                        f32 rotationAngle_frame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount).angle;
+                        i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
+
+                        KeyFrame keyFrame0 = rotationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
+                        KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+
+                        f32 rotationAngle_frame0 = keyFrame0.angle;
+                        f32 rotationAngle_frame1 = keyFrame1.angle;
 
                         ConvertNegativeToPositiveAngle_Radians($(rotationAngle_frame0));
                         ConvertNegativeToPositiveAngle_Radians($(rotationAngle_frame1));
 
-                        if(rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::STEPPED)
+                        if(keyFrame0.curve == CurveType::STEPPED)
                         {
-                            if(anim->currentTime < rotationTimelineOfBone.keyFrames.At(keyFrameCount).time)
+                            if(anim->currentTime < keyFrame1.time)
                                 amountOfRotation = rotationAngle_frame0;
                             else
                                 amountOfRotation = rotationAngle_frame1;
                         }
-                        else if(rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::LINEAR)
+                        else if(keyFrame0.curve == CurveType::LINEAR)
                         {
                             //Find percent to lerp
-                            f32 diff = rotationTimelineOfBone.keyFrames.At(keyFrameCount).time - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                            f32 diff1 = anim->currentTime - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                            f32 diff = keyFrame1.time - keyFrame0.time;
+                            f32 diff1 = anim->currentTime - keyFrame0.time;
                             f32 percentToLerp = diff1 / diff;
 
                             v2f boneVector_frame0 = { bone->length * CosR(rotationAngle_frame0), bone->length * SinR(rotationAngle_frame0) };
@@ -372,24 +376,28 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(translationTimeLineOfBone.exists)
                 {
                     v2f amountOfTranslation{0.0f, 0.0f};
-                    i32 keyFrameCount = _CurrentActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
-                    if (keyFrameCount) 
+                    if (anim->currentTime > 0.0f && anim->currentTime < anim->totalTime) 
                     {
-                        v2f translation_frame0 = translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).translation;
-                        v2f translation_frame1 = translationTimeLineOfBone.keyFrames.At(keyFrameCount).translation;
+                        i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
 
-                        if(translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::STEPPED)
+                        KeyFrame keyFrame0 = translationTimeLineOfBone.keyFrames.At(activeKeyFrame_index);
+                        KeyFrame keyFrame1 = translationTimeLineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+
+                        v2f translation_frame0 = keyFrame0.translation;
+                        v2f translation_frame1 = keyFrame1.translation;
+
+                        if(keyFrame0.curve == CurveType::STEPPED)
                         {
-                            if(anim->currentTime < translationTimeLineOfBone.keyFrames.At(keyFrameCount).time)
+                            if(anim->currentTime < keyFrame1.time)
                                 amountOfTranslation = translation_frame0;
                             else
                                 amountOfTranslation = translation_frame1;
                         }
-                        else if(translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::LINEAR)
+                        else if(keyFrame0.curve == CurveType::LINEAR)
                         {
                             //Find percent to lerp
-                            f32 diff = translationTimeLineOfBone.keyFrames.At(keyFrameCount).time - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                            f32 diff1 = anim->currentTime - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                            f32 diff = keyFrame1.time - keyFrame0.time;
+                            f32 diff1 = anim->currentTime - keyFrame0.time;
                             f32 percentToLerp = diff1 / diff;
 
                             amountOfTranslation = Lerp(translation_frame0, translation_frame1, percentToLerp);
