@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "x4P9tV97kR3OHfXbe0GaoOzsClI", "spine": "3.7.87", "width": 503.37, "height": 942.74, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "bUrItSAldWTXKqLuRf7sCnxX/Xs", "spine": "3.7.87", "width": 503.37, "height": 942.74, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -17.93, "y": 444.54 },
@@ -261,100 +261,39 @@
 	},
 	"low_kick": {
 		"bones": {
-			"left-bicep": {
-				"rotate": [
-					{ "time": 0.0667, "angle": 56.05 }
-				]
-			},
 			"left-leg": {
 				"rotate": [
-					{ "time": 0.0667, "angle": 1.41 },
-					{ "time": 0.1667, "angle": -4.87 }
+					{ "time": 0, "angle": 0 },
+					{ "time": 0.1, "angle": -30.43 },
+					{ "time": 0.2, "angle": 0 }
 				]
 			},
 			"left-shin": {
 				"rotate": [
-					{ "time": 0.0667, "angle": 1.23 },
-					{ "time": 0.1667, "angle": -5.48 }
-				]
-			},
-			"left-foot": {
-				"rotate": [
-					{ "time": 0.0667, "angle": -4.06 },
-					{ "time": 0.1667, "angle": 10.61 }
-				]
-			},
-			"left-forearm": {
-				"rotate": [
-					{ "time": 0.0667, "angle": 42.03 }
-				]
-			},
-			"left-shoulder": {
-				"rotate": [
-					{ "time": 0.0667, "angle": -7.32 }
-				],
-				"translate": [
-					{ "time": 0.0667, "x": 2.74, "y": -42.87 }
-				]
-			},
-			"right-shoulder": {
-				"rotate": [
-					{ "time": 0.0667, "angle": -15.43 }
-				],
-				"translate": [
-					{ "time": 0.0667, "x": -5.88, "y": 21.06 }
+					{ "time": 0, "angle": 0 },
+					{ "time": 0.1, "angle": 31.65 },
+					{ "time": 0.2, "angle": 0 }
 				]
 			},
 			"right-leg": {
 				"rotate": [
-					{ "time": 0.0667, "angle": 5.22 },
-					{ "time": 0.1667, "angle": 56.81 }
-				],
-				"translate": [
-					{ "time": 0.0667, "x": 0, "y": 0 },
-					{ "time": 0.1667, "x": -1.33, "y": -35.95 }
-				]
-			},
-			"right-shin": {
-				"rotate": [
-					{ "time": 0.0667, "angle": -29.91 },
-					{ "time": 0.1667, "angle": 4.02, "curve": "stepped" },
-					{ "time": 0.2, "angle": 4.02 },
-					{ "time": 0.3, "angle": -23.91 }
+					{ "time": 0, "angle": 0 },
+					{ "time": 0.1, "angle": 71.49 },
+					{ "time": 0.2, "angle": 0 }
 				]
 			},
 			"right-foot": {
 				"rotate": [
-					{ "time": 0.0667, "angle": -1.49 },
-					{ "time": 0.1667, "angle": -60.08, "curve": "stepped" },
-					{ "time": 0.2, "angle": -60.08 },
-					{ "time": 0.3, "angle": 22.33 }
-				]
-			},
-			"right-forearm": {
-				"rotate": [
-					{ "time": 0.0667, "angle": 88.26 }
+					{ "time": 0, "angle": 0 },
+					{ "time": 0.1, "angle": -65.76 },
+					{ "time": 0.2, "angle": 0 }
 				]
 			},
 			"Pelvis": {
 				"translate": [
-					{ "time": 0.0667, "x": 0, "y": -1.56 },
-					{ "time": 0.1667, "x": 0, "y": -9.36, "curve": "stepped" },
-					{ "time": 0.2, "x": 0, "y": -9.36 },
-					{ "time": 0.2667, "x": 3.9, "y": 4.94 }
-				]
-			},
-			"head": {
-				"rotate": [
-					{ "time": 0.0667, "angle": -6.04 }
-				],
-				"translate": [
-					{ "time": 0.0667, "x": -10.75, "y": -1.94 }
-				]
-			},
-			"left-hand": {
-				"rotate": [
-					{ "time": 0.0667, "angle": 19.83 }
+					{ "time": 0, "x": 0, "y": 0 },
+					{ "time": 0.1, "x": 0, "y": 37.88 },
+					{ "time": 0.2, "x": 0, "y": 0 }
 				]
 			}
 		}

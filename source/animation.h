@@ -272,7 +272,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
         KeyFrame keyFrame0 = timelineOfBone.keyFrames.At(keyFrameCount - 1);
         KeyFrame keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
 
-        if (keyFrame0.time < currentAnimRuntime && keyFrame1.time > currentAnimRuntime && timelineOfBone.keyFrames.size != 1)                        
+        if (keyFrame0.time < currentAnimRuntime && keyFrame1.time > currentAnimRuntime )                        
         {
             result = keyFrameCount - 1;
             keyFrameCount = 0;
@@ -314,7 +314,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 {
                     f32 amountOfRotation{0.0f};
                     f32 maxTimeOfCurrentBoneTimeline {rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time};
-                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline) 
+                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline && rotationTimelineOfBone.keyFrames.size > 1) 
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
 
@@ -377,7 +377,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 {
                     v2f amountOfTranslation{0.0f, 0.0f};
                     f32 maxTimeOfCurrentBoneTimeline {translationTimelineOfBone.keyFrames.At(translationTimelineOfBone.keyFrames.size - 1).time};
-                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline) 
+                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline && translationTimelineOfBone.keyFrames.size > 1) 
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
 
