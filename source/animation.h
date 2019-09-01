@@ -9,7 +9,9 @@
     API ideas:
     1. Should you call rotate, translate, scale timelines? 
     2. Organize data in more of a SOA fashion?
-    3. Have stepped vs. lerped keyframes
+    3. Right now, code expects all animations start with with their keyframes set to the setup pose
+    bone positions. Might want to eventually change this given this is a waste of keyframes. Fix might 
+    involve mixing between idle anim and current playing anim or something. 
 */
 
 enum class CurveType
