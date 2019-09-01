@@ -261,9 +261,10 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
     };
 };
 
-//Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)
+//Returns lower keyFrame of range(e.g. if range is between 0 - 1 then keyFrame number 0 is returned)
 i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 {
+    i32 result{};
     i32 keyFrameCount = (i32)timelineOfBone.keyFrames.size - 1;
 
     while(keyFrameCount)
@@ -273,7 +274,8 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 
         if (keyFrame0.time < currentAnimRuntime && keyFrame1.time > currentAnimRuntime && timelineOfBone.keyFrames.size != 1)                        
         {
-            return keyFrameCount - 1;
+            result = keyFrameCount - 1;
+            keyFrameCount = 0;
         }
         else
         {
@@ -281,7 +283,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
         }
     };
 
-    return -1;
+    return result;
 };
 
 void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
@@ -311,7 +313,8 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(rotationTimelineOfBone.exists)
                 {
                     f32 amountOfRotation{0.0f};
-                    if (anim->currentTime > 0.0f && anim->currentTime < rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time) 
+                    f32 maxTimeOfCurrentBoneTimeline {rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time};
+                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline) 
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
 
@@ -369,16 +372,17 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                     Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
                 };
 
-                Timeline translationTimeLineOfBone = timelineSet->translationTimeline;
-                if(translationTimeLineOfBone.exists)
+                Timeline translationTimelineOfBone = timelineSet->translationTimeline;
+                if(translationTimelineOfBone.exists)
                 {
                     v2f amountOfTranslation{0.0f, 0.0f};
-                    if (anim->currentTime > 0.0f && anim->currentTime < translationTimeLineOfBone.keyFrames.At(translationTimeLineOfBone.keyFrames.size - 1).time) 
+                    f32 maxTimeOfCurrentBoneTimeline {translationTimelineOfBone.keyFrames.At(translationTimelineOfBone.keyFrames.size - 1).time};
+                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline) 
                     {
-                        i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
+                        i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
 
-                        KeyFrame keyFrame0 = translationTimeLineOfBone.keyFrames.At(activeKeyFrame_index);
-                        KeyFrame keyFrame1 = translationTimeLineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+                        KeyFrame keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
+                        KeyFrame keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
 
                         if(keyFrame0.curve == CurveType::STEPPED)
                         {
