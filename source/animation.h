@@ -262,7 +262,7 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 };
 
 //Returns higher keyFrame (e.g. if range is between 0 - 1 then keyFrame number 1 is returned)
-i32 _ActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
+i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 {
     i32 keyFrameCount = (i32)timelineOfBone.keyFrames.size - 1;
 
@@ -311,7 +311,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(rotationTimelineOfBone.exists)
                 {
                     f32 amountOfRotation{0.0f};
-                    i32 keyFrameCount = _ActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
+                    i32 keyFrameCount = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
                     if (keyFrameCount) 
                     {
                         f32 rotationAngle_frame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).angle;
@@ -372,7 +372,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(translationTimeLineOfBone.exists)
                 {
                     v2f amountOfTranslation{0.0f, 0.0f};
-                    i32 keyFrameCount = _ActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
+                    i32 keyFrameCount = _CurrentActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
                     if (keyFrameCount) 
                     {
                         v2f translation_frame0 = translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).translation;

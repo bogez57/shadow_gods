@@ -373,7 +373,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "high_kick", PlayBackStatus::IMMEDIATE);
+        QueueAnimation($(player->animQueue), player->animData, "high_kick", PlayBackStatus::NEXT);
     };
 
     if (KeyPressed(keyboard->ActionLeft))
