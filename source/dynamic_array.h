@@ -59,7 +59,15 @@ public:
     Dynam_Array(i32 memPartitionID_dynamic) 
         : memPartitionID(memPartitionID_dynamic)
     {}
-    Dynam_Array(i64 initialSize, const Type& type, i32 memPartitionID_dynamic)
+    Dynam_Array(i64 initialSize, i32 memPartitionID_dynamic)
+        : capacity(initialSize)
+        , memPartitionID(memPartitionID_dynamic)
+    {
+        ResizeArray<Type>($(*this), initialSize);
+        memset(this->elements, 0, initialSize); 
+        this->size = initialSize;
+    };
+    Dynam_Array(i64 initialSize, const Type& type, i32 memPartitionID_dynamic)//Have default initialized elements
         : capacity(initialSize)
         , memPartitionID(memPartitionID_dynamic)
     {
@@ -71,14 +79,6 @@ public:
         {
             this->elements[i] = type;
         };
-    };
-    Dynam_Array(i64 initialSize, i32 memPartitionID_dynamic)
-        : capacity(initialSize)
-        , memPartitionID(memPartitionID_dynamic)
-    {
-        ResizeArray<Type>($(*this), initialSize);
-        memset(this->elements, 0, initialSize); 
-        this->size = initialSize;
     };
 
     Type& operator[](i64 index)

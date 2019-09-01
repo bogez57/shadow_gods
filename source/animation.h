@@ -7,18 +7,22 @@
 
 /*
     API ideas:
-    1. QueueAnimaiton() and PlayAnimationImmediately() funcitons
-    2. Each Json object under rotate, translate, scale is a keyframe so call it that? 
-    3. Should you call rotate, translate, scale timelines? 
-    4. Organize data in more of a SOA fashion?
+    1. Should you call rotate, translate, scale timelines? 
+    2. Organize data in more of a SOA fashion?
+    3. Have stepped vs. lerped keyframes
 */
 
+enum class CurveType
+{
+    LINEAR,
+    STEPPED
+};
 struct KeyFrame
 {
     f32 time{};
     f32 angle{};
     v2f translation{};
-    char* curve{nullptr};
+    CurveType curve{CurveType::LINEAR};
 };
 
 struct Timeline
@@ -60,8 +64,7 @@ struct Animation
     Animation(Init) :
         boneTimelineSets{heap},
         boneRotations{heap},
-        boneTranslations{heap},
-        startAnimation{false}
+        boneTranslations{heap}
     {};
 
     const char* name{nullptr};
@@ -70,7 +73,6 @@ struct Animation
     HashMap_Str<TimelineSet> boneTimelineSets; 
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
-    b startAnimation{false};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
 };
 
@@ -142,6 +144,10 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
 
                     keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
                     keyFrame.angle = Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f));
+                    const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
+
+                    if(!strcmp(keyFrameCurve, "stepped"))
+                        keyFrame.curve = CurveType::STEPPED;
 
                     Insert($(rotationTimeline.keyFrames), keyFrame, keyFrameIndex);
                 };
@@ -303,7 +309,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 i32 keyFrameCount{};
                 if(rotationTimelineOfBone.exists)
                 {
-                    f32 lerpedRotation{bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle};
+                    f32 finalRotation{bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle};
                     i32 keyFrameCount = _ActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
                     if (keyFrameCount) 
                     {
@@ -313,63 +319,83 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                         ConvertNegativeToPositiveAngle_Radians($(rotationAngle0));
                         ConvertNegativeToPositiveAngle_Radians($(rotationAngle1));
 
-                        //Find percent to lerp
-                        f32 diff = rotationTimelineOfBone.keyFrames.At(keyFrameCount).time - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                        f32 diff1 = anim->currentTime - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                        f32 percentToLerp = diff1 / diff;
-
-                        v2f boneVector_frame0 = { bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0) };
-                        v2f boneVector_frame1 = { bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1) };
-                        f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
-
-                        if (directionOfRotation > 0) //Rotate counter-clockwise
+                        if(rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::STEPPED)
                         {
-                            if (rotationAngle0 < rotationAngle1)
-                            {
-                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
-                            }
+                            if(anim->currentTime < rotationTimelineOfBone.keyFrames.At(keyFrameCount).time)
+                                finalRotation = rotationAngle0;
                             else
-                            {
-                                ConvertPositiveToNegativeAngle_Radians($(rotationAngle0));
-                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
-                            }
+                                finalRotation = rotationAngle1;
                         }
-                        else //Rotate clockwise
+                        else if(rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::LINEAR)
                         {
-                            if (rotationAngle0 < rotationAngle1)
+                            //Find percent to lerp
+                            f32 diff = rotationTimelineOfBone.keyFrames.At(keyFrameCount).time - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                            f32 diff1 = anim->currentTime - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                            f32 percentToLerp = diff1 / diff;
+
+                            v2f boneVector_frame0 = { bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0) };
+                            v2f boneVector_frame1 = { bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1) };
+                            f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
+
+                            if (directionOfRotation > 0) //Rotate counter-clockwise
                             {
-                                ConvertPositiveToNegativeAngle_Radians($(rotationAngle1));
-                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                if (rotationAngle0 < rotationAngle1)
+                                {
+                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                }
+                                else
+                                {
+                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle0));
+                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                }
                             }
-                            else
+                            else //Rotate clockwise
                             {
-                                lerpedRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                if (rotationAngle0 < rotationAngle1)
+                                {
+                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle1));
+                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                }
+                                else
+                                {
+                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                }
                             }
-                        }
+                        };
                     };
 
-                    Insert<f32>($(anim->boneRotations), bone->name, lerpedRotation);
+                    Insert<f32>($(anim->boneRotations), bone->name, finalRotation);
                 };
 
                 Timeline translationTimeLineOfBone = timelineSet->translationTimeline;
                 if(translationTimeLineOfBone.exists)
                 {
-                    v2f newTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
+                    v2f finalTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
                     i32 keyFrameCount = _ActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
                     if (keyFrameCount) 
                     {
                         v2f translation0 = bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).translation;
                         v2f translation1 = bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(keyFrameCount).translation;
 
-                        //Find percent to lerp
-                        f32 diff = translationTimeLineOfBone.keyFrames.At(keyFrameCount).time - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                        f32 diff1 = anim->currentTime - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
-                        f32 percentToLerp = diff1 / diff;
+                        if(translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::STEPPED)
+                        {
+                            if(anim->currentTime < translationTimeLineOfBone.keyFrames.At(keyFrameCount).time)
+                                finalTranslation = translation0;
+                            else
+                                finalTranslation = translation1;
+                        }
+                        else if(translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::LINEAR)
+                        {
+                            //Find percent to lerp
+                            f32 diff = translationTimeLineOfBone.keyFrames.At(keyFrameCount).time - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                            f32 diff1 = anim->currentTime - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
+                            f32 percentToLerp = diff1 / diff;
 
-                        newTranslation = Lerp(translation0, translation1, percentToLerp);
+                            finalTranslation = Lerp(translation0, translation1, percentToLerp);
+                        };
                     };
 
-                    Insert<v2f>($(anim->boneTranslations), bone->name, newTranslation);
+                    Insert<v2f>($(anim->boneTranslations), bone->name, finalTranslation);
                 };
             };
         };
