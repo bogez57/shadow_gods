@@ -281,7 +281,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
         }
     };
 
-    return 0;
+    return -1;
 };
 
 void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
@@ -301,7 +301,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
             {
                 Bone* bone = &bones->At(boneIndex);
 
-                if(!strcmp(bone->name, "Pelvis"))
+                if(!strcmp(bone->name, "right-forearm"))
                     int x{3};
 
                 TimelineSet* timelineSet = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bones->At(boneIndex).name);
@@ -311,25 +311,22 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(rotationTimelineOfBone.exists)
                 {
                     f32 amountOfRotation{0.0f};
-                    if (anim->currentTime > 0.0f && anim->currentTime < anim->totalTime) 
+                    if (anim->currentTime > 0.0f && anim->currentTime < rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time) 
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
 
                         KeyFrame keyFrame0 = rotationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
                         KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
 
-                        f32 rotationAngle_frame0 = keyFrame0.angle;
-                        f32 rotationAngle_frame1 = keyFrame1.angle;
-
-                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle_frame0));
-                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle_frame1));
+                        ConvertNegativeToPositiveAngle_Radians($(keyFrame0.angle));
+                        ConvertNegativeToPositiveAngle_Radians($(keyFrame1.angle));
 
                         if(keyFrame0.curve == CurveType::STEPPED)
                         {
                             if(anim->currentTime < keyFrame1.time)
-                                amountOfRotation = rotationAngle_frame0;
+                                amountOfRotation = keyFrame0.angle;
                             else
-                                amountOfRotation = rotationAngle_frame1;
+                                amountOfRotation = keyFrame1.angle;
                         }
                         else if(keyFrame0.curve == CurveType::LINEAR)
                         {
@@ -338,32 +335,32 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                             f32 diff1 = anim->currentTime - keyFrame0.time;
                             f32 percentToLerp = diff1 / diff;
 
-                            v2f boneVector_frame0 = { bone->length * CosR(rotationAngle_frame0), bone->length * SinR(rotationAngle_frame0) };
-                            v2f boneVector_frame1 = { bone->length * CosR(rotationAngle_frame1), bone->length * SinR(rotationAngle_frame1) };
+                            v2f boneVector_frame0 = { bone->length * CosR(keyFrame0.angle), bone->length * SinR(keyFrame0.angle) };
+                            v2f boneVector_frame1 = { bone->length * CosR(keyFrame1.angle), bone->length * SinR(keyFrame1.angle) };
                             f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
 
                             if (directionOfRotation > 0) //Rotate counter-clockwise
                             {
-                                if (rotationAngle_frame0 < rotationAngle_frame1)
+                                if (keyFrame0.angle < keyFrame1.angle)
                                 {
-                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
+                                    amountOfRotation = Lerp(keyFrame0.angle, keyFrame1.angle, percentToLerp);
                                 }
                                 else
                                 {
-                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle_frame0));
-                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
+                                    ConvertPositiveToNegativeAngle_Radians($(keyFrame0.angle));
+                                    amountOfRotation = Lerp(keyFrame0.angle, keyFrame1.angle, percentToLerp);
                                 }
                             }
                             else //Rotate clockwise
                             {
-                                if (rotationAngle_frame0 < rotationAngle_frame1)
+                                if (keyFrame0.angle < keyFrame1.angle)
                                 {
-                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle_frame1));
-                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
+                                    ConvertPositiveToNegativeAngle_Radians($(keyFrame1.angle));
+                                    amountOfRotation = Lerp(keyFrame0.angle, keyFrame1.angle, percentToLerp);
                                 }
                                 else
                                 {
-                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
+                                    amountOfRotation = Lerp(keyFrame0.angle, keyFrame1.angle, percentToLerp);
                                 }
                             }
                         };
@@ -376,22 +373,19 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(translationTimeLineOfBone.exists)
                 {
                     v2f amountOfTranslation{0.0f, 0.0f};
-                    if (anim->currentTime > 0.0f && anim->currentTime < anim->totalTime) 
+                    if (anim->currentTime > 0.0f && anim->currentTime < translationTimeLineOfBone.keyFrames.At(translationTimeLineOfBone.keyFrames.size - 1).time) 
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
 
                         KeyFrame keyFrame0 = translationTimeLineOfBone.keyFrames.At(activeKeyFrame_index);
                         KeyFrame keyFrame1 = translationTimeLineOfBone.keyFrames.At(activeKeyFrame_index + 1);
 
-                        v2f translation_frame0 = keyFrame0.translation;
-                        v2f translation_frame1 = keyFrame1.translation;
-
                         if(keyFrame0.curve == CurveType::STEPPED)
                         {
                             if(anim->currentTime < keyFrame1.time)
-                                amountOfTranslation = translation_frame0;
+                                amountOfTranslation = keyFrame0.translation;
                             else
-                                amountOfTranslation = translation_frame1;
+                                amountOfTranslation = keyFrame1.translation;
                         }
                         else if(keyFrame0.curve == CurveType::LINEAR)
                         {
@@ -400,7 +394,7 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                             f32 diff1 = anim->currentTime - keyFrame0.time;
                             f32 percentToLerp = diff1 / diff;
 
-                            amountOfTranslation = Lerp(translation_frame0, translation_frame1, percentToLerp);
+                            amountOfTranslation = Lerp(keyFrame0.translation, keyFrame1.translation, percentToLerp);
                         };
                     };
 
