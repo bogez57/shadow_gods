@@ -81,6 +81,7 @@ struct Skeleton
     f32 width{}, height{};
 };
 
+void ResetBonesToSetupPose(Skeleton&& skeleton);
 Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
 
 #endif
@@ -215,6 +216,15 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
     globalPlatformServices->Free((void*)skeletonJson);
 
     _TranslateSkelPropertiesToGameUnits($(*this));
+};
+
+void ResetBonesToSetupPose(Skeleton&& skel)
+{
+    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+    {
+        *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation;
+        *skel.bones.At(boneIndex).parentLocalPos = skel.bones.At(boneIndex).originalParentLocalPos;
+    };
 };
 
 Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)

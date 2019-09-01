@@ -97,7 +97,6 @@ struct AnimationQueue
     Animation idleAnim;
 };
 
-void SetToSetupPose(Skeleton&& skel, Animation anim);
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
 void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
@@ -309,22 +308,22 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 i32 keyFrameCount{};
                 if(rotationTimelineOfBone.exists)
                 {
-                    f32 finalRotation{bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(0).angle};
+                    f32 amountOfRotation{0.0f};
                     i32 keyFrameCount = _ActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
                     if (keyFrameCount) 
                     {
-                        f32 rotationAngle0 = bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).angle;
-                        f32 rotationAngle1 = bone->originalParentLocalRotation + rotationTimelineOfBone.keyFrames.At(keyFrameCount).angle;
+                        f32 rotationAngle_frame0 = rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).angle;
+                        f32 rotationAngle_frame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount).angle;
 
-                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle0));
-                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle1));
+                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle_frame0));
+                        ConvertNegativeToPositiveAngle_Radians($(rotationAngle_frame1));
 
                         if(rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::STEPPED)
                         {
                             if(anim->currentTime < rotationTimelineOfBone.keyFrames.At(keyFrameCount).time)
-                                finalRotation = rotationAngle0;
+                                amountOfRotation = rotationAngle_frame0;
                             else
-                                finalRotation = rotationAngle1;
+                                amountOfRotation = rotationAngle_frame1;
                         }
                         else if(rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::LINEAR)
                         {
@@ -333,56 +332,56 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                             f32 diff1 = anim->currentTime - rotationTimelineOfBone.keyFrames.At(keyFrameCount - 1).time;
                             f32 percentToLerp = diff1 / diff;
 
-                            v2f boneVector_frame0 = { bone->length * CosR(rotationAngle0), bone->length * SinR(rotationAngle0) };
-                            v2f boneVector_frame1 = { bone->length * CosR(rotationAngle1), bone->length * SinR(rotationAngle1) };
+                            v2f boneVector_frame0 = { bone->length * CosR(rotationAngle_frame0), bone->length * SinR(rotationAngle_frame0) };
+                            v2f boneVector_frame1 = { bone->length * CosR(rotationAngle_frame1), bone->length * SinR(rotationAngle_frame1) };
                             f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
 
                             if (directionOfRotation > 0) //Rotate counter-clockwise
                             {
-                                if (rotationAngle0 < rotationAngle1)
+                                if (rotationAngle_frame0 < rotationAngle_frame1)
                                 {
-                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
                                 }
                                 else
                                 {
-                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle0));
-                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle_frame0));
+                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
                                 }
                             }
                             else //Rotate clockwise
                             {
-                                if (rotationAngle0 < rotationAngle1)
+                                if (rotationAngle_frame0 < rotationAngle_frame1)
                                 {
-                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle1));
-                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                    ConvertPositiveToNegativeAngle_Radians($(rotationAngle_frame1));
+                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
                                 }
                                 else
                                 {
-                                    finalRotation = Lerp(rotationAngle0, rotationAngle1, percentToLerp);
+                                    amountOfRotation = Lerp(rotationAngle_frame0, rotationAngle_frame1, percentToLerp);
                                 }
                             }
                         };
                     };
 
-                    Insert<f32>($(anim->boneRotations), bone->name, finalRotation);
+                    Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
                 };
 
                 Timeline translationTimeLineOfBone = timelineSet->translationTimeline;
                 if(translationTimeLineOfBone.exists)
                 {
-                    v2f finalTranslation{ bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(0).translation };
+                    v2f amountOfTranslation{0.0f, 0.0f};
                     i32 keyFrameCount = _ActiveKeyFrame(translationTimeLineOfBone, anim->currentTime);
                     if (keyFrameCount) 
                     {
-                        v2f translation0 = bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).translation;
-                        v2f translation1 = bone->originalParentLocalPos + translationTimeLineOfBone.keyFrames.At(keyFrameCount).translation;
+                        v2f translation_frame0 = translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).translation;
+                        v2f translation_frame1 = translationTimeLineOfBone.keyFrames.At(keyFrameCount).translation;
 
                         if(translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::STEPPED)
                         {
                             if(anim->currentTime < translationTimeLineOfBone.keyFrames.At(keyFrameCount).time)
-                                finalTranslation = translation0;
+                                amountOfTranslation = translation_frame0;
                             else
-                                finalTranslation = translation1;
+                                amountOfTranslation = translation_frame1;
                         }
                         else if(translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).curve == CurveType::LINEAR)
                         {
@@ -391,11 +390,11 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                             f32 diff1 = anim->currentTime - translationTimeLineOfBone.keyFrames.At(keyFrameCount - 1).time;
                             f32 percentToLerp = diff1 / diff;
 
-                            finalTranslation = Lerp(translation0, translation1, percentToLerp);
+                            amountOfTranslation = Lerp(translation_frame0, translation_frame1, percentToLerp);
                         };
                     };
 
-                    Insert<v2f>($(anim->boneTranslations), bone->name, finalTranslation);
+                    Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
                 };
             };
         };
@@ -408,17 +407,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 
     if(anim)
     {
-        if(anim->status == PlayBackStatus::IMMEDIATE)
-        {
-            //Reset bones to setup position 
-            for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
-            {
-                *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation;
-                *skel.bones.At(boneIndex).parentLocalPos = skel.bones.At(boneIndex).originalParentLocalPos;
-            };
-
-            anim->status = PlayBackStatus::DEFAULT;
-        };
+        ResetBonesToSetupPose($(skel));
 
         for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
         {
@@ -426,16 +415,16 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
-                f32 newBoneRotation = *GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
-                *skel.bones.At(boneIndex).parentLocalRotation = newBoneRotation;
+                f32 BoneRotationToAdd = *GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
+                *skel.bones.At(boneIndex).parentLocalRotation += BoneRotationToAdd;
             };
 
             hashIndex = GetHashIndex(anim->boneTranslations, skel.bones.At(boneIndex).name);
 
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
-                v2f newBoneTranslation = *GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
-                *skel.bones.At(boneIndex).parentLocalPos = newBoneTranslation;
+                v2f BoneTranslationToAdd = *GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
+                *skel.bones.At(boneIndex).parentLocalPos += BoneTranslationToAdd;
             };
         };
 
