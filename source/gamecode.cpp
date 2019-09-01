@@ -378,6 +378,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionLeft))
     {
+        QueueAnimation($(player->animQueue), player->animData, "left_jab", PlayBackStatus::IMMEDIATE);
     };
 
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
