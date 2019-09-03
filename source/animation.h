@@ -102,6 +102,7 @@ struct AnimationQueue
     Animation idleAnim;
 };
 
+void CopyAnimation(Animation src, Animation&& dest);
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
 Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
@@ -198,18 +199,24 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
     };
 };
 
+void CopyAnimation(Animation src, Animation&& dest)
+{
+    dest = src;
+    CopyArray(src.boneTimelineSets.keyInfos, $(dest.boneTimelineSets.keyInfos));
+    CopyArray(src.boneRotations.keyInfos, $(dest.boneRotations.keyInfos));
+    CopyArray(src.boneTranslations.keyInfos, $(dest.boneTranslations.keyInfos));
+};
+
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
 {
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
-    Animation sourceAnim {Init::_};
-    sourceAnim = *GetVal<Animation>(animData.animations, index, animName);
+    Animation* sourceAnim = GetVal<Animation>(animData.animations, index, animName);
 
-    Animation destAnim = sourceAnim;
-    CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
-    CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
-    CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
+    Animation destAnim;
+    CopyAnimation(*sourceAnim, $(destAnim));
+
     destAnim.status = PlayBackStatus::IDLE;
     animQueue.idleAnim = destAnim;
 
@@ -223,13 +230,11 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
     i32 index = GetHashIndex<Animation>(animData.animations, animName);
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
-    Animation sourceAnim {Init::_};
-    sourceAnim = *GetVal<Animation>(animData.animations, index, animName);
+    Animation* sourceAnim = GetVal<Animation>(animData.animations, index, animName);
 
-    Animation destAnim = sourceAnim;
-    CopyArray(sourceAnim.boneTimelineSets.keyInfos, $(destAnim.boneTimelineSets.keyInfos));
-    CopyArray(sourceAnim.boneRotations.keyInfos, $(destAnim.boneRotations.keyInfos));
-    CopyArray(sourceAnim.boneTranslations.keyInfos, $(destAnim.boneTranslations.keyInfos));
+    Animation destAnim; 
+    CopyAnimation(*sourceAnim, $(destAnim));
+
     destAnim.status = playBackStatus;
 
     switch(playBackStatus)
@@ -445,10 +450,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bo
         };
     };
 
-    Animation result = *anim;
-    CopyArray(anim->boneTimelineSets.keyInfos, $(result.boneTimelineSets.keyInfos));
-    CopyArray(anim->boneRotations.keyInfos, $(result.boneRotations.keyInfos));
-    CopyArray(anim->boneTranslations.keyInfos, $(result.boneTranslations.keyInfos));
+    Animation result;
+    CopyAnimation(*anim, $(result));
 
     if (anim->hasEnded)
     {

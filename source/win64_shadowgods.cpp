@@ -1119,7 +1119,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 FramePerformanceTimer.UpdateTimeCount();
 
-                //BGZ_CONSOLE("ms per frame: %f\n", frameTimeInMS);
+                BGZ_CONSOLE("ms per frame: %f\n", frameTimeInMS);
             };
 
 
