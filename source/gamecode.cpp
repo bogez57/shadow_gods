@@ -371,14 +371,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor -= .02f;
     };
 
-    if (KeyPressed(keyboard->ActionRight))
+    if (KeyHeld(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "high_kick", PlayBackStatus::NEXT);
+        QueueAnimation($(player->animQueue), player->animData, "block", PlayBackStatus::NEXT);
     };
 
     if (KeyPressed(keyboard->ActionLeft))
     {
-        QueueAnimation($(player->animQueue), player->animData, "low_kick", PlayBackStatus::IMMEDIATE);
+        QueueAnimation($(player->animQueue), player->animData, "low-kick", PlayBackStatus::IMMEDIATE);
     };
 
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);

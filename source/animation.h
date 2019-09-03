@@ -306,6 +306,9 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(!strcmp(bone->name, "right-forearm"))
                     int x{3};
 
+                if(!strcmp(bone->name, "left-forearm"))
+                    int x{3};
+
                 TimelineSet* timelineSet = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bones->At(boneIndex).name);
 
                 Timeline rotationTimelineOfBone = timelineSet->rotationTimeline;
