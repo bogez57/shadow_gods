@@ -381,17 +381,19 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
 
+    defer { CleanUpAnimation($(player->currentAnim)); };
+
     player->currentAnim = UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
 
     ApplyAnimationToSkeleton($(player->skel), player->currentAnim);
-
-    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
     UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
     UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
     Array<v2f, 2> uvs = { v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f } };
     PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{ stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f{ 1.0f, 1.0f }, uvs, "background");
+
+    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
     auto DrawFighter = [](Fighter fighter) -> void {
         for (i32 slotIndex{ 0 }; slotIndex < fighter.skel.slots.size; ++slotIndex)
@@ -413,6 +415,4 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     DrawFighter(*player);
     DrawFighter(*enemy);
-
-    CleanUpAnimation($(player->currentAnim));
 };
