@@ -104,7 +104,7 @@ struct AnimationQueue
 
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
-void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
+Animation* UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
 void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status);
 
 #endif
@@ -311,9 +311,10 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
     return result;
 };
 
-void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
+Animation* UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
 {
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
+    BGZ_ASSERT(anim, "No animation returned!");
 
     if(anim)
     {
@@ -326,6 +327,8 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
            anim->currentTime -= diff;
            anim->hasEnded = true;
         };
+
+        
 
         f32 maxTimeOfAnimation{};
         for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
@@ -443,45 +446,42 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
             };
         };
     };
+
+    if (anim->hasEnded)
+    {
+        animQueue.queuedAnimations.RemoveElem();
+
+        if(animQueue.queuedAnimations.Empty())
+            animQueue.queuedAnimations.PushBack(animQueue.idleAnim);
+    };
+
+    return anim;
 };
 
-void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
+void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
 {
-    Animation* anim = animQueue.queuedAnimations.GetFirstElem();
+    ResetBonesToSetupPose($(skel));
 
-    if(anim)
+    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
     {
-        ResetBonesToSetupPose($(skel));
+        i32 hashIndex = GetHashIndex(anim.boneRotations, skel.bones.At(boneIndex).name);
 
-        for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+        if (hashIndex != HASH_DOES_NOT_EXIST)
         {
-            i32 hashIndex = GetHashIndex(anim->boneRotations, skel.bones.At(boneIndex).name);
-
-            if (hashIndex != HASH_DOES_NOT_EXIST)
-            {
-                f32 boneRotationToAdd = *GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
+                f32 boneRotationToAdd = *GetVal(anim.boneRotations, hashIndex, skel.bones.At(boneIndex).name);
                 *skel.bones.At(boneIndex).parentLocalRotation += boneRotationToAdd;
-            };
-
-            hashIndex = GetHashIndex(anim->boneTranslations, skel.bones.At(boneIndex).name);
-
-            if (hashIndex != HASH_DOES_NOT_EXIST)
-            {
-                v2f boneTranslationToAdd = *GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
-                *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
-            };
         };
 
-        if (anim->hasEnded)
+        hashIndex = GetHashIndex(anim.boneTranslations, skel.bones.At(boneIndex).name);
+
+        if (hashIndex != HASH_DOES_NOT_EXIST)
         {
-            anim->currentTime = 0.0f;
-
-            animQueue.queuedAnimations.RemoveElem();
-
-            if(animQueue.queuedAnimations.Empty())
-                animQueue.queuedAnimations.PushBack(animQueue.idleAnim);
+            v2f boneTranslationToAdd = *GetVal(anim.boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
+            *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
         };
     };
+
+    
 };
 
 #endif //ANIMATION_IMPL
