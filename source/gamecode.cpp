@@ -373,12 +373,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "block", PlayBackStatus::HOLD);
+        QueueAnimation($(player->animQueue), player->animData, "low-kick", PlayBackStatus::HOLD);
     };
 
     if (KeyPressed(keyboard->ActionLeft))
     {
-        QueueAnimation($(player->animQueue), player->animData, "high-kick", PlayBackStatus::IMMEDIATE);
+        QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
 
     UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
