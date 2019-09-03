@@ -78,6 +78,7 @@ struct Animation
     HashMap_Str<v2f> boneTranslations;
     PlayBackStatus status{PlayBackStatus::DEFAULT};
     b repeat{false};
+    b hasEnded{false};
 };
 
 struct AnimationData
@@ -289,14 +290,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 
     KeyFrame keyFrame0{};
     KeyFrame keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
-
-    //This catches the case where on prev frame current anim runtime was less than
-    //the max time of current timeline but on this frame current anim runtime is no more.
-    //By having calling function get back the final keyframe on the time line this can 
-    //make sure the lerp finishes through on it's animation if there was still some 
-    //work left to do (This helps prevent subtle bugs currently) 
-    if(keyFrame1.time < currentAnimRuntime)
-        return keyFrameCount - 1;
+    BGZ_ASSERT(keyFrame1.time > currentAnimRuntime, "Animation's current runtime has surpassed max time of timeline");
 
     while(keyFrameCount)
     {
@@ -323,7 +317,15 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
 
     if(anim)
     {
+        f32 prevFrameAnimTime = anim->currentTime;
         anim->currentTime += prevFrameDT;
+
+        if(anim->currentTime > anim->totalTime)
+        {
+           f32 diff = anim->currentTime - prevFrameAnimTime;
+           anim->currentTime -= diff;
+           anim->hasEnded = true;
+        };
 
         f32 maxTimeOfAnimation{};
         for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
@@ -470,7 +472,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
             };
         };
 
-        if (anim->currentTime > anim->totalTime)
+        if (anim->hasEnded)
         {
             anim->currentTime = 0.0f;
 
