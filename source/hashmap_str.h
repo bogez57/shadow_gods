@@ -57,6 +57,13 @@ ui16 _HashFunction(i32 numberToCondense)
 };
 
 template <typename ValueType>
+void CleanUpHashMap_Str(HashMap_Str<ValueType>&& map)
+{
+    map.numOfCollisions = 0;
+    CleanUpDynamArr($(map.keyInfos));
+};
+
+template <typename ValueType>
 ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 {
     KeyInfo<ValueType> info{};

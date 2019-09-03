@@ -73,12 +73,12 @@ struct Animation
     const char* name{nullptr};
     f32 totalTime{};
     f32 currentTime{};
-    HashMap_Str<TimelineSet> boneTimelineSets; 
-    HashMap_Str<f32> boneRotations;
-    HashMap_Str<v2f> boneTranslations;
     PlayBackStatus status{PlayBackStatus::DEFAULT};
     b repeat{false};
     b hasEnded{false};
+    HashMap_Str<TimelineSet> boneTimelineSets; 
+    HashMap_Str<f32> boneRotations;
+    HashMap_Str<v2f> boneTranslations;
 };
 
 struct AnimationData
@@ -102,6 +102,7 @@ struct AnimationQueue
     Animation idleAnim;
 };
 
+void CleanUpAnimation(Animation&& anim);
 void CopyAnimation(Animation src, Animation&& dest);
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
@@ -197,6 +198,20 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
 
         Insert<Animation>($(this->animations), animation.name, animation);
     };
+};
+
+void CleanUpAnimation(Animation&& anim)
+{
+    anim.name = {nullptr};
+    anim.totalTime = {};
+    anim.currentTime = {};
+    anim.status = {PlayBackStatus::DEFAULT};
+    anim.repeat = {false};
+    anim.hasEnded = {false};
+
+    CleanUpHashMap_Str($(anim.boneTranslations));
+    CleanUpHashMap_Str($(anim.boneRotations));
+    CleanUpHashMap_Str($(anim.boneTimelineSets));
 };
 
 void CopyAnimation(Animation src, Animation&& dest)

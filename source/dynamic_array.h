@@ -102,6 +102,16 @@ public:
 };
 
 template <typename Type>
+void CleanUpDynamArr(Dynam_Array<Type>&& arr)
+{
+    DeAlloc(arr.memPartitionID , arr.elements);
+    arr.hasArrayBeenDestroyed = true;
+    arr.size = 0;
+    arr.capacity = 0;
+    arr.memPartitionID = 0;
+};
+
+template <typename Type>
 void PopBack(Dynam_Array<Type>&& arr)
 {
     BGZ_ASSERT(arr.size > 0, "Cannot pop off an empty dynamic array!");

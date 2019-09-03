@@ -413,4 +413,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     DrawFighter(*player);
     DrawFighter(*enemy);
+
+    CleanUpAnimation($(player->currentAnim));
 };
