@@ -373,7 +373,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "block", PlayBackStatus::DEFAULT);
+        QueueAnimation($(player->animQueue), player->animData, "block", PlayBackStatus::HOLD);
     };
 
     if (KeyPressed(keyboard->ActionLeft))

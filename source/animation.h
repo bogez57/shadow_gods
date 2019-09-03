@@ -57,7 +57,8 @@ enum class PlayBackStatus
     DEFAULT,
     IDLE,
     IMMEDIATE,
-    NEXT
+    NEXT,
+    HOLD
 };
 
 struct Animation
@@ -76,6 +77,7 @@ struct Animation
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     PlayBackStatus status{PlayBackStatus::DEFAULT};
+    b repeat{false};
 };
 
 struct AnimationData
@@ -244,17 +246,35 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
         case PlayBackStatus::NEXT:
         {
-            {//Clear out animations not currently playing and insert new animation to play next
-                if(NOT animQueue.queuedAnimations.Empty())
-                {
-                    animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
-                    animQueue.queuedAnimations.PushBack(destAnim);
-                }
-                else
-                {
-                    animQueue.queuedAnimations.PushBack(destAnim);
-                }
+            //Clear out animations not currently playing and insert new animation to play next
+            if(NOT animQueue.queuedAnimations.Empty())
+            {
+                animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
+                animQueue.queuedAnimations.PushBack(destAnim);
             }
+            else
+            {
+                animQueue.queuedAnimations.PushBack(destAnim);
+            }
+        }break;
+
+        case PlayBackStatus::HOLD:
+        {
+            if(animQueue.queuedAnimations.Empty())
+            {
+                animQueue.queuedAnimations.PushBack(destAnim);
+                animQueue.queuedAnimations.GetFirstElem()->repeat = true;
+            }
+            else if(animQueue.queuedAnimations.GetFirstElem()->repeat == true)
+            {
+                //Do nothing
+            }
+            else
+            {
+                animQueue.queuedAnimations.Reset();
+                animQueue.queuedAnimations.PushBack(destAnim);
+                animQueue.queuedAnimations.GetFirstElem()->repeat = true;
+            };
         }break;
 
         InvalidDefaultCase;
