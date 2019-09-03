@@ -267,10 +267,21 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
     i32 result{};
     i32 keyFrameCount = (i32)timelineOfBone.keyFrames.size - 1;
 
+    KeyFrame keyFrame0{};
+    KeyFrame keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
+
+    //This catches the case where on prev frame current anim runtime was less than
+    //the max time of current timeline but on this frame current anim runtime is no more.
+    //By having calling function get back the final keyframe on the time line this can 
+    //make sure the lerp finishes through on it's animation if there was still some 
+    //work left to do (This helps prevent subtle bugs currently) 
+    if(keyFrame1.time < currentAnimRuntime)
+        return keyFrameCount - 1;
+
     while(keyFrameCount)
     {
-        KeyFrame keyFrame0 = timelineOfBone.keyFrames.At(keyFrameCount - 1);
-        KeyFrame keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
+        keyFrame0 = timelineOfBone.keyFrames.At(keyFrameCount - 1);
+        keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
 
         if (keyFrame0.time < currentAnimRuntime && keyFrame1.time > currentAnimRuntime )                        
         {
@@ -310,12 +321,11 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(rotationTimelineOfBone.exists)
                 {
                     f32 amountOfRotation{0.0f};
-                    f32 maxTimeOfCurrentBoneTimeline {rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time};
                     if(rotationTimelineOfBone.keyFrames.size == 1)
                     {
                         amountOfRotation = rotationTimelineOfBone.keyFrames.At(0).angle;
                     }
-                    else if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline) 
+                    else if (anim->currentTime > 0.0f) 
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
 
@@ -377,12 +387,11 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 if(translationTimelineOfBone.exists)
                 {
                     v2f amountOfTranslation{0.0f, 0.0f};
-                    f32 maxTimeOfCurrentBoneTimeline {translationTimelineOfBone.keyFrames.At(translationTimelineOfBone.keyFrames.size - 1).time};
-                    if(translationTimelineOfBone.keyFrames.size == 1)
+                    if(translationTimelineOfBone.keyFrames.size == 1) 
                     {
                         amountOfTranslation = translationTimelineOfBone.keyFrames.At(0).translation;
                     }
-                    else if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline)
+                    else if (anim->currentTime > 0.0f)
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
 
@@ -428,16 +437,20 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
 
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
-                f32 BoneRotationToAdd = *GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
-                *skel.bones.At(boneIndex).parentLocalRotation += BoneRotationToAdd;
+                f32 boneRotationToAdd = *GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
+                if(boneRotationToAdd == 0)
+                    int x{3}; 
+                *skel.bones.At(boneIndex).parentLocalRotation += boneRotationToAdd;
             };
 
             hashIndex = GetHashIndex(anim->boneTranslations, skel.bones.At(boneIndex).name);
 
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
-                v2f BoneTranslationToAdd = *GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
-                *skel.bones.At(boneIndex).parentLocalPos += BoneTranslationToAdd;
+                v2f boneTranslationToAdd = *GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
+                if(boneTranslationToAdd == v2f{0, 0})
+                    int x{3}; 
+                *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
             };
         };
 
