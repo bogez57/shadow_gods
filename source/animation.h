@@ -438,8 +438,6 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
                 f32 boneRotationToAdd = *GetVal(anim->boneRotations, hashIndex, skel.bones.At(boneIndex).name);
-                if(boneRotationToAdd == 0)
-                    int x{3}; 
                 *skel.bones.At(boneIndex).parentLocalRotation += boneRotationToAdd;
             };
 
@@ -448,8 +446,6 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, AnimationQueue&& animQueue)
             if (hashIndex != HASH_DOES_NOT_EXIST)
             {
                 v2f boneTranslationToAdd = *GetVal(anim->boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
-                if(boneTranslationToAdd == v2f{0, 0})
-                    int x{3}; 
                 *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
             };
         };
