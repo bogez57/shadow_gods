@@ -14,7 +14,7 @@ struct Fighter
     Skeleton skel;
     AnimationQueue animQueue;
     AnimationData animData;
-    Animation* currentAnim{nullptr};
+    Animation currentAnim{Init::_};
 };
 
 #endif

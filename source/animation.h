@@ -104,7 +104,7 @@ struct AnimationQueue
 
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
-Animation* UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
+Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
 void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status);
 
 #endif
@@ -311,7 +311,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
     return result;
 };
 
-Animation* UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
+Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
 {
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
     BGZ_ASSERT(anim, "No animation returned!");
@@ -327,8 +327,6 @@ Animation* UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* b
            anim->currentTime -= diff;
            anim->hasEnded = true;
         };
-
-        
 
         f32 maxTimeOfAnimation{};
         for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
@@ -447,6 +445,11 @@ Animation* UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* b
         };
     };
 
+    Animation result = *anim;
+    CopyArray(anim->boneTimelineSets.keyInfos, $(result.boneTimelineSets.keyInfos));
+    CopyArray(anim->boneRotations.keyInfos, $(result.boneRotations.keyInfos));
+    CopyArray(anim->boneTranslations.keyInfos, $(result.boneTranslations.keyInfos));
+
     if (anim->hasEnded)
     {
         animQueue.queuedAnimations.RemoveElem();
@@ -455,7 +458,7 @@ Animation* UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* b
             animQueue.queuedAnimations.PushBack(animQueue.idleAnim);
     };
 
-    return anim;
+    return result;
 };
 
 void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
