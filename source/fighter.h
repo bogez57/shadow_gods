@@ -14,7 +14,7 @@ struct Fighter
     Skeleton skel;
     AnimationQueue animQueue;
     AnimationData animData;
-    Animation currentAnim{Init::_};
+    Animation currentAnim;
 };
 
 #endif
@@ -25,6 +25,7 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
     animData{jsonFilePath},
     skel{atlasFilePath, jsonFilePath, heap},
     animQueue{Init::_},
+    currentAnim{Init::_},
     world{0.0f, worldPos, {1.0f, 1.0f}},
     height{fighterHeight}
 {

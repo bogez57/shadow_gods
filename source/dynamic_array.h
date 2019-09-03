@@ -180,7 +180,13 @@ void CopyArray(Dynam_Array<Type> sourceArray, Dynam_Array<Type>&& destinationArr
         ResizeArray<Type>($(destinationArray), sourceArray.size);
     };
 
-    destinationArray.size = sourceArray.size;
+    BGZ_ASSERT(destinationArray.size == sourceArray.size, "Did not resize arrays correctly when copying!");
+
+    if(destinationArray.elements == sourceArray.elements)
+    {
+        destinationArray.elements = MallocType(heap, Type, destinationArray.size);
+    };
+
     memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.size);
 };
 

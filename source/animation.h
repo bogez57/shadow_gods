@@ -452,6 +452,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bo
 
     if (anim->hasEnded)
     {
+        anim->currentTime = 0.0f;
         animQueue.queuedAnimations.RemoveElem();
 
         if(animQueue.queuedAnimations.Empty())
@@ -483,8 +484,6 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
             *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
         };
     };
-
-    
 };
 
 #endif //ANIMATION_IMPL
