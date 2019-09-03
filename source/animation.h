@@ -303,12 +303,6 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
             {
                 Bone* bone = &bones->At(boneIndex);
 
-                if(!strcmp(bone->name, "right-forearm"))
-                    int x{3};
-
-                if(!strcmp(bone->name, "left-forearm"))
-                    int x{3};
-
                 TimelineSet* timelineSet = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bones->At(boneIndex).name);
 
                 Timeline rotationTimelineOfBone = timelineSet->rotationTimeline;
@@ -317,7 +311,11 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 {
                     f32 amountOfRotation{0.0f};
                     f32 maxTimeOfCurrentBoneTimeline {rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time};
-                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline && rotationTimelineOfBone.keyFrames.size > 1) 
+                    if(rotationTimelineOfBone.keyFrames.size == 1)
+                    {
+                        amountOfRotation = rotationTimelineOfBone.keyFrames.At(0).angle;
+                    }
+                    else if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline) 
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
 
@@ -380,7 +378,11 @@ void UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, 
                 {
                     v2f amountOfTranslation{0.0f, 0.0f};
                     f32 maxTimeOfCurrentBoneTimeline {translationTimelineOfBone.keyFrames.At(translationTimelineOfBone.keyFrames.size - 1).time};
-                    if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline && translationTimelineOfBone.keyFrames.size > 1) 
+                    if(translationTimelineOfBone.keyFrames.size == 1)
+                    {
+                        amountOfTranslation = translationTimelineOfBone.keyFrames.At(0).translation;
+                    }
+                    else if (anim->currentTime > 0.0f && anim->currentTime < maxTimeOfCurrentBoneTimeline)
                     {
                         i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
 
