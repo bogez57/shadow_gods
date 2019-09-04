@@ -351,12 +351,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         globalPlatformServices->DLLJustReloaded = false;
     };
 
-    if (KeyHeld(keyboard->MoveRight))
+    if (gamePad->LThumbStick.x > 0.0f)
     {
         player->world.translation.x += .1f;
     };
 
-    if (KeyHeld(keyboard->MoveLeft))
+    if (gamePad->LThumbStick.x < 0.0f)
     {
         player->world.translation.x -= .1f;
     }
@@ -371,19 +371,18 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor -= .02f;
     };
 
-    if (KeyHeld(keyboard->ActionRight))
-    {
-        QueueAnimation($(player->animQueue), player->animData, "low-kick", PlayBackStatus::HOLD);
-    };
-
-    if (KeyPressed(keyboard->ActionLeft))
+    if (KeyPressed(gamePad->ActionLeft))
     {
         QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
 
-    defer { CleanUpAnimation($(player->currentAnim)); };
+    if (KeyHeld(gamePad->ActionRight))
+    {
+        QueueAnimation($(player->animQueue), player->animData, "block", PlayBackStatus::HOLD);
+    };
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
+    defer { CleanUpAnimation($(player->currentAnim)); };
 
     ApplyAnimationToSkeleton($(player->skel), player->currentAnim);
 
