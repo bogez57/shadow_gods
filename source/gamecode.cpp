@@ -343,6 +343,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
 
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
+
+        MixAnimations($(player->animData), "idle", "high-kick");
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -351,12 +353,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         globalPlatformServices->DLLJustReloaded = false;
     };
 
-    if (gamePad->LThumbStick.x > 0.0f)
+    if (KeyHeld(keyboard->MoveRight))
     {
         player->world.translation.x += .1f;
     };
 
-    if (gamePad->LThumbStick.x < 0.0f)
+    if (KeyHeld(keyboard->MoveLeft))
     {
         player->world.translation.x -= .1f;
     }
@@ -371,12 +373,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor -= .02f;
     };
 
-    if (KeyPressed(gamePad->ActionLeft))
+    if (KeyPressed(keyboard->ActionLeft))
     {
         QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
 
-    if (KeyHeld(gamePad->ActionRight))
+    if (KeyHeld(keyboard->ActionRight))
     {
         QueueAnimation($(player->animQueue), player->animData, "block", PlayBackStatus::HOLD);
     };
