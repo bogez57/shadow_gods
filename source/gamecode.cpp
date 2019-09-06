@@ -344,6 +344,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         MixAnimations($(player->animData), "idle", "high-kick");
 
+        SetBonesOfAnimations($(player->animData), &player->skel);
+
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
     };
 
@@ -383,7 +385,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         QueueAnimation($(player->animQueue), player->animData, "block", PlayBackStatus::HOLD);
     };
 
-    player->currentAnim = UpdateAnimationState($(player->animQueue), &player->skel.bones, deltaT);
+    player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
     defer { CleanUpAnimation($(player->currentAnim)); };
 
     ApplyAnimationToSkeleton($(player->skel), player->currentAnim);

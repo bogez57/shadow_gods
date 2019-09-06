@@ -67,8 +67,11 @@ struct Animation
     Animation(Init) :
         boneTimelineSets{heap},
         boneRotations{heap},
-        boneTranslations{heap}
-    {};
+        boneTranslations{heap},
+        bones{heap}
+    {
+        Reserve($(bones), 10);
+    };
 
     const char* name{nullptr};
     f32 totalTime{};
@@ -76,6 +79,7 @@ struct Animation
     PlayBackStatus status{PlayBackStatus::DEFAULT};
     b repeat{false};
     b hasEnded{false};
+    Dynam_Array<Bone*> bones;
     HashMap_Str<TimelineSet> boneTimelineSets; 
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
@@ -108,7 +112,7 @@ void CleanUpAnimation(Animation&& anim);
 void CopyAnimation(Animation src, Animation&& dest);
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
-Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT);
+Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT);
 void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName, PlayBackStatus status);
 
 #endif
@@ -199,6 +203,27 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
         };
 
         Insert<Animation>($(this->animations), animation.name, animation);
+    };
+};
+
+void SetBonesOfAnimations(AnimationData&& animData, Skeleton* skel)
+{
+    for(i32 animIndex{}; animIndex < animData.animations.keyInfos.size; ++animIndex)
+    {
+        Animation* anim = (Animation*)&animData.animations.keyInfos.At(animIndex).value;
+
+        if(anim->name)
+        {
+            for(i32 boneIndex{}; boneIndex < skel->bones.size; ++boneIndex)
+            {
+                i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, skel->bones.At(boneIndex).name);
+
+                if (hashIndex != HASH_DOES_NOT_EXIST)
+                {
+                    PushBack($(anim->bones), &skel->bones.At(boneIndex));
+                };
+            };
+        };
     };
 };
 
@@ -346,7 +371,7 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
     return result;
 };
 
-Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bones, f32 prevFrameDT)
+Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 {
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
     BGZ_ASSERT(anim, "No animation returned!");
@@ -378,15 +403,14 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bo
 
 
     f32 maxTimeOfAnimation{};
-    for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
+    for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
     {
-        i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, bones->At(boneIndex).name);
+            Bone* bone = anim->bones.At(boneIndex);
 
-        if (hashIndex != HASH_DOES_NOT_EXIST)
-        {
-            Bone* bone = &bones->At(boneIndex);
+            i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, bone->name);
+            BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
 
-            TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bones->At(boneIndex).name);
+            TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bone->name);
 
             Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
             i32 keyFrameCount{};
@@ -490,7 +514,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bo
 
                 Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
             };
-        };
     };
 
     Animation result;
