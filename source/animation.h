@@ -361,6 +361,22 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, Dynam_Array<Bone>* bo
         anim->hasEnded = true;
     };
 
+#if 0
+    if(anim->animToTransitionTo)
+                {
+                    const Animation* nextAnimInQueue = &animQueue.queuedAnimations.buffer[animQueue.queuedAnimations.read + 1];
+
+                    if(nextAnimInQueue->name)
+                    {
+                        if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
+                        {
+                            BGZ_CONSOLE("success");
+                        };
+                    };
+                };
+#endif
+
+
     f32 maxTimeOfAnimation{};
     for (i32 boneIndex{}; boneIndex < bones->size; ++boneIndex)
     {
