@@ -344,8 +344,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         MixAnimations($(player->animData), "idle", "high-kick");
 
-        SetBonesOfAnimations($(player->animData), &player->skel);
-
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
     };
 

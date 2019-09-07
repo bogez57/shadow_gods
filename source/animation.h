@@ -89,7 +89,7 @@ struct Animation
 struct AnimationData
 {
     AnimationData() = default;
-    AnimationData(const char* animDataJsonFilePath);
+    AnimationData(const char* animDataJsonFilePath, Skeleton&& skel);
 
     HashMap_Str<Animation> animations;
 };
@@ -119,9 +119,7 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 #ifdef ANIMATION_IMPL
 
-//TODO: Replace timelineSets with normal times lines and set them to bone.rotationTimeline/translationtimeline//0-
-
-AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
+AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : animations{heap}
 {
     i32 length;
 
@@ -206,27 +204,26 @@ AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
 
         Insert<Animation>($(this->animations), animation.name, animation);
     };
-};
 
-void SetBonesOfAnimations(AnimationData&& animData, Skeleton* skel)
-{
-    for(i32 animIndex{}; animIndex < animData.animations.keyInfos.size; ++animIndex)
+    //Set bones of Animation
+    for(i32 animIndex{}; animIndex < this->animations.keyInfos.size; ++animIndex)
     {
-        Animation* anim = (Animation*)&animData.animations.keyInfos.At(animIndex).value;
+        Animation* anim = (Animation*)&this->animations.keyInfos.At(animIndex).value;
 
         if(anim->name)
         {
-            for(i32 boneIndex{}; boneIndex < skel->bones.size; ++boneIndex)
+            for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
             {
-                i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, skel->bones.At(boneIndex).name);
+                i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, skel.bones.At(boneIndex).name);
 
                 if (hashIndex != HASH_DOES_NOT_EXIST)
                 {
-                    PushBack($(anim->bones), &skel->bones.At(boneIndex));
+                    PushBack($(anim->bones), &skel.bones.At(boneIndex));
                 };
             };
         };
     };
+
 };
 
 void MixAnimations(AnimationData&& animData, const char* animName_from, const char* animName_to)

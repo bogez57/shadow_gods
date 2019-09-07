@@ -22,8 +22,8 @@ struct Fighter
 #ifdef FIGHTER_IMPL
 
 Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight) :
-    animData{jsonFilePath},
     skel{atlasFilePath, jsonFilePath, heap},
+    animData{jsonFilePath, $(this->skel)},
     animQueue{Init::_},
     currentAnim{Init::_},
     world{0.0f, worldPos, {1.0f, 1.0f}},
