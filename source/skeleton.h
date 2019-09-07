@@ -32,6 +32,15 @@
 #include "json.h"
 #include "atlas.h"
 
+struct Region_Attachment
+{
+    f32 width, height{};
+    v2f parentBoneLocalPos{};
+    v2f parentBoneLocalScale{};
+    f32 parentBoneLocalRotation{};
+    AtlasRegion region_image;
+};
+
 struct Bone
 {
     Bone() = default;
@@ -53,15 +62,6 @@ struct Bone
     Dynam_Array<Bone*> childBones; 
     b isRoot{false};
     const char* name{nullptr};
-};
-
-struct Region_Attachment
-{
-    f32 width, height{};
-    v2f parentBoneLocalPos{};
-    v2f parentBoneLocalScale{};
-    f32 parentBoneLocalRotation{};
-    AtlasRegion region_image;
 };
 
 struct Slot

@@ -119,6 +119,8 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 #ifdef ANIMATION_IMPL
 
+//TODO: Replace timelineSets with normal times lines and set them to bone.rotationTimeline/translationtimeline//0-
+
 AnimationData::AnimationData(const char* animJsonFilePath) : animations{heap}
 {
     i32 length;
@@ -405,7 +407,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     f32 maxTimeOfAnimation{};
     for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
     {
-            Bone* bone = anim->bones.At(boneIndex);
+            const Bone* bone = anim->bones.At(boneIndex);
 
             i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, bone->name);
             BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
