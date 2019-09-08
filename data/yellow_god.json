@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "79XqDh6Uq4lty1sW8+U95s5691s", "spine": "3.7.87", "width": 503.37, "height": 942.74, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "hsPVbq9p5rdKeuTSKv4JnHD4ISU", "spine": "3.7.87", "width": 503.37, "height": 942.74, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -17.93, "y": 444.54 },
@@ -212,22 +212,22 @@
 			"torso": {
 				"translate": [
 					{ "time": 0, "x": 0, "y": 0 },
-					{ "time": 0.5, "x": 6.17, "y": 3.89 },
-					{ "time": 1, "x": 0, "y": 0 }
+					{ "time": 0.8333, "x": 6.17, "y": 3.89 },
+					{ "time": 1.6667, "x": 0, "y": 0 }
 				]
 			},
 			"left-shoulder": {
 				"translate": [
 					{ "time": 0, "x": 0, "y": 0 },
-					{ "time": 0.5, "x": 17.6, "y": -0.61 },
-					{ "time": 1, "x": 0, "y": 0 }
+					{ "time": 0.8333, "x": 17.6, "y": -0.61 },
+					{ "time": 1.6667, "x": 0, "y": 0 }
 				]
 			},
 			"right-shoulder": {
 				"translate": [
 					{ "time": 0, "x": 0, "y": 0 },
-					{ "time": 0.5, "x": 17.6, "y": -0.61 },
-					{ "time": 1, "x": 0, "y": 0 }
+					{ "time": 0.8333, "x": 17.6, "y": -0.61 },
+					{ "time": 1.6667, "x": 0, "y": 0 }
 				]
 			}
 		}
@@ -725,16 +725,17 @@
 	"test": {
 		"bones": {
 			"right-shoulder": {
-				"rotate": [
-					{ "time": 0, "angle": -6.2, "curve": "stepped" },
-					{ "time": 0.2, "angle": 100.85, "curve": "stepped" },
-					{ "time": 0.4, "angle": -92.02 }
+				"translate": [
+					{ "time": 0, "x": -1.93, "y": 25.34 },
+					{ "time": 0.6667, "x": -2.48, "y": -30.8 },
+					{ "time": 1.3333, "x": -1.93, "y": 25.34 }
 				]
 			},
-			"right-leg": {
-				"rotate": [
-					{ "time": 0.1333, "angle": 102.45, "curve": "stepped" },
-					{ "time": 0.2667, "angle": 138.7 }
+			"left-shoulder": {
+				"translate": [
+					{ "time": 0, "x": -1.54, "y": 36.55 },
+					{ "time": 0.6667, "x": -3.93, "y": -32.15 },
+					{ "time": 1.3333, "x": -1.54, "y": 36.55 }
 				]
 			}
 		}

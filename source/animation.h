@@ -370,13 +370,6 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
     return result;
 };
 
-#if 0
-if(rotationTimelineOfBone.keyFrames.size == 1)
-            {
-                amountOfRotation = rotationTimelineOfBone.keyFrames.At(0).angle;
-            }
-#endif
-
 Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 {
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
@@ -392,24 +385,21 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         anim->hasEnded = true;
     };
 
+    f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
+    f32 mixTime = .1f;
+    b readyToMix{false};
+    const Animation* nextAnimInQueue = &animQueue.queuedAnimations.buffer[animQueue.queuedAnimations.read + 1];
+    if(nextAnimInQueue->name && amountOfTimeLeftInAnim <= mixTime) 
+    {
+        //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
+        if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
+            readyToMix = true;
+    };
+
     f32 maxTimeOfAnimation{};
     for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
     {
         const Bone* bone = anim->bones.At(boneIndex);
-
-        f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
-        f32 mixTime = .1f;
-        if(anim->animToTransitionTo && amountOfTimeLeftInAnim <= mixTime )
-        {
-            const Animation* nextAnimInQueue = &animQueue.queuedAnimations.buffer[animQueue.queuedAnimations.read + 1];
-
-            if(nextAnimInQueue->name)
-            {
-                if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
-                {
-                };
-            };
-        };
 
         i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, bone->name);
         BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
@@ -486,8 +476,30 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {
             i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
 
-            KeyFrame keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
-            KeyFrame keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+            KeyFrame keyFrame0{}, keyFrame1{};
+            if(readyToMix)
+            {
+                i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+
+                if(hashIndex != -1)
+                {
+                    TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
+                    Timeline nextAnimTranslationTimelineOfBone = transformationTimelines->translationTimeline;
+
+                    keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
+                    keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
+                }
+                else
+                {
+                    keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
+                    keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+                }
+            }
+            else
+            {
+                keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
+                keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+            }
 
             if(keyFrame0.curve == CurveType::STEPPED)
             {
