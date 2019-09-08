@@ -206,7 +206,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
     };
 
     //Set bones of Animation
-    for(i32 animIndex{}; animIndex < this->animations.keyInfos.size; ++animIndex)
+    for(i32 animIndex{}; animIndex < this->animations.keyInfos.size; ++animIndex)//TODO: Remove iteration, this is very slow!
     {
         Animation* anim = (Animation*)&this->animations.keyInfos.At(animIndex).value;
 
@@ -405,6 +405,20 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
     {
             const Bone* bone = anim->bones.At(boneIndex);
+
+            f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
+            f32 mixTime = .1f;
+            if(anim->animToTransitionTo && amountOfTimeLeftInAnim <= mixTime )
+            {
+                const Animation* nextAnimInQueue = &animQueue.queuedAnimations.buffer[animQueue.queuedAnimations.read + 1];
+
+                if(nextAnimInQueue->name)
+                {
+                    if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
+                    {
+                    };
+                };
+            };
 
             i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, bone->name);
             BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
