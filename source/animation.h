@@ -386,7 +386,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     };
 
     f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
-    f32 mixTime = .1f;
+    f32 mixTime = .3f;
     b readyToMix{false};
     const Animation* nextAnimInQueue = &animQueue.queuedAnimations.buffer[animQueue.queuedAnimations.read + 1];
     if(nextAnimInQueue->name && amountOfTimeLeftInAnim <= mixTime) 
@@ -475,6 +475,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         if(translationTimelineOfBone.exists && anim->currentTime > 0.0f && translationTimelineOfBone.keyFrames.size != 1)
         {
             i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
+
+            if(!strcmp(bone->name, "left-shoulder"))
+                int x{3};
 
             KeyFrame keyFrame0{}, keyFrame1{};
             if(readyToMix)
