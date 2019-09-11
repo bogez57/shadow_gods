@@ -84,6 +84,8 @@ struct Animation
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     Animation* animToTransitionTo{nullptr};
+    b init{false};
+    f32 mixTimeSnapShot{};
 };
 
 struct AnimationData
@@ -393,7 +395,14 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     {
         //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
         if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
+        {
             readyToMix = true;
+            if(NOT anim->init)
+            {
+                anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
+                anim->init = true;
+            }
+        }
     };
 
     f32 maxTimeOfAnimation{};
@@ -476,10 +485,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {
             i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
 
-            if(!strcmp(bone->name, "left-shoulder"))
-                int x{3};
-
             KeyFrame keyFrame0{}, keyFrame1{};
+            f32 diff{}, diff1{}, percentToLerp{};
             if(readyToMix)
             {
                 i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
@@ -491,17 +498,38 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
                     keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
                     keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
+
+                    f32 newZero = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time - anim->mixTimeSnapShot;
+                    diff1 = anim->currentTime - newZero;
+                    percentToLerp = diff1 / translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time;
+
+                    i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+                    v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, bone->name);
+
+                    amountOfTranslation = Lerp(oldAmountOfTranslation, keyFrame1.translation, percentToLerp);
                 }
                 else
                 {
                     keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
                     keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+
+                    diff = keyFrame1.time - keyFrame0.time;
+                    diff1 = anim->currentTime - keyFrame0.time;
+                    percentToLerp = diff1 / diff;
+
+                    amountOfTranslation = Lerp(keyFrame0.translation, keyFrame1.translation, percentToLerp);
                 }
             }
             else
             {
                 keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
                 keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
+
+                diff = keyFrame1.time - keyFrame0.time;
+                diff1 = anim->currentTime - keyFrame0.time;
+                percentToLerp = diff1 / diff;
+
+                amountOfTranslation = Lerp(keyFrame0.translation, keyFrame1.translation, percentToLerp);
             }
 
             if(keyFrame0.curve == CurveType::STEPPED)
@@ -514,11 +542,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             else if(keyFrame0.curve == CurveType::LINEAR)
             {
                 //Find percent to lerp
-                f32 diff = keyFrame1.time - keyFrame0.time;
-                f32 diff1 = anim->currentTime - keyFrame0.time;
-                f32 percentToLerp = diff1 / diff;
-
-                amountOfTranslation = Lerp(keyFrame0.translation, keyFrame1.translation, percentToLerp);
             };
         };
 
