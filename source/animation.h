@@ -420,8 +420,17 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         f32 amountOfRotation{0.0f};
         KeyFrame keyFrame0{}, keyFrame1{};
         f32 diff{}, diff1{}, percentToLerp{};
-        if(rotationTimelineOfBone.exists && anim->currentTime > 0.0f && rotationTimelineOfBone.keyFrames.size != 1)
+        if(anim->currentTime > 0.0f && rotationTimelineOfBone.keyFrames.size != 1)
         {
+            if(NOT rotationTimelineOfBone.exists)
+            {
+                rotationTimelineOfBone.keyFrames = {2, heap};
+                rotationTimelineOfBone.keyFrames.elements[0].angle = 0.0f;
+                rotationTimelineOfBone.keyFrames.elements[0].time = 0.0f;
+                rotationTimelineOfBone.keyFrames.elements[0].angle = 0.0f;
+                rotationTimelineOfBone.keyFrames.elements[1].time = transformationTimelines->translationTimeline.keyFrames.At(transformationTimelines->translationTimeline.keyFrames.size - 1).time;
+            };
+
             i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
 
             if(readyToMix)
