@@ -380,6 +380,67 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
     return result;
 };
 
+struct TranslationRangeResult
+{
+    v2f translation0{};
+    v2f translation1{};
+};
+
+TranslationRangeResult GetTranslationRangeFromKeyFrames(Timeline translationTimelineOfBone, f32 currentAnimRunTime, const char* boneName)
+{
+    TranslationRangeResult result{};
+
+    BGZ_ASSERT(translationTimelineOfBone.keyFrames.size > 1, "Not able to handle timelines with only one keyframe right now");
+
+    i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
+    result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index).translation;
+    result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).translation;
+
+#if 0
+    local_persist const f32 initalSnapShotOfTime = anim->currentTime;
+
+                Timeline translationTimeline{1};
+                keyFrame0 = translationTimeline.keyFrames.At(0);
+                keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
+
+                diff = anim->totalTime - initalSnapShotOfTime; 
+                diff1 = anim->currentTime - initalSnapShotOfTime;
+                percentToLerp = diff1 / diff;
+
+                i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+                v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, bone->name);
+
+
+                amountOfTranslation = Lerp(oldAmountOfTranslation, keyFrame1.translation, percentToLerp)
+
+
+                if(nextAnimTranslationTimelineOfBone.exists)
+                {
+                    keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
+                    keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
+#endif
+
+    return result;
+};
+
+TranslationRangeResult GetTranslationRangeFromKeyFrames(Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, b readyToMix)
+{
+    TranslationRangeResult result{};
+
+    BGZ_ASSERT(boneTranslationTimeline_originalAnim.keyFrames.size > 1, "Not able to handle timelines with only one keyframe right now");
+
+    return result;
+};
+
+f32 FindPercentToLerp(f32 smallerTime, f32 largerTime, f32 currentAnimTime)
+{
+    f32 diff0 = largerTime - smallerTime;
+    f32 diff1 = currentAnimTime - smallerTime;
+    f32 percentToLerp = diff1 / diff0;
+
+    return percentToLerp;
+};
+
 Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 {
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
@@ -593,19 +654,29 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
             if(readyToMix)
             {
-
+                f32 t0, f32 t1 = GetTranslationRange();
             }
             else
             {
-
+                f32 t0, f32 t1 = GetTranslationRange();
             }
         */
 
         Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
 
         v2f amountOfTranslation{0.0f, 0.0f};
-        if(translationTimelineOfBone.exists && anim->currentTime > 0.0f && translationTimelineOfBone.keyFrames.size != 1)
+        if(translationTimelineOfBone.exists && anim->currentTime > 0.0f)
         {
+            TranslationRangeResult translationRange = GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime, bone->name);
+
+            i32 activeKeyFrameIndex =  _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
+            f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
+            f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
+            f32 percentToLerp = FindPercentToLerp(time0, time1, anim->currentTime);
+
+            amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, percentToLerp);
+
+#if 0
             i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
 
             KeyFrame keyFrame0{}, keyFrame1{};
@@ -696,6 +767,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
         if(translationTimelineOfBone.keyFrames.size == 1) 
             amountOfTranslation = translationTimelineOfBone.keyFrames.At(0).translation;
+#endif
+
+        }
 
         Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
     };
