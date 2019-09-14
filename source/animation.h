@@ -31,8 +31,12 @@ struct Timeline
 {
     Timeline() = default;
     Timeline(Init) :
-        keyFrames{0, heap}
+        keyFrames{0, KeyFrame{}, heap}
     {}
+    Timeline(i64 size) :
+        keyFrames{size, KeyFrame{}, heap}
+    {}
+
 
     b exists{false};
     Dynam_Array<KeyFrame> keyFrames;
@@ -216,11 +220,15 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
         {
             for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
             {
-                i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, skel.bones.At(boneIndex).name);
+                PushBack($(anim->bones), &skel.bones.At(boneIndex));
 
-                if (hashIndex != HASH_DOES_NOT_EXIST)
+                i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, skel.bones.At(boneIndex).name);
+                if (hashIndex == HASH_DOES_NOT_EXIST)
                 {
-                    PushBack($(anim->bones), &skel.bones.At(boneIndex));
+                    TimelineSet timelineSet;
+                    timelineSet.rotationTimeline.exists = false;
+                    timelineSet.translationTimeline.exists = false;
+                    Insert<TimelineSet>($(anim->boneTimelineSets), skel.bones.At(boneIndex).name, timelineSet);
                 };
             };
         };
@@ -388,7 +396,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     };
 
     f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
-    f32 mixTime = .3f;
+    f32 mixTime = .5f;
     b readyToMix{false};
     const Animation* nextAnimInQueue = &animQueue.queuedAnimations.buffer[animQueue.queuedAnimations.read + 1];
     if(nextAnimInQueue->name && amountOfTimeLeftInAnim <= mixTime) 
@@ -420,17 +428,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         f32 amountOfRotation{0.0f};
         KeyFrame keyFrame0{}, keyFrame1{};
         f32 diff{}, diff1{}, percentToLerp{};
+#if 0
         if(anim->currentTime > 0.0f && rotationTimelineOfBone.keyFrames.size != 1)
         {
-            if(NOT rotationTimelineOfBone.exists)
-            {
-                rotationTimelineOfBone.keyFrames = {2, heap};
-                rotationTimelineOfBone.keyFrames.elements[0].angle = 0.0f;
-                rotationTimelineOfBone.keyFrames.elements[0].time = 0.0f;
-                rotationTimelineOfBone.keyFrames.elements[0].angle = 0.0f;
-                rotationTimelineOfBone.keyFrames.elements[1].time = transformationTimelines->translationTimeline.keyFrames.At(transformationTimelines->translationTimeline.keyFrames.size - 1).time;
-            };
-
             i32 activeKeyFrame_index = _CurrentActiveKeyFrame(rotationTimelineOfBone, anim->currentTime);
 
             if(readyToMix)
@@ -584,8 +584,22 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
         if(rotationTimelineOfBone.keyFrames.size == 1)
             amountOfRotation = rotationTimelineOfBone.keyFrames.At(0).angle;
+#endif 
 
         Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
+
+        /*
+            transTimelineOfBone
+
+            if(readyToMix)
+            {
+
+            }
+            else
+            {
+
+            }
+        */
 
         Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
 
@@ -599,26 +613,24 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             if(readyToMix)
             {
                 i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+                BGZ_ASSERT(hashIndex != HASH_DOES_NOT_EXIST, "No timeline set for bone found!");
+                TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
 
-                if(hashIndex != -1)
+                Timeline nextAnimTranslationTimelineOfBone = transformationTimelines->translationTimeline;
+
+                if(nextAnimTranslationTimelineOfBone.exists)
                 {
-                    TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
-                    Timeline nextAnimTranslationTimelineOfBone = transformationTimelines->translationTimeline;
+                    keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
+                    keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
 
-                    if(nextAnimTranslationTimelineOfBone.exists)
-                    {
-                        keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
-                        keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
+                    f32 newZero = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time - anim->mixTimeSnapShot;
+                    diff1 = anim->currentTime - newZero;
+                    percentToLerp = diff1 / translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time;
 
-                        f32 newZero = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time - anim->mixTimeSnapShot;
-                        diff1 = anim->currentTime - newZero;
-                        percentToLerp = diff1 / translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time;
+                    i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+                    v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, bone->name);
 
-                        i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
-                        v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, bone->name);
-
-                        amountOfTranslation = Lerp(oldAmountOfTranslation, keyFrame1.translation, percentToLerp);
-                    };
+                    amountOfTranslation = Lerp(oldAmountOfTranslation, keyFrame1.translation, percentToLerp);
                 }
                 else
                 {
@@ -630,7 +642,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                     percentToLerp = diff1 / diff;
 
                     amountOfTranslation = Lerp(keyFrame0.translation, keyFrame1.translation, percentToLerp);
-                }
+                };
             }
             else
             {
@@ -655,6 +667,31 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             {
                 //Find percent to lerp
             };
+        }
+        else if(NOT translationTimelineOfBone.exists && readyToMix)
+        {
+            i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+            BGZ_ASSERT(hashIndex != HASH_DOES_NOT_EXIST, "No timeline set for bone found!");
+            TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
+            Timeline nextAnimTranslationTimelineOfBone = transformationTimelines->translationTimeline;
+
+            if(nextAnimTranslationTimelineOfBone.exists)
+            {
+                local_persist const f32 initalSnapShotOfTime = anim->currentTime;
+
+                Timeline translationTimeline{1};
+                keyFrame0 = translationTimeline.keyFrames.At(0);
+                keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
+
+                diff = anim->totalTime - initalSnapShotOfTime; 
+                diff1 = anim->currentTime - initalSnapShotOfTime;
+                percentToLerp = diff1 / diff;
+
+                i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+                v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, bone->name);
+
+                amountOfTranslation = Lerp(oldAmountOfTranslation, keyFrame1.translation, percentToLerp);
+            }
         };
 
         if(translationTimelineOfBone.keyFrames.size == 1) 

@@ -81,4 +81,5 @@
     "C_Cpp.clang_format_fallbackStyle": "none",
     "C_Cpp.clang_format_path": "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
     "C_Cpp.errorSquiggles": "Disabled",
+    "C_Cpp.dimInactiveRegions": false,
 }
