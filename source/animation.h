@@ -408,7 +408,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTim
     return result;
 };
 
-TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName)
+TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName)
 {
     TranslationRangeResult result{};
 
@@ -429,8 +429,11 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeli
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(boneTranslationTimeline_originalAnim, currentAnimRunTime);
 
-        result.translation0 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex).translation;
-        result.translation1 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).translation;
+        i32 index = GetHashIndex<TimelineSet>(anim->boneTimelineSets, boneName);
+        v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, boneName);
+
+        result.translation0 = oldAmountOfTranslation;
+        result.translation1 = v2f{0.0f, 0.0f};
 
         f32 time0 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex).time;
         f32 time1 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).time;
@@ -441,7 +444,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeli
     }
     else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {
-        i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, boneName);
+        i32 index = GetHashIndex<TimelineSet>(anim->boneTimelineSets, boneName);
         v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, boneName);
 
         result.translation0 = oldAmountOfTranslation;
