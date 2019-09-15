@@ -394,11 +394,10 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTim
 
     BGZ_ASSERT(translationTimelineOfBone.keyFrames.size > 1, "Not able to handle timelines with only one keyframe right now");
 
-    i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
-    result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index).translation;
-    result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).translation;
-
     i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
+    result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).translation;
+    result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).translation;
+
     f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
     f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
 
@@ -432,6 +431,13 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeli
 
         result.translation0 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex).translation;
         result.translation1 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).translation;
+
+        f32 time0 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex).time;
+        f32 time1 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).time;
+
+        f32 diff0 = time1 - time0;
+        f32 diff1 = currentAnimRunTime - time0;
+        result.percentToLerp = diff1 / diff0;
     }
     else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {
@@ -665,6 +671,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             if(readyToMix)
             {
                 f32 t0, f32 t1 = GetTranslationRange();
+                precenttolerp = FindPercentToLerp();
+
+                lerp(t0, t1, percenttolerp)
             }
             else
             {
