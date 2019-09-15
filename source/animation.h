@@ -385,9 +385,8 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 struct TranslationRangeResult
 {
     v2f translation0{};
-    v2f translation1{};
+    v2f translation1{}; 
 };
-
 TranslationRangeResult GetTranslationRangeFromKeyFrames(Timeline translationTimelineOfBone, f32 currentAnimRunTime)
 {
     TranslationRangeResult result{};
@@ -415,6 +414,21 @@ TranslationRangeResult GetTranslationRangeFromKeyFrames(Animation* anim, Timelin
         result.translation0 = oldAmountOfTranslation;
         result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
     }
+    else if(boneTranslationTimeline_originalAnim.exists && NOT boneTranslationTimeline_nextAnim.exists)
+    {
+        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(boneTranslationTimeline_originalAnim, currentAnimRunTime);
+
+        result.translation0 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex).translation;
+        result.translation1 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).translation;
+    }
+    else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
+    {
+        i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, boneName);
+        v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, boneName);
+
+        result.translation0 = oldAmountOfTranslation;
+        result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
+    }
 
     return result;
 };
@@ -424,6 +438,13 @@ f32 FindPercentToLerp(f32 smallerTime, f32 largerTime, f32 currentAnimTime)
     f32 diff0 = largerTime - smallerTime;
     f32 diff1 = currentAnimTime - smallerTime;
     f32 percentToLerp = diff1 / diff0;
+
+    local_persist const f32 initalSnapShotOfTime = anim->currentTime;
+
+                diff = anim->totalTime - initalSnapShotOfTime; 
+                diff1 = anim->currentTime - initalSnapShotOfTime;
+                percentToLerp = diff1 / diff;
+
 
     return percentToLerp;
 };
@@ -665,10 +686,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 TranslationRangeResult translationRange = GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name);
 
                 i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
-
                 f32 newZero = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time - anim->mixTimeSnapShot;
                 diff1 = anim->currentTime - newZero;
-                percentToLerp = diff1 / translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
+                f32 percentToLerp = diff1 / translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
 
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, percentToLerp);
             }
