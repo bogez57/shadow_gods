@@ -386,8 +386,9 @@ struct TranslationRangeResult
 {
     v2f translation0{};
     v2f translation1{}; 
+    f32 percentToLerp{};
 };
-TranslationRangeResult GetTranslationRangeFromKeyFrames(Timeline translationTimelineOfBone, f32 currentAnimRunTime)
+TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTimelineOfBone, f32 currentAnimRunTime)
 {
     TranslationRangeResult result{};
 
@@ -397,10 +398,18 @@ TranslationRangeResult GetTranslationRangeFromKeyFrames(Timeline translationTime
     result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index).translation;
     result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).translation;
 
+    i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
+    f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
+    f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
+
+    f32 diff0 = time1 - time0;
+    f32 diff1 = currentAnimRunTime - time0;
+    result.percentToLerp = diff1 / diff0;
+
     return result;
 };
 
-TranslationRangeResult GetTranslationRangeFromKeyFrames(Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName)
+TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName)
 {
     TranslationRangeResult result{};
 
@@ -411,6 +420,11 @@ TranslationRangeResult GetTranslationRangeFromKeyFrames(Animation* anim, Timelin
 
         result.translation0 = oldAmountOfTranslation;
         result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
+
+        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(boneTranslationTimeline_originalAnim, anim->currentTime);
+        f32 newZero = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).time - anim->mixTimeSnapShot;
+        f32 diff1 = currentAnimRunTime - newZero;
+        result.percentToLerp = diff1 / boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).time;
     }
     else if(boneTranslationTimeline_originalAnim.exists && NOT boneTranslationTimeline_nextAnim.exists)
     {
@@ -426,18 +440,15 @@ TranslationRangeResult GetTranslationRangeFromKeyFrames(Animation* anim, Timelin
 
         result.translation0 = oldAmountOfTranslation;
         result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
-    }
+
+        local_persist const f32 initalSnapShotOfTime = currentAnimRunTime;
+
+        f32 diff = anim->totalTime - initalSnapShotOfTime; 
+        f32 diff1 = currentAnimRunTime - initalSnapShotOfTime;
+        result.percentToLerp = diff1 / diff;
+    };
 
     return result;
-};
-
-f32 FindPercentToLerp(f32 smallerTime, f32 largerTime, f32 currentAnimTime)
-{
-    f32 diff0 = largerTime - smallerTime;
-    f32 diff1 = currentAnimTime - smallerTime;
-    f32 percentToLerp = diff1 / diff0;
-
-    return percentToLerp;
 };
 
 Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
@@ -666,7 +677,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         v2f amountOfTranslation{0.0f, 0.0f};
         if(anim->currentTime > 0.0f)
         {
-#if 1
             if(readyToMix)
             {
                 i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
@@ -674,135 +684,23 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 TimelineSet* nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
                 Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
 
-                TranslationRangeResult translationRange = GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name);
+                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name);
 
-                f32 percentToLerp{};
-                if(translationTimelineOfBone.exists && nextAnimTranslationTimeline.exists)
-                {
-                    i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
-                    f32 newZero = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time - anim->mixTimeSnapShot;
-                    diff1 = anim->currentTime - newZero;
-                    percentToLerp = diff1 / translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
-                }
-                else if(NOT translationTimelineOfBone.exists && nextAnimTranslationTimeline.exists)
-                {
-                    local_persist const f32 initalSnapShotOfTime = anim->currentTime;
-
-                    f32 diff = anim->totalTime - initalSnapShotOfTime; 
-                    f32 diff1 = anim->currentTime - initalSnapShotOfTime;
-                    percentToLerp = diff1 / diff;
-                }
-
-                amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, percentToLerp);
+                amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
             }
             else
             {
                 if(translationTimelineOfBone.exists)
                 {
-                    TranslationRangeResult translationRange = GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
+                    TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
 
-                    i32 activeKeyFrameIndex =  _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
-                    f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
-                    f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
-                    f32 percentToLerp = FindPercentToLerp(time0, time1, anim->currentTime);
-
-                    amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, percentToLerp);
+                    amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
                 };
             };
         }
-
-#elif 1
-            i32 activeKeyFrame_index = _CurrentActiveKeyFrame(translationTimelineOfBone, anim->currentTime);
-
-            KeyFrame keyFrame0{}, keyFrame1{};
-            f32 diff{}, diff1{}, percentToLerp{};
-            if(readyToMix)
-            {
-                i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
-                BGZ_ASSERT(hashIndex != HASH_DOES_NOT_EXIST, "No timeline set for bone found!");
-                TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
-
-                Timeline nextAnimTranslationTimelineOfBone = transformationTimelines->translationTimeline;
-
-                if(nextAnimTranslationTimelineOfBone.exists)
-                {
-                    keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
-                    keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
-
-                    f32 newZero = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time - anim->mixTimeSnapShot;
-                    diff1 = anim->currentTime - newZero;
-                    percentToLerp = diff1 / translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1).time;
-
-                    i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
-                    v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, bone->name);
-
-                    amountOfTranslation = Lerp(oldAmountOfTranslation, keyFrame1.translation, percentToLerp);
-                }
-                else
-                {
-                    keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
-                    keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
-
-                    diff = keyFrame1.time - keyFrame0.time;
-                    diff1 = anim->currentTime - keyFrame0.time;
-                    percentToLerp = diff1 / diff;
-
-                    amountOfTranslation = Lerp(keyFrame0.translation, keyFrame1.translation, percentToLerp);
-                };
-            }
-            else
-            {
-                keyFrame0 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index);
-                keyFrame1 = translationTimelineOfBone.keyFrames.At(activeKeyFrame_index + 1);
-
-                diff = keyFrame1.time - keyFrame0.time;
-                diff1 = anim->currentTime - keyFrame0.time;
-                percentToLerp = diff1 / diff;
-
-                amountOfTranslation = Lerp(keyFrame0.translation, keyFrame1.translation, percentToLerp);
-            }
-
-            if(keyFrame0.curve == CurveType::STEPPED)
-            {
-                if(anim->currentTime < keyFrame1.time)
-                    amountOfTranslation = keyFrame0.translation;
-                else
-                    amountOfTranslation = keyFrame1.translation;
-            }
-            else if(keyFrame0.curve == CurveType::LINEAR)
-            {
-                //Find percent to lerp
-            };
-        }
-        else if(NOT translationTimelineOfBone.exists && readyToMix)
-        {
-            i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
-            BGZ_ASSERT(hashIndex != HASH_DOES_NOT_EXIST, "No timeline set for bone found!");
-            TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
-            Timeline nextAnimTranslationTimelineOfBone = transformationTimelines->translationTimeline;
-
-            if(nextAnimTranslationTimelineOfBone.exists)
-            {
-                local_persist const f32 initalSnapShotOfTime = anim->currentTime;
-
-                Timeline translationTimeline{1};
-                keyFrame0 = translationTimeline.keyFrames.At(0);
-                keyFrame1 = nextAnimTranslationTimelineOfBone.keyFrames.At(0);
-
-                diff = anim->totalTime - initalSnapShotOfTime; 
-                diff1 = anim->currentTime - initalSnapShotOfTime;
-                percentToLerp = diff1 / diff;
-
-                i32 index = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
-                v2f oldAmountOfTranslation = *GetVal($(anim->boneTranslations), index, bone->name);
-
-                amountOfTranslation = Lerp(oldAmountOfTranslation, keyFrame1.translation, percentToLerp);
-            }
-        };
 
         if(translationTimelineOfBone.keyFrames.size == 1) 
             amountOfTranslation = translationTimelineOfBone.keyFrames.At(0).translation;
-#endif
 
         Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
     };
