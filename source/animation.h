@@ -485,7 +485,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
         if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
         {
-            anim->currentMixTime += prevFrameDT;
+            anim->currentMixTime += anim->mixTimeDuration - amountOfTimeLeftInAnim;
             if(NOT anim->init)
             {
                 anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
@@ -721,24 +721,14 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
     };
 
-    if(anim->currentMixTime > 0.0f)
-    {
-        if(anim->currentMixTime < anim->mixTimeDuration)
-        {
-            anim->currentMixTime += prevFrameDT;
-        }
-        else
-        {
-            anim->currentMixTime = 0.0f;
-        }
-    };
-
     Animation result;
     CopyAnimation(*anim, $(result));
 
     if (anim->hasEnded)
     {
         anim->currentTime = 0.0f;
+        anim->currentMixTime = 0.0f;
+        anim->init = false;
         animQueue.queuedAnimations.RemoveElem();
 
         if(animQueue.queuedAnimations.Empty())
