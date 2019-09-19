@@ -453,11 +453,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, 
         result.translation0 = prevFrameTranslation;
         result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
 
-        local_persist const f32 initalSnapShotOfTime = currentAnimRunTime;
-
-        f32 diff = anim->totalTime - initalSnapShotOfTime; 
-        f32 diff1 = currentAnimRunTime - initalSnapShotOfTime;
-        result.percentToLerp = diff1 / diff;
+        result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
     };
 
     return result;
@@ -486,6 +482,10 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
         {
             anim->currentMixTime += anim->mixTimeDuration - amountOfTimeLeftInAnim;
+            if(anim->currentMixTime > amountOfTimeLeftInAnim)
+            {
+                anim->currentMixTime = amountOfTimeLeftInAnim;
+            }
             if(NOT anim->init)
             {
                 anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
