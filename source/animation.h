@@ -427,20 +427,13 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, 
     }
     else if(boneTranslationTimeline_originalAnim.exists && NOT boneTranslationTimeline_nextAnim.exists)
     {
-        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(boneTranslationTimeline_originalAnim, currentAnimRunTime);
-
         i32 index = GetHashIndex<TimelineSet>(anim->boneTimelineSets, boneName);
         v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
 
         result.translation0 = prevFrameTranslation;
         result.translation1 = v2f{0.0f, 0.0f};
 
-        f32 time0 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex).time;
-        f32 time1 = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).time;
-
-        f32 diff0 = time1 - time0;
-        f32 diff1 = currentAnimRunTime - time0;
-        result.percentToLerp = diff1 / diff0;
+        result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
     }
     else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {
