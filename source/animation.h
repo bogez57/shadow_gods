@@ -6,12 +6,10 @@
 #include "json.h"
 
 /*
-    API ideas:
-    1. Should you call rotate, translate, scale timelines? 
-    2. Organize data in more of a SOA fashion?
-    3. Right now, code expects all animations start with with their keyframes set to the setup pose
-    bone positions. Might want to eventually change this given this is a waste of keyframes. Fix might 
-    involve mixing between idle anim and current playing anim or something. 
+    1. Organize data in more of a SOA fashion?
+    2. Properly handle timelines with only 1 key frame (especially when mixing animations)
+    3. Currently every bone in the skeleton is iterated over in an animaiton. It's just that animatons
+    don't always have bonetimelines existing on every bone
 */
 
 enum class CurveType
@@ -415,6 +413,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, 
 {
     TranslationRangeResult result{};
 
+    //TODO: compress this code
     if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {
         i32 index = GetHashIndex(anim->boneTranslations, boneName);
