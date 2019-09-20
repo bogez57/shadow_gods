@@ -423,10 +423,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, 
         result.translation0 = prevFrameTranslation;
         result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
 
-        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(boneTranslationTimeline_originalAnim, anim->currentTime);
-        f32 newZero = boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).time - anim->mixTimeSnapShot;
-        f32 diff1 = currentAnimRunTime - newZero;
-        result.percentToLerp = diff1 / boneTranslationTimeline_originalAnim.keyFrames.At(activeKeyFrameIndex + 1).time;
+        result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
     }
     else if(boneTranslationTimeline_originalAnim.exists && NOT boneTranslationTimeline_nextAnim.exists)
     {
@@ -481,15 +478,16 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
         if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
         {
-            anim->currentMixTime += anim->mixTimeDuration - amountOfTimeLeftInAnim;
-            if(anim->currentMixTime > amountOfTimeLeftInAnim)
-            {
-                anim->currentMixTime = amountOfTimeLeftInAnim;
-            }
+            if(anim->currentMixTime > anim->mixTimeSnapShot)
+                {/*Do nothing*/}
+            else
+                { anim->currentMixTime += prevFrameDT; }
+            
             if(NOT anim->init)
             {
                 anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
                 anim->init = true;
+                anim->currentMixTime += anim->mixTimeDuration - amountOfTimeLeftInAnim - (prevFrameDT*9);
             }
         }
     };
