@@ -48,6 +48,14 @@ public:
         return &this->buffer[this->write - 1];
     };
 
+    Type* GetNextElem()
+    {
+        if(NOT this->Empty() && this->read != this->write)
+            return &this->buffer[this->read + 1];
+        else
+            return nullptr;
+    };
+
     Type GetFirstElemAndRemove()
     {
         BGZ_ASSERT(NOT this->Empty(), "Trying to access an element from an empty ring buffer container!");
@@ -69,7 +77,7 @@ public:
 
     b Empty()
     {
-        return (!this->full && (this->write == this->read));
+        return (NOT this->full && (this->write == this->read));
     };
 
     b Full()

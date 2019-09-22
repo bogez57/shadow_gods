@@ -245,8 +245,9 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
 
     Animation* anim_from = GetVal<Animation>(animData.animations, index_from, animName_from);
     Animation* anim_to = GetVal<Animation>(animData.animations, index_to, animName_to);
-    anim_from->mixTimeDuration = mixDuration;
+    BGZ_ASSERT(anim_from->totalTime > mixDuration, "passing a mix time that is too long!");
 
+    anim_from->mixTimeDuration = mixDuration;
     anim_from->animToTransitionTo = anim_to;
 };
 
@@ -413,37 +414,25 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, 
 {
     TranslationRangeResult result{};
 
-    //TODO: compress this code
+    i32 index = GetHashIndex(anim->boneTranslations, boneName);
+    v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
+
+    result.translation0 = prevFrameTranslation;
+
     if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {
-        i32 index = GetHashIndex(anim->boneTranslations, boneName);
-        v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
-
-        result.translation0 = prevFrameTranslation;
         result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
-
-        result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
     }
     else if(boneTranslationTimeline_originalAnim.exists && NOT boneTranslationTimeline_nextAnim.exists)
     {
-        i32 index = GetHashIndex<TimelineSet>(anim->boneTimelineSets, boneName);
-        v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
-
-        result.translation0 = prevFrameTranslation;
         result.translation1 = v2f{0.0f, 0.0f};
-
-        result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
     }
     else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {
-        i32 index = GetHashIndex(anim->boneTranslations, boneName);
-        v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
-
-        result.translation0 = prevFrameTranslation;
         result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
-
-        result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
     };
+
+    result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
 
     return result;
 };
@@ -464,24 +453,27 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     };
 
     f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
-    const Animation* nextAnimInQueue = &animQueue.queuedAnimations.buffer[animQueue.queuedAnimations.read + 1];
-    if(nextAnimInQueue->name && amountOfTimeLeftInAnim <= anim->mixTimeDuration) 
+    const Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
+    if(nextAnimInQueue)
     {
-        //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
-        if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
+        if(nextAnimInQueue->name && amountOfTimeLeftInAnim <= anim->mixTimeDuration) 
         {
-            if(anim->currentMixTime > anim->mixTimeSnapShot)
-                {/*Do nothing*/}
-            else
-                { anim->currentMixTime += prevFrameDT; }
-            
-            if(NOT anim->init)
+            //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
+            if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
             {
-                anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
-                anim->init = true;
-                anim->currentMixTime += anim->mixTimeDuration - amountOfTimeLeftInAnim - (prevFrameDT*9);
+                if(anim->currentMixTime > anim->mixTimeSnapShot)
+                    {/*Do nothing*/}
+                else
+                    { anim->currentMixTime += prevFrameDT; }
+                
+                if(NOT anim->init)
+                {
+                    anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
+                    anim->init = true;
+                    anim->currentMixTime += anim->mixTimeDuration - amountOfTimeLeftInAnim;
+                }
             }
-        }
+        };
     };
 
     f32 maxTimeOfAnimation{};
