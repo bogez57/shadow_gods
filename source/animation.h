@@ -104,7 +104,7 @@ struct AnimationQueue
 {
     AnimationQueue() = default;
     AnimationQueue(Init) :
-        queuedAnimations{20, heap},
+        queuedAnimations{10, heap},
         idleAnim{Init::_}
     {}
 
@@ -470,7 +470,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 {
                     anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
                     anim->init = true;
-                    anim->currentMixTime += anim->mixTimeDuration - amountOfTimeLeftInAnim;
+                    anim->currentMixTime += prevFrameDT;
                 }
             }
         };

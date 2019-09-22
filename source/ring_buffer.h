@@ -50,7 +50,7 @@ public:
 
     Type* GetNextElem()
     {
-        if(NOT this->Empty() && this->read != this->write)
+        if(NOT this->Empty() && this->read != this->write && this->Size() > 1)
             return &this->buffer[this->read + 1];
         else
             return nullptr;
