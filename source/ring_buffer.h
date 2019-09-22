@@ -8,13 +8,13 @@ public:
     Ring_Buffer(i64 size, i32 memPartitionID_dynamic)
         : maxSize(size)
     {
-        this->buffer = MallocType(memPartitionID_dynamic, Type, size);
+        this->buffer = CallocType(memPartitionID_dynamic, Type, size);
     };
 
     void Init(i64 size, i32 memPartitionID_dynamic)
     {
         this->maxSize = size;
-        this->buffer = MallocType(memPartitionID_dynamic, Type, size);
+        this->buffer = CallocType(memPartitionID_dynamic, Type, size);
     };
 
     void PushBack(Type elem)
@@ -51,9 +51,16 @@ public:
     Type* GetNextElem()
     {
         if(NOT this->Empty() && this->read != this->write && this->Size() > 1)
-            return &this->buffer[this->read + 1];
+        {
+            if((this->read + 1) == this->maxSize)
+                return &this->buffer[0];
+            else
+                return &this->buffer[this->read + 1];
+        }
         else
+        {
             return nullptr;
+        }
     };
 
     Type GetFirstElemAndRemove()

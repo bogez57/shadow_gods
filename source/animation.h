@@ -454,26 +454,22 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
     f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
     const Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
-    if(nextAnimInQueue)
+    if(nextAnimInQueue && amountOfTimeLeftInAnim <= anim->mixTimeDuration) 
     {
-        if(nextAnimInQueue->name && amountOfTimeLeftInAnim <= anim->mixTimeDuration) 
+        if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
         {
-            //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
-            if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
-            {
-                if(anim->currentMixTime > anim->mixTimeSnapShot)
-                    {/*Do nothing*/}
-                else
-                    { anim->currentMixTime += prevFrameDT; }
+            if(anim->currentMixTime > anim->mixTimeSnapShot)
+                {/*Do nothing*/}
+            else
+                { anim->currentMixTime += prevFrameDT; }
                 
-                if(NOT anim->init)
-                {
-                    anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
-                    anim->init = true;
-                    anim->currentMixTime += prevFrameDT;
-                }
+            if(NOT anim->init)
+            {
+                anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
+                anim->init = true;
+                anim->currentMixTime += prevFrameDT;
             }
-        };
+        }
     };
 
     f32 maxTimeOfAnimation{};
