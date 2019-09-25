@@ -80,6 +80,8 @@ struct Animation
     f32 currentTime{};
     f32 mixTimeDuration{};
     f32 currentMixTime{};
+    Array<v2f, 20> initialTranslations{};
+    Array<b, 20> boneInit{};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
     b repeat{false};
     b hasEnded{false};
@@ -421,14 +423,18 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTim
     return result;
 };
 
-TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName)
+TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
 {
     TranslationRangeResult result{};
 
-    i32 index = GetHashIndex(anim->boneTranslations, boneName);
-    v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
+    if(NOT anim->boneInit.At(boneIndex))
+    {
+        i32 index = GetHashIndex(anim->boneTranslations, boneName);
+        anim->initialTranslations.At(boneIndex) = *GetVal($(anim->boneTranslations), index, boneName);
+        anim->boneInit.At(boneIndex) = true;
+    };
 
-    result.translation0 = prevFrameTranslation;
+    result.translation0 = anim->initialTranslations.At(boneIndex);
 
     if(boneTranslationTimeline_nextAnim.exists)
     {
@@ -695,12 +701,19 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {
             if(anim->currentMixTime > 0.0f)
             {
+                if(!strcmp(bone->name, "torso"))
+                {
+                    int x{3};
+
+                };
+
                 i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
                 BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
                 TimelineSet* nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
                 Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
 
-                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name);
+                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
+                v2f range = translationRange.translation1 - translationRange.translation0;
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
             }
             else
@@ -724,6 +737,10 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         anim->currentTime = 0.0f;
         anim->currentMixTime = 0.0f;
         anim->init = false;
+
+        for(i32 i{}; i < anim->boneInit.Size(); ++i)
+            anim->boneInit.At(i) = false;
+
         animQueue.queuedAnimations.RemoveElem();
 
         if(animQueue.queuedAnimations.Empty())
