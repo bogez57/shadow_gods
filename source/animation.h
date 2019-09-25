@@ -363,7 +363,6 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 
     KeyFrame keyFrame0{};
     KeyFrame keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
-    BGZ_ASSERT(keyFrame1.time > currentAnimRuntime, "Animation's current runtime has surpassed max time of timeline");
 
     while(keyFrameCount)
     {
