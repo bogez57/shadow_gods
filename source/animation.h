@@ -686,19 +686,12 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {
             if(anim->currentMixTime > 0.0f)
             {
-                if(!strcmp(bone->name, "right-leg"))
-                {
-                    BGZ_CONSOLE("Initial time left in anim: %f\n", anim->mixTimeSnapShot);
-                    BGZ_CONSOLE("mixTime: %f\n", anim->currentMixTime);
-                }
-
                 i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
                 BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
                 TimelineSet* nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
                 Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
 
                 TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name);
-
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
             }
             else
@@ -706,7 +699,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(translationTimelineOfBone.exists)
                 {
                     TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
-
                     amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
                 };
             };
