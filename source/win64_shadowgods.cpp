@@ -983,8 +983,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
 #if (DEVELOPMENT_BUILD)
 	            //helps to prevent overly large detlatimes from getting passed when using debugger and breakpoints
-	            if (platformServices.prevFrameTimeInSecs > 1.0f)
-	                platformServices.prevFrameTimeInSecs = 1.0f/60.0f;
+	            if (platformServices.prevFrameTimeInSecs > 1.0f/30.0f)
+	                platformServices.prevFrameTimeInSecs = 1.0f/30.0f;
 #endif
 
                 //TODO: Should we poll more frequently?
@@ -1119,7 +1119,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 FramePerformanceTimer.UpdateTimeCount();
 
-                BGZ_CONSOLE("ms per frame: %f\n", frameTimeInMS);
+                //BGZ_CONSOLE("ms per frame: %f\n", frameTimeInMS);
             };
 
 

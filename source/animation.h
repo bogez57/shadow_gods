@@ -80,6 +80,8 @@ struct Animation
     f32 currentTime{};
     f32 mixTimeDuration{};
     f32 currentMixTime{};
+    Array<v2f, 20> initialTranslations{};
+    Array<b, 20> boneInit{};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
     b repeat{false};
     b hasEnded{false};
@@ -363,7 +365,6 @@ i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
 
     KeyFrame keyFrame0{};
     KeyFrame keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
-    BGZ_ASSERT(keyFrame1.time > currentAnimRuntime, "Animation's current runtime has surpassed max time of timeline");
 
     while(keyFrameCount)
     {
@@ -392,32 +393,55 @@ struct TranslationRangeResult
 };
 TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTimelineOfBone, f32 currentAnimRunTime)
 {
+    BGZ_ASSERT(translationTimelineOfBone.keyFrames.size != 0, "Can't get translations range from timeline w/ no keyframes!");
+
     TranslationRangeResult result{};
 
-    BGZ_ASSERT(translationTimelineOfBone.keyFrames.size > 1, "Not able to handle timelines with only one keyframe right now");
+    if(translationTimelineOfBone.keyFrames.size == 1)
+    {
+        if(currentAnimRunTime > translationTimelineOfBone.keyFrames.At(0).time)
+        {
+            result.translation0 = translationTimelineOfBone.keyFrames.At(0).translation;
+            result.translation1 = translationTimelineOfBone.keyFrames.At(0).translation;
+            result.percentToLerp = 1.0f;
+        };
+    }
+    else
+    {
+        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
+        result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).translation;
+        result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).translation;
 
-    i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
-    result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).translation;
-    result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).translation;
+        f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
+        f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
 
-    f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
-    f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
-
-    f32 diff0 = time1 - time0;
-    f32 diff1 = currentAnimRunTime - time0;
-    result.percentToLerp = diff1 / diff0;
+        f32 diff0 = time1 - time0;
+        f32 diff1 = currentAnimRunTime - time0;
+        result.percentToLerp = diff1 / diff0;
+    }
 
     return result;
 };
 
-TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName)
+TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
 {
     TranslationRangeResult result{};
 
-    i32 index = GetHashIndex(anim->boneTranslations, boneName);
-    v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
+    if(NOT anim->boneInit.At(boneIndex))
+    {
+        i32 index = GetHashIndex(anim->boneTranslations, boneName);
+        anim->initialTranslations.At(boneIndex) = *GetVal($(anim->boneTranslations), index, boneName);
+        anim->boneInit.At(boneIndex) = true;
+    };
 
-    result.translation0 = prevFrameTranslation;
+    result.translation0 = anim->initialTranslations.At(boneIndex);
+
+    if(boneTranslationTimeline_nextAnim.exists)
+    {
+        //Catches cases where we don't want to mix keyframes that are not at the start of the next animations timeline
+        if(boneTranslationTimeline_nextAnim.keyFrames.At(0).time > 0.0f)
+            return result;
+    };
 
     if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {
@@ -458,16 +482,23 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     {
         if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
         {
-            if(anim->currentMixTime > anim->mixTimeSnapShot)
-                {/*Do nothing*/}
-            else
-                { anim->currentMixTime += prevFrameDT; }
-                
-            if(NOT anim->init)
+            //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
+            if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
             {
-                anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
-                anim->init = true;
+                f32 prevFrameMixTime = anim->currentMixTime;
                 anim->currentMixTime += prevFrameDT;
+
+                if(NOT anim->init)
+                {
+                    anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
+                    anim->init = true;
+                }
+
+                if(anim->currentMixTime > anim->mixTimeSnapShot)
+                {
+                    anim->currentMixTime = anim->mixTimeSnapShot;
+                    anim->hasEnded = true;
+                }
             }
         }
     };
@@ -670,16 +701,19 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {
             if(anim->currentMixTime > 0.0f)
             {
-                if(!strcmp(bone->name, "right-leg"))
-                    int x{};
+                if(!strcmp(bone->name, "torso"))
+                {
+                    int x{3};
+
+                };
 
                 i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
                 BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
                 TimelineSet* nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
                 Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
 
-                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name);
-
+                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
+                v2f range = translationRange.translation1 - translationRange.translation0;
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
             }
             else
@@ -687,14 +721,10 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(translationTimelineOfBone.exists)
                 {
                     TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
-
                     amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
                 };
             };
         }
-
-        if(translationTimelineOfBone.keyFrames.size == 1) 
-            amountOfTranslation = translationTimelineOfBone.keyFrames.At(0).translation;
 
         Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
     };
@@ -707,6 +737,10 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         anim->currentTime = 0.0f;
         anim->currentMixTime = 0.0f;
         anim->init = false;
+
+        for(i32 i{}; i < anim->boneInit.Size(); ++i)
+            anim->boneInit.At(i) = false;
+
         animQueue.queuedAnimations.RemoveElem();
 
         if(animQueue.queuedAnimations.Empty())
