@@ -398,9 +398,12 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTim
 
     if(translationTimelineOfBone.keyFrames.size == 1)
     {
-        result.translation0 = translationTimelineOfBone.keyFrames.At(0).translation;
-        result.translation1 = translationTimelineOfBone.keyFrames.At(0).translation;
-        result.percentToLerp = 1.0f;
+        if(currentAnimRunTime > translationTimelineOfBone.keyFrames.At(0).time)
+        {
+            result.translation0 = translationTimelineOfBone.keyFrames.At(0).translation;
+            result.translation1 = translationTimelineOfBone.keyFrames.At(0).translation;
+            result.percentToLerp = 1.0f;
+        };
     }
     else
     {
@@ -427,6 +430,13 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(const Animation* anim, 
     v2f prevFrameTranslation = *GetVal($(anim->boneTranslations), index, boneName);
 
     result.translation0 = prevFrameTranslation;
+
+    if(boneTranslationTimeline_nextAnim.exists)
+    {
+        //Catches cases where we don't want to mix keyframes that are not at the start of the next animations timeline
+        if(boneTranslationTimeline_nextAnim.keyFrames.At(0).time > 0.0f)
+            return result;
+    };
 
     if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
     {

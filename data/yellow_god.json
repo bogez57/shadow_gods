@@ -1,5 +1,5 @@
 {
-"skeleton": { "hash": "Csm2Jn/Zhw1SXz8K0m0WU6ZRVnw", "spine": "3.7.87", "width": 503.37, "height": 942.74, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
+"skeleton": { "hash": "7OFqcwPZH2MUJfIJ0C/3rdAhv2I", "spine": "3.7.87", "width": 503.37, "height": 942.74, "images": "./YG_Images/", "audio": "G:/User Program Files_Data/Spine/YG_Images" },
 "bones": [
 	{ "name": "root" },
 	{ "name": "Pelvis", "parent": "root", "length": 80.06, "rotation": 79.59, "x": -17.93, "y": 444.54 },
@@ -754,6 +754,17 @@
 				"translate": [
 					{ "time": 0, "x": -96.68, "y": -13.23 },
 					{ "time": 1.3333, "x": -70.17, "y": -14.15 }
+				]
+			},
+			"left-leg": {
+				"translate": [
+					{ "time": 0.7, "x": -34.72, "y": -107.95 }
+				]
+			},
+			"Neck": {
+				"translate": [
+					{ "time": 0.3333, "x": 21.16, "y": 71.42 },
+					{ "time": 1.3333, "x": 0, "y": 0 }
 				]
 			}
 		}
