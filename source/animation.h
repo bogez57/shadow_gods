@@ -392,20 +392,29 @@ struct TranslationRangeResult
 };
 TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTimelineOfBone, f32 currentAnimRunTime)
 {
+    BGZ_ASSERT(translationTimelineOfBone.keyFrames.size != 0, "Can't get translations range from timeline w/ no keyframes!");
+
     TranslationRangeResult result{};
 
-    BGZ_ASSERT(translationTimelineOfBone.keyFrames.size > 1, "Not able to handle timelines with only one keyframe right now");
+    if(translationTimelineOfBone.keyFrames.size == 1)
+    {
+        result.translation0 = translationTimelineOfBone.keyFrames.At(0).translation;
+        result.translation1 = translationTimelineOfBone.keyFrames.At(0).translation;
+        result.percentToLerp = 1.0f;
+    }
+    else
+    {
+        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
+        result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).translation;
+        result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).translation;
 
-    i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
-    result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).translation;
-    result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).translation;
+        f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
+        f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
 
-    f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
-    f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
-
-    f32 diff0 = time1 - time0;
-    f32 diff1 = currentAnimRunTime - time0;
-    result.percentToLerp = diff1 / diff0;
+        f32 diff0 = time1 - time0;
+        f32 diff1 = currentAnimRunTime - time0;
+        result.percentToLerp = diff1 / diff0;
+    }
 
     return result;
 };
@@ -702,9 +711,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 };
             };
         }
-
-        if(translationTimelineOfBone.keyFrames.size == 1) 
-            amountOfTranslation = translationTimelineOfBone.keyFrames.At(0).translation;
 
         Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
     };
