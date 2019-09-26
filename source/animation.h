@@ -404,7 +404,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTim
             result.percentToLerp = 1.0f;
         };
     }
-    else
+    else if(currentAnimRunTime > translationTimelineOfBone.keyFrames.At(0).time && currentAnimRunTime < translationTimelineOfBone.keyFrames.At(translationTimelineOfBone.keyFrames.size - 1).time)
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
         result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).translation;
@@ -698,19 +698,12 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {
             if(anim->currentMixTime > 0.0f)
             {
-                if(!strcmp(bone->name, "torso"))
-                {
-                    int x{3};
-
-                };
-
                 i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
                 BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
                 TimelineSet* nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
                 Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
 
                 TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
-                v2f range = translationRange.translation1 - translationRange.translation0;
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
             }
             else
