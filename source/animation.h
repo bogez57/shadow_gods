@@ -80,7 +80,6 @@ struct Animation
     f32 currentTime{};
     f32 mixTimeDuration{};
     f32 currentMixTime{};
-    Array<v2f, 20> initialTranslations{};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
     b repeat{false};
     b hasEnded{false};
@@ -89,7 +88,7 @@ struct Animation
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     Animation* animToTransitionTo{nullptr};
-    b init{false};
+    b MixingStarted{false};
     f32 mixTimeSnapShot{};
 };
 
@@ -426,7 +425,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeli
 {
     TranslationRangeResult result{};
 
-    result.translation0 = anim->initialTranslations.At(boneIndex);
+    result.translation0 = anim->bones.At(boneIndex)->initialTranslationForMixing;
 
     if(boneTranslationTimeline_nextAnim.exists)
     {
@@ -480,15 +479,15 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 f32 prevFrameMixTime = anim->currentMixTime;
                 anim->currentMixTime += prevFrameDT;
 
-                if(NOT anim->init)
+                if(NOT anim->MixingStarted)
                 {
                     anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
-                    anim->init = true;
+                    anim->MixingStarted= true;
 
                     for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
                     {
                         i32 index = GetHashIndex(anim->boneTranslations, anim->bones.At(boneIndex)->name);
-                        anim->initialTranslations.At(boneIndex) = *GetVal($(anim->boneTranslations), index, anim->bones.At(boneIndex)->name);
+                        anim->bones.At(boneIndex)->initialTranslationForMixing = *GetVal($(anim->boneTranslations), index, anim->bones.At(boneIndex)->name);
                     }
                 }
 
@@ -734,7 +733,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     {
         anim->currentTime = 0.0f;
         anim->currentMixTime = 0.0f;
-        anim->init = false;
+        anim->MixingStarted = false;
 
         animQueue.queuedAnimations.RemoveElem();
 
