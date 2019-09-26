@@ -81,7 +81,6 @@ struct Animation
     f32 mixTimeDuration{};
     f32 currentMixTime{};
     Array<v2f, 20> initialTranslations{};
-    Array<b, 20> boneInit{};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
     b repeat{false};
     b hasEnded{false};
@@ -427,13 +426,6 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeli
 {
     TranslationRangeResult result{};
 
-    if(NOT anim->boneInit.At(boneIndex))
-    {
-        i32 index = GetHashIndex(anim->boneTranslations, boneName);
-        anim->initialTranslations.At(boneIndex) = *GetVal($(anim->boneTranslations), index, boneName);
-        anim->boneInit.At(boneIndex) = true;
-    };
-
     result.translation0 = anim->initialTranslations.At(boneIndex);
 
     if(boneTranslationTimeline_nextAnim.exists)
@@ -492,6 +484,12 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 {
                     anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
                     anim->init = true;
+
+                    for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
+                    {
+                        i32 index = GetHashIndex(anim->boneTranslations, anim->bones.At(boneIndex)->name);
+                        anim->initialTranslations.At(boneIndex) = *GetVal($(anim->boneTranslations), index, anim->bones.At(boneIndex)->name);
+                    }
                 }
 
                 if(anim->currentMixTime > anim->mixTimeSnapShot)
@@ -737,9 +735,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         anim->currentTime = 0.0f;
         anim->currentMixTime = 0.0f;
         anim->init = false;
-
-        for(i32 i{}; i < anim->boneInit.Size(); ++i)
-            anim->boneInit.At(i) = false;
 
         animQueue.queuedAnimations.RemoveElem();
 
