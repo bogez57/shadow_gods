@@ -303,53 +303,56 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
     destAnim.status = playBackStatus;
 
-    switch(playBackStatus)
+    if(NOT animQueue.queuedAnimations.full)
     {
-        case PlayBackStatus::DEFAULT:
+        switch(playBackStatus)
         {
-            animQueue.queuedAnimations.PushBack(destAnim);
-        }break;
-
-        case PlayBackStatus::IMMEDIATE:
-        {
-            animQueue.queuedAnimations.Reset();
-            animQueue.queuedAnimations.PushBack(destAnim);
-        }break;
-
-        case PlayBackStatus::NEXT:
-        {
-            //Clear out animations not currently playing and insert new animation to play next
-            if(NOT animQueue.queuedAnimations.Empty())
-            {
-                animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
-                animQueue.queuedAnimations.PushBack(destAnim);
-            }
-            else
+            case PlayBackStatus::DEFAULT:
             {
                 animQueue.queuedAnimations.PushBack(destAnim);
-            }
-        }break;
+            }break;
 
-        case PlayBackStatus::HOLD:
-        {
-            if(animQueue.queuedAnimations.Empty())
-            {
-                animQueue.queuedAnimations.PushBack(destAnim);
-                animQueue.queuedAnimations.GetFirstElem()->repeat = true;
-            }
-            else if(animQueue.queuedAnimations.GetFirstElem()->repeat == true)
-            {
-                //Do nothing
-            }
-            else
+            case PlayBackStatus::IMMEDIATE:
             {
                 animQueue.queuedAnimations.Reset();
                 animQueue.queuedAnimations.PushBack(destAnim);
-                animQueue.queuedAnimations.GetFirstElem()->repeat = true;
-            };
-        }break;
+            }break;
 
-        InvalidDefaultCase;
+            case PlayBackStatus::NEXT:
+            {
+                //Clear out animations not currently playing and insert new animation to play next
+                if(NOT animQueue.queuedAnimations.Empty())
+                {
+                    animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
+                    animQueue.queuedAnimations.PushBack(destAnim);
+                }
+                else
+                {
+                    animQueue.queuedAnimations.PushBack(destAnim);
+                }
+            }break;
+
+            case PlayBackStatus::HOLD:
+            {
+                if(animQueue.queuedAnimations.Empty())
+                {
+                    animQueue.queuedAnimations.PushBack(destAnim);
+                    animQueue.queuedAnimations.GetFirstElem()->repeat = true;
+                }
+                else if(animQueue.queuedAnimations.GetFirstElem()->repeat == true)
+                {
+                    //Do nothing
+                }
+                else
+                {
+                    animQueue.queuedAnimations.Reset();
+                    animQueue.queuedAnimations.PushBack(destAnim);
+                    animQueue.queuedAnimations.GetFirstElem()->repeat = true;
+                };
+            }break;
+
+            InvalidDefaultCase;
+        };
     };
 };
 
@@ -473,7 +476,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     {
         if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
         {
-            //TODO: Still need to handle corner cases. What if element previously removed is still sitting in ring buffer and just happens to have matching name?
             if(!strcmp(anim->animToTransitionTo->name, nextAnimInQueue->name))
             {
                 f32 prevFrameMixTime = anim->currentMixTime;
