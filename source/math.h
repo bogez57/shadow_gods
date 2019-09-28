@@ -350,9 +350,16 @@ void ConvertNegativeToPositiveAngle_Radians(f32&& radianAngle)
 local_func
 void ConvertPositiveToNegativeAngle_Radians(f32&& radianAngle)
 {
-    f32 unitCircleCircumferenceInRadians = 2*PI;
-    radianAngle = Mod(radianAngle, unitCircleCircumferenceInRadians);
-    if (radianAngle > 0) radianAngle -= unitCircleCircumferenceInRadians;
+    if(radianAngle == 0.0f)
+    {
+        radianAngle = -6.28f;
+    }
+    else
+    {
+        f32 unitCircleCircumferenceInRadians = 2*PI;
+        radianAngle = Mod(radianAngle, unitCircleCircumferenceInRadians);
+        if (radianAngle > 0) radianAngle -= unitCircleCircumferenceInRadians;
+    }
 };
 
 local_func
