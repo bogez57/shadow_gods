@@ -12,6 +12,18 @@
     don't always have bonetimelines existing on every bone
 */
 
+class Timeline1
+{
+public:
+    f32 time;
+};
+
+class TranslationTimeline : public Timeline1
+{
+public:
+    v2f translation;
+};
+
 enum class CurveType
 {
     LINEAR,
@@ -128,6 +140,12 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : animations{heap}
 {
     i32 length;
+
+    Timeline1 timeline{};
+    TranslationTimeline* transTimeline = (TranslationTimeline*)&timeline;
+
+    transTimeline->translation.x = 3.0f;
+    transTimeline->time = 3.0f;
 
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), animJsonFilePath);
 
@@ -505,16 +523,105 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     f32 maxTimeOfAnimation{};
     for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
     {
+        /*
+            boneTranslationTimeline = bone->translationTimeline;
+
+            boneRotationTimeline = boneTranslationTimeline->rotaiotnTimeline;
+            boneTranslationTimeline = boneTranslationTimeline->translaitontimeline;
+
+            if(anim->currentMixtime > 0.0f)
+            {
+                Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
+                boneTranslationTimeline 
+
+                Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
+                boneRotationTimeline
+            }
+            else if(anim->ucrrenttime > 0.0f)
+            {
+
+            }
+
+
+            Timeline* timeline
+
+            switch(timeline->type)
+            {
+                case Rotation:
+                {
+                    f32 amountOfRotation{0.0f};
+                    if(anim->currentMixTime > 0.0f)
+                    {
+                        TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
+                        amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
+                    }
+                    else if(anim.currenttime > 0.0f)
+                    {
+
+                    }
+
+                    Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
+                };
+
+                case Translation:
+                {
+                    ........
+                };
+            }
+
+
+        */
+
         const Bone* bone = anim->bones.At(boneIndex);
 
+        //Gather transformation timelines
         i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, bone->name);
         BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
         TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bone->name);
+        TimelineSet* nextAnimTransformationTimelines{};
+        if(anim->animToTransitionTo)
+        {
+            i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
+            BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
+            nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
+        };
 
-        Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
+        v2f amountOfTranslation{0.0f, 0.0f};
+        f32 amountOfRotation{0.0f};
+        if(anim->currentMixTime > 0.0f)
+        {
+            {//Translation mixing
+                Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
+                Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
+
+                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
+                amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
+            };
+
+            {//Rotation mixing
+                Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
+                Timeline nextAnimRotationTimeline = nextAnimTransformationTimelines->rotationTimeline;
+
+            };
+        }
+        else if (anim->currentTime > 0.0f)
+        {
+            Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
+            Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
+
+            if(translationTimelineOfBone.exists)
+            {
+                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
+                amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
+            };
+
+            if(rotationTimelineOfBone.exists)
+            {
+
+            };
+        }
 
         i32 keyFrameCount{};
-        f32 amountOfRotation{0.0f};
         KeyFrame keyFrame0{}, keyFrame1{};
         f32 diff{}, diff1{}, percentToLerp{};
 #if 0
@@ -676,48 +783,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 #endif 
 
         Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
-
-        /*
-            transTimelineOfBone
-
-            if(readyToMix)
-            {
-                f32 t0, f32 t1 = GetTranslationRange();
-                precenttolerp = FindPercentToLerp();
-
-                lerp(t0, t1, percenttolerp)
-            }
-            else
-            {
-                f32 t0, f32 t1 = GetTranslationRange();
-            }
-        */
-
-        Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
-
-        v2f amountOfTranslation{0.0f, 0.0f};
-        if(anim->currentTime > 0.0f)
-        {
-            if(anim->currentMixTime > 0.0f)
-            {
-                i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
-                BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
-                TimelineSet* nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
-                Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
-
-                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
-                amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
-            }
-            else
-            {
-                if(translationTimelineOfBone.exists)
-                {
-                    TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
-                    amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
-                };
-            };
-        }
-
         Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
     };
 
