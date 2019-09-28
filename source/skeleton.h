@@ -58,6 +58,7 @@ struct Bone
     f32* parentLocalRotation{nullptr};
     Transform transform;
     v2f initialTranslationForMixing{};
+    f32 initialRotationForMixing{};
     f32 length{};
     Bone* parentBone{nullptr};
     Dynam_Array<Bone*> childBones; 
