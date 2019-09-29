@@ -342,7 +342,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f};
         *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
 
+        MixAnimations($(player->animData), "idle", "high-kick", .2f);
+        MixAnimations($(player->animData), "idle", "right-cross", .2f);
+        MixAnimations($(player->animData), "idle", "left-jab", .2f);
         MixAnimations($(player->animData), "right-cross", "high-kick", .2f);
+        MixAnimations($(player->animData), "high-kick", "right-cross", .2f);
 
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
     };
@@ -375,7 +379,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionLeft))
     {
-        QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::DEFAULT);
+        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::DEFAULT);
     };
 
     if (KeyPressed(keyboard->ActionRight))
