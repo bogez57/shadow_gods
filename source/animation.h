@@ -12,6 +12,20 @@
     don't always have bonetimelines existing on every bone
 */
 
+struct RotationTimeline
+{
+    b exists{false};
+    Dynam_Array<f32> times{heap};
+    Dynam_Array<f32> angles{heap};
+};
+
+struct TranslationTimeline
+{
+    b exists{false};
+    Dynam_Array<f32> times{heap};
+    Dynam_Array<v2f> translations{heap};
+};
+
 enum class CurveType
 {
     LINEAR,
@@ -83,6 +97,8 @@ struct Animation
     b hasEnded{false};
     Dynam_Array<Bone*> bones;
     HashMap_Str<TimelineSet> boneTimelineSets; 
+    Array<RotationTimeline, 20> boneRotationTimelines;
+    Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<f32, 20> boneRotations;
     Array<v2f, 20> boneTranslations;
     Animation* animToTransitionTo{nullptr};
@@ -146,31 +162,25 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
         {
             Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
             Json* translateTimeline_json = Json_getItem(currentBone, "translate");
-            TimelineSet transformationTimelines{Init::_};
 
             if (rotateTimeline_json)
             {
+                RotationTimeline* boneRotationTimeline = &animation.boneRotationTimelines.At(boneIndex);
+                boneRotationTimeline.exists = true;
+
                 i32 keyFrameIndex{};
-                Timeline rotationTimeline{};
-                rotationTimeline.keyFrames = { rotateTimeline_json->size, heap };
-                rotationTimeline.exists = true;
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
-                    KeyFrame keyFrame;
-
-                    keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                    keyFrame.angle = Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f));
+                    PushBack($(boneRotationTimeline->times), Json_getFloat(jsonKeyFrame, "time", 0.0f));
+                    PushBack($(boneRotationTimeline->angles), Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f)));
+                    /*
                     const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
-
                     if(!strcmp(keyFrameCurve, "stepped"))
                         keyFrame.curve = CurveType::STEPPED;
-
-                    Insert($(rotationTimeline.keyFrames), keyFrame, keyFrameIndex);
+                    */
                 };
 
-                transformationTimelines.rotationTimeline = rotationTimeline;
-
-                f32 maxTimeOfRotationTimeline = rotationTimeline.keyFrames.At(rotationTimeline.keyFrames.size - 1).time;
+                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->times.size - 1);
             
                 if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfRotationTimeline;
@@ -178,32 +188,27 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
 
             if (translateTimeline_json)
             {
+                TranslationTimeline* boneTranslationTimeline = &animation.boneTranslationTimelines.At(boneIndex);
+                boneTranslationTimeline.exists = true;
+
                 i32 keyFrameIndex{};
-                Timeline translateTimeline{Init::_};
-                translateTimeline.keyFrames = { translateTimeline_json->size, heap };
-                translateTimeline.exists = true;
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
-                    KeyFrame keyFrame;
-
                     f32 pixelsPerMeter{100.0f};
-                    keyFrame.time = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                    keyFrame.translation.x = Json_getFloat(jsonKeyFrame, "x", 0.0f) / pixelsPerMeter;
-                    keyFrame.translation.y = Json_getFloat(jsonKeyFrame, "y", 0.0f) / pixelsPerMeter;
+                    PushBack($(boneTranslationTimeline->times), Json_getFloat(jsonKeyFrame, "time", 0.0f));
+                    PushBack($(boneTranslationTimeline->translations), v2f{0.0f, 0.0f});
 
-                    Insert($(translateTimeline.keyFrames), keyFrame, keyFrameIndex);
+                    boneTranslationTimeline->translations.At(keyFrameIndex).x = Json_getFloat(jsonKeyFrame, "x", 0.0f) / pixelsPerMeter;
+                    boneTranslationTimeline->translations.At(keyFrameIndex).y = Json_getFloat(jsonKeyFrame, "y", 0.0f) / pixelsPerMeter;
                 };
 
-                transformationTimelines.translationTimeline = translateTimeline;
-
-                f32 maxTimeOfTranslationTimeline = translateTimeline.keyFrames.At(translateTimeline.keyFrames.size - 1).time;
+                f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times.At(boneTranslationTimeline->times.size - 1);
             
                 if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
             };
 
             animation.totalTime = maxTimeOfAnimation;
-            Insert<TimelineSet>($(animation.boneTimelineSets), currentBone->name, transformationTimelines);
         };
 
         Insert<Animation>($(this->animations), animation.name, animation);
@@ -219,15 +224,6 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
             {
                 PushBack($(anim->bones), &skel.bones.At(boneIndex));
-
-                i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, skel.bones.At(boneIndex).name);
-                if (hashIndex == HASH_DOES_NOT_EXIST)
-                {
-                    TimelineSet timelineSet;
-                    timelineSet.rotationTimeline.exists = false;
-                    timelineSet.translationTimeline.exists = false;
-                    Insert<TimelineSet>($(anim->boneTimelineSets), skel.bones.At(boneIndex).name, timelineSet);
-                };
             };
         };
     };
