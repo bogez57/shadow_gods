@@ -31,42 +31,6 @@ enum class CurveType
     LINEAR,
     STEPPED
 };
-struct KeyFrame
-{
-    f32 time{};
-    f32 angle{};
-    v2f translation{};
-    CurveType curve{CurveType::LINEAR};
-};
-
-struct Timeline
-{
-    Timeline() = default;
-    Timeline(Init) :
-        keyFrames{0, KeyFrame{}, heap}
-    {}
-    Timeline(i64 size) :
-        keyFrames{size, KeyFrame{}, heap}
-    {}
-
-
-    b exists{false};
-    Dynam_Array<KeyFrame> keyFrames;
-};
-
-struct TimelineSet
-{
-    TimelineSet() = default;
-    TimelineSet(Init init) :
-        rotationTimeline{init},
-        translationTimeline{init},
-        scaleTimeline{init}
-    {};
-
-    Timeline rotationTimeline;
-    Timeline translationTimeline;
-    Timeline scaleTimeline;
-};
 
 enum class PlayBackStatus
 {
@@ -251,6 +215,14 @@ void CleanUpAnimation(Animation&& anim)
     anim.status = {PlayBackStatus::DEFAULT};
     anim.repeat = {false};
     anim.hasEnded = {false};
+
+    for(i32 i{}; i < anim.bones.size; ++i)
+    {
+        CleanUp($(anim.boneTranslationTimelines.At(i).times));
+        CleanUp($(anim.boneTranslationTimelines.At(i).translations));
+        CleanUp($(anim.boneRotationTimelines.At(i).times));
+        CleanUp($(anim.boneRotationTimelines.At(i).angles));
+    };
 };
 
 void CopyAnimation(Animation src, Animation&& dest)
