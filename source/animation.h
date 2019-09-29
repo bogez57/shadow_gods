@@ -85,6 +85,8 @@ struct Animation
     b hasEnded{false};
     Dynam_Array<Bone*> bones;
     HashMap_Str<TimelineSet> boneTimelineSets; 
+    Array<f32, 20> boneRotations1;
+    Array<v2f, 20> boneTranslations1;
     HashMap_Str<f32> boneRotations;
     HashMap_Str<v2f> boneTranslations;
     Animation* animToTransitionTo{nullptr};
@@ -546,6 +548,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
                         anim->bones.At(boneIndex)->initialTranslationForMixing = *GetVal($(anim->boneTranslations), translationIndex, anim->bones.At(boneIndex)->name);
                         anim->bones.At(boneIndex)->initialRotationForMixing = *GetVal($(anim->boneRotations), rotationIndex, anim->bones.At(boneIndex)->name);
+
+                        anim->bones.At(boneIndex)->initialRotationForMixing = anim->boneRotations1.At(boneIndex);
+                        anim->bones.At(boneIndex)->initialTranslationForMixing = anim->boneTranslations1.At(boneIndex);
                     }
                 }
 
@@ -701,6 +706,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             };
         }
 
+        anim->boneRotations1.At(boneIndex) = amountOfRotation;
+        anim->boneTranslations1.At(boneIndex) = amountOfTranslation;
         Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
         Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
     };
@@ -731,6 +738,8 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
     {
         i32 hashIndex = GetHashIndex(anim.boneRotations, skel.bones.At(boneIndex).name);
 
+        //f32 boneRotationToAdd = anim.boneRotations1.At(boneIndex);
+
         if (hashIndex != HASH_DOES_NOT_EXIST)
         {
                 f32 boneRotationToAdd = *GetVal(anim.boneRotations, hashIndex, skel.bones.At(boneIndex).name);
@@ -738,6 +747,8 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
         };
 
         hashIndex = GetHashIndex(anim.boneTranslations, skel.bones.At(boneIndex).name);
+
+        //f32 boneTranslationToAdd = anim.boneTranslations1.At(boneIndex);
 
         if (hashIndex != HASH_DOES_NOT_EXIST)
         {
