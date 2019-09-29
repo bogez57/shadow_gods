@@ -81,7 +81,6 @@ struct Animation
 {
     Animation() = default;
     Animation(Init) :
-        boneTimelineSets{heap},
         bones{heap}
     {
         Reserve($(bones), 10);
@@ -96,7 +95,6 @@ struct Animation
     b repeat{false};
     b hasEnded{false};
     Dynam_Array<Bone*> bones;
-    HashMap_Str<TimelineSet> boneTimelineSets; 
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<f32, 20> boneRotations;
@@ -166,7 +164,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             if (rotateTimeline_json)
             {
                 RotationTimeline* boneRotationTimeline = &animation.boneRotationTimelines.At(boneIndex);
-                boneRotationTimeline.exists = true;
+                boneRotationTimeline->exists = true;
 
                 i32 keyFrameIndex{};
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
@@ -189,7 +187,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             if (translateTimeline_json)
             {
                 TranslationTimeline* boneTranslationTimeline = &animation.boneTranslationTimelines.At(boneIndex);
-                boneTranslationTimeline.exists = true;
+                boneTranslationTimeline->exists = true;
 
                 i32 keyFrameIndex{};
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
@@ -259,7 +257,7 @@ void CopyAnimation(Animation src, Animation&& dest)
 {
     dest = src;
 
-    for(i32 boneIndex; boneIndex < src.bones.size; ++boneIndex)
+    for(i32 boneIndex{}; boneIndex < src.bones.size; ++boneIndex)
     {
         CopyArray(src.boneTranslationTimelines.At(boneIndex).times, $(dest.boneTranslationTimelines.At(boneIndex).times));
         CopyArray(src.boneTranslationTimelines.At(boneIndex).translations, $(dest.boneTranslationTimelines.At(boneIndex).translations));
@@ -359,9 +357,6 @@ i32 _CurrentActiveKeyFrame(RotationTimeline rotationTimelineOfBone, f32 currentA
     i32 result{};
     i32 keyFrameCount = (i32)rotationTimelineOfBone.times.size - 1;
 
-    KeyFrame keyFrame0{};
-    KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount);
-
     f32 keyFrameTime0{};
     f32 keyFrameTime1 = rotationTimelineOfBone.times.At(keyFrameCount);
 
@@ -391,9 +386,6 @@ i32 _CurrentActiveKeyFrame(TranslationTimeline translationTimelineOfBone, f32 cu
     i32 result{};
     i32 keyFrameCount = (i32)translationTimelineOfBone.times.size - 1;
 
-    KeyFrame keyFrame0{};
-    KeyFrame keyFrame1 = translationTimelineOfBone.keyFrames.At(keyFrameCount);
-
     f32 keyFrameTime0{};
     f32 keyFrameTime1 = translationTimelineOfBone.times.At(keyFrameCount);
 
@@ -422,29 +414,30 @@ struct TranslationRangeResult
     v2f translation1{}; 
     f32 percentToLerp{};
 };
-TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTimelineOfBone, f32 currentAnimRunTime)
+TranslationRangeResult _GetTranslationRangeFromKeyFrames(TranslationTimeline translationTimelineOfBone, f32 currentAnimRunTime)
 {
-    BGZ_ASSERT(translationTimelineOfBone.keyFrames.size != 0, "Can't get translations range from timeline w/ no keyframes!");
+    BGZ_ASSERT(translationTimelineOfBone.times.size != 0, "Can't get translations range from timeline w/ no keyframes!");
 
     TranslationRangeResult result{};
 
-    if(translationTimelineOfBone.keyFrames.size == 1)
+    i32 firstKeyFrame{0};
+    if(translationTimelineOfBone.times.size == 1)
     {
-        if(currentAnimRunTime > translationTimelineOfBone.keyFrames.At(0).time)
+        if(currentAnimRunTime > translationTimelineOfBone.times.At(firstKeyFrame))
         {
-            result.translation0 = translationTimelineOfBone.keyFrames.At(0).translation;
-            result.translation1 = translationTimelineOfBone.keyFrames.At(0).translation;
+            result.translation0 = translationTimelineOfBone.translations.At(firstKeyFrame);
+            result.translation1 = translationTimelineOfBone.translations.At(firstKeyFrame);
             result.percentToLerp = 1.0f;
         };
     }
-    else if(currentAnimRunTime > translationTimelineOfBone.keyFrames.At(0).time && currentAnimRunTime < translationTimelineOfBone.keyFrames.At(translationTimelineOfBone.keyFrames.size - 1).time)
+    else if(currentAnimRunTime > translationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < translationTimelineOfBone.times.At(translationTimelineOfBone.times.size - 1))
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
-        result.translation0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).translation;
-        result.translation1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).translation;
+        result.translation0 = translationTimelineOfBone.translations.At(activeKeyFrameIndex);
+        result.translation1 = translationTimelineOfBone.translations.At(activeKeyFrameIndex + 1);
 
-        f32 time0 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
-        f32 time1 = translationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
+        f32 time0 = translationTimelineOfBone.times.At(activeKeyFrameIndex);
+        f32 time1 = translationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
 
         f32 diff0 = time1 - time0;
         f32 diff1 = currentAnimRunTime - time0;
@@ -454,23 +447,23 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Timeline translationTim
     return result;
 };
 
-TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Timeline boneTranslationTimeline_originalAnim, Timeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
+TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, TranslationTimeline boneTranslationTimeline_originalAnim, TranslationTimeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
 {
     TranslationRangeResult result{};
 
     result.translation0 = anim->bones.At(boneIndex)->initialTranslationForMixing;
 
-    if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists && boneTranslationTimeline_nextAnim.keyFrames.At(0).time > 0.0f)
+    if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists && boneTranslationTimeline_nextAnim.times.At(0) > 0.0f)
         result.translation1 = v2f{0.0f, 0.0f};
 
     else if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
-        result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
+        result.translation1 = boneTranslationTimeline_nextAnim.translations.At(0);
 
     else if(boneTranslationTimeline_originalAnim.exists && NOT boneTranslationTimeline_nextAnim.exists)
         result.translation1 = v2f{0.0f, 0.0f};
 
     else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
-        result.translation1 = boneTranslationTimeline_nextAnim.keyFrames.At(0).translation;
+        result.translation1 = boneTranslationTimeline_nextAnim.translations.At(0);
 
     result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
 
@@ -483,29 +476,30 @@ struct RotationRangeResult
     f32 angle1{}; 
     f32 percentToLerp{};
 };
-RotationRangeResult _GetRotationRangeFromKeyFrames(Timeline rotationTimelineOfBone, f32 currentAnimRunTime)
+RotationRangeResult _GetRotationRangeFromKeyFrames(RotationTimeline rotationTimelineOfBone, f32 currentAnimRunTime)
 {
-    BGZ_ASSERT(rotationTimelineOfBone.keyFrames.size != 0, "Can't get rotation range from timeline w/ no keyframes!");
+    BGZ_ASSERT(rotationTimelineOfBone.times.size != 0, "Can't get rotation range from timeline w/ no keyframes!");
 
     RotationRangeResult result{};
 
-    if(rotationTimelineOfBone.keyFrames.size == 1)
+    i32 firstKeyFrame{0};
+    if(rotationTimelineOfBone.times.size == 1)
     {
-        if(currentAnimRunTime > rotationTimelineOfBone.keyFrames.At(0).time)
+        if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame))
         {
-            result.angle0 = rotationTimelineOfBone.keyFrames.At(0).angle;
-            result.angle1 = rotationTimelineOfBone.keyFrames.At(0).angle;
+            result.angle0 = rotationTimelineOfBone.angles.At(firstKeyFrame);
+            result.angle1 = rotationTimelineOfBone.angles.At(firstKeyFrame);
             result.percentToLerp = 1.0f;
         };
     }
-    else if(currentAnimRunTime > rotationTimelineOfBone.keyFrames.At(0).time && currentAnimRunTime < rotationTimelineOfBone.keyFrames.At(rotationTimelineOfBone.keyFrames.size - 1).time)
+    else if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < rotationTimelineOfBone.times.At(rotationTimelineOfBone.times.size - 1))
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(rotationTimelineOfBone, currentAnimRunTime);
-        result.angle0 = rotationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).angle;
-        result.angle1 = rotationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).angle;
+        result.angle0 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex);
+        result.angle1 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex + 1);
 
-        f32 time0 = rotationTimelineOfBone.keyFrames.At(activeKeyFrameIndex).time;
-        f32 time1 = rotationTimelineOfBone.keyFrames.At(activeKeyFrameIndex + 1).time;
+        f32 time0 = rotationTimelineOfBone.times.At(activeKeyFrameIndex);
+        f32 time1 = rotationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
 
         f32 diff0 = time1 - time0;
         f32 diff1 = currentAnimRunTime - time0;
@@ -515,23 +509,23 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(Timeline rotationTimelineOfBo
     return result;
 };
 
-RotationRangeResult _GetRotationRangeFromKeyFrames(Animation* anim, Timeline boneRotationTimeline_originalAnim, Timeline boneRotationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
+RotationRangeResult _GetRotationRangeFromKeyFrames(Animation* anim, RotationTimeline boneRotationTimeline_originalAnim, RotationTimeline boneRotationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
 {
     RotationRangeResult result{};
 
     result.angle0 = anim->bones.At(boneIndex)->initialRotationForMixing;
 
-    if(boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists && boneRotationTimeline_nextAnim.keyFrames.At(0).time > 0.0f)
+    if(boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists && boneRotationTimeline_nextAnim.times.At(0) > 0.0f)
         result.angle1 = 0.0f;
 
     else if(boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists)
-        result.angle1 = boneRotationTimeline_nextAnim.keyFrames.At(0).angle;
+        result.angle1 = boneRotationTimeline_nextAnim.angles.At(0);
 
     else if(boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists)
         result.angle1 = 0.0f;
 
     else if (NOT boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists)
-        result.angle1 = boneRotationTimeline_nextAnim.keyFrames.At(0).angle;
+        result.angle1 = boneRotationTimeline_nextAnim.angles.At(0);
 
     result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
 
@@ -620,26 +614,16 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         const Bone* bone = anim->bones.At(boneIndex);
 
         //Gather transformation timelines
-        i32 hashIndex = GetHashIndex<TimelineSet>(anim->boneTimelineSets, bone->name);
-        BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
-        TimelineSet* transformationTimelines = GetVal<TimelineSet>(anim->boneTimelineSets, hashIndex, bone->name);
-        TimelineSet* nextAnimTransformationTimelines{};
-        if(anim->animToTransitionTo)
-        {
-            i32 hashIndex = GetHashIndex<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, bone->name);
-            BGZ_ASSERT(hashIndex != -1, "TimelineSet not found!");
-            nextAnimTransformationTimelines = GetVal<TimelineSet>(anim->animToTransitionTo->boneTimelineSets, hashIndex, bone->name);
-        };
-
         v2f amountOfTranslation{0.0f, 0.0f};
         f32 amountOfRotation{0.0f};
-        Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
-        Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
+        TranslationTimeline translationTimelineOfBone = anim->boneTranslationTimelines.At(boneIndex);
+        RotationTimeline rotationTimelineOfBone = anim->boneRotationTimelines.At(boneIndex);
 
         {//Translation Timeline
             if(anim->currentMixTime > 0.0f)
             {
-                Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
+                BGZ_ASSERT(anim->animToTransitionTo, "No transition animation for mixing has been set!");
+                TranslationTimeline nextAnimTranslationTimeline = anim->animToTransitionTo->boneTranslationTimelines.At(boneIndex);
 
                 TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
@@ -657,7 +641,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {//Rotation Timeline
             if(anim->currentMixTime > 0.0f)
             {
-                Timeline nextAnimRotationTimeline = nextAnimTransformationTimelines->rotationTimeline;
+                BGZ_ASSERT(anim->animToTransitionTo, "No transition animation for mixing has been set!");
+                RotationTimeline nextAnimRotationTimeline = anim->animToTransitionTo->boneRotationTimelines.At(boneIndex);
+
                 RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex);
 
                 v2f boneVector_frame0 = { bone->length * CosR(rotationRange.angle0), bone->length * SinR(rotationRange.angle0) };

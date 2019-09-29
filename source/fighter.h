@@ -68,18 +68,13 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
             {
                 for (i32 boneIndex{}; boneIndex < this->skel.bones.size; ++boneIndex)
                 {
-                    i32 hashIndex = GetHashIndex(anim.boneTimelineSets, this->skel.bones.At(boneIndex).name);
+                    TranslationTimeline* translationTimeline = &anim.boneTranslationTimelines.At(boneIndex);
 
-                    if (hashIndex != HASH_DOES_NOT_EXIST)
+                    if(translationTimeline->exists)
                     {
-                        TimelineSet* timelineSet = GetVal(anim.boneTimelineSets, hashIndex, this->skel.bones.At(boneIndex).name);
-
-                        if(timelineSet->translationTimeline.exists)
+                        for(i32 keyFrameIndex{}; keyFrameIndex < translationTimeline->times.size; ++keyFrameIndex)
                         {
-                            for(i32 i{}; i < timelineSet->translationTimeline.keyFrames.size; ++i)
-                            {
-                                timelineSet->translationTimeline.keyFrames.At(i).translation *= scaleFactor;
-                            };
+                            translationTimeline->translations.At(keyFrameIndex) *= scaleFactor;
                         };
                     };
                 };
