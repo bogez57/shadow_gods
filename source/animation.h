@@ -253,14 +253,19 @@ void CleanUpAnimation(Animation&& anim)
     anim.status = {PlayBackStatus::DEFAULT};
     anim.repeat = {false};
     anim.hasEnded = {false};
-
-    CleanUpHashMap_Str($(anim.boneTimelineSets));
 };
 
 void CopyAnimation(Animation src, Animation&& dest)
 {
     dest = src;
-    CopyArray(src.boneTimelineSets.keyInfos, $(dest.boneTimelineSets.keyInfos));
+
+    for(i32 boneIndex; boneIndex < src.bones.size; ++boneIndex)
+    {
+        CopyArray(src.boneTranslationTimelines.At(boneIndex).times, $(dest.boneTranslationTimelines.At(boneIndex).times));
+        CopyArray(src.boneTranslationTimelines.At(boneIndex).translations, $(dest.boneTranslationTimelines.At(boneIndex).translations));
+        CopyArray(src.boneRotationTimelines.At(boneIndex).times, $(dest.boneRotationTimelines.At(boneIndex).times));
+        CopyArray(src.boneRotationTimelines.At(boneIndex).angles, $(dest.boneRotationTimelines.At(boneIndex).angles));
+    };
 };
 
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
@@ -347,22 +352,57 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 };
 
 //Returns lower keyFrame of range(e.g. if range is between 0 - 1 then keyFrame number 0 is returned)
-i32 _CurrentActiveKeyFrame(Timeline timelineOfBone, f32 currentAnimRuntime)
+i32 _CurrentActiveKeyFrame(RotationTimeline rotationTimelineOfBone, f32 currentAnimRuntime)
 {
-    BGZ_ASSERT(timelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
+    BGZ_ASSERT(rotationTimelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
 
     i32 result{};
-    i32 keyFrameCount = (i32)timelineOfBone.keyFrames.size - 1;
+    i32 keyFrameCount = (i32)rotationTimelineOfBone.times.size - 1;
 
     KeyFrame keyFrame0{};
-    KeyFrame keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
+    KeyFrame keyFrame1 = rotationTimelineOfBone.keyFrames.At(keyFrameCount);
+
+    f32 keyFrameTime0{};
+    f32 keyFrameTime1 = rotationTimelineOfBone.times.At(keyFrameCount);
 
     while(keyFrameCount)
     {
-        keyFrame0 = timelineOfBone.keyFrames.At(keyFrameCount - 1);
-        keyFrame1 = timelineOfBone.keyFrames.At(keyFrameCount);
+        keyFrameTime0 = rotationTimelineOfBone.times.At(keyFrameCount - 1);
+        keyFrameTime1 = rotationTimelineOfBone.times.At(keyFrameCount);
 
-        if (keyFrame0.time < currentAnimRuntime && keyFrame1.time > currentAnimRuntime )                        
+        if (keyFrameTime0 < currentAnimRuntime && keyFrameTime1 > currentAnimRuntime )                        
+        {
+            result = keyFrameCount - 1;
+            keyFrameCount = 0;
+        }
+        else
+        {
+            --keyFrameCount;
+        }
+    };
+
+    return result;
+};
+
+i32 _CurrentActiveKeyFrame(TranslationTimeline translationTimelineOfBone, f32 currentAnimRuntime)
+{
+    BGZ_ASSERT(translationTimelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
+
+    i32 result{};
+    i32 keyFrameCount = (i32)translationTimelineOfBone.times.size - 1;
+
+    KeyFrame keyFrame0{};
+    KeyFrame keyFrame1 = translationTimelineOfBone.keyFrames.At(keyFrameCount);
+
+    f32 keyFrameTime0{};
+    f32 keyFrameTime1 = translationTimelineOfBone.times.At(keyFrameCount);
+
+    while(keyFrameCount)
+    {
+        keyFrameTime0 = translationTimelineOfBone.times.At(keyFrameCount - 1);
+        keyFrameTime1 = translationTimelineOfBone.times.At(keyFrameCount);
+
+        if (keyFrameTime0 < currentAnimRuntime && keyFrameTime1 > currentAnimRuntime )                        
         {
             result = keyFrameCount - 1;
             keyFrameCount = 0;
