@@ -7,9 +7,36 @@
 
 /*
     1. Organize data in more of a SOA fashion?
-    2. Properly handle timelines with only 1 key frame (especially when mixing animations)
-    3. Currently every bone in the skeleton is iterated over in an animaiton. It's just that animatons
+    2. Currently every bone in the skeleton is iterated over in an animaiton. It's just that animatons
     don't always have bonetimelines existing on every bone
+    3. There is still some compression on animation code that could be done. Maybe to look more like this:
+
+        Timeline* timeline
+
+        switch(timeline->type)
+        {
+            case Rotation:
+            {
+                f32 amountOfRotation{0.0f};
+                if(anim->currentMixTime > 0.0f)
+                {
+                    TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
+                    amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
+                }
+                else if(anim.currenttime > 0.0f)
+                {
+
+                }
+
+                Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
+            };
+
+            case Translation:
+            {
+                ........
+            };
+        }
+
 */
 
 struct RotationTimeline
@@ -554,34 +581,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     f32 maxTimeOfAnimation{};
     for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
     {
-        /*
-            Timeline* timeline
-
-            switch(timeline->type)
-            {
-                case Rotation:
-                {
-                    f32 amountOfRotation{0.0f};
-                    if(anim->currentMixTime > 0.0f)
-                    {
-                        TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
-                        amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
-                    }
-                    else if(anim.currenttime > 0.0f)
-                    {
-
-                    }
-
-                    Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
-                };
-
-                case Translation:
-                {
-                    ........
-                };
-            }
-
-        */
+        
 
         const Bone* bone = anim->bones.At(boneIndex);
 
