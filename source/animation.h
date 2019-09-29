@@ -150,20 +150,37 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
     i32 animIndex{};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {
-        Animation animation{Init::_};
+        Animation newAnimation{Init::_};
+        Insert<Animation>($(this->animations), currentAnimation_json->name, newAnimation);
+        i32 index = GetHashIndex(this->animations, currentAnimation_json->name);
+        Animation* anim = (Animation*)&this->animations.keyInfos.At(index).value;
 
-        animation.name = currentAnimation_json->name;
+        for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+        {
+            PushBack($(anim->bones), &skel.bones.At(boneIndex));
+        };
+
+        anim->name = currentAnimation_json->name;
 
         Json* bonesOfAnimation = currentAnimation_json->child;
-        i32 boneIndex{}; f32 maxTimeOfAnimation{};
-        for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex)
+        i32 boneIndex_json{}; f32 maxTimeOfAnimation{};
+        for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex_json)
         {
+            i32 boneIndex{};
+            while(boneIndex < anim->bones.size)
+            {
+                if(!strcmp(anim->bones.At(boneIndex)->name, currentBone->name))
+                    break;
+                else
+                    ++boneIndex;
+            };
+
             Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
             Json* translateTimeline_json = Json_getItem(currentBone, "translate");
 
             if (rotateTimeline_json)
             {
-                RotationTimeline* boneRotationTimeline = &animation.boneRotationTimelines.At(boneIndex);
+                RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
                 boneRotationTimeline->exists = true;
 
                 i32 keyFrameIndex{};
@@ -186,7 +203,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
 
             if (translateTimeline_json)
             {
-                TranslationTimeline* boneTranslationTimeline = &animation.boneTranslationTimelines.At(boneIndex);
+                TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
                 boneTranslationTimeline->exists = true;
 
                 i32 keyFrameIndex{};
@@ -206,29 +223,9 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
             };
 
-            animation.totalTime = maxTimeOfAnimation;
-        };
-
-        Insert<Animation>($(this->animations), animation.name, animation);
-    };
-
-    //Set bones of Animation
-    for(i32 animIndex{}; animIndex < this->animations.keyInfos.size; ++animIndex)//TODO: Remove iteration, this is very slow!
-    {
-        Animation* anim = (Animation*)&this->animations.keyInfos.At(animIndex).value;
-
-        if(anim->name)
-        {
-            for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
-            {
-                PushBack($(anim->bones), &skel.bones.At(boneIndex));
-
-                const char* name = anim->bones.At(boneIndex)->name;
-                TranslationTimeline timeline = anim->boneTranslationTimelines.At(boneIndex);
-            };
+            anim->totalTime = maxTimeOfAnimation;
         };
     };
-
 };
 
 void MixAnimations(AnimationData&& animData, const char* animName_from, const char* animName_to, f32 mixDuration)
