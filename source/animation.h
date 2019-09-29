@@ -222,6 +222,9 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
             {
                 PushBack($(anim->bones), &skel.bones.At(boneIndex));
+
+                const char* name = anim->bones.At(boneIndex)->name;
+                TranslationTimeline timeline = anim->boneTranslationTimelines.At(boneIndex);
             };
         };
     };
@@ -632,6 +635,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             {
                 if(translationTimelineOfBone.exists)
                 {
+                    if(!strcmp(bone->name, "right-shoulder"))
+                        int x{};
+
                     TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
                     amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
                 };
