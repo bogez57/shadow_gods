@@ -597,23 +597,31 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
         v2f amountOfTranslation{0.0f, 0.0f};
         f32 amountOfRotation{0.0f};
-        if(anim->currentMixTime > 0.0f)
-        {
-            {//Translation mixing
-                Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
-                Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
+        Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
+        Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
 
-                if(!strcmp(bone->name, "torso"))
-                    int x{};
+        {//Translation Timeline
+            if(anim->currentMixTime > 0.0f)
+            {
+                Timeline nextAnimTranslationTimeline = nextAnimTransformationTimelines->translationTimeline;
 
                 TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
+            }
+            else if (anim->currentTime > 0.0f)
+            {
+                if(translationTimelineOfBone.exists)
+                {
+                    TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
+                    amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
+                };
             };
+        }
 
-            {//Rotation mixing
-                Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
+        {//Rotation Timeline
+            if(anim->currentMixTime > 0.0f)
+            {
                 Timeline nextAnimRotationTimeline = nextAnimTransformationTimelines->rotationTimeline;
-
                 RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex);
 
                 v2f boneVector_frame0 = { bone->length * CosR(rotationRange.angle0), bone->length * SinR(rotationRange.angle0) };
@@ -644,51 +652,42 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                         amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
                     }
                 }
-            };
-        }
-        else if (anim->currentTime > 0.0f)
-        {
-            Timeline translationTimelineOfBone = transformationTimelines->translationTimeline;
-            Timeline rotationTimelineOfBone = transformationTimelines->rotationTimeline;
-
-            if(translationTimelineOfBone.exists)
+            }
+            else if(anim->currentTime > 0.0f)
             {
-                TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
-                amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
-            };
-
-            if(rotationTimelineOfBone.exists)
-            {
-                RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(rotationTimelineOfBone, anim->currentTime);
-
-                v2f boneVector_frame0 = { bone->length * CosR(rotationRange.angle0), bone->length * SinR(rotationRange.angle0) };
-                v2f boneVector_frame1 = { bone->length * CosR(rotationRange.angle1), bone->length * SinR(rotationRange.angle1) };
-                f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
-
-                if (directionOfRotation > 0) //Rotate counter-clockwise
+                if(rotationTimelineOfBone.exists)
                 {
-                    if (rotationRange.angle0 < rotationRange.angle1)
+                    RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(rotationTimelineOfBone, anim->currentTime);
+
+                    v2f boneVector_frame0 = { bone->length * CosR(rotationRange.angle0), bone->length * SinR(rotationRange.angle0) };
+                    v2f boneVector_frame1 = { bone->length * CosR(rotationRange.angle1), bone->length * SinR(rotationRange.angle1) };
+                    f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
+
+                    if (directionOfRotation > 0) //Rotate counter-clockwise
                     {
-                        amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
+                        if (rotationRange.angle0 < rotationRange.angle1)
+                        {
+                            amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
+                        }
+                        else
+                        {
+                            ConvertPositiveToNegativeAngle_Radians($(rotationRange.angle0));
+                            amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
+                        }
                     }
-                    else
+                    else //Rotate clockwise
                     {
-                        ConvertPositiveToNegativeAngle_Radians($(rotationRange.angle0));
-                        amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
+                        if (rotationRange.angle0 < rotationRange.angle1)
+                        {
+                            ConvertPositiveToNegativeAngle_Radians($(rotationRange.angle1));
+                            amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
+                        }
+                        else
+                        {
+                            amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
+                        }
                     }
-                }
-                else //Rotate clockwise
-                {
-                    if (rotationRange.angle0 < rotationRange.angle1)
-                    {
-                        ConvertPositiveToNegativeAngle_Radians($(rotationRange.angle1));
-                        amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
-                    }
-                    else
-                    {
-                        amountOfRotation = Lerp(rotationRange.angle0, rotationRange.angle1, rotationRange.percentToLerp);
-                    }
-                }
+                };
             };
         }
 
