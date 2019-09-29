@@ -68,8 +68,6 @@ struct Animation
     Animation() = default;
     Animation(Init) :
         boneTimelineSets{heap},
-        boneRotations{heap},
-        boneTranslations{heap},
         bones{heap}
     {
         Reserve($(bones), 10);
@@ -85,10 +83,8 @@ struct Animation
     b hasEnded{false};
     Dynam_Array<Bone*> bones;
     HashMap_Str<TimelineSet> boneTimelineSets; 
-    Array<f32, 20> boneRotations1;
-    Array<v2f, 20> boneTranslations1;
-    HashMap_Str<f32> boneRotations;
-    HashMap_Str<v2f> boneTranslations;
+    Array<f32, 20> boneRotations;
+    Array<v2f, 20> boneTranslations;
     Animation* animToTransitionTo{nullptr};
     b MixingStarted{false};
     f32 mixTimeSnapShot{};
@@ -262,8 +258,6 @@ void CleanUpAnimation(Animation&& anim)
     anim.repeat = {false};
     anim.hasEnded = {false};
 
-    CleanUpHashMap_Str($(anim.boneTranslations));
-    CleanUpHashMap_Str($(anim.boneRotations));
     CleanUpHashMap_Str($(anim.boneTimelineSets));
 };
 
@@ -271,8 +265,6 @@ void CopyAnimation(Animation src, Animation&& dest)
 {
     dest = src;
     CopyArray(src.boneTimelineSets.keyInfos, $(dest.boneTimelineSets.keyInfos));
-    CopyArray(src.boneRotations.keyInfos, $(dest.boneRotations.keyInfos));
-    CopyArray(src.boneTranslations.keyInfos, $(dest.boneTranslations.keyInfos));
 };
 
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
@@ -543,14 +535,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
                     for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
                     {
-                        i32 translationIndex = GetHashIndex(anim->boneTranslations, anim->bones.At(boneIndex)->name);
-                        i32 rotationIndex = GetHashIndex(anim->boneRotations, anim->bones.At(boneIndex)->name);
-
-                        anim->bones.At(boneIndex)->initialTranslationForMixing = *GetVal($(anim->boneTranslations), translationIndex, anim->bones.At(boneIndex)->name);
-                        anim->bones.At(boneIndex)->initialRotationForMixing = *GetVal($(anim->boneRotations), rotationIndex, anim->bones.At(boneIndex)->name);
-
-                        anim->bones.At(boneIndex)->initialRotationForMixing = anim->boneRotations1.At(boneIndex);
-                        anim->bones.At(boneIndex)->initialTranslationForMixing = anim->boneTranslations1.At(boneIndex);
+                        anim->bones.At(boneIndex)->initialRotationForMixing = anim->boneRotations.At(boneIndex);
+                        anim->bones.At(boneIndex)->initialTranslationForMixing = anim->boneTranslations.At(boneIndex);
                     }
                 }
 
@@ -706,10 +692,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             };
         }
 
-        anim->boneRotations1.At(boneIndex) = amountOfRotation;
-        anim->boneTranslations1.At(boneIndex) = amountOfTranslation;
-        Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
-        Insert<v2f>($(anim->boneTranslations), bone->name, amountOfTranslation);
+        anim->boneRotations.At(boneIndex) = amountOfRotation;
+        anim->boneTranslations.At(boneIndex) = amountOfTranslation;
     };
 
     Animation result;
@@ -736,25 +720,11 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
 
     for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
     {
-        i32 hashIndex = GetHashIndex(anim.boneRotations, skel.bones.At(boneIndex).name);
+        f32 boneRotationToAdd = anim.boneRotations.At(boneIndex);
+        *skel.bones.At(boneIndex).parentLocalRotation += boneRotationToAdd;
 
-        //f32 boneRotationToAdd = anim.boneRotations1.At(boneIndex);
-
-        if (hashIndex != HASH_DOES_NOT_EXIST)
-        {
-                f32 boneRotationToAdd = *GetVal(anim.boneRotations, hashIndex, skel.bones.At(boneIndex).name);
-                *skel.bones.At(boneIndex).parentLocalRotation += boneRotationToAdd;
-        };
-
-        hashIndex = GetHashIndex(anim.boneTranslations, skel.bones.At(boneIndex).name);
-
-        //f32 boneTranslationToAdd = anim.boneTranslations1.At(boneIndex);
-
-        if (hashIndex != HASH_DOES_NOT_EXIST)
-        {
-            v2f boneTranslationToAdd = *GetVal(anim.boneTranslations, hashIndex, skel.bones.At(boneIndex).name);
-            *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
-        };
+        v2f boneTranslationToAdd = anim.boneTranslations.At(boneIndex);
+        *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
     };
 };
 
