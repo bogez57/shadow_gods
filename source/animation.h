@@ -12,18 +12,6 @@
     don't always have bonetimelines existing on every bone
 */
 
-class Timeline1
-{
-public:
-    f32 time;
-};
-
-class TranslationTimeline : public Timeline1
-{
-public:
-    v2f translation;
-};
-
 enum class CurveType
 {
     LINEAR,
@@ -140,12 +128,6 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : animations{heap}
 {
     i32 length;
-
-    Timeline1 timeline{};
-    TranslationTimeline* transTimeline = (TranslationTimeline*)&timeline;
-
-    transTimeline->translation.x = 3.0f;
-    transTimeline->time = 3.0f;
 
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), animJsonFilePath);
 
