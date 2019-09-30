@@ -339,16 +339,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f};
-        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
+        *player = {"data/spineboy-ess.atlas", "data/spineboy-ess.json", playerWorldPos, /*player height*/ 2.0f};
+        *enemy = {"data/spineboy-ess.atlas", "data/spineboy-ess.json", enemyWorldPos, /*enemy height*/ 2.0f};
 
-        MixAnimations($(player->animData), "idle", "high-kick", .2f);
-        MixAnimations($(player->animData), "idle", "right-cross", .2f);
-        MixAnimations($(player->animData), "idle", "left-jab", .2f);
-        MixAnimations($(player->animData), "right-cross", "high-kick", .2f);
-        MixAnimations($(player->animData), "high-kick", "right-cross", .2f);
+        //MixAnimations($(player->animData), "idle", "run", .2f);
 
-        SetIdleAnimation($(player->animQueue), player->animData, "idle");
+        SetIdleAnimation($(player->animQueue), player->animData, "run");
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -379,12 +375,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionLeft))
     {
-        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::DEFAULT);
+        QueueAnimation($(player->animQueue), player->animData, "jump", PlayBackStatus::DEFAULT);
     };
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "high-kick", PlayBackStatus::DEFAULT);
+        QueueAnimation($(player->animQueue), player->animData, "run", PlayBackStatus::DEFAULT);
     };
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
