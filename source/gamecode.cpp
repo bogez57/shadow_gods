@@ -344,7 +344,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //MixAnimations($(player->animData), "idle", "run", .2f);
 
-        SetIdleAnimation($(player->animQueue), player->animData, "run");
+        SetIdleAnimation($(player->animQueue), player->animData, "idle");
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -375,12 +375,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionLeft))
     {
-        QueueAnimation($(player->animQueue), player->animData, "jump", PlayBackStatus::DEFAULT);
+        QueueAnimation($(player->animQueue), player->animData, "test", PlayBackStatus::DEFAULT);
     };
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "run", PlayBackStatus::DEFAULT);
+        QueueAnimation($(player->animQueue), player->animData, "high-kick", PlayBackStatus::DEFAULT);
     };
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);

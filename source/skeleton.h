@@ -166,7 +166,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
 
                     const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
                     Json* jsonSkin = Json_getItem(root, "skins");
-                    Json* jsonDefaultSkin = Json_getItem(jsonSkin, "default");
+                    Json* jsonDefaultSkin = Json_getItem(jsonSkin->child, "attachments");
 
                     i32 attachmentCounter {};
                     for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)
