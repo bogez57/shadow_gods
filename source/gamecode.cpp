@@ -339,8 +339,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        *player = {"data/spineboy-ess.atlas", "data/spineboy-ess.json", playerWorldPos, /*player height*/ 2.0f};
-        *enemy = {"data/spineboy-ess.atlas", "data/spineboy-ess.json", enemyWorldPos, /*enemy height*/ 2.0f};
+        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f};
+        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
 
         //MixAnimations($(player->animData), "idle", "run", .2f);
 

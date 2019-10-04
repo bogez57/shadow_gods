@@ -669,6 +669,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.exists)
                 {
+                    if(!strcmp(bone->name, "front-upper-arm"))
+                        int x{3};
+
                     RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(rotationTimelineOfBone, anim->currentTime);
 
                     v2f boneVector_frame0 = { bone->length * CosR(rotationRange.angle0), bone->length * SinR(rotationRange.angle0) };
