@@ -640,7 +640,10 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             if(anim->currentMixTime > 0.0f)
             {
                 BGZ_ASSERT(anim->animToTransitionTo.size > 0, "No transition animation for mixing has been set!");
-                RotationTimeline nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines.At(boneIndex);
+
+                RotationTimeline nextAnimRotationTimeline{}; 
+                if(nextAnimInQueue)
+                    nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines.At(boneIndex);
 
                 RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex);
 
