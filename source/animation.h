@@ -305,14 +305,19 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
     Animation* sourceAnim = GetVal<Animation>(animData.animations, index, animName);
+    Animation* nextAnim = animQueue.queuedAnimations.GetNextElem();
+    const char* nextAnimName{""};
 
-    Animation destAnim; 
-    CopyAnimation(*sourceAnim, $(destAnim));
+    if(nextAnim)
+        nextAnimName = nextAnim->name;
 
-    destAnim.status = playBackStatus;
-
-    if(NOT animQueue.queuedAnimations.full)
+    if(NOT animQueue.queuedAnimations.full && strcmp(sourceAnim->name, nextAnimName))
     {
+        Animation destAnim; 
+        CopyAnimation(*sourceAnim, $(destAnim));
+
+        destAnim.status = playBackStatus;
+
         switch(playBackStatus)
         {
             case PlayBackStatus::DEFAULT:
@@ -613,7 +618,10 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             if(anim->currentMixTime > 0.0f)
             {
                 BGZ_ASSERT(anim->animToTransitionTo.size > 0, "No transition animation for mixing has been set!");
-                TranslationTimeline nextAnimTranslationTimeline = nextAnimInQueue->boneTranslationTimelines.At(boneIndex);
+
+                TranslationTimeline nextAnimTranslationTimeline{};
+                if(nextAnimInQueue)
+                    nextAnimTranslationTimeline = nextAnimInQueue->boneTranslationTimelines.At(boneIndex);
 
                 TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
                 amountOfTranslation = Lerp(translationRange.translation0, translationRange.translation1, translationRange.percentToLerp);
