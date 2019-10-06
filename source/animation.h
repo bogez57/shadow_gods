@@ -92,7 +92,7 @@ struct Animation
     Array<v2f, 20> boneTranslations;
     Dynam_Array<Animation> animToTransitionTo{heap};
     b MixingStarted{false};
-    f32 mixTimeSnapShot{};
+    f32 initialTimeLeftInAnimAtMixingStart{};
 };
 
 struct AnimationData
@@ -485,7 +485,7 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(Animation* anim, Transl
     else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
         result.translation1 = boneTranslationTimeline_nextAnim.translations.At(0);
 
-    result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
+    result.percentToLerp = anim->currentMixTime / anim->initialTimeLeftInAnimAtMixingStart;
 
     return result;
 };
@@ -547,7 +547,7 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(Animation* anim, RotationTime
     else if (NOT boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists)
         result.angle1 = boneRotationTimeline_nextAnim.angles.At(0);
 
-    result.percentToLerp = anim->currentMixTime / anim->mixTimeSnapShot;
+    result.percentToLerp = anim->currentMixTime / anim->initialTimeLeftInAnimAtMixingStart;
 
     return result;
 };
@@ -583,7 +583,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
                     if(NOT anim->MixingStarted)
                     {
-                        anim->mixTimeSnapShot = amountOfTimeLeftInAnim;
+                        anim->initialTimeLeftInAnimAtMixingStart = amountOfTimeLeftInAnim;
                         anim->MixingStarted= true;
 
                         for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
@@ -593,9 +593,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                         }
                     }
 
-                    if(anim->currentMixTime > anim->mixTimeSnapShot)
+                    if(anim->currentMixTime > anim->initialTimeLeftInAnimAtMixingStart)
                     {
-                        anim->currentMixTime = anim->mixTimeSnapShot;
+                        anim->currentMixTime = anim->initialTimeLeftInAnimAtMixingStart;
                         anim->hasEnded = true;
                     }
                 }
