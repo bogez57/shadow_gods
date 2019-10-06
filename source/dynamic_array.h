@@ -144,7 +144,7 @@ void Reserve(Dynam_Array<Type>&& arr, ui32 numItems)
 template <typename Type>
 void CleanUp(Dynam_Array<Type>&& arr)
 {
-    DeAlloc(memPartitionID, arr.elements);
+    DeAlloc(arr.memPartitionID, arr.elements);
     arr.size = 0;
     arr.capacity = 0;
     arr.hasArrayBeenDestroyed = true;

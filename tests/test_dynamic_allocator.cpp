@@ -3,7 +3,7 @@
 #include "memory_handling.h"
 #include "dynamic_allocator.h"
 
-SCENARIO("Memory regions can be created")
+SCENARIO("Memory Paritions can be created")
 {
     GIVEN("We call OS to allocate memory and initialize our application memory struct")
     {
@@ -18,17 +18,17 @@ SCENARIO("Memory regions can be created")
         REQUIRE(appMemory.TemporaryStorage);
         REQUIRE(appMemory.TemporaryStorageUsed == 0);
 
-        WHEN("we create one memory region from the allocated memory block")
+        WHEN("we create one memory parition from the allocated memory block")
         {
-            i32 Region1ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(7), DYNAMIC);
-            InitDynamAllocator(Region1ID);
+            i32 partition1_ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(7), DYNAMIC);
+            InitDynamAllocator(partition1_ID);
 
             REQUIRE(appMemory.Initialized);
-            REQUIRE(appMemory.partitions[Region1ID].BaseAddress);
+            REQUIRE(appMemory.partitions[partition1_ID].BaseAddress);
 
             THEN("We can allocate memory onto region")
             {
-                i32* ptr = MallocType(Region1ID, i32, 1);
+                i32* ptr = MallocType(partition1_ID, i32, 1);
 
                 REQUIRE(ptr);
 
@@ -41,7 +41,7 @@ SCENARIO("Memory regions can be created")
 
                 THEN("We can deallocate that memory which sets handle to null")
                 {
-                    DeAlloc(Region1ID, ptr);
+                    DeAlloc(partition1_ID, ptr);
 
                     REQUIRE(ptr == nullptr);
                 }
@@ -50,8 +50,8 @@ SCENARIO("Memory regions can be created")
                 {
                     ui64 originalPtrAddress = (ui64)ptr;
 
-                    DeAlloc(Region1ID, ptr);
-                    i32* newPtr = MallocType(Region1ID, i32, 1);
+                    DeAlloc(partition1_ID, ptr);
+                    i32* newPtr = MallocType(partition1_ID, i32, 1);
 
                     ui64 newPtrAddress = (ui64)newPtr;
 
@@ -60,55 +60,55 @@ SCENARIO("Memory regions can be created")
             }
         }
 
-        WHEN("We try and create multiple memory regions from that memory block")
+        WHEN("We try and create multiple memory partitions from that memory block")
         {
-            i32 Region1ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
-            i32 Region2ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
-            i32 Region3ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
-            InitDynamAllocator(Region1ID);
-            InitDynamAllocator(Region2ID);
-            InitDynamAllocator(Region3ID);
+            i32 partition1_ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
+            i32 partition2_ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
+            i32 partition3_ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
+            InitDynamAllocator(partition1_ID);
+            InitDynamAllocator(partition2_ID);
+            InitDynamAllocator(partition3_ID);
 
-            REQUIRE(Region1ID == 0);
-            REQUIRE(Region2ID == 1);
-            REQUIRE(Region3ID == 2);
+            REQUIRE(partition1_ID == 0);
+            REQUIRE(partition2_ID == 1);
+            REQUIRE(partition3_ID == 2);
             REQUIRE(appMemory.partitionCount == 3);
 
-            THEN("we have multiple valid memory regions within the memory block")
+            THEN("we have multiple valid memory partitions within the memory block")
             {
-                i32* region1Allocation = MallocType(Region1ID, i32, 1);
-                i32* region2Allocation = MallocType(Region2ID, i32, 1);
-                i32* region3Allocation = MallocType(Region3ID, i32, 1);
+                i32* partition1Allocation = MallocType(partition1_ID, i32, 1);
+                i32* partition2Allocation = MallocType(partition2_ID, i32, 1);
+                i32* partition3Allocation = MallocType(partition3_ID, i32, 1);
 
-                REQUIRE(region1Allocation);
-                REQUIRE(region2Allocation);
-                REQUIRE(region3Allocation);
+                REQUIRE(partition1Allocation);
+                REQUIRE(partition2Allocation);
+                REQUIRE(partition3Allocation);
             }
 
-            THEN("We have multiple, separate memory regions with correct address ranges for which to allocate on")
+            THEN("We have multiple, separate memory paritions with correct address ranges for which to allocate on")
             {
-                i64 region1Range = (i64)appMemory.partitions[Region1ID].EndAddress - (i64)appMemory.partitions[Region1ID].BaseAddress;
-                i64 region2Range = (i64)appMemory.partitions[Region2ID].EndAddress - (i64)appMemory.partitions[Region2ID].BaseAddress;
-                i64 region3Range = (i64)appMemory.partitions[Region3ID].EndAddress - (i64)appMemory.partitions[Region3ID].BaseAddress;
+                i64 region1Range = (i64)appMemory.partitions[partition1_ID].EndAddress - (i64)appMemory.partitions[partition1_ID].BaseAddress;
+                i64 region2Range = (i64)appMemory.partitions[partition2_ID].EndAddress - (i64)appMemory.partitions[partition2_ID].BaseAddress;
+                i64 region3Range = (i64)appMemory.partitions[partition3_ID].EndAddress - (i64)appMemory.partitions[partition3_ID].BaseAddress;
 
                 REQUIRE(region1Range == (Megabytes(10) - 1)); //Subtract 1 since addresses start from a 0 index
                 REQUIRE(region2Range == (Megabytes(10) - 1));
                 REQUIRE(region3Range == (Megabytes(10) - 1));
             }
 
-            THEN("We have multiple, separate memory regions for which to allocate on")
+            THEN("We have multiple, separate memory partitions for which to allocate on")
             {
-                i32* region1Allocation = MallocType(Region1ID, i32, 1);
-                i32* region2Allocation = MallocType(Region2ID, i32, 1);
-                i32* region3Allocation = MallocType(Region3ID, i32, 1);
+                i32* partition1Allocation = MallocType(partition1_ID, i32, 1);
+                i32* partition2Allocation = MallocType(partition2_ID, i32, 1);
+                i32* partition3Allocation = MallocType(partition3_ID, i32, 1);
 
-                i64 region1Address = (i64)region1Allocation;
-                i64 region2Address = (i64)region2Allocation;
-                i64 region3Address = (i64)region3Allocation;
+                i64 partition1Address = (i64)partition1Allocation;
+                i64 partition2Address = (i64)partition2Allocation;
+                i64 partition3Address = (i64)partition3Allocation;
 
-                REQUIRE(region1Address != region2Address);
-                REQUIRE(region1Address != region3Address);
-                REQUIRE(region2Address != region3Address);
+                REQUIRE(partition1Address != partition2Address);
+                REQUIRE(partition1Address != partition3Address);
+                REQUIRE(partition2Address != partition3Address);
             }
         }
     }
