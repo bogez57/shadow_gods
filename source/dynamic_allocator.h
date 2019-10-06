@@ -92,9 +92,9 @@ _Memory_Block* _SplitBlock(i32 memRegionIdentifier, _Memory_Block* BlockToSplit,
     ASSERT(BlockToSplit->data);
     ASSERT(SizeOfNewBlock > sizeof(_Memory_Block));
 
-    _Memory_Block* NewBlock = (_Memory_Block*)((ui8*)(BlockToSplit) + (BlockToSplit->Size - 1) + (sizeof(_Memory_Block)));
+    _Memory_Block* NewBlock = (_Memory_Block*)((ui8*)(BlockToSplit) + (BlockToSplit->Size) + (sizeof(_Memory_Block)));
 
-    NewBlock->Size = SizeOfNewBlock;
+    NewBlock->Size = SizeOfNewBlock - sizeof(_Memory_Block);
     NewBlock->data = _GetDataFromBlock(NewBlock);
     NewBlock->prevBlock = BlockToSplit;
     NewBlock->nextBlock = BlockToSplit->nextBlock;
