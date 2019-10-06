@@ -38,7 +38,7 @@
 #include "memory_handling.h"
 #include "array.h"
 
-#include "math.h"
+#include "my_math.h"
 #include "utilities.h"
 #include "renderer_stuff.h"
 #include "win64_shadowgods.h"

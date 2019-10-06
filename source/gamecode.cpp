@@ -34,7 +34,7 @@ global_variable i32 heap;
 #include "shared.h"
 #include "renderer_stuff.h"
 #include "gamecode.h"
-#include "math.h"
+#include "my_math.h"
 #include "utilities.h"
 
 global_variable Platform_Services* globalPlatformServices;

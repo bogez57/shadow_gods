@@ -12,13 +12,13 @@ void* _MallocSize(i32, i64);
 void* _CallocSize(i32, i64);
 void* _ReAlloc(i32, void*, i64);
 void _DeAlloc(i32, void**);
-#define MallocType(MemRegionIdentifier, Type, Count) /*(Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))*/ (Type*)globalPlatformServices->Malloc(((sizeof(Type)) * (Count)))
-#define MallocSize(MemRegionIdentifier, Size) /*_MallocSize(MemRegionIdentifier, (Size))*/ globalPlatformServices->Malloc(Size)
-#define CallocType(MemRegionIdentifier, Type, Count) /*(Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))*/ (Type*)globalPlatformServices->Calloc(1, ((sizeof(Type)) * (Count)))
-#define CallocSize(MemRegionIdentifier, Size) /*_CallocSize(MemRegionIdentifier, (Size))*/ globalPlatformServices->Calloc(1, (Size))
-#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) /*(Type*)_ReAlloc(MemRegionIdentifier, Ptr, (sizeof(Type))*/ (Count)) (Type*)globalPlatformServices->Realloc(Ptr, (sizeof(Type)) * (Count))
-#define ReAllocSize(MemRegionIdentifier, Ptr, Size) /*_ReAlloc(MemRegionIdentifier, Ptr, Size)*/ globalPlatformServices->Realloc(Ptr, Size)
-#define DeAlloc(MemRegionIdentifier, PtrToMemory) /*_DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)*/ globalPlatformServices->Free((void*)PtrToMemory)
+#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count))) //(Type*)globalPlatformServices->Malloc(((sizeof(Type)) * (Count)))
+#define MallocSize(MemRegionIdentifier, Size) _MallocSize(MemRegionIdentifier, (Size)) //globalPlatformServices->Malloc(Size)
+#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count))) //(Type*)globalPlatformServices->Calloc(1, ((sizeof(Type)) * (Count)))
+#define CallocSize(MemRegionIdentifier, Size) _CallocSize(MemRegionIdentifier, (Size)) //globalPlatformServices->Calloc(1, (Size))
+#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, (sizeof(Type)) * (Count)) //(Type*)globalPlatformServices->Realloc(Ptr, (sizeof(Type)) * (Count))
+#define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size) //globalPlatformServices->Realloc(Ptr, Size)
+#define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory) //globalPlatformServices->Free((void*)PtrToMemory)
 
 #endif
 

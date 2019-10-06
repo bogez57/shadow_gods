@@ -1,6 +1,6 @@
 #pragma once
 
-#include "math.h"
+#include "my_math.h"
 #include "utilities.h"
 
 struct Button_State

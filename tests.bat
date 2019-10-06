@@ -10,7 +10,8 @@ set cwd=%~dp0\
 IF NOT EXIST build mkdir build
 pushd build
 
-cl -EHsc -I %cwd%tests -I %cwd% -I %cwd%"third_party/boagz/include" ../tests/*.cpp -MP -nologo /link -out:tests.exe
+cl /c %cwd%tests/*.cpp -EHsc -I %cwd%"source" -I %cwd%"tests" -I %cwd%"third_party/boagz/include" -MP -nologo -std:c++17 
+link *.obj -out:tests.exe
 
 REM Run tests
 tests.exe

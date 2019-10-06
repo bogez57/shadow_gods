@@ -2,6 +2,8 @@
 #include "catch.hpp"
 
 #define ATOMIC_TYPES_IMPL
-#include "source/atomic_types.h"
-#define MEMHANDLING_IMPL
-#include "source/memory_handling.h"
+#include "atomic_types.h"
+#define MEMORY_HANDLING_IMPL
+#include "memory_handling.h"
+#define DYNAMIC_ALLOCATOR_IMPL
+#include "dynamic_allocator.h"

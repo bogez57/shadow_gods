@@ -5,7 +5,7 @@
 #define BYTES_PER_PIXEL 4
 #endif
 
-#include "math.h"
+#include "my_math.h"
 
 /*
 

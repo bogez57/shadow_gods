@@ -1,6 +1,7 @@
-#include "source/atomic_types.h"
+#include "atomic_types.h"
 #include "catch.hpp"
-#include "source/memory_handling.h"
+#include "memory_handling.h"
+#include "dynamic_allocator.h"
 
 SCENARIO("Memory regions can be created")
 {
@@ -19,10 +20,11 @@ SCENARIO("Memory regions can be created")
 
         WHEN("we create one memory region from the allocated memory block")
         {
-            i32 Region1ID = CreateRegionFromMemory(&appMemory, Megabytes(7));
+            i32 Region1ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(7), DYNAMIC);
+            InitDynamAllocator(Region1ID);
 
             REQUIRE(appMemory.Initialized);
-            REQUIRE(appMemory.regions[Region1ID].BaseAddress);
+            REQUIRE(appMemory.partitions[Region1ID].BaseAddress);
 
             THEN("We can allocate memory onto region")
             {
@@ -60,14 +62,17 @@ SCENARIO("Memory regions can be created")
 
         WHEN("We try and create multiple memory regions from that memory block")
         {
-            i32 Region1ID = CreateRegionFromMemory(&appMemory, Megabytes(10));
-            i32 Region2ID = CreateRegionFromMemory(&appMemory, Megabytes(10));
-            i32 Region3ID = CreateRegionFromMemory(&appMemory, Megabytes(10));
+            i32 Region1ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
+            i32 Region2ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
+            i32 Region3ID = CreatePartitionFromMemoryBlock(&appMemory, Megabytes(10), DYNAMIC);
+            InitDynamAllocator(Region1ID);
+            InitDynamAllocator(Region2ID);
+            InitDynamAllocator(Region3ID);
 
             REQUIRE(Region1ID == 0);
             REQUIRE(Region2ID == 1);
             REQUIRE(Region3ID == 2);
-            REQUIRE(appMemory.regionCount == 3);
+            REQUIRE(appMemory.partitionCount == 3);
 
             THEN("we have multiple valid memory regions within the memory block")
             {
@@ -82,9 +87,9 @@ SCENARIO("Memory regions can be created")
 
             THEN("We have multiple, separate memory regions with correct address ranges for which to allocate on")
             {
-                i64 region1Range = (i64)appMemory.regions[Region1ID].EndAddress - (i64)appMemory.regions[Region1ID].BaseAddress;
-                i64 region2Range = (i64)appMemory.regions[Region2ID].EndAddress - (i64)appMemory.regions[Region2ID].BaseAddress;
-                i64 region3Range = (i64)appMemory.regions[Region3ID].EndAddress - (i64)appMemory.regions[Region3ID].BaseAddress;
+                i64 region1Range = (i64)appMemory.partitions[Region1ID].EndAddress - (i64)appMemory.partitions[Region1ID].BaseAddress;
+                i64 region2Range = (i64)appMemory.partitions[Region2ID].EndAddress - (i64)appMemory.partitions[Region2ID].BaseAddress;
+                i64 region3Range = (i64)appMemory.partitions[Region3ID].EndAddress - (i64)appMemory.partitions[Region3ID].BaseAddress;
 
                 REQUIRE(region1Range == (Megabytes(10) - 1)); //Subtract 1 since addresses start from a 0 index
                 REQUIRE(region2Range == (Megabytes(10) - 1));
