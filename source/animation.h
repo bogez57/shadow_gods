@@ -333,16 +333,8 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
             case PlayBackStatus::NEXT:
             {
-                //Clear out animations not currently playing and insert new animation to play next
-                if(NOT animQueue.queuedAnimations.Empty())
-                {
-                    animQueue.queuedAnimations.write = animQueue.queuedAnimations.read + 1;
-                    animQueue.queuedAnimations.PushBack(destAnim);
-                }
-                else
-                {
-                    animQueue.queuedAnimations.PushBack(destAnim);
-                }
+                animQueue.queuedAnimations.ClearRemaining();
+                animQueue.queuedAnimations.PushBack(destAnim);
             }break;
 
             case PlayBackStatus::HOLD:

@@ -117,6 +117,14 @@ public:
         return size;
     };
 
+    void ClearRemaining()
+    {
+        if(this->read == this->maxSize - 1)
+            this->write = 0;
+        else
+            this->write = this->read + 1;
+    };
+
     i64 maxSize {};
     i64 write {};
     i64 read {};

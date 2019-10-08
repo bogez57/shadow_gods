@@ -357,7 +357,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     if (KeyHeld(keyboard->MoveLeft))
     {
         //player->world.translation.x += .1f;
-        QueueAnimation($(player->animQueue), player->animData, "walk", PlayBackStatus::DEFAULT);
+        QueueAnimation($(player->animQueue), player->animData, "walk", PlayBackStatus::NEXT);
     };
 
     if (KeyHeld(keyboard->MoveLeft))
