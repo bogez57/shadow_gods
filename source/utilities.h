@@ -3,6 +3,8 @@
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
 #include <utility>
+#include <string.h>
+
 template <typename F>
 struct Defer {
     Defer( F f ) : f( f ) {}
@@ -98,3 +100,14 @@ RoundFloat32ToInt32(v2f floats)
 
     return result;
 }
+
+inline b32
+StringCmp(const char* str1, const char* str2)
+{
+    b32 didStringsMatch = strcmp(str1, str2);
+
+    if(!didStringsMatch)
+        return 1;
+    else
+        return 0;
+};

@@ -160,7 +160,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             i32 boneIndex{};
             while(boneIndex < anim->bones.size)
             {
-                if(!strcmp(anim->bones.At(boneIndex)->name, currentBone->name))
+                if(StringCmp(anim->bones.At(boneIndex)->name, currentBone->name))
                     break;
                 else
                     ++boneIndex;
@@ -181,7 +181,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                     PushBack($(boneRotationTimeline->angles), Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f)));
                     /*
                     const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
-                    if(!strcmp(keyFrameCurve, "stepped"))
+                    if(StringCmp(keyFrameCurve, "stepped"))
                         keyFrame.curve = CurveType::STEPPED;
                     */
                 };
@@ -237,7 +237,7 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
     {
         for(i32 i{}; i < anim_from->animToTransitionTo.size; ++i)
         {
-            BGZ_ASSERT(strcmp(anim_from->animToTransitionTo.At(i).name, anim_to.name), "Duplicate mix animation tyring to be set");
+            BGZ_ASSERT(NOT StringCmp(anim_from->animToTransitionTo.At(i).name, anim_to.name), "Duplicate mix animation tyring to be set");
         };
 
         PushBack($(anim_from->animToTransitionTo), anim_to);
@@ -305,13 +305,13 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
     BGZ_ASSERT(index != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
     Animation* sourceAnim = GetVal<Animation>(animData.animations, index, animName);
+
     Animation* nextAnim = animQueue.queuedAnimations.GetNextElem();
     const char* nextAnimName{""};
-
     if(nextAnim)
         nextAnimName = nextAnim->name;
 
-    if(NOT animQueue.queuedAnimations.full && strcmp(sourceAnim->name, nextAnimName))
+    if(NOT animQueue.queuedAnimations.full && NOT StringCmp(sourceAnim->name, nextAnimName))
     {
         Animation destAnim; 
         CopyAnimation(*sourceAnim, $(destAnim));
@@ -574,7 +574,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     {
         for(i32 i{}; i < anim->animToTransitionTo.size; ++i)
         {
-            if(!strcmp(anim->animToTransitionTo.At(i).name, nextAnimInQueue->name))
+            if(StringCmp(anim->animToTransitionTo.At(i).name, nextAnimInQueue->name))
             {
                 if(amountOfTimeLeftInAnim <= anim->animToTransitionTo.At(i).mixTimeDuration)
                 {
@@ -680,7 +680,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.exists)
                 {
-                    if(!strcmp(bone->name, "front-upper-arm"))
+                    if(StringCmp(bone->name, "front-upper-arm"))
                         int x{3};
 
                     RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(rotationTimelineOfBone, anim->currentTime);

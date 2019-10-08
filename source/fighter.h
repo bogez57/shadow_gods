@@ -40,7 +40,7 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
 
         for (i32 boneIndex{}; boneIndex < this->skel.bones.size; ++boneIndex)
         {
-            if(!strcmp(this->skel.bones.At(boneIndex).name, "left-shoulder"))
+            if(StringCmp(this->skel.bones.At(boneIndex).name, "left-shoulder"))
                 int x{3};
 
             this->skel.bones.At(boneIndex).transform.translation.x *= scaleFactor;

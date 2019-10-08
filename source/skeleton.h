@@ -125,7 +125,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                 Bone* bone = GetLastElem(this->bones);
 
                 bone->name = Json_getString(currentBone_json, "name", 0);
-                if(!strcmp(bone->name, "root"))
+                if(StringCmp(bone->name, "root"))
                     bone->isRoot = true;
                 bone->transform.scale = v2f{1.0f, 1.0f};
                 bone->parentLocalScale = &bone->transform.scale;
@@ -173,7 +173,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                     {
                         Json* jsonAttachment = currentBodyPartOfSkin_json->child;
 
-                        if (strcmp(jsonAttachment->name, attachmentName) == 0)
+                        if (StringCmp(jsonAttachment->name, attachmentName))
                         {
                             resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
                             resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
@@ -189,7 +189,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
 
                                 while (region)
                                 {
-                                    if (strcmp(region->name, attachmentName) == 0)
+                                    if (StringCmp(region->name, attachmentName))
                                     {
                                         resultAtlasRegion = *region;
                                         break;
@@ -235,7 +235,7 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
 
     for (i32 i = 0; i < skeleton.bones.size; ++i)
     {
-        if (strcmp(skeleton.bones.At(i).name, boneName) == 0)
+        if (StringCmp(skeleton.bones.At(i).name, boneName))
         {
             bone = &skeleton.bones.At(i);
             break;

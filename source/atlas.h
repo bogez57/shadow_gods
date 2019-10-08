@@ -531,7 +531,7 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name)
     AtlasRegion* region = self->regions;
     while (region)
     {
-        if (strcmp(region->name, name) == 0)
+        if (StringCmp(region->name, name))
             return region;
         region = region->next;
     }
