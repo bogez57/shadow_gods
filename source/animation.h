@@ -546,6 +546,9 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(Animation* anim, RotationTime
 
 Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 {
+    if(animQueue.queuedAnimations.Empty())
+        animQueue.queuedAnimations.PushBack(animQueue.idleAnim);
+
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
     BGZ_ASSERT(anim, "No animation returned!");
 
