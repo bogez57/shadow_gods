@@ -829,6 +829,7 @@ void DoRenderWork(void* data)
 
                 Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+                Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera);
 
                 DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
@@ -845,6 +846,7 @@ void DoRenderWork(void* data)
 
                 Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
                 Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+                Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera);
 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);

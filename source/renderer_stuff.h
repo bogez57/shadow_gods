@@ -138,7 +138,7 @@ struct RenderEntry_Texture
     ui8* colorData{nullptr};
     v2i size{};
     ui32 pitch_pxls{};
-    v2i targetRectSize{};
+    v2f targetRectSize{};
     Array<v2f, 2> uvBounds;
 };
 
@@ -230,7 +230,7 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_met
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     
-    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(objectSize_meters.width), RoundFloat32ToInt32(objectSize_meters.height)};
+    textureEntry->targetRectSize= {objectSize_meters.width, objectSize_meters.height};
 
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -257,7 +257,7 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     
-    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth), RoundFloat32ToInt32(desiredHeight)};
+    textureEntry->targetRectSize= {desiredWidth, desiredHeight};
 
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -427,6 +427,8 @@ Quadf ProjectionTransform_Ortho(Quadf cameraCoords)
     for(i32 vertIndex{}; vertIndex < 4; vertIndex++) 
     {
         cameraCoords.vertices[vertIndex] *= 100.0f;
+        cameraCoords.vertices[vertIndex].x = Floor(cameraCoords.vertices[vertIndex].x + .5f);
+        cameraCoords.vertices[vertIndex].y = Floor(cameraCoords.vertices[vertIndex].y + .5f);
     };
 
     return cameraCoords;
