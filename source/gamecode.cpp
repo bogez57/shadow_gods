@@ -402,29 +402,33 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
     UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
-    Array<v2f, 2> uvs = { v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f } };
-    PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{ stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f{ 1.0f, 1.0f }, uvs, "background");
-
     ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenDims);
 
-    auto DrawFighter = [](Fighter fighter) -> void {
-        for (i32 slotIndex{ 0 }; slotIndex < fighter.skel.slots.size; ++slotIndex)
-        {
-            Slot* currentSlot = &fighter.skel.slots[slotIndex];
+    {//Render 
+        auto DrawFighter = [](Fighter fighter) -> void {
+            for (i32 slotIndex{ 0 }; slotIndex < fighter.skel.slots.size; ++slotIndex)
+            {
+                Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
-			Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
+                Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
 
-            AtlasRegion* region = &currentSlot->regionAttachment.region_image;
-            Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };
+                AtlasRegion* region = &currentSlot->regionAttachment.region_image;
+                Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };
 
-            v2f worldPosOfImage = WorldTransform_Bone(currentSlot->regionAttachment.parentBoneLocalPos, *currentSlot->bone);
-            f32 worldRotationOfBone = WorldRotation_Bone(*currentSlot->bone);
-            f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + worldRotationOfBone;
+                v2f worldPosOfImage = WorldTransform_Bone(currentSlot->regionAttachment.parentBoneLocalPos, *currentSlot->bone);
+                f32 worldRotationOfBone = WorldRotation_Bone(*currentSlot->bone);
+                f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + worldRotationOfBone;
 
-            PushTexture(global_renderingInfo, region->page->rendererObject, v2f{ currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, fighter.world.scale, uvs2, region->name);
+                PushTexture(global_renderingInfo, region->page->rendererObject, v2f{ currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, fighter.world.scale, uvs2, region->name);
+            };
         };
-    };
 
-    DrawFighter(*player);
-    DrawFighter(*enemy);
+        //Push background
+        Array<v2f, 2> uvs = { v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f } };
+        PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{ stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f{ 1.0f, 1.0f }, uvs, "background");
+
+        //Push Fighters
+        DrawFighter(*player);
+        DrawFighter(*enemy);
+    };
 };

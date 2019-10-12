@@ -409,6 +409,11 @@ Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
     return transformedCoords;
 };
 
+Quadf ProjectionTransform_Ortho(Quadf cameraCoords)
+{
+
+};
+
 local_func
 auto _LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat) 
 {
