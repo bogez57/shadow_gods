@@ -21,10 +21,10 @@
 struct Camera2D
 {
     v2f lookAt{};
-    v2f viewCenter{};
-    v2f dilatePoint_inScreenDims{};
+    v2f viewCenter_pxls{};
+    v2f dilatePoint_inScreenDims_pxls{};
     f32 zoomFactor{};
-    v2f screenDimensions{};
+    v2f screenDimensions_pxls{};
 };
 
 struct Rectf
@@ -90,7 +90,7 @@ struct Image
     f32 aspectRatio{};
     i32 width_pxls{};
     i32 height_pxls{};
-    ui32 pitch{};
+    ui32 pitch_pxls{};
     f32 opacity {1.0f};
 };
 
@@ -136,7 +136,7 @@ struct RenderEntry_Texture
     Object_Transform world;
     ui8* colorData{nullptr};
     v2i size{};
-    ui32 pitch{};
+    ui32 pitch_pxls{};
     v2i targetRectSize{};
     Array<v2f, 2> uvBounds;
 };
@@ -185,10 +185,11 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels, v2f cameraLookAtCoords_meters, f32 pixelsPerMeter)
 {
     renderingInfo->pixelsPerMeter = pixelsPerMeter;
-    renderingInfo->camera.lookAt = cameraLookAtCoords_meters * pixelsPerMeter;
-    renderingInfo->camera.screenDimensions = screenDimensions_pixels;
-    renderingInfo->camera.viewCenter = screenDimensions_pixels / 2.0f;
-    renderingInfo->camera.dilatePoint_inScreenDims = renderingInfo->camera.viewCenter;
+    //renderingInfo->camera.lookAt = cameraLookAtCoords_meters * pixelsPerMeter;
+    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
+    renderingInfo->camera.screenDimensions_pxls = screenDimensions_pixels;
+    renderingInfo->camera.viewCenter_pxls = screenDimensions_pixels / 2.0f;
+    renderingInfo->camera.dilatePoint_inScreenDims_pxls = renderingInfo->camera.viewCenter;
     renderingInfo->camera.zoomFactor = 1.0f;
 };
 
@@ -197,10 +198,12 @@ void PushRect(Rendering_Info* renderingInfo, v2f worldPos, f32 rotation, v2f sca
     RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect);
 
     rectEntry->header.type = EntryType_Rect;
-    rectEntry->dimensions = {dimensions.width * renderingInfo->pixelsPerMeter, dimensions.height * renderingInfo->pixelsPerMeter};
+    //rectEntry->dimensions = {dimensions.width * renderingInfo->pixelsPerMeter, dimensions.height * renderingInfo->pixelsPerMeter};
+    rectEntry->dimensions = {dimensions.width, dimensions.height}; 
     rectEntry->color = color;
     rectEntry->world.rotation = rotation;
-    rectEntry->world.pos = worldPos * renderingInfo->pixelsPerMeter;
+    //rectEntry->world.pos = worldPos * renderingInfo->pixelsPerMeter;
+    rectEntry->world.pos = worldPos; 
     rectEntry->world.scale = scale;
  
     ++renderingInfo->cmdBuffer.entryCount;
@@ -210,20 +213,21 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_met
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
-    f32 desiredWidth_pixels = objectSize_meters.width * renderingInfo->pixelsPerMeter;
-    f32 desiredHeight_pixels = objectSize_meters.height * renderingInfo->pixelsPerMeter;
+    //f32 desiredWidth_pixels = objectSize_meters.width * renderingInfo->pixelsPerMeter;
+    //f32 desiredHeight_pixels = objectSize_meters.height * renderingInfo->pixelsPerMeter;
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->name = name;
     textureEntry->world.rotation = rotation;
-    textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter;
+    //textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter; 
+    textureEntry->world.pos = pos; 
     textureEntry->world.scale = scale;
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
-    textureEntry->pitch = bitmap.pitch;
+    textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     
-    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
+    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(objectSize_meters.width), RoundFloat32ToInt32(objectSize_meters.height)};
 
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -234,34 +238,40 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
 
-    f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * renderingInfo->pixelsPerMeter;
-    f32 desiredHeight_pixels = objectHeight_meters * renderingInfo->pixelsPerMeter;
+    //f32 desiredWidth_pixels = bitmap.aspectRatio* objectHeight_meters * renderingInfo->pixelsPerMeter;
+    //f32 desiredHeight_pixels = objectHeight_meters * renderingInfo->pixelsPerMeter;
+    f32 desiredWidth = bitmap.aspectRatio* objectHeight_meters;
+    f32 desiredHeight = objectHeight_meters; 
 
     textureEntry->header.type = EntryType_Texture;
     textureEntry->name = name;
     textureEntry->world.rotation = rotation;
-    textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter;
+    //textureEntry->world.pos = pos * renderingInfo->pixelsPerMeter;
+    textureEntry->world.pos = pos;
     textureEntry->world.scale = scale;
     textureEntry->colorData = bitmap.data;
     textureEntry->size = v2i{(i32)bitmap.width_pxls, (i32)bitmap.height_pxls};
-    textureEntry->pitch = bitmap.pitch;
+    textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     
-    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth_pixels), RoundFloat32ToInt32(desiredHeight_pixels)};
+    textureEntry->targetRectSize= v2i{RoundFloat32ToInt32(desiredWidth), RoundFloat32ToInt32(desiredHeight)};
 
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint_inScreenDims)
 {
-    renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
+    //renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
+    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
-    renderingInfo->camera.dilatePoint_inScreenDims = dilatePoint_inScreenDims * renderingInfo->pixelsPerMeter;
+    //renderingInfo->camera.dilatePoint_inScreenDims = dilatePoint_inScreenDims * renderingInfo->pixelsPerMeter;
+    renderingInfo->camera.dilatePoint_inScreenDims = dilatePoint_inScreenDims;
 };
 
 void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
 {
-    renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
+    //renderingInfo->camera.lookAt = renderingInfo->pixelsPerMeter * cameraLookAtCoords_meters;
+    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
 };
 
