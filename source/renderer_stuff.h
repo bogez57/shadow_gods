@@ -427,8 +427,6 @@ Quadf ProjectionTransform_Ortho(Quadf cameraCoords)
     for(i32 vertIndex{}; vertIndex < 4; vertIndex++) 
     {
         cameraCoords.vertices[vertIndex] *= 100.0f;
-        cameraCoords.vertices[vertIndex].x = Floor(cameraCoords.vertices[vertIndex].x + .5f);
-        cameraCoords.vertices[vertIndex].y = Floor(cameraCoords.vertices[vertIndex].y + .5f);
     };
 
     return cameraCoords;
