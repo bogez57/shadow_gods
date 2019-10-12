@@ -327,11 +327,11 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
                 BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
 
                 //Gather 4 texels (in a square pattern) from certain texel Ptr
-                ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelCoords_y.m256_f32[index]*image.pitch) + ((ui32)texelCoords_x.m256_f32[index]*sizeof(ui32));//size of pixel
+                ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelCoords_y.m256_f32[index]*image.pitch_pxls) + ((ui32)texelCoords_x.m256_f32[index]*sizeof(ui32));//size of pixel
                 sampleTexelAs.m256i_u32[index] = *(ui32*)(texelPtr);
                 sampleTexelBs.m256i_u32[index] = *(ui32*)(texelPtr + sizeof(ui32));
-                sampleTexelCs.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch);
-                sampleTexelDs.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
+                sampleTexelCs.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch_pxls);
+                sampleTexelDs.m256i_u32[index] = *(ui32*)(texelPtr + image.pitch_pxls + sizeof(ui32));
             };
 
 #if __AVX2__
@@ -618,13 +618,13 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (i32)image.size.width), "x coord is out of range!: %f", texelPos_x);
                 BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (i32)image.size.height), "x coord is out of range!: %f", texelPos_y);
 
-                    ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
+                    ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelPos_y*image.pitch_pxls) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
 
                     v4ui32 texelSquare {}; 
                     texelSquare.x = *(ui32*)(texelPtr);
                     texelSquare.y = *(ui32*)(texelPtr + sizeof(ui32));
-                    texelSquare.z = *(ui32*)(texelPtr + image.pitch);
-                    texelSquare.w = *(ui32*)(texelPtr + image.pitch + sizeof(ui32));
+                    texelSquare.z = *(ui32*)(texelPtr + image.pitch_pxls);
+                    texelSquare.w = *(ui32*)(texelPtr + image.pitch_pxls + sizeof(ui32));
 
                     //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
                     v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
@@ -637,10 +637,10 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                     b shadePixel{false};
                     if(normalMap.data)
                     {
-                        ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPos_y*image.pitch) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
+                        ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPos_y*image.pitch_pxls) + ((ui32)texelPos_x*sizeof(ui32));//size of pixel
 
                         //Grab 4 normals (in a square pattern) to blend
-                        v4ui32 normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch);
+                        v4ui32 normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, normalMap.pitch_pxls);
 
                         v4f blendedNormal = BiLinearLerp(normalSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
 
@@ -778,8 +778,9 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
                 Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+                Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera);
 
-                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
@@ -794,8 +795,9 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
                 Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
                 Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
+                Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera);
 
-                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
+                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_projection, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
             }break;
 

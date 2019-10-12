@@ -21,10 +21,11 @@
 struct Camera2D
 {
     v2f lookAt{};
-    v2f viewCenter_pxls{};
-    v2f dilatePoint_inScreenDims_pxls{};
+    v2f viewCenter{};
+    v2f dilatePoint_inScreenDims{};
     f32 zoomFactor{};
     v2f screenDimensions_pxls{};
+    v2f screenDimensions_meters{};
 };
 
 struct Rectf
@@ -160,6 +161,7 @@ void ConvertToCorrectPositiveRadian(f32&& angle);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
+Quadf ProjectionTransform_Ortho(Quadf cameraCoords);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
@@ -188,8 +190,9 @@ void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels,
     //renderingInfo->camera.lookAt = cameraLookAtCoords_meters * pixelsPerMeter;
     renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.screenDimensions_pxls = screenDimensions_pixels;
-    renderingInfo->camera.viewCenter_pxls = screenDimensions_pixels / 2.0f;
-    renderingInfo->camera.dilatePoint_inScreenDims_pxls = renderingInfo->camera.viewCenter;
+    renderingInfo->camera.screenDimensions_meters = renderingInfo->camera.screenDimensions_pxls / renderingInfo->pixelsPerMeter;
+    renderingInfo->camera.viewCenter = renderingInfo->camera.screenDimensions_meters / 2.0f;
+    renderingInfo->camera.dilatePoint_inScreenDims = renderingInfo->camera.viewCenter;
     renderingInfo->camera.zoomFactor = 1.0f;
 };
 
@@ -318,14 +321,14 @@ Image LoadBitmap_BGRA(const char* fileName)
     };
 
     result.aspectRatio = (f32)result.width_pxls/(f32)result.height_pxls;
-    result.pitch = (ui32)result.width_pxls * BYTES_PER_PIXEL;
+    result.pitch_pxls = (ui32)result.width_pxls * BYTES_PER_PIXEL;
 
     return result;
 };
 
 v2f viewPortDimensions_Meters(Rendering_Info* renderingInfo)
 {
-    return renderingInfo->camera.screenDimensions / renderingInfo->pixelsPerMeter;
+    return renderingInfo->camera.screenDimensions_pxls / renderingInfo->pixelsPerMeter;
 };
 
 #endif //GAME_RENDERER_STUFF_IMPL
@@ -421,7 +424,12 @@ Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
 
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords)
 {
+    for(i32 vertIndex{}; vertIndex < 4; vertIndex++) 
+    {
+        cameraCoords.vertices[vertIndex] *= 100.0f;
+    };
 
+    return cameraCoords;
 };
 
 local_func
