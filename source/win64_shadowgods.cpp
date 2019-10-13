@@ -55,8 +55,8 @@
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_context.cpp>
 
-global_variable ui32 globalWindowWidth { 1280 };
-global_variable ui32 globalWindowHeight { 720 };
+global_variable ui32 globalWindowWidth { 1920 };
+global_variable ui32 globalWindowHeight { 1080 };
 global_variable Win32::Offscreen_Buffer globalBackBuffer;
 global_variable Application_Memory GameMemory;
 global_variable bool GameRunning {};
@@ -684,8 +684,8 @@ namespace Win32
             PAINTSTRUCT Paint;
             HDC deviceContext = BeginPaint(WindowHandle, &Paint);
 #if 0
-            Win32::Window_Dimension dimension = GetWindowDimension(WindowHandle);
-            Win32::DisplayBufferInWindow(deviceContext, dimension.width, dimension.height);
+            Win32::Window_Dimension windowDimension = GetWindowDimension(WindowHandle);
+            Win32::DisplayBufferInWindow(deviceContext, windowDimension.width, windowDimension.height);
 #endif
             EndPaint(WindowHandle, &Paint);
         }break;
@@ -916,6 +916,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 renderingInfo.cmdBuffer.size = Megabytes(10);
                 renderingInfo.cmdBuffer.entryCount = 0;
                 renderingInfo.cmdBuffer.usedAmount = 0;
+
+                renderingInfo._pixelsPerMeter = globalBackBuffer.height * .10f;
             }
 
             { //Init input recording and replay services
@@ -973,6 +975,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             while (GameRunning)
             {
+                Win32::Window_Dimension windowDimension = Win32::GetWindowDimension(window);
+                HDC deviceContext = GetDC(window);
+                Win32::ResizeDIBSection($(globalBackBuffer), windowDimension.width, windowDimension.height);
+                renderingInfo._pixelsPerMeter = globalBackBuffer.height * .10f;
+
                 //Hot reloading
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("w:/shadow_gods/build/gamecode.dll");
                 if (CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
@@ -1107,10 +1114,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     BGZ_CONSOLE("Missed our frame rate!!!\n");
                 }
 
-                Win32::Window_Dimension dimension = Win32::GetWindowDimension(window);
-                HDC deviceContext = GetDC(window);
-                Win32::ResizeDIBSection($(globalBackBuffer), dimension.width, dimension.height);
-                Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, dimension.width, dimension.height, platformServices);
+                Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, windowDimension.width, windowDimension.height, platformServices);
                 ReleaseDC(window, deviceContext);
 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();

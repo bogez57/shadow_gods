@@ -30,7 +30,7 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
     height{fighterHeight}
 {
     {//Translate pixels to meters (since spine exports everything in pixel units)
-        f32 pixelsPerMeter{100.0f};
+        f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
 
         this->skel.width /= pixelsPerMeter;
         this->skel.height /= pixelsPerMeter;

@@ -763,7 +763,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
 
-    f32 pixelsPerMeter = (f32)work->colorBufferSize.y * .10f;
+    f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
     v2f screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
 

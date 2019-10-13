@@ -81,6 +81,7 @@ struct Rendering_Info
 {
     Game_Render_Cmd_Buffer cmdBuffer;
     Camera2D camera;
+    f32 _pixelsPerMeter{};
 };
 
 struct Image
