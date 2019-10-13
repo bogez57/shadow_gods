@@ -1109,6 +1109,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 Win32::Window_Dimension dimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
+                Win32::ResizeDIBSection($(globalBackBuffer), dimension.width, dimension.height);
                 Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, dimension.width, dimension.height, platformServices);
                 ReleaseDC(window, deviceContext);
 
