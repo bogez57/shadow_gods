@@ -23,6 +23,7 @@ struct Camera2D
     v2f lookAt{};
     v2f viewCenter{};
     v2f dilatePoint_inScreenCoords{};
+    v2f dilatePointOffset_normalized{};
     f32 zoomFactor{};
     v2f screenDimensions_meters{};
 };
@@ -249,11 +250,14 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint_inScreenCoords)
+void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f normalizedDilatePointOffset)
 {
+    BGZ_ASSERT(normalizedDilatePointOffset.x >= 0.0f && normalizedDilatePointOffset.x <= 1.0f 
+               && normalizedDilatePointOffset.y >= 0.0f && normalizedDilatePointOffset.y <= 1.0f, "Dilate point is not normalized!");
+
     renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
-    renderingInfo->camera.dilatePoint_inScreenCoords = dilatePoint_inScreenCoords;
+    renderingInfo->camera.dilatePointOffset_normalized = normalizedDilatePointOffset;
 };
 
 void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
@@ -308,13 +312,6 @@ Image LoadBitmap_BGRA(const char* fileName)
     result.pitch_pxls = (ui32)result.width_pxls * BYTES_PER_PIXEL;
 
     return result;
-};
-
-v2f viewPortDimensions_Meters(Rendering_Info* renderingInfo)
-{
-    //TODO: Remove!!!
-    v2f screenDims_pxls = {1280.0f, 720.0f};
-    return screenDims_pxls / renderingInfo->pixelsPerMeter;
 };
 
 #endif //GAME_RENDERER_STUFF_IMPL

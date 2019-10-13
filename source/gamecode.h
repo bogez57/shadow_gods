@@ -11,6 +11,7 @@ struct Game_Camera
 {
     v2f lookAt{};
     v2f dilatePoint_inScreenCoords{};
+    v2f dilatePointOffset_normalized{};
     f32 zoomFactor{};
 };
 

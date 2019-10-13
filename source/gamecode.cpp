@@ -332,8 +332,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         InitRenderStuff(global_renderingInfo, /*screen dims*/ v2f{ 1280.0f, 720.0f }, /*pixelsPerMeter*/ 100.0f);
 
         //Camera Init
-        v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
-        stage->camera.dilatePoint_inScreenCoords = viewDims / 2.0f;
+        stage->camera.dilatePointOffset_normalized = {0.0f, 0.0f};
         stage->camera.lookAt = {20.0f, 4.0f};
         stage->camera.zoomFactor = 1.0f;
 
@@ -402,7 +401,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
     UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
-    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenCoords);
+    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
     {//Render 
         auto DrawFighter = [](Fighter fighter) -> void {
