@@ -763,8 +763,9 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
     v2f screenDims_pxls = {1280.0f, 720.0f};
-    camera->dilatePoint_inScreenCoords = (screenDims_pxls / 100.0f) / 2.0f;
-    camera->screenDimensions_meters = screenDims_pxls / 100.0f;
+    f32 pixelsPerMeter = screenDims_pxls.y * .10f;
+    camera->dilatePoint_inScreenCoords = (screenDims_pxls / pixelsPerMeter) / 2.0f;
+    camera->screenDimensions_meters = screenDims_pxls / pixelsPerMeter;
     camera->viewCenter = camera->screenDimensions_meters / 2.0f;
 
     for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
@@ -782,7 +783,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
                 Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
-                Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera);
+                Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
                 DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
@@ -799,7 +800,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
                 Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
                 Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
-                Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera);
+                Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera, pixelsPerMeter);
 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_projection, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
@@ -817,6 +818,11 @@ void DoRenderWork(void* data)
 
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
+    v2f screenDims_pxls = {1280.0f, 720.0f};
+    f32 pixelsPerMeter = screenDims_pxls.y * .10f;
+    camera->dilatePoint_inScreenCoords = (screenDims_pxls / pixelsPerMeter) / 2.0f;
+    camera->screenDimensions_meters = screenDims_pxls / pixelsPerMeter;
+    camera->viewCenter = camera->screenDimensions_meters / 2.0f;
 
     for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {
@@ -833,7 +839,7 @@ void DoRenderWork(void* data)
 
                 Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
-                Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera);
+                Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
                 DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
@@ -850,7 +856,7 @@ void DoRenderWork(void* data)
 
                 Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
                 Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
-                Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera);
+                Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera, pixelsPerMeter);
 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);

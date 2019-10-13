@@ -331,7 +331,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Camera Init
         stage->camera.dilatePointOffset_normalized = {0.0f, 0.0f};
-        stage->camera.lookAt = {20.0f, 4.0f};
+        stage->camera.lookAt = {20.0f, 7.0f};
         stage->camera.zoomFactor = 1.0f;
 
         //Init fighters

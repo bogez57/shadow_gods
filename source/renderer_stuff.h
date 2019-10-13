@@ -160,7 +160,7 @@ void ConvertToCorrectPositiveRadian(f32&& angle);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
-Quadf ProjectionTransform_Ortho(Quadf cameraCoords);
+Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
@@ -395,11 +395,11 @@ Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
     return transformedCoords;
 };
 
-Quadf ProjectionTransform_Ortho(Quadf cameraCoords)
+Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter)
 {
     for(i32 vertIndex{}; vertIndex < 4; vertIndex++) 
     {
-        cameraCoords.vertices[vertIndex] *= 100.0f;
+        cameraCoords.vertices[vertIndex] *= pixelsPerMeter;
     };
 
     return cameraCoords;
