@@ -764,6 +764,8 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
     Camera2D* camera = &work->renderingInfo.camera;
     v2f screenDims_pxls = {1280.0f, 720.0f};
     camera->dilatePoint_inScreenCoords = (screenDims_pxls / 100.0f) / 2.0f;
+    camera->screenDimensions_meters = screenDims_pxls / 100.0f;
+    camera->viewCenter = camera->screenDimensions_meters / 2.0f;
 
     for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {

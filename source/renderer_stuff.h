@@ -82,7 +82,6 @@ struct Rendering_Info
 {
     Game_Render_Cmd_Buffer cmdBuffer;
     Camera2D camera;
-    f32 pixelsPerMeter{};
 };
 
 struct Image
@@ -183,15 +182,6 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
     return memoryPointer;
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
-
-void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels, f32 pixelsPerMeter)
-{
-    renderingInfo->pixelsPerMeter = pixelsPerMeter;
-    renderingInfo->camera.screenDimensions_meters = screenDimensions_pixels / renderingInfo->pixelsPerMeter;
-    renderingInfo->camera.viewCenter = renderingInfo->camera.screenDimensions_meters / 2.0f;
-    renderingInfo->camera.dilatePoint_inScreenCoords = renderingInfo->camera.viewCenter;
-    renderingInfo->camera.zoomFactor = 1.0f;
-};
 
 void PushRect(Rendering_Info* renderingInfo, v2f worldPos, f32 rotation, v2f scale, v2f dimensions, v3f color)
 {

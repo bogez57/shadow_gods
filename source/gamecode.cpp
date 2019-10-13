@@ -329,8 +329,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
-        InitRenderStuff(global_renderingInfo, /*screen dims*/ v2f{ 1280.0f, 720.0f }, /*pixelsPerMeter*/ 100.0f);
-
         //Camera Init
         stage->camera.dilatePointOffset_normalized = {0.0f, 0.0f};
         stage->camera.lookAt = {20.0f, 4.0f};
