@@ -29,6 +29,53 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
     world{0.0f, worldPos, {1.0f, 1.0f}},
     height{fighterHeight}
 {
+    {//Translate pixels to meters (since spine exports everything in pixel units)
+        f32 pixelsPerMeter{100.0f};
+
+        this->skel.width /= pixelsPerMeter;
+        this->skel.height /= pixelsPerMeter;
+
+        for (i32 boneIndex{}; boneIndex < this->skel.bones.size; ++boneIndex)
+        {
+            this->skel.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
+            this->skel.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
+            this->skel.bones.At(boneIndex).originalParentLocalPos.x /= pixelsPerMeter;
+            this->skel.bones.At(boneIndex).originalParentLocalPos.y /= pixelsPerMeter;
+
+            this->skel.bones.At(boneIndex).transform.rotation = Radians(this->skel.bones.At(boneIndex).transform.rotation);
+            this->skel.bones.At(boneIndex).originalParentLocalRotation = Radians(this->skel.bones.At(boneIndex).originalParentLocalRotation);
+
+            this->skel.bones.At(boneIndex).length /= pixelsPerMeter; 
+        };
+
+        for (i32 slotI{}; slotI < this->skel.slots.size; ++slotI)
+        {
+            this->skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
+            this->skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
+            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation = Radians(this->skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation);
+            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
+            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
+        };
+
+        for(i32 animIndex{}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
+        {
+            Animation anim = (Animation)this->animData.animations.keyInfos.At(animIndex).value;
+
+            if(anim.name)
+            {
+                for(i32 boneIndex{}; boneIndex < anim.bones.size; ++boneIndex)
+                {
+                    TranslationTimeline* boneTranslationTimeline = &anim.boneTranslationTimelines.At(boneIndex);
+                    for(i32 keyFrameIndex{}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
+                    {
+                        boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
+                        boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
+                    }
+                };
+            }
+        }
+    }
+
     f32 scaleFactor{};
     { //Change fighter height
         f32 aspectRatio = this->skel.height / this->skel.width;
@@ -57,6 +104,8 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
             this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y *= scaleFactor;
         };
     };
+
+    
 
     {//Adjust animations to new height standards
         //TODO: Very stupid, move out or change as I'm currently iterating over ALL keyInfos for which there are a lot in my current hashMap_Str class

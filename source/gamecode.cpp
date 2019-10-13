@@ -330,9 +330,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
         //Camera Init
-        stage->camera.dilatePointOffset_normalized = {0.0f, 0.0f};
+        stage->camera.dilatePointOffset_normalized = {-0.2f, -0.5f};
         stage->camera.lookAt = {20.0f, 7.0f};
-        stage->camera.zoomFactor = 1.0f;
+        stage->camera.zoomFactor = 1.5f;
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
@@ -369,7 +369,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyHeld(keyboard->MoveUp))
     {
-        stage->camera.zoomFactor += .02f;
+        stage->camera.zoomFactor += .06f;
     };
 
     if (KeyHeld(keyboard->MoveDown))

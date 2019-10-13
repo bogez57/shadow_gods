@@ -241,8 +241,8 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
 
 void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f normalizedDilatePointOffset)
 {
-    BGZ_ASSERT(normalizedDilatePointOffset.x >= 0.0f && normalizedDilatePointOffset.x <= 1.0f 
-               && normalizedDilatePointOffset.y >= 0.0f && normalizedDilatePointOffset.y <= 1.0f, "Dilate point is not normalized!");
+    BGZ_ASSERT(normalizedDilatePointOffset.x >= -1.0f && normalizedDilatePointOffset.x <= 1.0f 
+               && normalizedDilatePointOffset.y >= -1.0f && normalizedDilatePointOffset.y <= 1.0f, "Dilate point is not normalized!");
 
     renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;

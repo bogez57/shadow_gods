@@ -90,7 +90,6 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
 
 #ifdef SKELETON_IMPL
 
-void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton);
 Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID) :
         bones{memParitionID},
         slots{memParitionID}
@@ -216,8 +215,6 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
     };
 
     globalPlatformServices->Free((void*)skeletonJson);
-
-    _TranslateSkelPropertiesToGameUnits($(*this));
 };
 
 void ResetBonesToSetupPose(Skeleton&& skel)
@@ -245,36 +242,6 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
     BGZ_ASSERT(bone->name != nullptr, "Bone was not found!");
 
     return bone;
-};
-
-void _TranslateSkelPropertiesToGameUnits(Skeleton&& skeleton)
-{
-    f32 pixelsPerMeter{100.0f};//TODO: Remove the need for this???
-
-    skeleton.width /= pixelsPerMeter;
-    skeleton.height /= pixelsPerMeter;
-
-    for (i32 boneIndex{}; boneIndex < skeleton.bones.size; ++boneIndex)
-    {
-        skeleton.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).originalParentLocalPos.x /= pixelsPerMeter;
-        skeleton.bones.At(boneIndex).originalParentLocalPos.y /= pixelsPerMeter;
-
-        skeleton.bones.At(boneIndex).transform.rotation = Radians(skeleton.bones.At(boneIndex).transform.rotation);
-        skeleton.bones.At(boneIndex).originalParentLocalRotation = Radians(skeleton.bones.At(boneIndex).originalParentLocalRotation);
-
-        skeleton.bones.At(boneIndex).length /= pixelsPerMeter; 
-    };
-
-    for (i32 slotI{}; slotI < skeleton.slots.size; ++slotI)
-    {
-        skeleton.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
-        skeleton.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
-        skeleton.slots.At(slotI).regionAttachment.parentBoneLocalRotation = Radians(skeleton.slots.At(slotI).regionAttachment.parentBoneLocalRotation);
-        skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
-        skeleton.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
-    };
 };
 
 #endif //SKELETON_IMPL
