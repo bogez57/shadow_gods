@@ -150,7 +150,7 @@ v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 objectHeight_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, v2f objectSize_meters, f32 worldRotation, v2f worldPos, v2f worldScale, const char* name);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenCoords, f32 zoomFactor);
-void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
+void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
 
 
@@ -183,10 +183,9 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels, v2f cameraLookAtCoords_meters, f32 pixelsPerMeter)
+void InitRenderStuff(Rendering_Info* renderingInfo, v2f screenDimensions_pixels, f32 pixelsPerMeter)
 {
     renderingInfo->pixelsPerMeter = pixelsPerMeter;
-    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.screenDimensions_meters = screenDimensions_pixels / renderingInfo->pixelsPerMeter;
     renderingInfo->camera.viewCenter = renderingInfo->camera.screenDimensions_meters / 2.0f;
     renderingInfo->camera.dilatePoint_inScreenCoords = renderingInfo->camera.viewCenter;
@@ -250,20 +249,20 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint_inScreenCoords)
+void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f dilatePoint_inScreenCoords)
 {
     renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
     renderingInfo->camera.dilatePoint_inScreenCoords = dilatePoint_inScreenCoords;
 };
 
-void ChangeCameraSettings(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
+void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
 {
     renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
 };
 
-void ChangeCameraSettings(Rendering_Info* renderingInfo, f32 zoomFactor)
+void UpdateCamera(Rendering_Info* renderingInfo, f32 zoomFactor)
 {
     renderingInfo->camera.zoomFactor = zoomFactor;
 };

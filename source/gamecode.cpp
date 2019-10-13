@@ -329,12 +329,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
-        InitRenderStuff(global_renderingInfo, /*screen dims*/ v2f{ 1280.0f, 720.0f }, /*look at point*/ viewPortDimensions_Meters(global_renderingInfo) / 2.0f, /*pixelsPerMeter*/ 100.0f);
+        InitRenderStuff(global_renderingInfo, /*screen dims*/ v2f{ 1280.0f, 720.0f }, /*pixelsPerMeter*/ 100.0f);
 
         //Camera Init
         v2f viewDims = viewPortDimensions_Meters(global_renderingInfo);
-        stage->camera.lookAt = { stage->size.width / 2.0f, 4.0f };
         stage->camera.dilatePoint_inScreenCoords = viewDims / 2.0f;
+        stage->camera.lookAt = {20.0f, 4.0f};
         stage->camera.zoomFactor = 1.0f;
 
         //Init fighters
@@ -402,7 +402,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
     UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
-    ChangeCameraSettings(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenCoords);
+    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePoint_inScreenCoords);
 
     {//Render 
         auto DrawFighter = [](Fighter fighter) -> void {
