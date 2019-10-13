@@ -25,7 +25,6 @@ struct Camera2D
     v2f dilatePoint_inScreenCoords{};
     v2f dilatePointOffset_normalized{};
     f32 zoomFactor{};
-    v2f screenDimensions_meters{};
 };
 
 struct Rectf

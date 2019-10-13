@@ -762,11 +762,12 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
-    v2f screenDims_pxls = {1280.0f, 720.0f};
-    f32 pixelsPerMeter = screenDims_pxls.y * .10f;
-    camera->dilatePoint_inScreenCoords = (screenDims_pxls / pixelsPerMeter) / 2.0f;
-    camera->screenDimensions_meters = screenDims_pxls / pixelsPerMeter;
-    camera->viewCenter = camera->screenDimensions_meters / 2.0f;
+
+    f32 pixelsPerMeter = (f32)work->colorBufferSize.y * .10f;
+    camera->dilatePoint_inScreenCoords = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter) / 2.0f;
+
+    v2f screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
+    camera->viewCenter = screenDimensions_meters / 2.0f;
 
     for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {
@@ -818,11 +819,12 @@ void DoRenderWork(void* data)
 
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
-    v2f screenDims_pxls = {1280.0f, 720.0f};
-    f32 pixelsPerMeter = screenDims_pxls.y * .10f;
-    camera->dilatePoint_inScreenCoords = (screenDims_pxls / pixelsPerMeter) / 2.0f;
-    camera->screenDimensions_meters = screenDims_pxls / pixelsPerMeter;
-    camera->viewCenter = camera->screenDimensions_meters / 2.0f;
+
+    f32 pixelsPerMeter = (f32)work->colorBufferSize.y * .10f;
+    camera->dilatePoint_inScreenCoords = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter) / 2.0f;
+
+    v2f screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
+    camera->viewCenter = screenDimensions_meters / 2.0f;
 
     for(i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {

@@ -213,9 +213,22 @@ struct m2x2
     f32 Elem[2][2];
 };
 
+local_func
+v2f CastV2IToV2F(v2i vecToCast);
+
 #endif
 
 #ifdef ATOMIC_TYPES_IMPL
+
+v2f CastV2IToV2F(v2i vecToCast)
+{
+    v2f result{};
+
+    result.x = (f32)vecToCast.x;
+    result.y = (f32)vecToCast.y;
+
+    return result;
+}
 
 v2f::v2f(f32 x, f32 y)
     : x(x)
