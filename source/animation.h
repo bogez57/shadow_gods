@@ -376,7 +376,7 @@ i32 _CurrentActiveKeyFrame(RotationTimeline rotationTimelineOfBone, f32 currentA
         keyFrameTime0 = rotationTimelineOfBone.times.At(keyFrameCount - 1);
         keyFrameTime1 = rotationTimelineOfBone.times.At(keyFrameCount);
 
-        if (keyFrameTime0 < currentAnimRuntime && keyFrameTime1 > currentAnimRuntime )                        
+        if (keyFrameTime0 <= currentAnimRuntime && keyFrameTime1 >= currentAnimRuntime )                        
         {
             result = keyFrameCount - 1;
             keyFrameCount = 0;
@@ -405,7 +405,7 @@ i32 _CurrentActiveKeyFrame(TranslationTimeline translationTimelineOfBone, f32 cu
         keyFrameTime0 = translationTimelineOfBone.times.At(keyFrameCount - 1);
         keyFrameTime1 = translationTimelineOfBone.times.At(keyFrameCount);
 
-        if (keyFrameTime0 < currentAnimRuntime && keyFrameTime1 > currentAnimRuntime )                        
+        if (keyFrameTime0 <= currentAnimRuntime && keyFrameTime1 > currentAnimRuntime )                        
         {
             result = keyFrameCount - 1;
             keyFrameCount = 0;
@@ -674,7 +674,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.exists)
                 {
-                    if(StringCmp(bone->name, "front-upper-arm"))
+                    if(StringCmp(bone->name, "right-shin"))
                         int x{3};
 
                     RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(rotationTimelineOfBone, anim->currentTime);

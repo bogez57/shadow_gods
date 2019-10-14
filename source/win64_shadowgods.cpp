@@ -55,8 +55,8 @@
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_context.cpp>
 
-global_variable ui32 globalWindowWidth { 1920 };
-global_variable ui32 globalWindowHeight { 1080 };
+global_variable ui32 globalWindowWidth { 1280 };
+global_variable ui32 globalWindowHeight { 720 };
 global_variable Win32::Offscreen_Buffer globalBackBuffer;
 global_variable Application_Memory GameMemory;
 global_variable bool GameRunning {};
