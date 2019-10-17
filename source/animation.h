@@ -39,11 +39,18 @@
 
 */
 
+enum class CurveType
+{
+    LINEAR,
+    STEPPED
+};
+
 struct RotationTimeline
 {
     b exists{false};
     Dynam_Array<f32> times{heap};
     Dynam_Array<f32> angles{heap};
+    Dynam_Array<CurveType> curves{heap};
 };
 
 struct TranslationTimeline
@@ -51,12 +58,7 @@ struct TranslationTimeline
     b exists{false};
     Dynam_Array<f32> times{heap};
     Dynam_Array<v2f> translations{heap};
-};
-
-enum class CurveType
-{
-    LINEAR,
-    STEPPED
+    Dynam_Array<CurveType> curves{heap};
 };
 
 enum class PlayBackStatus
@@ -179,11 +181,12 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                 {
                     PushBack($(boneRotationTimeline->times), Json_getFloat(jsonKeyFrame, "time", 0.0f));
                     PushBack($(boneRotationTimeline->angles), Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f)));
-                    /*
-                    const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
+
+                    const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", ""); 
                     if(StringCmp(keyFrameCurve, "stepped"))
-                        keyFrame.curve = CurveType::STEPPED;
-                    */
+                        PushBack($(boneRotationTimeline->curves), CurveType::STEPPED);
+                    else
+                        PushBack($(boneRotationTimeline->curves), CurveType::LINEAR);
                 };
 
                 f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->times.size - 1);
@@ -205,6 +208,12 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
 
                     boneTranslationTimeline->translations.At(keyFrameIndex).x = Json_getFloat(jsonKeyFrame, "x", 0.0f); 
                     boneTranslationTimeline->translations.At(keyFrameIndex).y = Json_getFloat(jsonKeyFrame, "y", 0.0f);
+
+                    const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", ""); 
+                    if(StringCmp(keyFrameCurve, "stepped"))
+                        PushBack($(boneTranslationTimeline->curves), CurveType::STEPPED);
+                    else
+                        PushBack($(boneTranslationTimeline->curves), CurveType::LINEAR);
                 };
 
                 f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times.At(boneTranslationTimeline->times.size - 1);
@@ -431,28 +440,46 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(TranslationTimeline tra
 
     TranslationRangeResult result{};
 
-    i32 firstKeyFrame{0};
+    i32 firstKeyFrame{0}, lastKeyFrame{(i32)translationTimelineOfBone.times.size - 1};
     if(translationTimelineOfBone.times.size == 1)
     {
         if(currentAnimRunTime > translationTimelineOfBone.times.At(firstKeyFrame))
         {
             result.translation0 = translationTimelineOfBone.translations.At(firstKeyFrame);
-            result.translation1 = translationTimelineOfBone.translations.At(firstKeyFrame);
+            result.translation1 = result.translation0;
             result.percentToLerp = 1.0f;
         };
     }
-    else if(currentAnimRunTime > translationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < translationTimelineOfBone.times.At(translationTimelineOfBone.times.size - 1))
+    else if(currentAnimRunTime > translationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < translationTimelineOfBone.times.At(lastKeyFrame))
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
-        result.translation0 = translationTimelineOfBone.translations.At(activeKeyFrameIndex);
-        result.translation1 = translationTimelineOfBone.translations.At(activeKeyFrameIndex + 1);
+        BGZ_ASSERT(activeKeyFrameIndex != lastKeyFrame, "Should never be returning the last keyframe of timeline here!");
 
-        f32 time0 = translationTimelineOfBone.times.At(activeKeyFrameIndex);
-        f32 time1 = translationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
+        switch(translationTimelineOfBone.curves.At(activeKeyFrameIndex))
+        {
+            case CurveType::STEPPED : 
+            {
+                result.translation0 = translationTimelineOfBone.translations.At(activeKeyFrameIndex);
+                result.translation1 = translationTimelineOfBone.translations.At(activeKeyFrameIndex + 1);
 
-        f32 diff0 = time1 - time0;
-        f32 diff1 = currentAnimRunTime - time0;
-        result.percentToLerp = diff1 / diff0;
+                result.percentToLerp = 0.0f;
+            }break;
+
+            case CurveType::LINEAR :
+            {
+                result.translation0 = translationTimelineOfBone.translations.At(activeKeyFrameIndex);
+                result.translation1 = translationTimelineOfBone.translations.At(activeKeyFrameIndex + 1);
+
+                f32 time0 = translationTimelineOfBone.times.At(activeKeyFrameIndex);
+                f32 time1 = translationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
+
+                f32 diff0 = time1 - time0;
+                f32 diff1 = currentAnimRunTime - time0;
+                result.percentToLerp = diff1 / diff0;
+            }break;
+
+            InvalidDefaultCase;
+        }
     }
 
     return result;
@@ -499,7 +526,7 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(RotationTimeline rotationTime
         if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame))
         {
             result.angle0 = rotationTimelineOfBone.angles.At(firstKeyFrame);
-            result.angle1 = rotationTimelineOfBone.angles.At(firstKeyFrame);
+            result.angle1 = result.angle0;
             result.percentToLerp = 1.0f;
         };
     }
