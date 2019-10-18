@@ -520,7 +520,7 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(RotationTimeline rotationTime
 
     RotationRangeResult result{};
 
-    i32 firstKeyFrame{0};
+    i32 firstKeyFrame{0}, lastKeyFrame{(i32)rotationTimelineOfBone.times.size - 1};
     if(rotationTimelineOfBone.times.size == 1)
     {
         if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame))
@@ -530,18 +530,37 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(RotationTimeline rotationTime
             result.percentToLerp = 1.0f;
         };
     }
-    else if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < rotationTimelineOfBone.times.At(rotationTimelineOfBone.times.size - 1))
+    //TODO: How to ensure last key frame of certain timeline executes? Right now if the current anim time goes over last keyframe's time then the last key frame's properites won't be applied to bone 
+    else if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < rotationTimelineOfBone.times.At(lastKeyFrame))
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(rotationTimelineOfBone, currentAnimRunTime);
-        result.angle0 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex);
-        result.angle1 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex + 1);
+        BGZ_ASSERT(activeKeyFrameIndex != lastKeyFrame, "Should never be returning the last keyframe of timeline here!");
 
-        f32 time0 = rotationTimelineOfBone.times.At(activeKeyFrameIndex);
-        f32 time1 = rotationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
+        switch(rotationTimelineOfBone.curves.At(activeKeyFrameIndex))
+        {
+            case CurveType::STEPPED : 
+            {
+                result.angle0 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex);
+                result.angle1 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex + 1);
 
-        f32 diff0 = time1 - time0;
-        f32 diff1 = currentAnimRunTime - time0;
-        result.percentToLerp = diff1 / diff0;
+                result.percentToLerp = 0.0f;
+            }break;
+
+            case CurveType::LINEAR :
+            {
+                result.angle0 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex);
+                result.angle1 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex + 1);
+
+                f32 time0 = rotationTimelineOfBone.times.At(activeKeyFrameIndex);
+                f32 time1 = rotationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
+
+                f32 diff0 = time1 - time0;
+                f32 diff1 = currentAnimRunTime - time0;
+                result.percentToLerp = diff1 / diff0;
+            }break;
+
+            InvalidDefaultCase;
+        }
     }
 
     return result;
@@ -649,6 +668,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             }
             else if (anim->currentTime > 0.0f)
             {
+                if(StringCmp(bone->name, "right-shoulder"))
+                    int x{};
+
                 if(translationTimelineOfBone.exists)
                 {
                     TranslationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(translationTimelineOfBone, anim->currentTime);
