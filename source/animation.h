@@ -481,6 +481,12 @@ TranslationRangeResult _GetTranslationRangeFromKeyFrames(TranslationTimeline tra
             InvalidDefaultCase;
         }
     }
+    else if(currentAnimRunTime > translationTimelineOfBone.times.At(lastKeyFrame))
+    {
+        result.translation0 = translationTimelineOfBone.translations.At(lastKeyFrame);
+        result.translation1 = result.translation0;
+        result.percentToLerp = 1.0f;
+    }
 
     return result;
 };
