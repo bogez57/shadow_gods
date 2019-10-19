@@ -495,11 +495,11 @@ TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(
 };
 
 template<typename transformationType>
-TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(Animation* anim, TranslationTimeline boneTranslationTimeline_originalAnim, TranslationTimeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
+TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(Animation* anim, TranslationTimeline boneTranslationTimeline_originalAnim, TranslationTimeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex, transformationType initialTransformForMixing)
 {
     TransformationRangeResult<v2f> result{};
 
-    result.transformation0 = anim->bones.At(boneIndex)->initialTranslationForMixing;
+    result.transformation0 = initialTransformForMixing;
 
     if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists && boneTranslationTimeline_nextAnim.times.At(0) > 0.0f)
         result.transformation1 = v2f{0.0f, 0.0f};
@@ -577,11 +577,11 @@ TransformationRangeResult<transformationType> _GetRotationRangeFromKeyFrames(Rot
 };
 
 template<typename transformationRangeType>
-TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrames(Animation* anim, RotationTimeline boneRotationTimeline_originalAnim, RotationTimeline boneRotationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex)
+TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrames(Animation* anim, RotationTimeline boneRotationTimeline_originalAnim, RotationTimeline boneRotationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex, transformationRangeType initialTransformForMixing)
 {
     TransformationRangeResult<transformationRangeType> result{};
 
-    result.transformation0 = anim->bones.At(boneIndex)->initialRotationForMixing;
+    result.transformation0 = initialTransformForMixing;
 
     if(boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists && boneRotationTimeline_nextAnim.times.At(0) > 0.0f)
         result.transformation1 = 0.0f;
@@ -674,7 +674,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(nextAnimInQueue)
                     nextAnimTranslationTimeline = nextAnimInQueue->boneTranslationTimelines.At(boneIndex);
 
-                TransformationRangeResult<v2f> translationRange = _GetTranslationRangeFromKeyFrames<v2f>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
+                TransformationRangeResult<v2f> translationRange = _GetTranslationRangeFromKeyFrames<v2f>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex, anim->bones.At(boneIndex)->initialTranslationForMixing);
                 amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
             }
             else if (anim->currentTime > 0.0f)
@@ -699,7 +699,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(nextAnimInQueue)
                     nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines.At(boneIndex);
 
-                TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex);
+                TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex, anim->bones.At(boneIndex)->initialRotationForMixing);
 
                 v2f boneVector_frame0 = { bone->length * CosR(rotationRange.transformation0), bone->length * SinR(rotationRange.transformation0) };
                 v2f boneVector_frame1 = { bone->length * CosR(rotationRange.transformation1), bone->length * SinR(rotationRange.transformation1) };
