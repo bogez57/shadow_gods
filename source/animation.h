@@ -530,7 +530,6 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(RotationTimeline rotationTime
             result.percentToLerp = 1.0f;
         };
     }
-    //TODO: How to ensure last key frame of certain timeline executes? Right now if the current anim time goes over last keyframe's time then the last key frame's properites won't be applied to bone 
     else if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < rotationTimelineOfBone.times.At(lastKeyFrame))
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(rotationTimelineOfBone, currentAnimRunTime);
@@ -561,6 +560,12 @@ RotationRangeResult _GetRotationRangeFromKeyFrames(RotationTimeline rotationTime
 
             InvalidDefaultCase;
         }
+    }
+    else if(currentAnimRunTime > rotationTimelineOfBone.times.At(lastKeyFrame))
+    {
+        result.angle0 = rotationTimelineOfBone.angles.At(lastKeyFrame);
+        result.angle1 = result.angle0;
+        result.percentToLerp = 1.0f;
     }
 
     return result;
