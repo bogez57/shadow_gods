@@ -180,7 +180,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
                     PushBack($(boneRotationTimeline->times), Json_getFloat(jsonKeyFrame, "time", 0.0f));
-                    PushBack($(boneRotationTimeline->angles), Radians(Json_getFloat(jsonKeyFrame, "angle", 0.0f)));
+                    PushBack($(boneRotationTimeline->angles), Json_getFloat(jsonKeyFrame, "angle", 0.0f));
 
                     const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", ""); 
                     if(StringCmp(keyFrameCurve, "stepped"))
@@ -728,7 +728,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.exists)
                 {
-                    if(StringCmp(bone->name, "right-shin"))
+                    if(StringCmp(bone->name, "right-shoulder"))
                         int x{3};
 
                     RotationRangeResult rotationRange = _GetRotationRangeFromKeyFrames(rotationTimelineOfBone, anim->currentTime);

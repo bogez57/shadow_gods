@@ -3,6 +3,7 @@
 
 #include "skeleton.h"
 #include "animation.h"
+#include "my_math.h"
 
 struct Fighter
 {
@@ -29,7 +30,7 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
     world{0.0f, worldPos, {1.0f, 1.0f}},
     height{fighterHeight}
 {
-    {//Translate pixels to meters (since spine exports everything in pixel units)
+    {//Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
 
         this->skel.width /= pixelsPerMeter;
@@ -70,6 +71,12 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
                     {
                         boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
                         boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
+                    }
+
+                    RotationTimeline* boneRotationTimeline = &anim.boneRotationTimelines.At(boneIndex);
+                    for(i32 keyFrameIndex{}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
+                    {
+                        boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
                     }
                 };
             }
