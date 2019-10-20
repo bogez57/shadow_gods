@@ -357,11 +357,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         QueueAnimation($(player->animQueue), player->animData, "walk", PlayBackStatus::NEXT);
     };
 
-    if(KeyReleased(keyboard->MoveLeft))
-    {
-        player->animQueue.queuedAnimations.Reset();
-    }
-
     if (KeyHeld(keyboard->MoveLeft))
     {
         //player->world.translation.x -= .1f;
@@ -388,7 +383,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "test", PlayBackStatus::IMMEDIATE);
+        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::IMMEDIATE);
     };
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);

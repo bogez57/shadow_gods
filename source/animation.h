@@ -610,23 +610,24 @@ TransformationRangeResult<transformationType> _GetRotationRangeFromKeyFramesR(Ro
 };
 
 template<typename transformationRangeType, typename TransformTimelineType>
-TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrames(Animation* anim, TransformTimelineType boneRotationTimeline_originalAnim, TransformTimelineType boneRotationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex, transformationRangeType initialTransformForMixing)
+TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrames(Animation* anim, TransformTimelineType boneRotationTimeline_originalAnim, TransformTimelineType boneRotationTimeline_nextAnim, f32 currentAnimRunTime, transformationRangeType initialTransformForMixing, transformationRangeType defaultZeroValue)
 {
-    TransformationRangeResult<f32> result{};
+    TransformationRangeResult<transformationRangeType> result{};
 
     result.transformation0 = initialTransformForMixing;
+    result.transformation1 = defaultZeroValue;
 
-    if(boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists && boneRotationTimeline_nextAnim.times.At(0) > 0.0f)
-        result.transformation1 = 0.0f;
+    if((boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists && boneRotationTimeline_nextAnim.times.At(0) > 0.0f) ||
+       (boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists))
+    {
+        //Leave transformation1 at default 0 value
+    }
 
-    else if(boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists)
+    else if((boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists) ||
+            (boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists))
+    {
         result.transformation1 = boneRotationTimeline_nextAnim.GetMember(boneRotationTimeline_nextAnim, 0);
-
-    else if(boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists)
-        result.transformation1 = 0.0f;
-
-    else if (NOT boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists)
-        result.transformation1 = boneRotationTimeline_nextAnim.GetMember(boneRotationTimeline_nextAnim, 0);
+    }
 
     result.percentToLerp = anim->currentMixTime / anim->initialTimeLeftInAnimAtMixingStart;
 
@@ -732,7 +733,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(nextAnimInQueue)
                     nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines.At(boneIndex);
 
-                TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex, anim->bones.At(boneIndex)->initialRotationForMixing);
+                TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialRotationForMixing, 0.0f);
 
                 v2f boneVector_frame0 = { bone->length * CosR(rotationRange.transformation0), bone->length * SinR(rotationRange.transformation0) };
                 v2f boneVector_frame1 = { bone->length * CosR(rotationRange.transformation1), bone->length * SinR(rotationRange.transformation1) };
