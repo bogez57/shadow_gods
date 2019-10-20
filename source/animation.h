@@ -45,20 +45,8 @@ enum class CurveType
     STEPPED
 };
 
-enum class TimelineType
-{
-    ROTATION,
-    TRANSLATION 
-};
-
-struct TimelineHeader
-{
-    TimelineType type;
-};
-
 struct RotationTimeline
 {
-    TimelineHeader info;
     f32 (*GetTransformationVal)(RotationTimeline, i32);
     b exists{false};
     Dynam_Array<f32> times{heap};
@@ -68,7 +56,6 @@ struct RotationTimeline
 
 struct TranslationTimeline
 {
-    TimelineHeader info;
     v2f (*GetTransformationVal)(TranslationTimeline, i32);
     b exists{false};
     Dynam_Array<f32> times{heap};
@@ -199,7 +186,6 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             if (rotateTimeline_json)
             {
                 RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
-                boneRotationTimeline->info.type = TimelineType::ROTATION;
                 boneRotationTimeline->exists = true;
                 boneRotationTimeline->GetTransformationVal = &GetTransformationVal_RotationTimeline;
 
@@ -225,7 +211,6 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             if (translateTimeline_json)
             {
                 TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
-                boneTranslationTimeline->info.type = TimelineType::ROTATION;
                 boneTranslationTimeline->exists = true;
                 boneTranslationTimeline->GetTransformationVal = &GetTransformationVal_TranslationTimeline;
 
