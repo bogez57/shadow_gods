@@ -528,31 +528,7 @@ TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(
 };
 
 template<typename transformationType>
-TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(Animation* anim, TranslationTimeline boneTranslationTimeline_originalAnim, TranslationTimeline boneTranslationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex, transformationType initialTransformForMixing)
-{
-    TransformationRangeResult<v2f> result{};
-
-    result.transformation0 = initialTransformForMixing;
-
-    if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists && boneTranslationTimeline_nextAnim.times.At(0) > 0.0f)
-        result.transformation1 = v2f{0.0f, 0.0f};
-
-    else if(boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
-        result.transformation1 = boneTranslationTimeline_nextAnim.translations.At(0);
-
-    else if(boneTranslationTimeline_originalAnim.exists && NOT boneTranslationTimeline_nextAnim.exists)
-        result.transformation1 = v2f{0.0f, 0.0f};
-
-    else if (NOT boneTranslationTimeline_originalAnim.exists && boneTranslationTimeline_nextAnim.exists)
-        result.transformation1 = boneTranslationTimeline_nextAnim.translations.At(0);
-
-    result.percentToLerp = anim->currentMixTime / anim->initialTimeLeftInAnimAtMixingStart;
-
-    return result;
-};
-
-template<typename transformationType>
-TransformationRangeResult<transformationType> _GetRotationRangeFromKeyFramesR(RotationTimeline rotationTimelineOfBone, f32 currentAnimRunTime)
+TransformationRangeResult<transformationType> _GetTransformationRangeFromKeyFramesR(RotationTimeline rotationTimelineOfBone, f32 currentAnimRunTime)
 {
     BGZ_ASSERT(rotationTimelineOfBone.times.size != 0, "Can't get rotation range from timeline w/ no keyframes!");
 
@@ -610,7 +586,7 @@ TransformationRangeResult<transformationType> _GetRotationRangeFromKeyFramesR(Ro
 };
 
 template<typename transformationRangeType, typename TransformTimelineType>
-TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrames(Animation* anim, TransformTimelineType boneRotationTimeline_originalAnim, TransformTimelineType boneRotationTimeline_nextAnim, f32 currentAnimRunTime, transformationRangeType initialTransformForMixing, transformationRangeType defaultZeroValue)
+TransformationRangeResult<transformationRangeType> _GetTransformationRangeFromKeyFrames(Animation* anim, TransformTimelineType boneRotationTimeline_originalAnim, TransformTimelineType boneRotationTimeline_nextAnim, f32 currentAnimRunTime, transformationRangeType initialTransformForMixing, transformationRangeType defaultZeroValue)
 {
     TransformationRangeResult<transformationRangeType> result{};
 
@@ -708,7 +684,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(nextAnimInQueue)
                     nextAnimTranslationTimeline = nextAnimInQueue->boneTranslationTimelines.At(boneIndex);
 
-                TransformationRangeResult<v2f> translationRange = _GetTranslationRangeFromKeyFrames<v2f>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex, anim->bones.At(boneIndex)->initialTranslationForMixing);
+                TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialTranslationForMixing, {0.0f, 0.0f});
                 amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
             }
             else if (anim->currentTime > 0.0f)
@@ -733,7 +709,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(nextAnimInQueue)
                     nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines.At(boneIndex);
 
-                TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialRotationForMixing, 0.0f);
+                TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialRotationForMixing, 0.0f);
 
                 v2f boneVector_frame0 = { bone->length * CosR(rotationRange.transformation0), bone->length * SinR(rotationRange.transformation0) };
                 v2f boneVector_frame1 = { bone->length * CosR(rotationRange.transformation1), bone->length * SinR(rotationRange.transformation1) };
@@ -771,7 +747,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                     if(StringCmp(bone->name, "right-shoulder"))
                         int x{3};
 
-                    TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFramesR<f32>(rotationTimelineOfBone, anim->currentTime);
+                    TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFramesR<f32>(rotationTimelineOfBone, anim->currentTime);
 
                     v2f boneVector_frame0 = { bone->length * CosR(rotationRange.transformation0), bone->length * SinR(rotationRange.transformation0) };
                     v2f boneVector_frame1 = { bone->length * CosR(rotationRange.transformation1), bone->length * SinR(rotationRange.transformation1) };
