@@ -399,49 +399,21 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 };
 
 //Returns lower keyFrame of range(e.g. if range is between 0 - 1 then keyFrame number 0 is returned)
-i32 _CurrentActiveKeyFrame(RotationTimeline rotationTimelineOfBone, f32 currentAnimRuntime)
+template<typename TransformationTimelineType>
+i32 _CurrentActiveKeyFrame(TransformationTimelineType transformationTimelineOfBone, f32 currentAnimRuntime)
 {
-    BGZ_ASSERT(rotationTimelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
+    BGZ_ASSERT(transformationTimelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
 
     i32 result{};
-    i32 keyFrameCount = (i32)rotationTimelineOfBone.times.size - 1;
+    i32 keyFrameCount = (i32)transformationTimelineOfBone.times.size - 1;
 
     f32 keyFrameTime0{};
-    f32 keyFrameTime1 = rotationTimelineOfBone.times.At(keyFrameCount);
+    f32 keyFrameTime1 = transformationTimelineOfBone.times.At(keyFrameCount);
 
     while(keyFrameCount)
     {
-        keyFrameTime0 = rotationTimelineOfBone.times.At(keyFrameCount - 1);
-        keyFrameTime1 = rotationTimelineOfBone.times.At(keyFrameCount);
-
-        if (keyFrameTime0 <= currentAnimRuntime && keyFrameTime1 >= currentAnimRuntime )                        
-        {
-            result = keyFrameCount - 1;
-            keyFrameCount = 0;
-        }
-        else
-        {
-            --keyFrameCount;
-        }
-    };
-
-    return result;
-};
-
-i32 _CurrentActiveKeyFrame(TranslationTimeline translationTimelineOfBone, f32 currentAnimRuntime)
-{
-    BGZ_ASSERT(translationTimelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
-
-    i32 result{};
-    i32 keyFrameCount = (i32)translationTimelineOfBone.times.size - 1;
-
-    f32 keyFrameTime0{};
-    f32 keyFrameTime1 = translationTimelineOfBone.times.At(keyFrameCount);
-
-    while(keyFrameCount)
-    {
-        keyFrameTime0 = translationTimelineOfBone.times.At(keyFrameCount - 1);
-        keyFrameTime1 = translationTimelineOfBone.times.At(keyFrameCount);
+        keyFrameTime0 = transformationTimelineOfBone.times.At(keyFrameCount - 1);
+        keyFrameTime1 = transformationTimelineOfBone.times.At(keyFrameCount);
 
         if (keyFrameTime0 <= currentAnimRuntime && keyFrameTime1 > currentAnimRuntime )                        
         {
