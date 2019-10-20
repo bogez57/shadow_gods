@@ -72,8 +72,8 @@ struct Quadi
 struct Game_Render_Cmd_Buffer
 {
     ui8* baseAddress{nullptr};
-    ui32 usedAmount{};
-    ui32 size{};
+    i32 usedAmount{};
+    i32 size{};
     i32 entryCount{};
 };
 
@@ -90,7 +90,7 @@ struct Image
     f32 aspectRatio{};
     i32 width_pxls{};
     i32 height_pxls{};
-    ui32 pitch_pxls{};
+    i32 pitch_pxls{};
     f32 opacity {1.0f};
 };
 
@@ -136,7 +136,7 @@ struct RenderEntry_Texture
     Object_Transform world;
     ui8* colorData{nullptr};
     v2i size{};
-    ui32 pitch_pxls{};
+    i32 pitch_pxls{};
     v2f targetRectSize{};
     Array<v2f, 2> uvBounds;
 };

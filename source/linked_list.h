@@ -26,9 +26,9 @@ public:
         this->list.pop_front();
     };
 
-    ui64 Size()
+    i64 Size()
     {
-        return (ui64)this->list.size();
+        return (i64)this->list.size();
     };
 
 private:

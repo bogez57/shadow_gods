@@ -752,10 +752,10 @@ struct Work_Queue_Entry
 struct Work_Queue
 {
     HANDLE semaphoreHandle;
-    ui32 volatile entryCompletionGoal;
-    ui32 volatile entryCompletionCount;
-    ui32 volatile nextEntryToWrite;
-    ui32 volatile nextEntryToRead;
+    i32 volatile entryCompletionGoal;
+    i32 volatile entryCompletionCount;
+    i32 volatile nextEntryToWrite;
+    i32 volatile nextEntryToRead;
     Work_Queue_Entry entries[256]; 
 };
 
@@ -768,7 +768,7 @@ struct Thread_Info
 
 void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
 {
-    ui32 newNextEntryToWrite = (globalWorkQueue.nextEntryToWrite + 1) % ArrayCount(globalWorkQueue.entries);
+    i32 newNextEntryToWrite = (globalWorkQueue.nextEntryToWrite + 1) % ArrayCount(globalWorkQueue.entries);
     Assert(newNextEntryToWrite != globalWorkQueue.nextEntryToRead);
 
     Work_Queue_Entry entry{callback, data};
@@ -798,8 +798,8 @@ b DoWork()
 {
     b isThereStillWork{};
 
-    ui32 originalNextEntryToRead = globalWorkQueue.nextEntryToRead;
-    ui32 newNextEntryToRead = (originalNextEntryToRead + 1) % ArrayCount(globalWorkQueue.entries);
+    i32 originalNextEntryToRead = globalWorkQueue.nextEntryToRead;
+    i32 newNextEntryToRead = (originalNextEntryToRead + 1) % ArrayCount(globalWorkQueue.entries);
     if(originalNextEntryToRead != globalWorkQueue.nextEntryToWrite)
     {
         i32 entryIndex = _InterlockedCompareExchange((LONG volatile*) &globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
@@ -847,9 +847,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     Win32::Dbg::UseConsole();
 
     Thread_Info threadInfo[8] = {};
-    ui32 threadCount = ArrayCount(threadInfo);
+    i32 threadCount = ArrayCount(threadInfo);
 
-    ui32 initialThreadCount = 0;
+    i32 initialThreadCount = 0;
     globalWorkQueue.semaphoreHandle = CreateSemaphoreExA(0, initialThreadCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
 
     for(i32 threadIndex{}; threadIndex < ArrayCount(threadInfo); ++threadIndex)

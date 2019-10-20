@@ -14,7 +14,7 @@ class KeyInfo
 {
 public:
     const char* originalString{nullptr};
-    ui32 uniqueID{};
+    i32 uniqueID{};
     Type value;
     KeyInfo<Type>* nextInfo;
 };

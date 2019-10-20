@@ -45,7 +45,7 @@ struct _Dynamic_Allocator
 {
     _Memory_Block* head;
     _Memory_Block* tail;
-    ui32 AmountOfBlocks;
+    i32 AmountOfBlocks;
 };
 
 _Dynamic_Allocator dynamAllocators[10] = {};
@@ -124,7 +124,7 @@ _Memory_Block* _GetFirstFreeBlockOfSize(i32 memRegionIdentifier, i64 Size)
 
     if (MemBlock != dynamAllocators[memRegionIdentifier].tail)
     {
-        for (ui32 BlockIndex { 0 }; BlockIndex < dynamAllocators[memRegionIdentifier].AmountOfBlocks; ++BlockIndex)
+        for (i32 BlockIndex { 0 }; BlockIndex < dynamAllocators[memRegionIdentifier].AmountOfBlocks; ++BlockIndex)
         {
             if (MemBlock->IsFree && MemBlock->Size >= Size)
             {

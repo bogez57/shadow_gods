@@ -83,15 +83,19 @@ public:
 
     Type& operator[](i64 index)
     {
+        BGZ_ASSERT(index >= 0, "Cannot access a negative index!");
         BGZ_ASSERT(index < this->capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which is out of current dynam array bounds - current max array size: %i", index, size);
+
         return (this->elements[index]);
     };
 
     Type& At(i64 index)
     {
+        BGZ_ASSERT(index >= 0, "Cannot access a negative index!");
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which exceeds capacity - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which exceeds current array size - current max array size: %i", index, size);
+
         return (this->elements[index]);
     };
 
@@ -123,8 +127,10 @@ void PushBack(Dynam_Array<Type>&& arr, Type element)
 };
 
 template <typename Type>
-void Insert(Dynam_Array<Type>&& arr, Type element, ui32 AtIndex)
+void Insert(Dynam_Array<Type>&& arr, Type element, i32 AtIndex)
 {
+    BGZ_ASSERT(AtIndex >= 0, "Cannot access a negative index!");
+
     ((arr.capacity <= (i64)(AtIndex) ? (arr.capacity = arr.size = (AtIndex) + 1,
                                             Roundup32(arr.capacity),
                                             arr.elements = (Type*)ReAllocSize(arr.memPartitionID, arr.elements, sizeof(Type) * arr.capacity),
@@ -135,8 +141,10 @@ void Insert(Dynam_Array<Type>&& arr, Type element, ui32 AtIndex)
 };
 
 template <typename Type>
-void Reserve(Dynam_Array<Type>&& arr, ui32 numItems)
+void Reserve(Dynam_Array<Type>&& arr, i32 numItems)
 {
+    BGZ_ASSERT(numItems >= 0, "Cannot reserve a negative number of items!");
+
     i64 newSize = arr.capacity + numItems;
     ResizeArray<Type>($(arr), newSize);
 };

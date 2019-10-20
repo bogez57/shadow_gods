@@ -33,12 +33,12 @@ using GameUpdateFuncPtr = void (*)(Application_Memory*, Platform_Services*, Rend
 
 namespace Win32::Dbg
 {
-    const ui32 MaxAllowableRecordedInputs { 4000 };
+    const i32 MaxAllowableRecordedInputs { 4000 };
     struct Game_Replay_State
     {
         Game_Input* RecordedInputs { nullptr };
-        ui32 InputCount {};
-        ui32 TotalInputStructsRecorded {};
+        i32 InputCount {};
+        i32 TotalInputStructsRecorded {};
         void* OriginalRecordedGameState { nullptr };
 
         bool InputRecording { false };

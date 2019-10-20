@@ -55,7 +55,7 @@ struct Application_Memory
 };
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct);
-void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress);
+void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress);
 
 i32 CreatePartitionFromMemoryBlock(Application_Memory* Memory, i64 size, Allocator_Type allocatorType);
 
@@ -72,13 +72,13 @@ void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct)
     appMemory = userDefinedAppMemoryStruct;
 };
 
-void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, ui64 sizeOfMemory, ui32 sizeOfPermanentStore, void* memoryStartAddress)
+void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress)
 {
     appMemory = userDefinedAppMemoryStruct;
 
-    ui32 sizeOfPermanentStorage = sizeOfPermanentStore;
+    i32 sizeOfPermanentStorage = sizeOfPermanentStore;
     appMemory->SizeOfPermanentStorage = sizeOfPermanentStorage;
-    appMemory->SizeOfTemporaryStorage = sizeOfMemory - (ui64)sizeOfPermanentStorage;
+    appMemory->SizeOfTemporaryStorage = sizeOfMemory - (i64)sizeOfPermanentStorage;
     appMemory->TotalSize = sizeOfMemory;
     appMemory->PermanentStorage = memoryStartAddress;
     appMemory->TemporaryStorage = ((ui8*)appMemory->PermanentStorage + appMemory->SizeOfPermanentStorage);
@@ -92,7 +92,7 @@ i64 MemoryPartitionSize(i32 memRegionID)
 };
 
 //TODO: Alignment
-void* _PointerAddition(void* baseAddress, ui64 amountToAdvancePointer)
+void* _PointerAddition(void* baseAddress, i64 amountToAdvancePointer)
 {
     void* newAddress {};
 
