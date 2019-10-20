@@ -9,34 +9,6 @@
     1. Organize data in more of a SOA fashion?
     2. Currently every bone in the skeleton is iterated over in an animaiton. It's just that animatons
     don't always have bonetimelines existing on every bone
-    3. There is still some compression on animation code that could be done. Maybe to look more like this:
-
-        Timeline* timeline
-
-        switch(timeline->type)
-        {
-            case Rotation:
-            {
-                f32 amountOfRotation{0.0f};
-                if(anim->currentMixTime > 0.0f)
-                {
-                    TransformationRangeResult translationRange = _GetTranslationRangeFromKeyFrames(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, bone->name, boneIndex);
-                    amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
-                }
-                else if(anim.currenttime > 0.0f)
-                {
-
-                }
-
-                Insert<f32>($(anim->boneRotations), bone->name, amountOfRotation);
-            };
-
-            case Translation:
-            {
-                ........
-            };
-        }
-
 */
 
 enum class CurveType
@@ -104,7 +76,7 @@ struct Animation
     Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<f32, 20> boneRotations;
     Array<v2f, 20> boneTranslations;
-    Dynam_Array<Animation> animToTransitionTo{heap};
+    Dynam_Array<Animation> animsToTransitionTo{heap};
     b MixingStarted{false};
     f32 initialTimeLeftInAnimAtMixingStart{};
 };
@@ -255,37 +227,19 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
 
     anim_to.mixTimeDuration = mixDuration;
 
-    if(anim_from->animToTransitionTo.size > 0)
+    if(anim_from->animsToTransitionTo.size > 0)
     {
-        for(i32 i{}; i < anim_from->animToTransitionTo.size; ++i)
+        for(i32 i{}; i < anim_from->animsToTransitionTo.size; ++i)
         {
-            BGZ_ASSERT(NOT StringCmp(anim_from->animToTransitionTo.At(i).name, anim_to.name), "Duplicate mix animation tyring to be set");
+            BGZ_ASSERT(NOT StringCmp(anim_from->animsToTransitionTo.At(i).name, anim_to.name), "Duplicate mix animation tyring to be set");
         };
 
-        PushBack($(anim_from->animToTransitionTo), anim_to);
+        PushBack($(anim_from->animsToTransitionTo), anim_to);
     }
     else
     {
-        PushBack($(anim_from->animToTransitionTo), anim_to);
+        PushBack($(anim_from->animsToTransitionTo), anim_to);
     }
-};
-
-void CleanUpAnimation(Animation&& anim)
-{
-    anim.name = {nullptr};
-    anim.totalTime = {};
-    anim.currentTime = {};
-    anim.status = {PlayBackStatus::DEFAULT};
-    anim.repeat = {false};
-    anim.hasEnded = {false};
-
-    for(i32 i{}; i < anim.bones.size; ++i)
-    {
-        CleanUp($(anim.boneTranslationTimelines.At(i).times));
-        CleanUp($(anim.boneTranslationTimelines.At(i).translations));
-        CleanUp($(anim.boneRotationTimelines.At(i).times));
-        CleanUp($(anim.boneRotationTimelines.At(i).angles));
-    };
 };
 
 void CopyAnimation(Animation src, Animation&& dest)
@@ -300,7 +254,7 @@ void CopyAnimation(Animation src, Animation&& dest)
         CopyArray(src.boneRotationTimelines.At(boneIndex).angles, $(dest.boneRotationTimelines.At(boneIndex).angles));
     };
 
-    CopyArray(src.animToTransitionTo, $(dest.animToTransitionTo));
+    CopyArray(src.animsToTransitionTo, $(dest.animsToTransitionTo));
 };
 
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
@@ -508,6 +462,29 @@ TransformationRangeResult<transformationRangeType> _GetTransformationRangeFromKe
 
 Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 {
+    auto InitializeMixingData = [](Animation&& anim, f32 prevFrameDT, f32 amountOfTimeLeftInAnim) -> void
+    {
+        anim.currentMixTime += prevFrameDT;
+
+        if(NOT anim.MixingStarted)
+        {
+            anim.initialTimeLeftInAnimAtMixingStart = amountOfTimeLeftInAnim;
+            anim.MixingStarted = true;
+
+            for (i32 boneIndex{}; boneIndex < anim.bones.size; ++boneIndex)
+            {
+                anim.bones.At(boneIndex)->initialRotationForMixing = anim.boneRotations.At(boneIndex);
+                anim.bones.At(boneIndex)->initialTranslationForMixing = anim.boneTranslations.At(boneIndex);
+            }
+        }
+
+        if(anim.currentMixTime > anim.initialTimeLeftInAnimAtMixingStart)
+        {
+            anim.currentMixTime = anim.initialTimeLeftInAnimAtMixingStart;
+            anim.hasEnded = true;
+        }
+    };
+
     auto DetermineRotationAmountAndDirection = [](TransformationRangeResult<f32> rotationRange, f32 boneLength) -> f32
     {
         f32 amountOfRotation{};
@@ -550,9 +527,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
     BGZ_ASSERT(anim, "No animation returned!");
 
+    //Update anim playback time
     f32 prevFrameAnimTime = anim->currentTime;
     anim->currentTime += prevFrameDT;
-
     if(anim->currentTime > anim->totalTime)
     {
         f32 diff = anim->currentTime - prevFrameAnimTime;
@@ -560,39 +537,21 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         anim->hasEnded = true;
     };
 
-    f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
-    Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
-
-    if(nextAnimInQueue && anim->animToTransitionTo.size > 0)
-    {
-        for(i32 i{}; i < anim->animToTransitionTo.size; ++i)
+    {//Check if mixing needs to be activated
+        f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
+        Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
+        if(nextAnimInQueue)
         {
-            if(StringCmp(anim->animToTransitionTo.At(i).name, nextAnimInQueue->name))
+            for(i32 animIndex{}; animIndex < anim->animsToTransitionTo.size; ++animIndex)
             {
-                if(amountOfTimeLeftInAnim <= anim->animToTransitionTo.At(i).mixTimeDuration)
+                if(StringCmp(anim->animsToTransitionTo.At(animIndex).name, nextAnimInQueue->name))
                 {
-                    f32 prevFrameMixTime = anim->currentMixTime;
-                    anim->currentMixTime += prevFrameDT;
-
-                    if(NOT anim->MixingStarted)
+                    if(amountOfTimeLeftInAnim <= anim->animsToTransitionTo.At(animIndex).mixTimeDuration)
                     {
-                        anim->initialTimeLeftInAnimAtMixingStart = amountOfTimeLeftInAnim;
-                        anim->MixingStarted= true;
-
-                        for (i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
-                        {
-                            anim->bones.At(boneIndex)->initialRotationForMixing = anim->boneRotations.At(boneIndex);
-                            anim->bones.At(boneIndex)->initialTranslationForMixing = anim->boneTranslations.At(boneIndex);
-                        }
-                    }
-
-                    if(anim->currentMixTime > anim->initialTimeLeftInAnimAtMixingStart)
-                    {
-                        anim->currentMixTime = anim->initialTimeLeftInAnimAtMixingStart;
-                        anim->hasEnded = true;
+                        InitializeMixingData($(*anim), prevFrameDT, amountOfTimeLeftInAnim);
                     }
                 }
-            }
+            };
         };
     };
 
@@ -607,10 +566,12 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         TranslationTimeline translationTimelineOfBone = anim->boneTranslationTimelines.At(boneIndex);
         RotationTimeline rotationTimelineOfBone = anim->boneRotationTimelines.At(boneIndex);
 
+        Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
+
         {//Translation Timeline
-            if(anim->currentMixTime > 0.0f)
+            if(anim->MixingStarted)
             {
-                BGZ_ASSERT(anim->animToTransitionTo.size > 0, "No transition animation for mixing has been set!");
+                BGZ_ASSERT(anim->animsToTransitionTo.size > 0, "No transition animation for mixing has been set!");
 
                 TranslationTimeline nextAnimTranslationTimeline{};
                 if(nextAnimInQueue)
@@ -635,7 +596,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         {//Rotation Timeline
             if(anim->currentMixTime > 0.0f)
             {
-                BGZ_ASSERT(anim->animToTransitionTo.size > 0, "No transition animation for mixing has been set!");
+                BGZ_ASSERT(anim->animsToTransitionTo.size > 0, "No transition animation for mixing has been set!");
 
                 RotationTimeline nextAnimRotationTimeline{}; 
                 if(nextAnimInQueue)
@@ -687,6 +648,24 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
 
         v2f boneTranslationToAdd = anim.boneTranslations.At(boneIndex);
         *skel.bones.At(boneIndex).parentLocalPos += boneTranslationToAdd;
+    };
+};
+
+void CleanUpAnimation(Animation&& anim)
+{
+    anim.name = {nullptr};
+    anim.totalTime = {};
+    anim.currentTime = {};
+    anim.status = {PlayBackStatus::DEFAULT};
+    anim.repeat = {false};
+    anim.hasEnded = {false};
+
+    for(i32 i{}; i < anim.bones.size; ++i)
+    {
+        CleanUp($(anim.boneTranslationTimelines.At(i).times));
+        CleanUp($(anim.boneTranslationTimelines.At(i).translations));
+        CleanUp($(anim.boneRotationTimelines.At(i).times));
+        CleanUp($(anim.boneRotationTimelines.At(i).angles));
     };
 };
 
