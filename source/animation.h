@@ -45,8 +45,25 @@ enum class CurveType
     STEPPED
 };
 
+enum class TimelineType
+{
+    ROTATION,
+    TRANSLATION 
+};
+
+struct TimelineHeader
+{
+    TimelineType type;
+    Dynam_Array<f32> times{heap};
+    Dynam_Array<f32> angles{heap};
+    Dynam_Array<CurveType> curves{heap};
+    f32 (*GetMember)(i32);
+};
+
 struct RotationTimeline
 {
+    TimelineHeader info;
+    f32 (*GetMember)(RotationTimeline, i32);
     b exists{false};
     Dynam_Array<f32> times{heap};
     Dynam_Array<f32> angles{heap};
@@ -55,10 +72,22 @@ struct RotationTimeline
 
 struct TranslationTimeline
 {
+    TimelineHeader info;
+    v2f (*GetMember)(TranslationTimeline, i32);
     b exists{false};
     Dynam_Array<f32> times{heap};
     Dynam_Array<v2f> translations{heap};
     Dynam_Array<CurveType> curves{heap};
+};
+
+f32 GetMemberR(RotationTimeline rotationTimeline, i32 index)
+{
+    return rotationTimeline.angles.At(index);
+};
+
+v2f GetMemberT(TranslationTimeline translationTimeline, i32 index)
+{
+    return translationTimeline.translations.At(index);
 };
 
 enum class PlayBackStatus
@@ -174,7 +203,9 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             if (rotateTimeline_json)
             {
                 RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
+                boneRotationTimeline->info.type = TimelineType::ROTATION;
                 boneRotationTimeline->exists = true;
+                boneRotationTimeline->GetMember = &GetMemberR;
 
                 i32 keyFrameIndex{};
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
@@ -198,7 +229,9 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
             if (translateTimeline_json)
             {
                 TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
+                boneTranslationTimeline->info.type = TimelineType::ROTATION;
                 boneTranslationTimeline->exists = true;
+                boneTranslationTimeline->GetMember = &GetMemberT;
 
                 i32 keyFrameIndex{};
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
@@ -519,7 +552,7 @@ TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(
 };
 
 template<typename transformationType>
-TransformationRangeResult<transformationType> _GetRotationRangeFromKeyFrames(RotationTimeline rotationTimelineOfBone, f32 currentAnimRunTime)
+TransformationRangeResult<transformationType> _GetRotationRangeFromKeyFramesR(RotationTimeline rotationTimelineOfBone, f32 currentAnimRunTime)
 {
     BGZ_ASSERT(rotationTimelineOfBone.times.size != 0, "Can't get rotation range from timeline w/ no keyframes!");
 
@@ -576,10 +609,10 @@ TransformationRangeResult<transformationType> _GetRotationRangeFromKeyFrames(Rot
     return result;
 };
 
-template<typename transformationRangeType>
-TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrames(Animation* anim, RotationTimeline boneRotationTimeline_originalAnim, RotationTimeline boneRotationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex, transformationRangeType initialTransformForMixing)
+template<typename transformationRangeType, typename TransformTimelineType>
+TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrames(Animation* anim, TransformTimelineType boneRotationTimeline_originalAnim, TransformTimelineType boneRotationTimeline_nextAnim, f32 currentAnimRunTime, const char* boneName, i32 boneIndex, transformationRangeType initialTransformForMixing)
 {
-    TransformationRangeResult<transformationRangeType> result{};
+    TransformationRangeResult<f32> result{};
 
     result.transformation0 = initialTransformForMixing;
 
@@ -587,13 +620,13 @@ TransformationRangeResult<transformationRangeType> _GetRotationRangeFromKeyFrame
         result.transformation1 = 0.0f;
 
     else if(boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists)
-        result.transformation1 = boneRotationTimeline_nextAnim.angles.At(0);
+        result.transformation1 = boneRotationTimeline_nextAnim.GetMember(boneRotationTimeline_nextAnim, 0);
 
     else if(boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists)
         result.transformation1 = 0.0f;
 
     else if (NOT boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists)
-        result.transformation1 = boneRotationTimeline_nextAnim.angles.At(0);
+        result.transformation1 = boneRotationTimeline_nextAnim.GetMember(boneRotationTimeline_nextAnim, 0);
 
     result.percentToLerp = anim->currentMixTime / anim->initialTimeLeftInAnimAtMixingStart;
 
@@ -699,7 +732,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if(nextAnimInQueue)
                     nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines.At(boneIndex);
 
-                TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex, anim->bones.At(boneIndex)->initialRotationForMixing);
+                TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, bone->name, boneIndex, anim->bones.At(boneIndex)->initialRotationForMixing);
 
                 v2f boneVector_frame0 = { bone->length * CosR(rotationRange.transformation0), bone->length * SinR(rotationRange.transformation0) };
                 v2f boneVector_frame1 = { bone->length * CosR(rotationRange.transformation1), bone->length * SinR(rotationRange.transformation1) };
@@ -737,7 +770,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                     if(StringCmp(bone->name, "right-shoulder"))
                         int x{3};
 
-                    TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFrames<f32>(rotationTimelineOfBone, anim->currentTime);
+                    TransformationRangeResult<f32> rotationRange = _GetRotationRangeFromKeyFramesR<f32>(rotationTimelineOfBone, anim->currentTime);
 
                     v2f boneVector_frame0 = { bone->length * CosR(rotationRange.transformation0), bone->length * SinR(rotationRange.transformation0) };
                     v2f boneVector_frame1 = { bone->length * CosR(rotationRange.transformation1), bone->length * SinR(rotationRange.transformation1) };
