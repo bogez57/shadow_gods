@@ -383,7 +383,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::IMMEDIATE);
+        QueueAnimation($(player->animQueue), player->animData, "test", PlayBackStatus::IMMEDIATE);
     };
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
