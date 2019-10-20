@@ -54,10 +54,6 @@ enum class TimelineType
 struct TimelineHeader
 {
     TimelineType type;
-    Dynam_Array<f32> times{heap};
-    Dynam_Array<f32> angles{heap};
-    Dynam_Array<CurveType> curves{heap};
-    f32 (*GetMember)(i32);
 };
 
 struct RotationTimeline
@@ -80,12 +76,12 @@ struct TranslationTimeline
     Dynam_Array<CurveType> curves{heap};
 };
 
-f32 GetMemberR(RotationTimeline rotationTimeline, i32 index)
+f32 GetMember_RotationTimeline(RotationTimeline rotationTimeline, i32 index)
 {
     return rotationTimeline.angles.At(index);
 };
 
-v2f GetMemberT(TranslationTimeline translationTimeline, i32 index)
+v2f GetMember_TranslationTimeline(TranslationTimeline translationTimeline, i32 index)
 {
     return translationTimeline.translations.At(index);
 };
@@ -205,7 +201,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                 RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
                 boneRotationTimeline->info.type = TimelineType::ROTATION;
                 boneRotationTimeline->exists = true;
-                boneRotationTimeline->GetMember = &GetMemberR;
+                boneRotationTimeline->GetMember = &GetMember_RotationTimeline;
 
                 i32 keyFrameIndex{};
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
@@ -231,7 +227,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                 TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
                 boneTranslationTimeline->info.type = TimelineType::ROTATION;
                 boneTranslationTimeline->exists = true;
-                boneTranslationTimeline->GetMember = &GetMemberT;
+                boneTranslationTimeline->GetMember = &GetMember_TranslationTimeline;
 
                 i32 keyFrameIndex{};
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
@@ -469,45 +465,45 @@ struct TransformationRangeResult
     f32 percentToLerp{};
 };
 
-template<typename transformationType>
-TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(TranslationTimeline translationTimelineOfBone, f32 currentAnimRunTime)
+template<typename TransformationType, typename TransformationTimelineType>
+TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFrames(TransformationTimelineType transformationTimelineOfBone, f32 currentAnimRunTime)
 {
-    BGZ_ASSERT(translationTimelineOfBone.times.size != 0, "Can't get translations range from timeline w/ no keyframes!");
+    BGZ_ASSERT(transformationTimelineOfBone.times.size != 0, "Can't get translations range from timeline w/ no keyframes!");
 
-    TransformationRangeResult<v2f> result{};
+    TransformationRangeResult<TransformationType> result{};
 
-    i32 firstKeyFrame{0}, lastKeyFrame{(i32)translationTimelineOfBone.times.size - 1};
-    if(translationTimelineOfBone.times.size == 1)
+    i32 firstKeyFrame{0}, lastKeyFrame{(i32)transformationTimelineOfBone.times.size - 1};
+    if(transformationTimelineOfBone.times.size == 1)
     {
-        if(currentAnimRunTime > translationTimelineOfBone.times.At(firstKeyFrame))
+        if(currentAnimRunTime > transformationTimelineOfBone.times.At(firstKeyFrame))
         {
-            result.transformation0 = translationTimelineOfBone.translations.At(firstKeyFrame);
+            result.transformation0 = transformationTimelineOfBone.GetMember(transformationTimelineOfBone, firstKeyFrame);
             result.transformation1 = result.transformation0;
             result.percentToLerp = 1.0f;
         };
     }
-    else if(currentAnimRunTime > translationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < translationTimelineOfBone.times.At(lastKeyFrame))
+    else if(currentAnimRunTime > transformationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < transformationTimelineOfBone.times.At(lastKeyFrame))
     {
-        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(translationTimelineOfBone, currentAnimRunTime);
+        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(transformationTimelineOfBone, currentAnimRunTime);
         BGZ_ASSERT(activeKeyFrameIndex != lastKeyFrame, "Should never be returning the last keyframe of timeline here!");
 
-        switch(translationTimelineOfBone.curves.At(activeKeyFrameIndex))
+        switch(transformationTimelineOfBone.curves.At(activeKeyFrameIndex))
         {
             case CurveType::STEPPED : 
             {
-                result.transformation0 = translationTimelineOfBone.translations.At(activeKeyFrameIndex);
-                result.transformation1 = translationTimelineOfBone.translations.At(activeKeyFrameIndex + 1);
+                result.transformation0 = transformationTimelineOfBone.GetMember(transformationTimelineOfBone, activeKeyFrameIndex);
+                result.transformation1 = transformationTimelineOfBone.GetMember(transformationTimelineOfBone, activeKeyFrameIndex + 1);
 
                 result.percentToLerp = 0.0f;
             }break;
 
             case CurveType::LINEAR :
             {
-                result.transformation0 = translationTimelineOfBone.translations.At(activeKeyFrameIndex);
-                result.transformation1 = translationTimelineOfBone.translations.At(activeKeyFrameIndex + 1);
+                result.transformation0 = transformationTimelineOfBone.GetMember(transformationTimelineOfBone, activeKeyFrameIndex);
+                result.transformation1 = transformationTimelineOfBone.GetMember(transformationTimelineOfBone, activeKeyFrameIndex + 1);
 
-                f32 time0 = translationTimelineOfBone.times.At(activeKeyFrameIndex);
-                f32 time1 = translationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
+                f32 time0 = transformationTimelineOfBone.times.At(activeKeyFrameIndex);
+                f32 time1 = transformationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
 
                 f32 diff0 = time1 - time0;
                 f32 diff1 = currentAnimRunTime - time0;
@@ -517,67 +513,9 @@ TransformationRangeResult<transformationType> _GetTranslationRangeFromKeyFrames(
             InvalidDefaultCase;
         }
     }
-    else if(currentAnimRunTime > translationTimelineOfBone.times.At(lastKeyFrame))
+    else if(currentAnimRunTime > transformationTimelineOfBone.times.At(lastKeyFrame))
     {
-        result.transformation0 = translationTimelineOfBone.translations.At(lastKeyFrame);
-        result.transformation1 = result.transformation0;
-        result.percentToLerp = 1.0f;
-    }
-
-    return result;
-};
-
-template<typename transformationType>
-TransformationRangeResult<transformationType> _GetTransformationRangeFromKeyFramesR(RotationTimeline rotationTimelineOfBone, f32 currentAnimRunTime)
-{
-    BGZ_ASSERT(rotationTimelineOfBone.times.size != 0, "Can't get rotation range from timeline w/ no keyframes!");
-
-    TransformationRangeResult<transformationType> result{};
-
-    i32 firstKeyFrame{0}, lastKeyFrame{(i32)rotationTimelineOfBone.times.size - 1};
-    if(rotationTimelineOfBone.times.size == 1)
-    {
-        if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame))
-        {
-            result.transformation0 = rotationTimelineOfBone.angles.At(firstKeyFrame);
-            result.transformation1 = result.transformation0;
-            result.percentToLerp = 1.0f;
-        };
-    }
-    else if(currentAnimRunTime > rotationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < rotationTimelineOfBone.times.At(lastKeyFrame))
-    {
-        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(rotationTimelineOfBone, currentAnimRunTime);
-        BGZ_ASSERT(activeKeyFrameIndex != lastKeyFrame, "Should never be returning the last keyframe of timeline here!");
-
-        switch(rotationTimelineOfBone.curves.At(activeKeyFrameIndex))
-        {
-            case CurveType::STEPPED : 
-            {
-                result.transformation0 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex);
-                result.transformation1 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex + 1);
-
-                result.percentToLerp = 0.0f;
-            }break;
-
-            case CurveType::LINEAR :
-            {
-                result.transformation0 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex);
-                result.transformation1 = rotationTimelineOfBone.angles.At(activeKeyFrameIndex + 1);
-
-                f32 time0 = rotationTimelineOfBone.times.At(activeKeyFrameIndex);
-                f32 time1 = rotationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
-
-                f32 diff0 = time1 - time0;
-                f32 diff1 = currentAnimRunTime - time0;
-                result.percentToLerp = diff1 / diff0;
-            }break;
-
-            InvalidDefaultCase;
-        }
-    }
-    else if(currentAnimRunTime > rotationTimelineOfBone.times.At(lastKeyFrame))
-    {
-        result.transformation0 = rotationTimelineOfBone.angles.At(lastKeyFrame);
+        result.transformation0 = transformationTimelineOfBone.GetMember(transformationTimelineOfBone, lastKeyFrame);
         result.transformation1 = result.transformation0;
         result.percentToLerp = 1.0f;
     }
@@ -694,7 +632,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
                 if(translationTimelineOfBone.exists)
                 {
-                    TransformationRangeResult<v2f> translationRange = _GetTranslationRangeFromKeyFrames<v2f>(translationTimelineOfBone, anim->currentTime);
+                    TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(translationTimelineOfBone, anim->currentTime);
                     amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
                 };
             };
@@ -744,10 +682,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             {
                 if(rotationTimelineOfBone.exists)
                 {
-                    if(StringCmp(bone->name, "right-shoulder"))
-                        int x{3};
-
-                    TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFramesR<f32>(rotationTimelineOfBone, anim->currentTime);
+                    TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFrames<f32, RotationTimeline>(rotationTimelineOfBone, anim->currentTime);
 
                     v2f boneVector_frame0 = { bone->length * CosR(rotationRange.transformation0), bone->length * SinR(rotationRange.transformation0) };
                     v2f boneVector_frame1 = { bone->length * CosR(rotationRange.transformation1), bone->length * SinR(rotationRange.transformation1) };
