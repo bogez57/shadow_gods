@@ -594,7 +594,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         }
 
         {//Rotation Timeline
-            if(anim->currentMixTime > 0.0f)
+            if(anim->MixingStarted)
             {
                 BGZ_ASSERT(anim->animsToTransitionTo.size > 0, "No transition animation for mixing has been set!");
 

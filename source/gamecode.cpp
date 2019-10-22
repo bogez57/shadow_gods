@@ -341,6 +341,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
+        MixAnimations($(player->animData), "right-jab", "idle", .1f);
 
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
     };
@@ -374,6 +375,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionLeft))
     {
+        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::IMMEDIATE);
     };
 
     if(KeyComboHeld(keyboard->ActionLeft, keyboard->MoveRight))
@@ -383,7 +385,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (KeyPressed(keyboard->ActionRight))
     {
-        QueueAnimation($(player->animQueue), player->animData, "test", PlayBackStatus::IMMEDIATE);
+        QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
