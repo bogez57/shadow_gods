@@ -10,7 +10,7 @@ struct AABB
 struct Collision_Box
 {
     Collision_Box() = default;
-    Collision_Box(v2f WorldPos, v2f size);
+    Collision_Box(v2f worldPos, v2f size);
 
     AABB bounds;
     v2f worldPos{};
@@ -23,7 +23,7 @@ void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& oldCollisionB
 
 #ifdef COLLISION_DETECTION_IMPL
 
-Collision_Box::Collision_Box(v2f WorldPos, v2f size) :
+Collision_Box::Collision_Box(v2f worldPos, v2f size) :
     worldPos(worldPos),
     size(size)
 {

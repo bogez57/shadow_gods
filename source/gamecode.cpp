@@ -336,8 +336,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        Collision_Box playerDefaultHurtBox{v2f{playerWorldPos.x, (playerWorldPos.y + 1.0f)}, v2f{.2f, .2f}};
-        Collision_Box enemyDefaultHurtBox{v2f{enemyWorldPos.x, (enemyWorldPos.y + 1.0f)}, v2f{.2f, .2f}};
+        Collision_Box playerDefaultHurtBox{v2f{playerWorldPos.x, (playerWorldPos.y + 1.0f)}, v2f{.3f, .3f}};
+        Collision_Box enemyDefaultHurtBox{v2f{enemyWorldPos.x, (enemyWorldPos.y + 1.0f)}, v2f{.3f, .3f}};
         *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f, playerDefaultHurtBox};
         *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f, enemyDefaultHurtBox};
 
@@ -426,5 +426,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Push Fighters
         DrawFighter(*player);
         DrawFighter(*enemy);
+
+        //Draw hurt box
+        PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
     };
 };
