@@ -1,5 +1,5 @@
-#ifndef COLLISION_INCLUDE_H
-#define COLLISION_INCLUDE_H
+#ifndef COLLISION_DETECTION_INCLUDE
+#define COLLISION_DETECTION_INCLUDE
 
 struct AABB
 {
@@ -9,34 +9,35 @@ struct AABB
 
 struct Collision_Box
 {
+    Collision_Box() = default;
+    Collision_Box(v2f WorldPos, v2f size);
+
     AABB bounds;
-    v2f centerPoint{};
+    v2f worldPos{};
     v2f size{};
 };
 
-#endif
+void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& oldCollisionBox, v2f newWorldPos);
 
-#ifdef COLLISION_IMPL
+#endif //COLLISION_DETECTION_INCLUDE
 
-Collision_Box UpdateCollisionBoxBasedOnCenterPoint(Collision_Box oldCollisionBox, v2f newCenterPosition)
+#ifdef COLLISION_DETECTION_IMPL
+
+Collision_Box::Collision_Box(v2f WorldPos, v2f size) :
+    worldPos(worldPos),
+    size(size)
 {
-    Collision_Box newCollisionBox { oldCollisionBox };
-
-    newCollisionBox.bounds.minCorner.x = newCenterPosition.x - oldCollisionBox.size.x;
-    newCollisionBox.bounds.minCorner.y = newCenterPosition.y;
-    newCollisionBox.bounds.maxCorner.x = newCenterPosition.x + oldCollisionBox.size.x;
-    newCollisionBox.bounds.maxCorner.y = newCenterPosition.y + oldCollisionBox.size.y;
-
-    newCollisionBox.centerPoint = newCenterPosition;
-
-    return newCollisionBox;
+    UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(*this), worldPos);
 }
 
-void InitCollisionBox_1(Collision_Box* collisionBox, v2f centerPoint, v2f size)
+void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& collisionBox, v2f newWorldPos)
 {
-    collisionBox->size = size;
+    collisionBox.bounds.minCorner.x = newWorldPos.x - collisionBox.size.x;
+    collisionBox.bounds.minCorner.y = newWorldPos.y;
+    collisionBox.bounds.maxCorner.x = newWorldPos.x + collisionBox.size.x;
+    collisionBox.bounds.maxCorner.y = newWorldPos.y + collisionBox.size.y;
 
-    *collisionBox = UpdateCollisionBoxBasedOnCenterPoint(*collisionBox, centerPoint);
+    collisionBox.worldPos = newWorldPos;
 };
 
 local_func b CheckForFighterCollisions_AxisAligned(Collision_Box fighter1Box, Collision_Box fighter2Box)
@@ -67,4 +68,4 @@ local_func v2f FindCenterOfRectangle(AABB rectangle)
     return centerPoint;
 };
 
-#endif //COLLISION_IMPL
+#endif //COLLISION_DECTECTION_IMPL 

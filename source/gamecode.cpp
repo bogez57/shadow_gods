@@ -58,8 +58,8 @@ global_variable i32 renderBuffer;
 #include "dynamic_allocator.h"
 #define LINEAR_ALLOCATOR_IMPL
 #include "linear_allocator.h"
-#define COLLISION_IMPL
-#include "collisions.h"
+#define COLLISION_DETECTION_IMPL
+#include "collision_detection.h"
 #define JSON_IMPL
 #include "json.h"
 #define ATLAS_IMPL
@@ -336,8 +336,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f};
-        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f};
+        Collision_Box playerDefaultHurtBox{v2f{playerWorldPos.x, (playerWorldPos.y + 1.0f)}, v2f{.2f, .2f}};
+        Collision_Box enemyDefaultHurtBox{v2f{enemyWorldPos.x, (enemyWorldPos.y + 1.0f)}, v2f{.2f, .2f}};
+        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f, playerDefaultHurtBox};
+        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f, enemyDefaultHurtBox};
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);

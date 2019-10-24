@@ -2,7 +2,6 @@
 
 #include "atlas.h"
 #include "shared.h"
-#include "collisions.h"
 #include "skeleton.h"
 #include "animation.h"
 #include "fighter.h"

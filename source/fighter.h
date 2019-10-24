@@ -3,12 +3,13 @@
 
 #include "skeleton.h"
 #include "animation.h"
+#include "collision_detection.h"
 #include "my_math.h"
 
 struct Fighter
 {
     Fighter() = default;
-    Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight);
+    Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, Collision_Box defaultHurtBox);
 
     Transform world;
     f32 height{};
@@ -16,19 +17,22 @@ struct Fighter
     AnimationQueue animQueue;
     AnimationData animData;
     Animation currentAnim;
+    Collision_Box currentActiveHitBox;
+    Collision_Box hurtBox;
 };
 
 #endif
 
 #ifdef FIGHTER_IMPL
 
-Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight) :
+Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, Collision_Box defaultHurtBox) :
     skel{atlasFilePath, jsonFilePath, heap},
     animData{jsonFilePath, $(this->skel)},
     animQueue{Init::_},
     currentAnim{Init::_},
     world{0.0f, worldPos, {1.0f, 1.0f}},
-    height{fighterHeight}
+    height{fighterHeight},
+    hurtBox{defaultHurtBox}
 {
     {//Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
