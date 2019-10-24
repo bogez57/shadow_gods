@@ -398,6 +398,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
     UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
+    UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
+
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
     {//Render 

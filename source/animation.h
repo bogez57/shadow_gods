@@ -68,17 +68,21 @@ struct Animation
     f32 currentTime{};
     f32 mixTimeDuration{};
     f32 currentMixTime{};
+    f32 initialTimeLeftInAnimAtMixingStart{};
+    f32 hitBoxEndTime{};
+    f32 hitBoxDuration{};
+    v2f hitBoxCenterOffset{};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
+    b hitBoxTimerStarted{false};
     b repeat{false};
     b hasEnded{false};
+    b MixingStarted{false};
     Dynam_Array<Bone*> bones;
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<f32, 20> boneRotations;
     Array<v2f, 20> boneTranslations;
     Dynam_Array<Animation> animsToTransitionTo{heap};
-    b MixingStarted{false};
-    f32 initialTimeLeftInAnimAtMixingStart{};
 };
 
 struct AnimationData
