@@ -57,11 +57,7 @@ enum class PlayBackStatus
 struct Animation
 {
     Animation() = default;
-    Animation(Init) :
-        bones{heap}
-    {
-        Reserve($(bones), 10);
-    };
+    Animation(Init);
 
     const char* name{nullptr};
     f32 totalTime{};
@@ -117,6 +113,12 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 #endif
 
 #ifdef ANIMATION_IMPL
+
+Animation::Animation(Init) : 
+    bones{heap}
+{
+    Reserve($(bones), 10);
+};
 
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : animations{heap}
 {
@@ -211,9 +213,9 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                 if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
             };
-
-            anim->totalTime = maxTimeOfAnimation;
         };
+
+        anim->totalTime = maxTimeOfAnimation;
     };
 };
 

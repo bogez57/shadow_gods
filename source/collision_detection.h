@@ -10,9 +10,10 @@ struct AABB
 struct Collision_Box
 {
     Collision_Box() = default;
-    Collision_Box(v2f worldPos, v2f size);
+    Collision_Box(v2f worldPos, v2f worldPosOffset,v2f size);
 
     AABB bounds;
+    v2f worldPosOffset{};
     v2f worldPos{};
     v2f size{};
 };
@@ -23,21 +24,22 @@ void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& oldCollisionB
 
 #ifdef COLLISION_DETECTION_IMPL
 
-Collision_Box::Collision_Box(v2f worldPos, v2f size) :
-    worldPos(worldPos),
+Collision_Box::Collision_Box(v2f worldPos, v2f worldPosOffset, v2f size) :
+    worldPosOffset(worldPosOffset),
     size(size)
 {
+    this->worldPos = worldPos;
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(*this), worldPos);
 }
 
 void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& collisionBox, v2f newWorldPos)
 {
+    collisionBox.worldPos = newWorldPos + collisionBox.worldPosOffset;
+
     collisionBox.bounds.minCorner.x = newWorldPos.x - collisionBox.size.x;
     collisionBox.bounds.minCorner.y = newWorldPos.y;
     collisionBox.bounds.maxCorner.x = newWorldPos.x + collisionBox.size.x;
     collisionBox.bounds.maxCorner.y = newWorldPos.y + collisionBox.size.y;
-
-    collisionBox.worldPos = newWorldPos;
 };
 
 local_func b CheckForFighterCollisions_AxisAligned(Collision_Box fighter1Box, Collision_Box fighter2Box)
