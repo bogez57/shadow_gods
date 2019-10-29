@@ -988,7 +988,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     GameCode = Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll");
                 }
 
-#if 0
+#if 1
 	            //helps to prevent overly large detlatimes from getting passed when using debugger and breakpoints
 	            if (platformServices.prevFrameTimeInSecs > 1.0f/30.0f)
 	                platformServices.prevFrameTimeInSecs = 1.0f/30.0f;

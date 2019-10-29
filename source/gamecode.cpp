@@ -400,6 +400,26 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
 
+    if(StringCmp(player->currentAnim.name, "run"))
+    {
+        if(player->currentAnim.currentTime > player->currentAnim.timeUntilHitBoxIsActivated)
+        {
+            player->currentAnim.hitBoxEndTime = globalPlatformServices->realLifeTimeInSecs + player->currentAnim.hitBoxDuration;
+        }
+
+        if(globalPlatformServices->realLifeTimeInSecs <= player->currentAnim.hitBoxEndTime)
+        {
+            Collision_Box box{{0.0f, 0.0f}, {0.2f, 1.0f}, {0.4f, 0.4f}};
+            player->currentActiveHitBox = box;
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentActiveHitBox), player->world.translation);
+        }
+        else
+        {
+            Collision_Box box{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+            player->currentActiveHitBox = box;
+        }
+    }
+
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
     {//Render 
@@ -429,7 +449,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         DrawFighter(*enemy);
 
-        //Draw hurt box
+        //Draw collision boxes
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
+        PushRect(global_renderingInfo, player->currentActiveHitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->currentActiveHitBox.size, {0.0f, 1.0f, 0.0f});
     };
 };
