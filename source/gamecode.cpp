@@ -337,7 +337,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
         Collision_Box playerDefaultHurtBox{playerWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
-        Collision_Box enemyDefaultHurtBox{enemyWorldPos, v2f{.2f, .2f}, v2f{.3f, .3f}};
+        Collision_Box enemyDefaultHurtBox{enemyWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
         *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f, playerDefaultHurtBox};
         *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f, enemyDefaultHurtBox};
 
@@ -354,9 +354,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         globalPlatformServices->DLLJustReloaded = false;
     };
 
-    if (KeyHeld(keyboard->MoveLeft))
+    if (KeyHeld(keyboard->MoveRight))
     {
-        //player->world.translation.x += .1f;
+        player->world.translation.x += .1f;
         QueueAnimation($(player->animQueue), player->animData, "walk", PlayBackStatus::NEXT);
     };
 
@@ -399,13 +399,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
+    UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-    if(StringCmp(player->currentAnim.name, "run"))
+    if(StringCmp(player->currentAnim.name, "right-cross"))
     {
-        if(player->currentAnim.currentTime > player->currentAnim.timeUntilHitBoxIsActivated)
-        {
+        if(player->currentAnim.currentTime > player->currentAnim.timeUntilHitBoxIsActivated && player->currentAnim.currentTime < player->currentAnim.timeUntilHitBoxIsActivated + player->currentAnim.hitBoxDuration)
             player->currentAnim.hitBoxEndTime = globalPlatformServices->realLifeTimeInSecs + player->currentAnim.hitBoxDuration;
-        }
 
         if(globalPlatformServices->realLifeTimeInSecs <= player->currentAnim.hitBoxEndTime)
         {
@@ -419,6 +418,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             player->currentActiveHitBox = box;
         }
     }
+    else
+    {
+        Collision_Box box{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+        player->currentActiveHitBox = box;
+    }
+
+    if(CheckForFighterCollisions_AxisAligned(player->currentActiveHitBox, enemy->hurtBox))
+        BGZ_CONSOLE("Hit!\n");
 
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
@@ -450,6 +457,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*enemy);
 
         //Draw collision boxes
+        PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->currentActiveHitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->currentActiveHitBox.size, {0.0f, 1.0f, 0.0f});
     };
