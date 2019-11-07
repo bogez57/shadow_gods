@@ -9,7 +9,7 @@
 struct Fighter
 {
     Fighter() = default;
-    Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, Collision_Box defaultHurtBox);
+    Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox);
 
     Transform world;
     f32 height{};
@@ -17,15 +17,15 @@ struct Fighter
     AnimationQueue animQueue;
     AnimationData animData;
     Animation currentAnim;
-    Collision_Box currentActiveHitBox;
-    Collision_Box hurtBox;
+    HitBox hitBox;
+    HurtBox hurtBox;
 };
 
 #endif
 
 #ifdef FIGHTER_IMPL
 
-Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, Collision_Box defaultHurtBox) :
+Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox) :
     skel{atlasFilePath, jsonFilePath, heap},
     animData{jsonFilePath, $(this->skel)},
     animQueue{Init::_},

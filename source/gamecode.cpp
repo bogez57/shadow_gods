@@ -336,8 +336,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        Collision_Box playerDefaultHurtBox{playerWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
-        Collision_Box enemyDefaultHurtBox{enemyWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
+        HurtBox playerDefaultHurtBox{playerWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
+        HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
         *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f, playerDefaultHurtBox};
         *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f, enemyDefaultHurtBox};
 
@@ -403,29 +403,34 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(StringCmp(player->currentAnim.name, "right-cross"))
     {
-        if(player->currentAnim.currentTime > player->currentAnim.timeUntilHitBoxIsActivated && player->currentAnim.currentTime < player->currentAnim.timeUntilHitBoxIsActivated + player->currentAnim.hitBoxDuration)
-            player->currentAnim.hitBoxEndTime = globalPlatformServices->realLifeTimeInSecs + player->currentAnim.hitBoxDuration;
+        UpdateHitBoxStatus($(player->hitBox), player->currentAnim.currentTime);
+        UpdateHitBoxStatus($(enemy->hitBox), enemy->currentAnim.currentTime);
 
-        if(globalPlatformServices->realLifeTimeInSecs <= player->currentAnim.hitBoxEndTime)
+        if(player->hitBox.isActive)
         {
-            Collision_Box box{{0.0f, 0.0f}, {0.2f, 1.0f}, {0.4f, 0.4f}};
-            player->currentActiveHitBox = box;
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentActiveHitBox), player->world.translation);
+            player->hitBox.worldPos = {0.0f, 0.0f};
+            player->hitBox.worldPosOffset = {0.2f, 1.0f};
+            player->hitBox.size = {0.4f, 0.4f};
+
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hitBox), player->world.translation);
+            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->hitBox, enemy->hurtBox);
+
+            if(collisionOccurred)
+                BGZ_CONSOLE("ahhahha");
         }
         else
         {
-            Collision_Box box{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
-            player->currentActiveHitBox = box;
+            player->hitBox.worldPos = {0.0f, 0.0f};
+            player->hitBox.worldPosOffset = {0.0f, 0.0f};
+            player->hitBox.size = {0.0f, 0.0f};
         }
     }
     else
     {
-        Collision_Box box{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
-        player->currentActiveHitBox = box;
+        player->hitBox.worldPos = {0.0f, 0.0f};
+        player->hitBox.worldPosOffset = {0.0f, 0.0f};
+        player->hitBox.size = {0.0f, 0.0f};
     }
-
-    if(CheckForFighterCollisions_AxisAligned(player->currentActiveHitBox, enemy->hurtBox))
-        BGZ_CONSOLE("Hit!\n");
 
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
@@ -459,6 +464,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Draw collision boxes
         PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
-        PushRect(global_renderingInfo, player->currentActiveHitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->currentActiveHitBox.size, {0.0f, 1.0f, 0.0f});
+        PushRect(global_renderingInfo, player->hitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hitBox.size, {0.0f, 1.0f, 0.0f});
     };
 };

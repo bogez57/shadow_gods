@@ -18,9 +18,31 @@ struct Collision_Box
     v2f size{};
 };
 
+struct HitBox : public Collision_Box
+{
+    HitBox() = default;
+    HitBox(v2f worldPos, v2f worldPosOffset,v2f size); 
+
+    b isActive{false};
+    f32 endTime{};
+    f32 duration{.1f};
+    v2f centerOffset{.2f, .4f};
+    f32 timeUntilHitBoxIsActivated{.1f};
+    b timerStarted{false};
+};
+
+struct HurtBox : public Collision_Box
+{
+    HurtBox() = default;
+    HurtBox(v2f worldPos, v2f worldPosOffset,v2f size); 
+};
+
 void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& oldCollisionBox, v2f newWorldPos);
+void UpdateHitBoxStatus(HitBox&& hitBox, f32 currentAnimRunTime);
+b CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Box fighter2Box);
 
 #endif //COLLISION_DETECTION_INCLUDE
+
 
 #ifdef COLLISION_DETECTION_IMPL
 
@@ -32,6 +54,14 @@ Collision_Box::Collision_Box(v2f worldPos, v2f worldPosOffset, v2f size) :
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(*this), worldPos);
 }
 
+HurtBox::HurtBox(v2f worldPos, v2f worldPosOffset,v2f size) :
+        Collision_Box(worldPos, worldPosOffset, size)
+{}
+
+HitBox::HitBox(v2f worldPos, v2f worldPosOffset,v2f size) :
+        Collision_Box(worldPos, worldPosOffset, size)
+{}
+
 void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& collisionBox, v2f newWorldPos)
 {
     collisionBox.worldPos = newWorldPos + collisionBox.worldPosOffset;
@@ -42,7 +72,7 @@ void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& collisionBox,
     collisionBox.bounds.maxCorner.y = newWorldPos.y + collisionBox.size.y;
 };
 
-local_func b CheckForFighterCollisions_AxisAligned(Collision_Box fighter1Box, Collision_Box fighter2Box)
+local_func b CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Box fighter2Box)
 {
     // Exit returning NO intersection between bounding boxes
     if (fighter1Box.bounds.maxCorner.x < fighter2Box.bounds.minCorner.x || fighter1Box.bounds.minCorner.x > fighter2Box.bounds.maxCorner.x)
@@ -59,6 +89,17 @@ local_func b CheckForFighterCollisions_AxisAligned(Collision_Box fighter1Box, Co
     // Else intersection and thus collision has occured!
     return true;
 };
+
+void UpdateHitBoxStatus(HitBox&& hitBox, f32 currentAnimRunTime)
+{
+    if(currentAnimRunTime > hitBox.timeUntilHitBoxIsActivated && currentAnimRunTime < hitBox.timeUntilHitBoxIsActivated + hitBox.duration)
+            hitBox.endTime = globalPlatformServices->realLifeTimeInSecs + hitBox.duration;
+
+    if(globalPlatformServices->realLifeTimeInSecs <= hitBox.endTime)
+        hitBox.isActive = true;
+    else
+        hitBox.isActive = false;
+}
 
 local_func v2f FindCenterOfRectangle(AABB rectangle)
 {

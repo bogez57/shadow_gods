@@ -65,12 +65,7 @@ struct Animation
     f32 mixTimeDuration{};
     f32 currentMixTime{};
     f32 initialTimeLeftInAnimAtMixingStart{};
-    f32 hitBoxEndTime{};
-    f32 hitBoxDuration{.1f};
-    v2f hitBoxCenterOffset{.2f, .4f};
-    f32 timeUntilHitBoxIsActivated{.1f};
     PlayBackStatus status{PlayBackStatus::DEFAULT};
-    b hitBoxTimerStarted{false};
     b repeat{false};
     b hasEnded{false};
     b MixingStarted{false};
