@@ -388,14 +388,14 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
     i32 firstKeyFrame{0}, lastKeyFrame{(i32)transformationTimelineOfBone.times.size - 1};
     if(transformationTimelineOfBone.times.size == 1)
     {
-        if(currentAnimRunTime > transformationTimelineOfBone.times.At(firstKeyFrame))
+        if(currentAnimRunTime >= transformationTimelineOfBone.times.At(firstKeyFrame))
         {
             result.transformation0 = transformationTimelineOfBone.GetTransformationVal(transformationTimelineOfBone, firstKeyFrame);
             result.transformation1 = result.transformation0;
             result.percentToLerp = 1.0f;
         };
     }
-    else if(currentAnimRunTime > transformationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < transformationTimelineOfBone.times.At(lastKeyFrame))
+    else if(currentAnimRunTime >= transformationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < transformationTimelineOfBone.times.At(lastKeyFrame))
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(transformationTimelineOfBone, currentAnimRunTime);
         BGZ_ASSERT(activeKeyFrameIndex != lastKeyFrame, "Should never be returning the last keyframe of timeline here!");
@@ -426,7 +426,7 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
             InvalidDefaultCase;
         }
     }
-    else if(currentAnimRunTime > transformationTimelineOfBone.times.At(lastKeyFrame))
+    else if(currentAnimRunTime >= transformationTimelineOfBone.times.At(lastKeyFrame))
     {
         result.transformation0 = transformationTimelineOfBone.GetTransformationVal(transformationTimelineOfBone, lastKeyFrame);
         result.transformation1 = result.transformation0;
@@ -529,16 +529,6 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     Animation* anim = animQueue.queuedAnimations.GetFirstElem();
     BGZ_ASSERT(anim, "No animation returned!");
 
-    //Update anim playback time
-    f32 prevFrameAnimTime = anim->currentTime;
-    anim->currentTime += prevFrameDT;
-    if(anim->currentTime > anim->totalTime)
-    {
-        f32 diff = anim->currentTime - prevFrameAnimTime;
-        anim->currentTime -= diff;
-        anim->hasEnded = true;
-    };
-
     {//Check if mixing needs to be activated
         f32 amountOfTimeLeftInAnim = anim->totalTime - anim->currentTime;
         Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
@@ -582,11 +572,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialTranslationForMixing);
                 amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
             }
-            else if (anim->currentTime > 0.0f)
+            else 
             {
-                if(StringCmp(bone->name, "right-shoulder"))
-                    int x{};
-
                 if(translationTimelineOfBone.exists)
                 {
                     TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(translationTimelineOfBone, anim->currentTime);
@@ -607,8 +594,11 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialRotationForMixing);
                 amountOfRotation = DetermineRotationAmountAndDirection(rotationRange, bone->length);
             }
-            else if(anim->currentTime > 0.0f)
+            else 
             {
+                if(StringCmp(bone->name, "right-bicep"))
+                    int x{};
+                    
                 if(rotationTimelineOfBone.exists)
                 {
                     TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFrames<f32, RotationTimeline>(rotationTimelineOfBone, anim->currentTime);
@@ -635,6 +625,20 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         if(animQueue.queuedAnimations.Empty())
             animQueue.queuedAnimations.PushBack(animQueue.idleAnim);
     };
+
+    //Update anim playback time
+    f32 prevFrameAnimTime = anim->currentTime;
+    anim->currentTime += prevFrameDT;
+    if(anim->currentTime > anim->totalTime)
+    {
+        f32 diff = anim->currentTime - anim->totalTime;
+        anim->currentTime -= diff;
+        anim->hasEnded = true;
+    }
+    else if(anim->currentTime == anim->totalTime)
+    {
+        anim->hasEnded = true;
+    }
 
     return result;
 };
