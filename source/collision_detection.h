@@ -66,10 +66,10 @@ void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& collisionBox,
 {
     collisionBox.worldPos = newWorldPos + collisionBox.worldPosOffset;
 
-    collisionBox.bounds.minCorner.x = newWorldPos.x - collisionBox.size.x;
-    collisionBox.bounds.minCorner.y = newWorldPos.y;
-    collisionBox.bounds.maxCorner.x = newWorldPos.x + collisionBox.size.x;
-    collisionBox.bounds.maxCorner.y = newWorldPos.y + collisionBox.size.y;
+    collisionBox.bounds.minCorner.x = collisionBox.worldPos.x - (collisionBox.size.x/2.0f);
+    collisionBox.bounds.minCorner.y = collisionBox.worldPos.y - (collisionBox.size.y/2.0f);
+    collisionBox.bounds.maxCorner.x = collisionBox.worldPos.x + (collisionBox.size.x/2.0f);
+    collisionBox.bounds.maxCorner.y = collisionBox.worldPos.y + (collisionBox.size.y/2.0f);
 };
 
 local_func b CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Box fighter2Box)
