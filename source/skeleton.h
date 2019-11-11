@@ -97,7 +97,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
     i32 length;
 
     Reserve($(this->bones), 20);
-    Reserve($(this->slots), 20);
+    Reserve($(this->slots), 21);
 
     const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
@@ -152,60 +152,66 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
             i32 slotIndex {};
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
-                //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
-                Slot newSlot{};
-                PushBack($(this->slots), newSlot);
-                Slot* slot = GetLastElem(this->slots);
-
-                slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
-                slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
-                slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
+                //Ignore creating slots here for collision boxes for now. Will handle collision box
+                //creation in animation. 
+                char* slotName = (char*)Json_getString(currentSlot_json, "name", 0);
+                char slotName_firstThreeLetters[3] = {slotName[0], slotName[1], slotName[2]};
+                if(NOT StringCmp(slotName_firstThreeLetters, "box"))
                 {
-                    Region_Attachment resultRegionAttch {};
+                    //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
+                    Slot newSlot{};
+                    PushBack($(this->slots), newSlot);
+                    Slot* slot = GetLastElem(this->slots);
 
-                    const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
-                    Json* jsonSkin = Json_getItem(root, "skins");
-                    Json* jsonDefaultSkin = Json_getItem(jsonSkin->child, "attachments");
-
-                    i32 attachmentCounter {};
-                    for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)
+                    slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
+                    slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
                     {
-                        Json* jsonAttachment = currentBodyPartOfSkin_json->child;
+                        Region_Attachment resultRegionAttch {};
 
-                        if (StringCmp(jsonAttachment->name, attachmentName))
+                        const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
+                        Json* jsonSkin = Json_getItem(root, "skins");
+                        Json* jsonDefaultSkin = Json_getItem(jsonSkin->child, "attachments");
+
+                        i32 attachmentCounter {};
+                        for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)
                         {
-                            resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
-                            resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
-                            resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
-                            resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
-                            resultRegionAttch.parentBoneLocalRotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
-                            resultRegionAttch.parentBoneLocalScale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
-                            resultRegionAttch.parentBoneLocalScale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
-                            resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
-                            {
-                                AtlasRegion resultAtlasRegion {};
-                                AtlasRegion* region = atlas->regions;
+                            Json* jsonAttachment = currentBodyPartOfSkin_json->child;
 
-                                while (region)
+                            if (StringCmp(jsonAttachment->name, attachmentName))
+                            {
+                                resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
+                                resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
+                                resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
+                                resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
+                                resultRegionAttch.parentBoneLocalRotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
+                                resultRegionAttch.parentBoneLocalScale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
+                                resultRegionAttch.parentBoneLocalScale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
+                                resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
                                 {
-                                    if (StringCmp(region->name, attachmentName))
+                                    AtlasRegion resultAtlasRegion {};
+                                    AtlasRegion* region = atlas->regions;
+
+                                    while (region)
                                     {
-                                        resultAtlasRegion = *region;
-                                        break;
+                                        if (StringCmp(region->name, attachmentName))
+                                        {
+                                            resultAtlasRegion = *region;
+                                            break;
+                                        };
+
+                                        region = region->next;
                                     };
 
-                                    region = region->next;
-                                };
+                                    return resultAtlasRegion;
+                                }();
 
-                                return resultAtlasRegion;
-                            }();
-
-                            break;
+                                break;
+                            };
                         };
-                    };
 
-                    return resultRegionAttch;
-                }();
+                        return resultRegionAttch;
+                    }();
+                }; 
             };
         };   
     }

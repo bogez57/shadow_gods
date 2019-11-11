@@ -418,18 +418,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             if(collisionOccurred)
                 BGZ_CONSOLE("ahhahha");
         }
-        else
-        {
-            player->hitBox.worldPos = {0.0f, 0.0f};
-            player->hitBox.worldPosOffset = {0.0f, 0.0f};
-            player->hitBox.size = {0.0f, 0.0f};
-        }
-    }
-    else
-    {
-        player->hitBox.worldPos = {0.0f, 0.0f};
-        player->hitBox.worldPosOffset = {0.0f, 0.0f};
-        player->hitBox.size = {0.0f, 0.0f};
     }
 
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
@@ -464,6 +452,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Draw collision boxes
         PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
-        PushRect(global_renderingInfo, player->hitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hitBox.size, {0.0f, 1.0f, 0.0f});
+        if(player->hitBox.isActive)
+           PushRect(global_renderingInfo, player->hitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hitBox.size, {0.0f, 1.0f, 0.0f});
     };
 };

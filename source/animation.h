@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include "skeleton.h"
+#include "collision_detection.h"
 #include "json.h"
 
 /*
@@ -70,6 +71,7 @@ struct Animation
     b hasEnded{false};
     b MixingStarted{false};
     Dynam_Array<Bone*> bones;
+    HitBox hitBox;
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<f32, 20> boneRotations;

@@ -1,6 +1,6 @@
 {
 "skeleton": {
-	"hash": "Ri6HnlWLIOkzm86HsBRzAG+hw5I",
+	"hash": "Jme6G8GtYD+eJWi3aqVX4FBayVw",
 	"spine": "3.8.76",
 	"x": -261.69,
 	"y": -2.81,
@@ -50,12 +50,28 @@
 	{ "name": "right-bicep", "bone": "right-bicep", "color": "ffffff56", "attachment": "right-bicep" },
 	{ "name": "right-shoulder", "bone": "right-shoulder", "attachment": "right-shoulder" },
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
-	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" }
+	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
+	{ "name": "box-right-hand", "bone": "right-hand" },
+	{ "name": "box-left-hand", "bone": "left-hand" }
 ],
 "skins": [
 	{
 		"name": "default",
 		"attachments": {
+			"box-left-hand": {
+				"box-left-hand": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -8.19, 77.89, -14.48, -38.62, 130.67, -50.79, 135.1, 75.29 ]
+				}
+			},
+			"box-right-hand": {
+				"box-right-hand": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -22.74, 53.84, 106.6, 32.16, 95.67, -40.82, -33.43, -17.79 ]
+				}
+			},
 			"head": {
 				"head": { "x": 32.18, "y": -10.89, "rotation": -79.56, "width": 123, "height": 126 }
 			},
@@ -1178,6 +1194,14 @@
 		}
 	},
 	"right-cross": {
+		"slots": {
+			"box-right-hand": {
+				"attachment": [
+					{ "time": 0.1, "name": "box-right-hand" },
+					{ "time": 0.1667, "name": null }
+				]
+			}
+		},
 		"bones": {
 			"right-shoulder": {
 				"rotate": [
@@ -1201,7 +1225,7 @@
 				"rotate": [
 					{ "time": 0.0667, "angle": 6.59 },
 					{ "time": 0.1, "angle": -108.54 },
-					{ "time": 0.1333, "angle": -101.48 }
+					{ "time": 0.1333, "angle": -116.58 }
 				],
 				"translate": [
 					{ "x": -4.17, "y": -11.07 },
@@ -1285,6 +1309,18 @@
 					{ "time": 0.2, "angle": -1.96 }
 				]
 			}
+		},
+		"deform": {
+			"default": {
+				"box-right-hand": {
+					"box-right-hand": [
+						{
+							"time": 0.1,
+							"vertices": [ -69.09113, 14.55298, -8.37756, -2.74475, -17.06732, -24.38885, -77.09436, -13.33331 ]
+						}
+					]
+				}
+			}
 		}
 	},
 	"right-jab": {
@@ -1317,7 +1353,8 @@
 			"right-forearm": {
 				"rotate": [
 					{ "angle": -112.85 },
-					{ "time": 0.1, "angle": -106.12 }
+					{ "time": 0.1, "angle": -106.12 },
+					{ "time": 0.1333, "angle": -106.11 }
 				],
 				"translate": [
 					{ "x": 22.69, "y": 1.31 },
