@@ -137,13 +137,11 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
         Animation* anim = (Animation*)&this->animations.keyInfos.At(index).value;
 
         for(i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
-        {
             PushBack($(anim->bones), &skel.bones.At(boneIndex));
-        };
 
         anim->name = currentAnimation_json->name;
 
-        Json* bonesOfAnimation = currentAnimation_json->child;
+        Json* bonesOfAnimation = Json_getItem(currentAnimation_json, "bones");
         i32 boneIndex_json{}; f32 maxTimeOfAnimation{};
         for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex_json)
         {
@@ -212,6 +210,29 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
             };
         };
+
+        {//Setup hit boxes for anim
+            Json* collisionBoxesOfAnimation_json = Json_getItem(currentAnimation_json, "slots");
+
+            if(collisionBoxesOfAnimation_json)
+            {
+                i32 collisionBoxIndex{}; 
+                for (Json* currentCollisionBox_json = collisionBoxesOfAnimation_json ? collisionBoxesOfAnimation_json->child : 0; currentCollisionBox_json; currentCollisionBox_json = currentCollisionBox_json->next, ++collisionBoxIndex)
+                {
+                    Json* collisionBoxTimeline_json = Json_getItem(currentCollisionBox_json, "attachment");
+                    Json* keyFrame1_json = collisionBoxTimeline_json->child;
+                    Json* keyFrame2_json = collisionBoxTimeline_json->child->next;
+
+                    f32 time1 = Json_getFloat(keyFrame1_json, "time", 0.0f);
+                    f32 time2 = Json_getFloat(keyFrame2_json, "time", 0.0f);
+
+                    anim->hitBox.timeUntilHitBoxIsActivated = time1;
+                    anim->hitBox.duration = time2 - time1;
+                }
+
+                Json* collisionBoxDeformTimeline = Json_getItem(currentAnimation_json, "deform")->child->child->child;
+            };
+        }
 
         anim->totalTime = maxTimeOfAnimation;
     };

@@ -152,8 +152,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
             i32 slotIndex {};
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
-                //Ignore creating slots here for collision boxes for now. Will handle collision box
-                //creation in animation. 
+                //Ignore creating slots here for collision boxes for now. Will handle collision box creation in animation. 
                 char* slotName = (char*)Json_getString(currentSlot_json, "name", 0);
                 char slotName_firstThreeLetters[3] = {slotName[0], slotName[1], slotName[2]};
                 if(NOT StringCmp(slotName_firstThreeLetters, "box"))
