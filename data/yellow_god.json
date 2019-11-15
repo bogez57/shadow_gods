@@ -1,6 +1,6 @@
 {
 "skeleton": {
-	"hash": "Jme6G8GtYD+eJWi3aqVX4FBayVw",
+	"hash": "Z+pPZVq1StIEOvGoCsv4ALARBaQ",
 	"spine": "3.8.76",
 	"x": -261.69,
 	"y": -2.81,
@@ -51,20 +51,12 @@
 	{ "name": "right-shoulder", "bone": "right-shoulder", "attachment": "right-shoulder" },
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
 	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
-	{ "name": "box-right-hand", "bone": "right-hand" },
-	{ "name": "box-left-hand", "bone": "left-hand" }
+	{ "name": "box-right-hand", "bone": "right-hand", "attachment": "box-right-hand" }
 ],
 "skins": [
 	{
 		"name": "default",
 		"attachments": {
-			"box-left-hand": {
-				"box-left-hand": {
-					"type": "boundingbox",
-					"vertexCount": 4,
-					"vertices": [ -8.19, 77.89, -14.48, -38.62, 130.67, -50.79, 135.1, 75.29 ]
-				}
-			},
 			"box-right-hand": {
 				"box-right-hand": {
 					"type": "boundingbox",
@@ -1317,6 +1309,10 @@
 						{
 							"time": 0.1,
 							"vertices": [ -69.09113, 14.55298, -8.37756, -2.74475, -17.06732, -24.38885, -77.09436, -13.33331 ]
+						},
+						{
+							"time": 0.1333,
+							"vertices": [ -69.09113, 14.55298, -8.37756, -2.74475, -18.74292, -27.745, -77.09436, -13.33331 ]
 						}
 					]
 				}

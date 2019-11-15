@@ -230,7 +230,43 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                     anim->hitBox.duration = time2 - time1;
                 }
 
-                Json* collisionBoxDeformTimeline = Json_getItem(currentAnimation_json, "deform")->child->child->child;
+                //Read in original vertex coords from json file
+                Dynam_Array<v2f> originalCollisionBoxVerts{heap};
+                defer {CleanUp($(originalCollisionBoxVerts));};
+                Json* skins_json = Json_getItem(root, "skins");
+                Json* defaultSkinAttachments_json = Json_getItem(skins_json->child, "attachments");
+                Json* collisionBox_json = Json_getItem(defaultSkinAttachments_json, "box-right-hand")->child;
+                i32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
+                Json* verts_json = Json_getItem(collisionBox_json, "vertices")->child;
+                for(i32 i{}; i < numVerts; ++i)
+                {
+                    PushBack($(originalCollisionBoxVerts), v2f{verts_json->valueFloat, verts_json->next->valueFloat});
+                    verts_json = verts_json->next->next;
+                };
+
+                //Read in adjusted/deformed vert data from individual animation json info
+                Dynam_Array<v2f> adjustedCollisionBoxVerts{heap};
+                defer {CleanUp($(adjustedCollisionBoxVerts));};
+                Json* collisionBoxDeformTimeline_json = Json_getItem(currentAnimation_json, "deform");
+                Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
+                verts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
+                for(i32 i{}; i < numVerts; ++i)
+                {
+                    PushBack($(adjustedCollisionBoxVerts), v2f{verts_json->valueFloat, verts_json->next->valueFloat});
+                    verts_json = verts_json->next->next;
+                };
+
+                //Transform original verts into new transformed vert positions based on anim deformed verts
+                Dynam_Array<v2f> finalCollsionBoxVertCoords{heap};
+                defer {CleanUp($(finalCollsionBoxVertCoords));};
+                for(i32 i{}; i < numVerts; ++i)
+                {
+                    v2f finalVertCoord = originalCollisionBoxVerts.At(i) + adjustedCollisionBoxVerts.At(i);
+                    PushBack($(finalCollsionBoxVertCoords), finalVertCoord);
+                }
+
+                anim->hitBox.centerOffset = {(finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
+                                             (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f};
             };
         }
 
