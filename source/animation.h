@@ -279,6 +279,14 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
     };
 };
 
+AnimationData CopyAnimData(AnimationData src)
+{
+    AnimationData dest = src;
+    dest.animations = CopyHashMap(src.animations);
+
+    return dest;
+};
+
 void MixAnimations(AnimationData&& animData, const char* animName_from, const char* animName_to, f32 mixDuration)
 {
     i32 index_from = GetHashIndex<Animation>(animData.animations, animName_from);

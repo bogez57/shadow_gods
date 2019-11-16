@@ -83,12 +83,34 @@ struct Skeleton
     f32 width{}, height{};
 };
 
+Skeleton CopySkeleton(Skeleton src);
 void ResetBonesToSetupPose(Skeleton&& skeleton);
 Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
 
 #endif
 
 #ifdef SKELETON_IMPL
+
+//TODO: Not sure if this is working properly yet
+Skeleton CopySkeleton(Skeleton src)
+{
+    Skeleton dest = src;
+
+    CopyArray(src.bones, $(dest.bones));
+    CopyArray(src.slots, $(dest.slots));
+
+    for(i32 boneIndex{}; boneIndex < src.bones.size; ++boneIndex)
+    {
+        for(i32 childBoneIndex{}; childBoneIndex < src.bones.At(boneIndex).childBones.size; ++childBoneIndex)
+        {
+            const char* childBoneName = src.bones.At(boneIndex).childBones.At(childBoneIndex)->name;
+            Bone* bone = GetBoneFromSkeleton(dest, (char*)childBoneName);
+            dest.bones.At(boneIndex).childBones.At(childBoneIndex) = bone;
+        }
+    };
+
+    return dest;
+};
 
 Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID) :
         bones{memParitionID},

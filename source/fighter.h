@@ -26,8 +26,6 @@ struct Fighter
 #ifdef FIGHTER_IMPL
 
 Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox) : 
-    skel{skel},
-    animData{animData},
     animQueue{Init::_},
     currentAnim{Init::_},
     world{0.0f, worldPos, {1.0f, 1.0f}},
@@ -36,6 +34,9 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
 {
     {//Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
+
+        this->skel = skel;//TODO: want to eventually perform a manual copy here so I can use same skeleton data when making fighter
+        this->animData = animData;//TODO: same with this
 
         this->skel.width /= pixelsPerMeter;
         this->skel.height /= pixelsPerMeter;

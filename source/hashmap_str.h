@@ -32,6 +32,16 @@ public:
     i32 numOfCollisions{};
 };
 
+template <typename ValueType>
+HashMap_Str<ValueType> CopyHashMap(HashMap_Str<ValueType> src)
+{
+    HashMap_Str<ValueType> dest = src;
+
+    CopyArray(src.keyInfos, $(dest.keyInfos));
+
+    return dest;
+};
+
 i32 _ProduceUniqueIDForString(const char* key)
 {
     i32 uniqueID{};
