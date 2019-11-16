@@ -324,10 +324,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
         //Read in data
-        Skeleton playerSkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
-        Skeleton enemySkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
-        AnimationData playerAnimData{"data/yellow_god.json", playerSkel};
-        AnimationData enemyAnimData{"data/yellow_god.json", enemySkel};
+        Skeleton commonSkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
+        AnimationData commoneAnimData{"data/yellow_god.json", commonSkel};
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
@@ -344,8 +342,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
         HurtBox playerDefaultHurtBox{playerWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
         HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
-        *player = {"data/yellow_god.atlas", "data/yellow_god.json", playerWorldPos, /*player height*/ 2.0f, playerDefaultHurtBox};
-        *enemy = {"data/yellow_god.atlas", "data/yellow_god.json", enemyWorldPos, /*enemy height*/ 2.0f, enemyDefaultHurtBox};
+        *player = {commonSkel, commoneAnimData, playerWorldPos, /*player height*/ 2.0f, playerDefaultHurtBox};
+        *enemy = {commonSkel, commoneAnimData, enemyWorldPos, /*enemy height*/ 2.0f, enemyDefaultHurtBox};
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
