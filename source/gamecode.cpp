@@ -327,7 +327,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Skeleton playerSkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
         Skeleton enemySkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
         AnimationData playerAnimData{"data/yellow_god.json", playerSkel};
-        AnimationData enemySkel{"data/yellow_god.json", enemySkel};
+        AnimationData enemyAnimData{"data/yellow_god.json", enemySkel};
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");

@@ -10,6 +10,7 @@ struct Fighter
 {
     Fighter() = default;
     Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox);
+    Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox);
 
     Transform world;
     f32 height{};
@@ -24,6 +25,11 @@ struct Fighter
 #endif
 
 #ifdef FIGHTER_IMPL
+
+Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox)
+{
+    
+}
 
 Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox) :
     skel{atlasFilePath, jsonFilePath, heap},
