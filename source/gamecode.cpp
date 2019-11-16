@@ -403,17 +403,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if(StringCmp(player->currentAnim.name, "right-cross"))
     {
-        UpdateHitBoxStatus($(player->hitBox), player->currentAnim.currentTime);
-        UpdateHitBoxStatus($(enemy->hitBox), enemy->currentAnim.currentTime);
+        UpdateHitBoxStatus($(player->currentAnim.hitBox), player->currentAnim.currentTime);
+        UpdateHitBoxStatus($(enemy->currentAnim.hitBox), enemy->currentAnim.currentTime);
 
-        if(player->hitBox.isActive)
+        if(player->currentAnim.hitBox.isActive)
         {
-            player->hitBox.worldPos = {0.0f, 0.0f};
-            player->hitBox.worldPosOffset = {0.2f, 1.0f};
-            player->hitBox.size = {0.4f, 0.4f};
+            player->currentAnim.hitBox.worldPos = {0.0f, 0.0f};
 
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hitBox), player->world.translation);
-            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->hitBox, enemy->hurtBox);
+            Bone* bone = GetBoneFromSkeleton(player->skel, "right-hand");
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBox), bone->worldPos);
+            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBox, enemy->hurtBox);
 
             if(collisionOccurred)
                 BGZ_CONSOLE("ahhahha");
@@ -452,7 +451,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Draw collision boxes
         PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
-        if(player->hitBox.isActive)
-           PushRect(global_renderingInfo, player->hitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hitBox.size, {0.0f, 1.0f, 0.0f});
+        if(player->currentAnim.hitBox.isActive)
+           PushRect(global_renderingInfo, player->currentAnim.hitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBox.size, {0.0f, 1.0f, 0.0f});
     };
 };

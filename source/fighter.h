@@ -64,25 +64,30 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
 
         for(i32 animIndex{}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
         {
-            Animation anim = (Animation)this->animData.animations.keyInfos.At(animIndex).value;
+            Animation* anim = (Animation*)&this->animData.animations.keyInfos.At(animIndex).value;
 
-            if(anim.name)
+            if(anim->name)
             {
-                for(i32 boneIndex{}; boneIndex < anim.bones.size; ++boneIndex)
+                for(i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
                 {
-                    TranslationTimeline* boneTranslationTimeline = &anim.boneTranslationTimelines.At(boneIndex);
+                    TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
                     for(i32 keyFrameIndex{}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
                     {
                         boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
                         boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
                     }
 
-                    RotationTimeline* boneRotationTimeline = &anim.boneRotationTimelines.At(boneIndex);
+                    RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
                     for(i32 keyFrameIndex{}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
                     {
                         boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
                     }
                 };
+
+                anim->hitBox.size.width /= pixelsPerMeter;
+                anim->hitBox.size.height /= pixelsPerMeter;
+                anim->hitBox.worldPosOffset.x /= pixelsPerMeter;
+                anim->hitBox.worldPosOffset.y /= pixelsPerMeter;
             }
         }
     }
@@ -98,9 +103,6 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
 
         for (i32 boneIndex{}; boneIndex < this->skel.bones.size; ++boneIndex)
         {
-            if(StringCmp(this->skel.bones.At(boneIndex).name, "left-shoulder"))
-                int x{3};
-
             this->skel.bones.At(boneIndex).transform.translation.x *= scaleFactor;
             this->skel.bones.At(boneIndex).transform.translation.y *= scaleFactor;
             this->skel.bones.At(boneIndex).originalParentLocalPos *= scaleFactor;
@@ -114,6 +116,22 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
             this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x *= scaleFactor;
             this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y *= scaleFactor;
         };
+
+        for(i32 animIndex{}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
+        {
+            Animation* anim = (Animation*)&this->animData.animations.keyInfos.At(animIndex).value;
+
+            if(anim->name)
+            {
+                if(StringCmp(anim->name, "right-cross"))
+                    int x{};
+
+                anim->hitBox.size.width *= scaleFactor;
+                anim->hitBox.size.height *= scaleFactor;
+                anim->hitBox.worldPosOffset.x *= scaleFactor;
+                anim->hitBox.worldPosOffset.y *= scaleFactor;
+            }
+        }
     };
 
     

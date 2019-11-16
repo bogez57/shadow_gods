@@ -265,8 +265,13 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : an
                     PushBack($(finalCollsionBoxVertCoords), finalVertCoord);
                 }
 
-                anim->hitBox.centerOffset = {(finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
-                                             (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f};
+                v2f vector0_1 = finalCollsionBoxVertCoords.At(0) - finalCollsionBoxVertCoords.At(1);
+                v2f vector1_2 = finalCollsionBoxVertCoords.At(1) - finalCollsionBoxVertCoords.At(2);
+
+                anim->hitBox.size.width = Magnitude(vector0_1);
+                anim->hitBox.size.height = Magnitude(vector1_2);
+                anim->hitBox.worldPosOffset = {(finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
+                                               (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f};
             };
         }
 

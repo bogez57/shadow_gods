@@ -25,9 +25,8 @@ struct HitBox : public Collision_Box
 
     b isActive{false};
     f32 endTime{};
-    f32 duration{.1f};
-    v2f centerOffset{.2f, .4f};
-    f32 timeUntilHitBoxIsActivated{.1f};
+    f32 duration{};
+    f32 timeUntilHitBoxIsActivated{};
     b timerStarted{false};
 };
 
