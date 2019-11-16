@@ -394,21 +394,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
-        stage->size.height = 20.0f;
+        stage->size.height = 40.0f;
         stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
         //Camera Init
-        stage->camera.dilatePointOffset_normalized = {-0.2f, -0.5f};
-        stage->camera.lookAt = {20.0f, 7.0f};
-        stage->camera.zoomFactor = 1.5f;
+        stage->camera.dilatePointOffset_normalized = {0.0f, -0.3f};
+        stage->camera.lookAt = {stage->size.width/2.0f, 10.0f};
+        stage->camera.zoomFactor = .4f;
 
         //Init fighters
-        v2f playerWorldPos = { (stage->size.width / 2.0f) - 2.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 2.0f, 3.0f };
-        HurtBox playerDefaultHurtBox{playerWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
-        HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{.2f, 1.2f}, v2f{.3f, .3f}};
-        *player = {playerSkel, playerAnimData, playerWorldPos, /*player height*/ 2.0f, playerDefaultHurtBox};
-        *enemy = {enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ 2.0f, enemyDefaultHurtBox};
+        v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
+        HurtBox playerDefaultHurtBox{playerWorldPos, v2f{2.0f, 6.2f}, v2f{2.3f, 2.3f}};
+        HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{2.0f, 6.2f}, v2f{2.3f, 2.3f}};
+        *player = {playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox};
+        *enemy = {enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox};
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
