@@ -214,6 +214,9 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
         {//Setup hit boxes for anim
             Json* collisionBoxesOfAnimation_json = Json_getItem(currentAnimation_json, "slots");
 
+            if(StringCmp(anim->name, "left-jab"))
+                int x{};
+
             if(collisionBoxesOfAnimation_json)
             {
                 i32 collisionBoxIndex{}; 
@@ -235,7 +238,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
                 defer {CleanUp($(originalCollisionBoxVerts));};
                 Json* skins_json = Json_getItem(root, "skins");
                 Json* defaultSkinAttachments_json = Json_getItem(skins_json->child, "attachments");
-                Json* collisionBox_json = Json_getItem(defaultSkinAttachments_json, "box-right-hand")->child;
+                Json* collisionBox_json = Json_getItem(defaultSkinAttachments_json, defaultSkinAttachments_json->child->name)->child;
                 i32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
                 Json* verts_json = Json_getItem(collisionBox_json, "vertices")->child;
                 for(i32 i{}; i < numVerts; ++i)

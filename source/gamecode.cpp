@@ -470,7 +470,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-    if(StringCmp(player->currentAnim.name, "right-cross"))
+    if(StringCmp(player->currentAnim.name, "left-jab"))
     {
         UpdateHitBoxStatus($(player->currentAnim.hitBox), player->currentAnim.currentTime);
         UpdateHitBoxStatus($(enemy->currentAnim.hitBox), enemy->currentAnim.currentTime);
@@ -479,7 +479,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         {
             player->currentAnim.hitBox.worldPos = {0.0f, 0.0f};
 
-            Bone* bone = GetBoneFromSkeleton(player->skel, "right-hand");
+            Bone* bone = GetBoneFromSkeleton(player->skel, "left-hand");
             UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBox), bone->worldPos);
             b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBox, enemy->hurtBox);
 

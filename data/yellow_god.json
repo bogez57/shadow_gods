@@ -1,6 +1,6 @@
 {
 "skeleton": {
-	"hash": "mGDQCe6OpeLmJObqLwAP4024+ro",
+	"hash": "etLSQTf2Kf2sIiU88nTsUUVEprs",
 	"spine": "3.8.76",
 	"x": -261.69,
 	"y": -2.81,
@@ -51,12 +51,20 @@
 	{ "name": "right-shoulder", "bone": "right-shoulder", "attachment": "right-shoulder" },
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
 	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
-	{ "name": "box-right-hand", "bone": "right-hand", "attachment": "box-right-hand" }
+	{ "name": "box-right-hand", "bone": "right-hand" },
+	{ "name": "box-left-hand", "bone": "left-hand" }
 ],
 "skins": [
 	{
 		"name": "default",
 		"attachments": {
+			"box-left-hand": {
+				"box-left-hand": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 1.27, 65.11, 103.58, 56.26, 95.81, -38.74, -5.46, -30.94 ]
+				}
+			},
 			"box-right-hand": {
 				"box-right-hand": {
 					"type": "boundingbox",
@@ -557,6 +565,14 @@
 		}
 	},
 	"left-jab": {
+		"slots": {
+			"box-left-hand": {
+				"attachment": [
+					{ "time": 0.0333, "name": "box-left-hand" },
+					{ "time": 0.1, "name": null }
+				]
+			}
+		},
 		"bones": {
 			"Neck": {
 				"rotate": [
@@ -747,6 +763,23 @@
 				"translate": [
 					{}
 				]
+			}
+		},
+		"deform": {
+			"default": {
+				"box-left-hand": {
+					"box-left-hand": [
+						{
+							"time": 0.0333,
+							"vertices": [ -12.94299, -12.69147, -6.36621, -23.15778, -13.76517, -6.60889, -22.1283, 4.85443 ],
+							"curve": "stepped"
+						},
+						{
+							"time": 0.1,
+							"vertices": [ -12.94299, -12.69147, -6.36621, -23.15778, -13.76517, -6.60889, -22.1283, 4.85443 ]
+						}
+					]
+				}
 			}
 		}
 	},
