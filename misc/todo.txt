@@ -1,3 +1,2 @@
-1.) Have render engine be able to swap between degrees/radians
-2.) Have a more well defined rule or convention on what 'world pos' means (is that single point referring to the middle of a rectangle? center of a fighter? etc)
-3.) Bullet proof animation timing by thinking through it a bit more (Does it make more sense to update animation playback time at beginning or end of the anim state update function? Do all the if else statements for checking what ranges shoulde be lerped make sense? Etc.)
+1.) Have a more well defined rule or convention on what 'world pos' means (is that single point referring to the middle of a rectangle? center of a fighter? etc)
+2.) Bullet proof animation timing by thinking through it a bit more (Does it make more sense to update animation playback time at beginning or end of the anim state update function? Do all the if else statements for checking what ranges shoulde be lerped make sense? Etc.)
