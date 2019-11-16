@@ -291,6 +291,65 @@ f32 WorldRotation_Bone(Bone bone)
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
+    auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel, AnimationData&& animData)
+    {
+        f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
+
+        skel.width /= pixelsPerMeter;
+        skel.height /= pixelsPerMeter;
+
+        for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+        {
+            skel.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
+            skel.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
+            skel.bones.At(boneIndex).originalParentLocalPos.x /= pixelsPerMeter;
+            skel.bones.At(boneIndex).originalParentLocalPos.y /= pixelsPerMeter;
+
+            skel.bones.At(boneIndex).transform.rotation = Radians(skel.bones.At(boneIndex).transform.rotation);
+            skel.bones.At(boneIndex).originalParentLocalRotation = Radians(skel.bones.At(boneIndex).originalParentLocalRotation);
+
+            skel.bones.At(boneIndex).length /= pixelsPerMeter; 
+        };
+
+        for (i32 slotI{}; slotI < skel.slots.size; ++slotI)
+        {
+            skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation = Radians(skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation);
+            skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
+        };
+
+        for(i32 animIndex{}; animIndex < animData.animations.keyInfos.size; ++animIndex)
+        {
+            Animation* anim = (Animation*)&animData.animations.keyInfos.At(animIndex).value;
+
+            if(anim->name)
+            {
+                for(i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
+                {
+                    TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
+                    for(i32 keyFrameIndex{}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
+                    {
+                        boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
+                        boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
+                    }
+
+                    RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
+                    for(i32 keyFrameIndex{}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
+                    {
+                        boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
+                    }
+                };
+
+                anim->hitBox.size.width /= pixelsPerMeter;
+                anim->hitBox.size.height /= pixelsPerMeter;
+                anim->hitBox.worldPosOffset.x /= pixelsPerMeter;
+                anim->hitBox.worldPosOffset.y /= pixelsPerMeter;
+            };
+        }
+    };
+
     BGZ_ERRCTXT1("When entering GameUpdate");
 
     const Game_Controller* keyboard = &gameInput->Controllers[0];
@@ -324,10 +383,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
         //Read in data
-        Skeleton playerSkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
+        Skeleton playerSkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};//TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         Skeleton enemySkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
         AnimationData playerAnimData{"data/yellow_god.json", playerSkel};
         AnimationData enemyAnimData{"data/yellow_god.json", enemySkel};
+
+        //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
+        TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
+        TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");

@@ -26,73 +26,14 @@ struct Fighter
 #ifdef FIGHTER_IMPL
 
 Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox) : 
+    skel{skel},
+    animData{animData},
     animQueue{Init::_},
     currentAnim{Init::_},
     world{0.0f, worldPos, {1.0f, 1.0f}},
     height{fighterHeight},
     hurtBox{defaultHurtBox}
 {
-    {//Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
-        f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
-
-        this->skel = skel;//TODO: want to eventually perform a manual copy here so I can use same skeleton data when making fighter
-        this->animData = animData;//TODO: same with this
-
-        this->skel.width /= pixelsPerMeter;
-        this->skel.height /= pixelsPerMeter;
-
-        for (i32 boneIndex{}; boneIndex < this->skel.bones.size; ++boneIndex)
-        {
-            this->skel.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
-            this->skel.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
-            this->skel.bones.At(boneIndex).originalParentLocalPos.x /= pixelsPerMeter;
-            this->skel.bones.At(boneIndex).originalParentLocalPos.y /= pixelsPerMeter;
-
-            this->skel.bones.At(boneIndex).transform.rotation = Radians(this->skel.bones.At(boneIndex).transform.rotation);
-            this->skel.bones.At(boneIndex).originalParentLocalRotation = Radians(this->skel.bones.At(boneIndex).originalParentLocalRotation);
-
-            this->skel.bones.At(boneIndex).length /= pixelsPerMeter; 
-        };
-
-        for (i32 slotI{}; slotI < this->skel.slots.size; ++slotI)
-        {
-            this->skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
-            this->skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
-            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation = Radians(this->skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation);
-            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
-            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
-        };
-
-        for(i32 animIndex{}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
-        {
-            Animation* anim = (Animation*)&this->animData.animations.keyInfos.At(animIndex).value;
-
-            if(anim->name)
-            {
-                for(i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
-                {
-                    TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
-                    for(i32 keyFrameIndex{}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
-                    {
-                        boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
-                        boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
-                    }
-
-                    RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
-                    for(i32 keyFrameIndex{}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
-                    {
-                        boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
-                    }
-                };
-
-                anim->hitBox.size.width /= pixelsPerMeter;
-                anim->hitBox.size.height /= pixelsPerMeter;
-                anim->hitBox.worldPosOffset.x /= pixelsPerMeter;
-                anim->hitBox.worldPosOffset.y /= pixelsPerMeter;
-            }
-        }
-    }
-
     f32 scaleFactor{};
     { //Change fighter height
         f32 aspectRatio = this->skel.height / this->skel.width;
