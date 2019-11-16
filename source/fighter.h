@@ -27,7 +27,7 @@ struct Fighter
 
 Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox) :
     skel{atlasFilePath, jsonFilePath, heap},
-    animData{jsonFilePath, $(this->skel)},
+    animData{jsonFilePath, this->skel},
     animQueue{Init::_},
     currentAnim{Init::_},
     world{0.0f, worldPos, {1.0f, 1.0f}},
@@ -133,8 +133,6 @@ Fighter::Fighter(const char* atlasFilePath, const char* jsonFilePath, v2f worldP
             }
         }
     };
-
-    
 
     {//Adjust animations to new height standards
         //TODO: Very stupid, move out or change as I'm currently iterating over ALL keyInfos for which there are a lot in my current hashMap_Str class

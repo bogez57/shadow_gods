@@ -82,7 +82,7 @@ struct Animation
 struct AnimationData
 {
     AnimationData() = default;
-    AnimationData(const char* animDataJsonFilePath, Skeleton&& skel);
+    AnimationData(const char* animDataJsonFilePath, Skeleton skel);
 
     HashMap_Str<Animation> animations;
 };
@@ -118,7 +118,7 @@ Animation::Animation(Init) :
     Reserve($(bones), 10);
 };
 
-AnimationData::AnimationData(const char* animJsonFilePath, Skeleton&& skel) : animations{heap}
+AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : animations{heap}
 {
     i32 length;
 
