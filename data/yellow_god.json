@@ -1,6 +1,6 @@
 {
 "skeleton": {
-	"hash": "etLSQTf2Kf2sIiU88nTsUUVEprs",
+	"hash": "RflHEkIpnbuoWwHUGCGbv7Zi3f8",
 	"spine": "3.8.76",
 	"x": -261.69,
 	"y": -2.81,
@@ -52,7 +52,8 @@
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
 	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
 	{ "name": "box-right-hand", "bone": "right-hand" },
-	{ "name": "box-left-hand", "bone": "left-hand" }
+	{ "name": "box-left-hand", "bone": "left-hand", "attachment": "box-left-hand" },
+	{ "name": "box-right-forearm", "bone": "right-forearm" }
 ],
 "skins": [
 	{
@@ -63,6 +64,13 @@
 					"type": "boundingbox",
 					"vertexCount": 4,
 					"vertices": [ 1.27, 65.11, 103.58, 56.26, 95.81, -38.74, -5.46, -30.94 ]
+				}
+			},
+			"box-right-forearm": {
+				"box-right-forearm": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -26.78, 31.26, 150.65, 27.35, 147.98, -38.03, -29.54, -36.34 ]
 				}
 			},
 			"box-right-hand": {
@@ -1220,9 +1228,9 @@
 	},
 	"right-cross": {
 		"slots": {
-			"box-right-hand": {
+			"box-right-forearm": {
 				"attachment": [
-					{ "time": 0.1, "name": "box-right-hand" },
+					{ "time": 0.1, "name": "box-right-forearm" },
 					{ "time": 0.1667, "name": null }
 				]
 			}
@@ -1337,15 +1345,11 @@
 		},
 		"deform": {
 			"default": {
-				"box-right-hand": {
-					"box-right-hand": [
+				"box-right-forearm": {
+					"box-right-forearm": [
 						{
 							"time": 0.1,
-							"vertices": [ -69.09113, 14.55298, -8.37756, -2.74475, -17.06732, -24.38885, -77.09436, -13.33331 ]
-						},
-						{
-							"time": 0.1333,
-							"vertices": [ -69.09113, 14.55298, -8.37756, -2.74475, -18.74292, -27.745, -77.09436, -13.33331 ]
+							"vertices": [ 6.23474, -6.24268, -11.92813, -4.18854, -2.87445, -5.62976, 4.74579, -3.64685 ]
 						}
 					]
 				}
