@@ -45,7 +45,8 @@ struct Bone
 {
     Bone() = default;
     Bone(Init)
-        : childBones{heap}
+        : childBones{heap},
+          originalCollisionBoxVerts{heap}
     {
         Reserve($(childBones), 10);
     };
@@ -61,6 +62,7 @@ struct Bone
     f32 initialRotationForMixing{};
     f32 length{};
     Bone* parentBone{nullptr};
+    Dynam_Array<v2f> originalCollisionBoxVerts;
     Dynam_Array<Bone*> childBones; 
     b isRoot{false};
     const char* name{nullptr};
@@ -133,11 +135,12 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
         Json* jsonSkeleton = Json_getItem(root, "skeleton"); /* clang-format off */BGZ_ASSERT(jsonSkeleton, "Unable to return valid json object for skeleton!"); /* clang-format on */
         Json* jsonBones = Json_getItem(root, "bones"); /* clang-format off */BGZ_ASSERT(jsonBones, "Unable to return valid json object for bones!"); /* clang-format on */
         Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
+        Json* skins_json = Json_getItem(root, "skins");
 
         this->width = Json_getFloat(jsonSkeleton, "width", 0.0f);
         this->height = Json_getFloat(jsonSkeleton, "height", 0.0f);
 
-        { //Create Bones
+        {//Read in Bone data
             i32 boneIndex {};
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
@@ -162,6 +165,25 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
 
                 bone->length = Json_getFloat(currentBone_json, "length", 0.0f);
 
+                {//Read in collision box data
+                    Json* defaultSkinAttachments_json = Json_getItem(skins_json->child, "attachments");
+
+                    char nameOfCollisionBoxAttachment[100] = {"box-"};
+                    strcat(nameOfCollisionBoxAttachment, bone->name);
+                    if(NOT StringCmp(bone->name, "root"))
+                    {
+                        Json* collisionBox_json = Json_getItem(defaultSkinAttachments_json, nameOfCollisionBoxAttachment)->child;
+                        Json* verts_json = Json_getItem(collisionBox_json, "vertices")->child;
+
+                        i32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
+                        for(i32 i{}; i < numVerts; ++i)
+                        {
+                            PushBack($(bone->originalCollisionBoxVerts), v2f{verts_json->valueFloat, verts_json->next->valueFloat});
+                            verts_json = verts_json->next->next;
+                        };
+                    }
+                }
+
                 if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
                 {
                     bone->parentBone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentBone_json, "parent", 0));
@@ -170,11 +192,11 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
             };
         };
 
-        { //Create Slots
+        { //Read in Slot data
             i32 slotIndex {};
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
-                //Ignore creating slots here for collision boxes for now. Will handle collision box creation in animation. 
+                //Ignore creating slots here for collision boxes. Don't think I need it 
                 char* slotName = (char*)Json_getString(currentSlot_json, "name", 0);
                 char slotName_firstThreeLetters[3] = {slotName[0], slotName[1], slotName[2]};
                 if(NOT StringCmp(slotName_firstThreeLetters, "box"))
@@ -185,13 +207,12 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                     Slot* slot = GetLastElem(this->slots);
 
                     slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
-                    slot->regionAttachment = [currentSlot_json, root, atlas]() -> Region_Attachment 
+                    slot->regionAttachment = [currentSlot_json, skins_json, atlas]() -> Region_Attachment 
                     {
                         Region_Attachment resultRegionAttch {};
 
                         const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
-                        Json* jsonSkin = Json_getItem(root, "skins");
-                        Json* jsonDefaultSkin = Json_getItem(jsonSkin->child, "attachments");
+                        Json* jsonDefaultSkin = Json_getItem(skins_json->child, "attachments");
 
                         i32 attachmentCounter {};
                         for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)

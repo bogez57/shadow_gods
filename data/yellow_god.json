@@ -1,6 +1,6 @@
 {
 "skeleton": {
-	"hash": "RflHEkIpnbuoWwHUGCGbv7Zi3f8",
+	"hash": "tHNByfGedtfk9PbMoeH849qpw1E",
 	"spine": "3.8.76",
 	"x": -261.69,
 	"y": -2.81,
@@ -52,18 +52,111 @@
 	{ "name": "right-forearm", "bone": "right-forearm", "attachment": "right-forearm" },
 	{ "name": "right-hand", "bone": "right-hand", "attachment": "right-hand" },
 	{ "name": "box-right-hand", "bone": "right-hand" },
-	{ "name": "box-left-hand", "bone": "left-hand", "attachment": "box-left-hand" },
-	{ "name": "box-right-forearm", "bone": "right-forearm" }
+	{ "name": "box-left-hand", "bone": "left-hand" },
+	{ "name": "box-right-forearm", "bone": "right-forearm" },
+	{ "name": "box-pelvis", "bone": "Pelvis" },
+	{ "name": "box-left-leg", "bone": "left-leg" },
+	{ "name": "box-left-shin", "bone": "left-shin" },
+	{ "name": "box-left-foot", "bone": "left-foot" },
+	{ "name": "box-right-leg", "bone": "right-leg" },
+	{ "name": "box-right-shin", "bone": "right-shin" },
+	{ "name": "box-right-foot", "bone": "right-foot" },
+	{ "name": "box-torso", "bone": "torso" },
+	{ "name": "box-left-shoulder", "bone": "left-shoulder" },
+	{ "name": "box-left-bicep", "bone": "left-bicep" },
+	{ "name": "box-left-forearm", "bone": "left-forearm" },
+	{ "name": "box-right-shoulder", "bone": "right-shoulder" },
+	{ "name": "box-right-bicep", "bone": "right-bicep" },
+	{ "name": "box-trap", "bone": "trap" },
+	{ "name": "box-neck", "bone": "Neck" },
+	{ "name": "box-head", "bone": "head" }
 ],
 "skins": [
 	{
 		"name": "default",
 		"attachments": {
+			"box-head": {
+				"box-head": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 1.77, 38.23, 86.79, 32.89, 77.43, -75.98, -7.4, -71.65 ]
+				}
+			},
+			"box-left-bicep": {
+				"box-left-bicep": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -0.64, -38.78, 7.27, 34.03, 76.96, 25.75, 65.14, -34.1 ]
+				}
+			},
+			"box-left-foot": {
+				"box-left-foot": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -49.13, -8.9, 109.71, 53.77, 137.39, -22.2, -22.41, -75.65 ]
+				}
+			},
+			"box-left-forearm": {
+				"box-left-forearm": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -2.85, -46.7, 5.75, 50.14, 136.54, 42.05, 127.11, -48.57 ]
+				}
+			},
 			"box-left-hand": {
 				"box-left-hand": {
 					"type": "boundingbox",
 					"vertexCount": 4,
 					"vertices": [ 1.27, 65.11, 103.58, 56.26, 95.81, -38.74, -5.46, -30.94 ]
+				}
+			},
+			"box-left-leg": {
+				"box-left-leg": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 8.87, -50.6, 1.94, 58.87, 200.74, 37.04, 185.96, -63.58 ]
+				}
+			},
+			"box-left-shin": {
+				"box-left-shin": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 38.17, -72.41, 24.62, 54.89, 228.34, 72.06, 244.83, -61.71 ]
+				}
+			},
+			"box-left-shoulder": {
+				"box-left-shoulder": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 1.69, -30.91, 4.62, 38.5, 100.89, 52.07, 97.82, -27.86 ]
+				}
+			},
+			"box-neck": {
+				"box-neck": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -1.17, 32.09, 58.79, 31.37, 52.06, -35.97, 7.06, -36.75 ]
+				}
+			},
+			"box-pelvis": {
+				"box-pelvis": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 67.22, 61.47, 93.59, -82.12, 22.9, -95.11, 2.75, 51.91 ]
+				}
+			},
+			"box-right-bicep": {
+				"box-right-bicep": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 14.82, -43.28, 9.46, 41.1, 72.69, 49.25, 93.5, -35.3 ]
+				}
+			},
+			"box-right-foot": {
+				"box-right-foot": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -28.2, -6.25, 131.35, 40.78, 149.43, -19.49, -5.82, -72.19 ]
 				}
 			},
 			"box-right-forearm": {
@@ -78,6 +171,41 @@
 					"type": "boundingbox",
 					"vertexCount": 4,
 					"vertices": [ -22.74, 53.84, 106.6, 32.16, 95.67, -40.82, -33.43, -17.79 ]
+				}
+			},
+			"box-right-leg": {
+				"box-right-leg": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 41.51, -61.32, 22.62, 52.21, 180.31, 52.95, 192.18, -61.57 ]
+				}
+			},
+			"box-right-shin": {
+				"box-right-shin": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 25.96, -68.6, 26.73, 68.03, 216.28, 54.74, 229.76, -75.25 ]
+				}
+			},
+			"box-right-shoulder": {
+				"box-right-shoulder": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 16.15, -45.53, 7.36, 34.89, 80.22, 38.89, 95.06, -52.35 ]
+				}
+			},
+			"box-torso": {
+				"box-torso": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ 217.81, 72.33, 214.47, -71.86, -3.35, -62.61, 8.43, 82.97 ]
+				}
+			},
+			"box-trap": {
+				"box-trap": {
+					"type": "boundingbox",
+					"vertexCount": 4,
+					"vertices": [ -2.12, 24.07, 36.08, 22.65, 30.95, -31.94, -1.97, -27.62 ]
 				}
 			},
 			"head": {
