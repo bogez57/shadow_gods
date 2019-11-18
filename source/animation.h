@@ -211,7 +211,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
             };
         };
 
-        {//Setup hit boxes for anim
+        {//Setup hit boxes for anim if any
             Json* collisionBoxesOfAnimation_json = Json_getItem(currentAnimation_json, "slots");
 
             if(collisionBoxesOfAnimation_json)

@@ -470,23 +470,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-    if(StringCmp(player->currentAnim.name, "right-cross"))
+    UpdateHitBoxStatus($(player->currentAnim.hitBox), player->currentAnim.currentTime);
+    UpdateHitBoxStatus($(enemy->currentAnim.hitBox), enemy->currentAnim.currentTime);
+
+    if(player->currentAnim.hitBox.isActive)
     {
-        UpdateHitBoxStatus($(player->currentAnim.hitBox), player->currentAnim.currentTime);
-        UpdateHitBoxStatus($(enemy->currentAnim.hitBox), enemy->currentAnim.currentTime);
+        player->currentAnim.hitBox.worldPos = {0.0f, 0.0f};
 
-        if(player->currentAnim.hitBox.isActive)
-        {
-            player->currentAnim.hitBox.worldPos = {0.0f, 0.0f};
+        Bone* bone = GetBoneFromSkeleton(player->skel, "right-hand");
+        UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBox), bone->worldPos);
+        b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBox, enemy->hurtBox);
 
-            Bone* bone = GetBoneFromSkeleton(player->skel, "right-forearm");
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBox), bone->worldPos);
-            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBox, enemy->hurtBox);
-
-            if(collisionOccurred)
-                BGZ_CONSOLE("ahhahha");
-        }
-    }
+        if(collisionOccurred)
+            BGZ_CONSOLE("ahhahha");
+    };
 
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
