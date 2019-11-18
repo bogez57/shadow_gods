@@ -24,6 +24,7 @@ struct HitBox : public Collision_Box
     HitBox(v2f worldPos, v2f worldPosOffset,v2f size); 
 
     b isActive{false};
+    char* boneName;
     f32 endTime{};
     f32 duration{};
     f32 timeUntilHitBoxIsActivated{};

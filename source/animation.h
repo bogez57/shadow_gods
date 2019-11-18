@@ -222,6 +222,16 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
                 {
                     HitBox hitBox{};
                     PushBack($(anim->hitBoxes), hitBox);
+                    anim->hitBoxes.At(hitBoxIndex).boneName = CallocType(heap, char, 100);
+
+                    {//Get bone name collision box is attached to by cutting out "box-" prefix
+				        char boneName[100] = {};
+                        i32 j{0};
+                        for(i32 i = 4; i < strlen(currentCollisionBox_json->name); ++i, ++j)
+                            boneName[j] = currentCollisionBox_json->name[i];
+                        
+                        memcpy(anim->hitBoxes.At(hitBoxIndex).boneName, boneName, strlen(boneName));
+                    };
 
                     Json* collisionBoxTimeline_json = Json_getItem(currentCollisionBox_json, "attachment");
                     Json* keyFrame1_json = collisionBoxTimeline_json->child;
@@ -241,13 +251,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
                     Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
                     Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
                     
-                    //Get bone collision box is attached to by cutting out "box-" prefix
-					char boneName[100] = {};
-                    i32 j{0};
-                    for(i32 i = 4; i < strlen(currentCollisionBox_json->name); ++i, ++j)
-                        boneName[j] = currentCollisionBox_json->name[i];
-
-                    Bone* bone = GetBoneFromSkeleton(skel, boneName);
+                    Bone* bone = GetBoneFromSkeleton(skel, anim->hitBoxes.At(hitBoxIndex).boneName);
                     i32 numVerts = (i32)bone->originalCollisionBoxVerts.size;
                     for(i32 i{}; i < numVerts; ++i)
                     {

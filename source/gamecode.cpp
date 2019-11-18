@@ -408,8 +408,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
-        HurtBox playerDefaultHurtBox{playerWorldPos, v2f{2.0f, 6.2f}, v2f{2.3f, 2.3f}};
-        HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{2.0f, 6.2f}, v2f{2.3f, 2.3f}};
+        HurtBox playerDefaultHurtBox{playerWorldPos, v2f{2.0f, 8.9f}, v2f{2.3f, 2.3f}};
+        HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{2.0f, 8.9f}, v2f{2.3f, 2.3f}};
         *player = {playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox};
         *enemy = {enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox};
 
@@ -473,23 +473,25 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-#if 0
-    UpdateHitBoxStatus($(player->currentAnim.hitBox), player->currentAnim.currentTime);
-    UpdateHitBoxStatus($(enemy->currentAnim.hitBox), enemy->currentAnim.currentTime);
-
-    if(player->currentAnim.hitBox.isActive)
+    for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
     {
-        player->currentAnim.hitBox.worldPos = {0.0f, 0.0f};
+        UpdateHitBoxStatus($(player->currentAnim.hitBoxes.At(hitBoxIndex)), player->currentAnim.currentTime);
 
-        Bone* bone = GetBoneFromSkeleton(player->skel, "right-hand");
-        UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBox), bone->worldPos);
-        b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBox, enemy->hurtBox);
+        if(player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+        {
+            player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos = {0.0f, 0.0f};
 
-        if(collisionOccurred)
-            BGZ_CONSOLE("ahhahha");
+            Bone* bone = GetBoneFromSkeleton(player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->worldPos);
+            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes.At(hitBoxIndex), enemy->hurtBox);
+
+            if(collisionOccurred)
+                BGZ_CONSOLE("ahhahha");
+
+            PushRect(global_renderingInfo, player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBoxes.At(hitBoxIndex).size, {0.0f, 1.0f, 0.0f});
+        };
     };
-#endif
-
+    
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
     {//Render 
@@ -519,12 +521,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         DrawFighter(*enemy);
 
-#if 0
         //Draw collision boxes
         PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
-        if(player->currentAnim.hitBox.isActive)
-           PushRect(global_renderingInfo, player->currentAnim.hitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBox.size, {0.0f, 1.0f, 0.0f});
-#endif
     };
 };
