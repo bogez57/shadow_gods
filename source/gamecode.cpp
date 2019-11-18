@@ -342,10 +342,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                     }
                 };
 
-                anim->hitBox.size.width /= pixelsPerMeter;
-                anim->hitBox.size.height /= pixelsPerMeter;
-                anim->hitBox.worldPosOffset.x /= pixelsPerMeter;
-                anim->hitBox.worldPosOffset.y /= pixelsPerMeter;
+                for(i32 hitBoxIndex{}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                {
+                    anim->hitBoxes.At(hitBoxIndex).size.width /= pixelsPerMeter;
+                    anim->hitBoxes.At(hitBoxIndex).size.height /= pixelsPerMeter;
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x /= pixelsPerMeter;
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.y /= pixelsPerMeter;
+                };
             };
         }
     };
@@ -470,6 +473,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
+#if 0
     UpdateHitBoxStatus($(player->currentAnim.hitBox), player->currentAnim.currentTime);
     UpdateHitBoxStatus($(enemy->currentAnim.hitBox), enemy->currentAnim.currentTime);
 
@@ -484,6 +488,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         if(collisionOccurred)
             BGZ_CONSOLE("ahhahha");
     };
+#endif
 
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
@@ -514,10 +519,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         DrawFighter(*enemy);
 
+#if 0
         //Draw collision boxes
         PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
         if(player->currentAnim.hitBox.isActive)
            PushRect(global_renderingInfo, player->currentAnim.hitBox.worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBox.size, {0.0f, 1.0f, 0.0f});
+#endif
     };
 };

@@ -217,9 +217,12 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
 
             if(collisionBoxesOfAnimation_json)
             {
-                i32 collisionBoxIndex{}; 
-                for (Json* currentCollisionBox_json = collisionBoxesOfAnimation_json ? collisionBoxesOfAnimation_json->child : 0; currentCollisionBox_json; currentCollisionBox_json = currentCollisionBox_json->next, ++collisionBoxIndex)
+                i32 hitBoxIndex{}; 
+                for (Json* currentCollisionBox_json = collisionBoxesOfAnimation_json ? collisionBoxesOfAnimation_json->child : 0; currentCollisionBox_json; currentCollisionBox_json = currentCollisionBox_json->next, ++hitBoxIndex)
                 {
+                    HitBox hitBox{};
+                    PushBack($(anim->hitBoxes), hitBox);
+
                     Json* collisionBoxTimeline_json = Json_getItem(currentCollisionBox_json, "attachment");
                     Json* keyFrame1_json = collisionBoxTimeline_json->child;
                     Json* keyFrame2_json = collisionBoxTimeline_json->child->next;
@@ -227,8 +230,8 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
                     f32 time1 = Json_getFloat(keyFrame1_json, "time", 0.0f);
                     f32 time2 = Json_getFloat(keyFrame2_json, "time", 0.0f);
 
-                    anim->hitBox.timeUntilHitBoxIsActivated = time1;
-                    anim->hitBox.duration = time2 - time1;
+                    anim->hitBoxes.At(hitBoxIndex).timeUntilHitBoxIsActivated = time1;
+                    anim->hitBoxes.At(hitBoxIndex).duration = time2 - time1;
 
                     Dynam_Array<v2f> adjustedCollisionBoxVerts{heap}, finalCollsionBoxVertCoords{heap};
                     defer {CleanUp($(adjustedCollisionBoxVerts));};
@@ -260,10 +263,10 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
                     v2f vector0_1 = finalCollsionBoxVertCoords.At(0) - finalCollsionBoxVertCoords.At(1);
                     v2f vector1_2 = finalCollsionBoxVertCoords.At(1) - finalCollsionBoxVertCoords.At(2);
 
-                    anim->hitBox.size.width = Magnitude(vector0_1);
-                    anim->hitBox.size.height = Magnitude(vector1_2);
-                    anim->hitBox.worldPosOffset = {(finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
-                                                (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f};
+                    anim->hitBoxes.At(hitBoxIndex).size.width = Magnitude(vector0_1);
+                    anim->hitBoxes.At(hitBoxIndex).size.height = Magnitude(vector1_2);
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset = {(finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
+                                                                     (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f};
                 }
             };
         }

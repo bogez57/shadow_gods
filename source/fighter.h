@@ -65,15 +65,15 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
 
             if(anim->name)
             {
-                if(StringCmp(anim->name, "right-cross"))
-                    int x{};
-
-                anim->hitBox.size.width *= scaleFactor;
-                anim->hitBox.size.height *= scaleFactor;
-                anim->hitBox.worldPosOffset.x *= scaleFactor;
-                anim->hitBox.worldPosOffset.y *= scaleFactor;
+                for(i32 hitBoxIndex{}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                {
+                    anim->hitBoxes.At(hitBoxIndex).size.width *= scaleFactor;
+                    anim->hitBoxes.At(hitBoxIndex).size.height *= scaleFactor;
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x *= scaleFactor;
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.y *= scaleFactor;
+                };
             }
-        }
+        };
     };
 
     {//Adjust animations to new height standards
