@@ -71,7 +71,7 @@ struct Animation
     b hasEnded{false};
     b MixingStarted{false};
     Dynam_Array<Bone*> bones;
-    HitBox hitBox;
+    Dynam_Array<HitBox> hitBoxes;
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<f32, 20> boneRotations;
@@ -113,7 +113,8 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 #ifdef ANIMATION_IMPL
 
 Animation::Animation(Init) : 
-    bones{heap}
+    bones{heap},
+    hitBoxes{heap}
 {
     Reserve($(bones), 10);
 };
