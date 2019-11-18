@@ -418,6 +418,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         MixAnimations($(player->animData), "right-jab", "idle", .1f);
 
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
+        SetIdleAnimation($(enemy->animQueue), enemy->animData, "idle");
     };
 
     if (globalPlatformServices->DLLJustReloaded)
@@ -463,9 +464,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
+    enemy->currentAnim = UpdateAnimationState($(enemy->animQueue), deltaT);
     defer { CleanUpAnimation($(player->currentAnim)); };
+    defer { CleanUpAnimation($(enemy->currentAnim)); };
 
     ApplyAnimationToSkeleton($(player->skel), player->currentAnim);
+    ApplyAnimationToSkeleton($(enemy->skel), enemy->currentAnim);
 
     UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
     UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
