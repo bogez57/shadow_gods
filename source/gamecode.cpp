@@ -487,8 +487,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             if(collisionOccurred)
                 BGZ_CONSOLE("ahhahha");
-
-            PushRect(global_renderingInfo, player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBoxes.At(hitBoxIndex).size, {0.0f, 1.0f, 0.0f});
         };
     };
     
@@ -524,5 +522,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Draw collision boxes
         PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
+
+        for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
+        {
+            if(player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+                PushRect(global_renderingInfo, player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBoxes.At(hitBoxIndex).size, {0.0f, 1.0f, 0.0f});
+        };
     };
 };
