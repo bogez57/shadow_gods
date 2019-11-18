@@ -237,7 +237,13 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
                     Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
                     Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
                     
-                    Bone* bone = GetBoneFromSkeleton(skel, "right-forearm");
+                    //Get bone collision box is attached to by cutting out "box-" prefix
+					char boneName[100] = {};
+                    i32 j{0};
+                    for(i32 i = 4; i < strlen(currentCollisionBox_json->name); ++i, ++j)
+                        boneName[j] = currentCollisionBox_json->name[i];
+
+                    Bone* bone = GetBoneFromSkeleton(skel, boneName);
                     i32 numVerts = (i32)bone->originalCollisionBoxVerts.size;
                     for(i32 i{}; i < numVerts; ++i)
                     {

@@ -1,6 +1,6 @@
 {
 "skeleton": {
-	"hash": "tHNByfGedtfk9PbMoeH849qpw1E",
+	"hash": "bA8YL7P3asid0NWJdJX1fRrW9k8",
 	"spine": "3.8.76",
 	"x": -261.69,
 	"y": -2.81,
@@ -1359,6 +1359,12 @@
 			"box-right-forearm": {
 				"attachment": [
 					{ "time": 0.1, "name": "box-right-forearm" },
+					{ "time": 0.1667, "name": null }
+				]
+			},
+			"box-right-hand": {
+				"attachment": [
+					{ "time": 0.1, "name": "box-right-hand" },
 					{ "time": 0.1667, "name": null }
 				]
 			}
