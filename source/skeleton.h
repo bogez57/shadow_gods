@@ -52,6 +52,7 @@ struct Bone
     };
 
     v2f worldPos{};
+    f32 worldRotation{};
     f32 originalParentLocalRotation{};
     v2f originalParentLocalPos{};
     v2f* parentLocalScale{nullptr};

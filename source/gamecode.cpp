@@ -218,6 +218,24 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
+f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
+{
+    rotation += *bone.parentLocalRotation;
+
+    if (bone.isRoot)
+        return rotation;
+    else
+        return RecursivelyAddBoneRotations(rotation, *bone.parentBone);
+};
+
+f32 WorldRotation_Bone(Bone bone)
+{
+    if(bone.isRoot)
+        return 0;
+    else
+        return RecursivelyAddBoneRotations(*bone.parentLocalRotation, *bone.parentBone);
+};
+
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
     //With world space origin at 0, 0
@@ -275,26 +293,15 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
         v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
         fighterSkel.bones.At(i).worldPos = flippedX;
         fighterSkel.bones.At(i).worldPos += fighterWorldPos;
+        fighterSkel.bones.At(i).worldRotation = WorldRotation_Bone(fighterSkel.bones.At(i));
+        fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
     };
 
     root->worldPos = fighterWorldPos;
     root->transform.translation = fighterWorldPos;
 };
 
-f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
-{
-    rotation += *bone.parentLocalRotation;
 
-    if (bone.isRoot)
-        return rotation;
-    else
-        return RecursivelyAddBoneRotations(rotation, *bone.parentBone);
-};
-
-f32 WorldRotation_Bone(Bone bone)
-{
-    return RecursivelyAddBoneRotations(*bone.parentLocalRotation, *bone.parentBone);
-};
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
@@ -517,9 +524,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };
 
-                f32 worldRotationOfBone = WorldRotation_Bone(*currentSlot->bone);
-                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform{worldRotationOfBone, currentSlot->bone->worldPos, {1.0f, 1.0f}});
-                f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + worldRotationOfBone;
+                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform{currentSlot->bone->worldRotation, currentSlot->bone->worldPos, {1.0f, 1.0f}});
+                f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + currentSlot->bone->worldRotation;
 
                 PushTexture(global_renderingInfo, region->page->rendererObject, v2f{ currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, fighter.world.scale, uvs2, region->name);
             };
