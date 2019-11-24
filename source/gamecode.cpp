@@ -268,10 +268,17 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     Bone* root = &fighterSkel.bones[0];
     Bone* pelvis = &fighterSkel.bones[1];
 
+    UpdateBoneChainsWorldPositions_StartingFrom($(*root));
+
+    for(i32 i{}; i < fighterSkel.bones.size; ++i)
+    {
+        v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
+        fighterSkel.bones.At(i).worldPos = flippedX;
+        fighterSkel.bones.At(i).worldPos += fighterWorldPos;
+    };
+
     root->worldPos = fighterWorldPos;
     root->transform.translation = fighterWorldPos;
-
-    UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 };
 
 f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
@@ -504,6 +511,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
                 Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
 
+                if(StringCmp(currentSlot->bone->name, "left-hand"))
+                    int x{};
+
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };
 
@@ -524,8 +534,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*enemy);
 
         //Draw collision boxes
-        PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
-        PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
+        //PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
+        //PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
 
         for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
         {
