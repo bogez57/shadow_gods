@@ -290,11 +290,11 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
 
     for(i32 i{}; i < fighterSkel.bones.size; ++i)
     {
-        v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
-        fighterSkel.bones.At(i).worldPos = flippedX;
+        //v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
+        //fighterSkel.bones.At(i).worldPos = flippedX;
         fighterSkel.bones.At(i).worldPos += fighterWorldPos;
         fighterSkel.bones.At(i).worldRotation = WorldRotation_Bone(fighterSkel.bones.At(i));
-        fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
+        //fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
     };
 
     root->worldPos = fighterWorldPos;
@@ -518,16 +518,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
                 Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
 
-                if(StringCmp(currentSlot->bone->name, "left-hand"))
-                    int x{};
+                //if(StringCmp(currentSlot->bone->name, "left-hand"))
 
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };
 
                 v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform{currentSlot->bone->worldRotation, currentSlot->bone->worldPos, {1.0f, 1.0f}});
                 f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + currentSlot->bone->worldRotation;
+                v2f worldSclaeOfImage = currentSlot->regionAttachment.scale;
 
-                PushTexture(global_renderingInfo, region->page->rendererObject, v2f{ currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, fighter.world.scale, uvs2, region->name);
+                PushTexture(global_renderingInfo, region->page->rendererObject, v2f{ currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);
             };
         };
 
@@ -540,8 +540,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*enemy);
 
         //Draw collision boxes
-        //PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
-        //PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
+        PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
+        PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
 
         for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
         {

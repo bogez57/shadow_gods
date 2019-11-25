@@ -35,6 +35,7 @@
 struct Region_Attachment
 {
     f32 width, height{};
+    v2f scale{};
     v2f parentBoneLocalPos{};
     v2f parentBoneLocalScale{};
     f32 parentBoneLocalRotation{};
@@ -55,7 +56,7 @@ struct Bone
     f32 worldRotation{};
     f32 originalParentLocalRotation{};
     v2f originalParentLocalPos{};
-    v2f* parentLocalScale{nullptr};
+    v2f* scale{nullptr};
     v2f* parentLocalPos{nullptr};
     f32* parentLocalRotation{nullptr};
     Transform transform;
@@ -152,8 +153,9 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                 bone->name = Json_getString(currentBone_json, "name", 0);
                 if(StringCmp(bone->name, "root"))
                     bone->isRoot = true;
-                bone->transform.scale = v2f{1.0f, 1.0f};
-                bone->parentLocalScale = &bone->transform.scale;
+                bone->transform.scale.x = Json_getFloat(currentBone_json, "scaleX", 1.0f);
+                bone->transform.scale.y = Json_getFloat(currentBone_json, "scaleY", 1.0f);
+                bone->scale = &bone->transform.scale;
 
                 bone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
                 bone->parentLocalRotation = &bone->transform.rotation;
@@ -224,6 +226,8 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                             {
                                 resultRegionAttch.width = (f32)Json_getInt(jsonAttachment, "width", 0);
                                 resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
+                                resultRegionAttch.scale.x = (f32)Json_getFloat(jsonAttachment, "scaleX", 1.0f);
+                                resultRegionAttch.scale.y = (f32)Json_getFloat(jsonAttachment, "scaleY", 1.0f);
                                 resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
                                 resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
                                 resultRegionAttch.parentBoneLocalRotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);

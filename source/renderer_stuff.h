@@ -92,6 +92,7 @@ struct Image
     i32 height_pxls{};
     i32 pitch_pxls{};
     f32 opacity {1.0f};
+    v2f scale{1.0f, 1.0f};
 };
 
 

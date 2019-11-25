@@ -1,6 +1,6 @@
 {
 "skeleton": {
-	"hash": "bA8YL7P3asid0NWJdJX1fRrW9k8",
+	"hash": "EAL7ukcpG3W3qakfssXjgkONWqo",
 	"spine": "3.8.76",
 	"x": -261.69,
 	"y": -2.81,
@@ -22,7 +22,15 @@
 	{ "name": "left-shin", "parent": "left-leg", "length": 239.24, "rotation": -44.96, "x": 200.59, "y": -0.76 },
 	{ "name": "left-foot", "parent": "left-shin", "length": 101.8, "rotation": 76.05, "x": 239.92, "y": 0.8 },
 	{ "name": "left-forearm", "parent": "left-bicep", "length": 128.4, "rotation": 89.3, "x": 66.21, "y": -0.5 },
-	{ "name": "left-hand", "parent": "left-forearm", "length": 70.19, "rotation": 7.78, "x": 133.61, "y": -0.75 },
+	{
+		"name": "left-hand",
+		"parent": "left-forearm",
+		"length": 70.19,
+		"rotation": 7.78,
+		"x": 133.61,
+		"y": -0.75,
+		"scaleX": 1.1084
+	},
 	{ "name": "right-shoulder", "parent": "torso", "length": 75.23, "rotation": 138.51, "x": 230.09, "y": 34.27 },
 	{ "name": "right-bicep", "parent": "right-shoulder", "length": 61.01, "rotation": 19.08, "x": 77.92, "y": -0.02 },
 	{ "name": "right-leg", "parent": "Pelvis", "length": 199.87, "rotation": 163.94, "x": -2.68, "y": -0.88 },
