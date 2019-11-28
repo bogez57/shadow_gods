@@ -286,6 +286,8 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     Bone* root = &fighterSkel.bones[0];
     Bone* pelvis = &fighterSkel.bones[1];
 
+    root->transform.scale.x = 1.0f;
+
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 
     for(i32 i{}; i < fighterSkel.bones.size; ++i)
