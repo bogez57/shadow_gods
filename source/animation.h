@@ -36,6 +36,15 @@ struct TranslationTimeline
     Dynam_Array<v2f> translations{heap};
 };
 
+struct ScaleTimeline
+{
+    v2f (*GetTransformationVal)(ScaleTimeline, i32);
+    b exists{false};
+    Dynam_Array<f32> times{heap};
+    Dynam_Array<CurveType> curves{heap};
+    Dynam_Array<v2f> scales{heap};
+};
+
 f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, i32 keyFrameIndex)
 {
     return rotationTimeline.angles.At(keyFrameIndex);
@@ -44,6 +53,11 @@ f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, i32
 v2f GetTransformationVal_TranslationTimeline(TranslationTimeline translationTimeline, i32 keyFrameIndex)
 {
     return translationTimeline.translations.At(keyFrameIndex);
+};
+
+v2f GetTransformationVal_ScaleTimeline(ScaleTimeline scaleTimeline, i32 keyFrameIndex)
+{
+    return scaleTimeline.scales.At(keyFrameIndex);
 };
 
 enum class PlayBackStatus
@@ -74,6 +88,7 @@ struct Animation
     Dynam_Array<HitBox> hitBoxes;
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
+    Array<ScaleTimeline, 20> boneScaleTimelines;
     Array<f32, 20> boneRotations;
     Array<v2f, 20> boneTranslations;
     Dynam_Array<Animation> animsToTransitionTo{heap};
@@ -157,6 +172,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
 
             Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
             Json* translateTimeline_json = Json_getItem(currentBone, "translate");
+            Json* scaleTimeline_json = Json_getItem(currentBone, "scale");
 
             if (rotateTimeline_json)
             {
@@ -209,6 +225,11 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel) : anim
             
                 if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
+            };
+
+            if (translateTimeline_json)
+            {
+                //Implement
             };
         };
 
@@ -629,6 +650,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         f32 amountOfRotation{0.0f};
         TranslationTimeline translationTimelineOfBone = anim->boneTranslationTimelines.At(boneIndex);
         RotationTimeline rotationTimelineOfBone = anim->boneRotationTimelines.At(boneIndex);
+        ScaleTimeline scaleTimelineOfBone = anim->boneScaleTimelines.At(boneIndex);
 
         Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
 
@@ -677,6 +699,10 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                     amountOfRotation = DetermineRotationAmountAndDirection(rotationRange, bone->length);
                 };
             };
+        }
+
+        {//Scale timeline
+            //Implement
         }
 
         anim->boneRotations.At(boneIndex) = amountOfRotation;
