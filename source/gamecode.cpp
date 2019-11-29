@@ -514,7 +514,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     {//Render 
         auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex{ 0 }; slotIndex < fighter.skel.slots.size; ++slotIndex)
+            for (i32 slotIndex{ 0 }; slotIndex < 2; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
@@ -539,7 +539,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Push Fighters
         DrawFighter(*player);
-        DrawFighter(*enemy);
 
         for(i32 i{}; i < player->skel.bones.size; ++i)
         {

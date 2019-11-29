@@ -522,7 +522,7 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
 
 //TODO: Will eventually be removed 
 local_func void
-DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
+DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Rectf clipRect, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
 {    
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32
     {
@@ -555,13 +555,13 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
     v2f targetRectXAxis = cameraCoords.bottomRight - origin;
     v2f targetRectYAxis = cameraCoords.topLeft - origin;
 
-    f32 widthMax = (f32)(colorBufferSize.width - 1);
-    f32 heightMax = (f32)(colorBufferSize.height - 1);
+    f32 widthMax = clipRect.max.x;
+    f32 heightMax = clipRect.max.y;
     
     f32 xMin = widthMax;
-    f32 xMax = 0.0f;
+    f32 xMax = clipRect.min.x;
     f32 yMin = heightMax;
-    f32 yMax = 0.0f;
+    f32 yMax = clipRect.min.y;
 
     {//Optimization to avoid iterating over every pixel on the screen - HH ep 92
         Array<v2f, 4> vecs = {origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis};
@@ -579,8 +579,8 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
             if(yMax < ceiledY) {yMax = (f32)ceiledY;}
         }
 
-        if(xMin < 0.0f) {xMin = 0.0f;}
-        if(yMin < 0.0f) {yMin = 0.0f;}
+        if(xMin < clipRect.min.x) {xMin = clipRect.min.x;}
+        if(yMin < clipRect.min.y) {yMin = clipRect.min.y;}
         if(xMax > widthMax) {xMax = widthMax;}
         if(yMax > heightMax) {yMax = heightMax;}
     };
@@ -846,7 +846,7 @@ void DoRenderWork(void* data)
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
                 Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
-                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+                DrawTexture_UnOptimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
