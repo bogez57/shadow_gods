@@ -781,9 +781,8 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
                 ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
-                Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
 
-                Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
+                Quadf imageTargetRect_world = ProduceWorldCoordsFromCenterPoint(textureEntry.world.pos, textureEntry.dimensions, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
                 Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
@@ -798,14 +797,18 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
                 ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
 
-                Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
-
-                Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
+                Quadf targetQuad_world = ProduceWorldCoordsFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions, rectEntry.world);
                 Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
                 Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera, pixelsPerMeter);
 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_projection, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+            }break;
+
+            case EntryType_Line:
+            {
+                RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
+
             }break;
 
             InvalidDefaultCase;
@@ -838,9 +841,7 @@ void DoRenderWork(void* data)
 
                 ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
-                Quadf imageTargetRect = _ProduceQuadFromCenterPoint(textureEntry.world.pos, (f32)textureEntry.targetRectSize.width, (f32)textureEntry.targetRectSize.height);
-
-                Quadf imageTargetRect_world = WorldTransform_CenterPoint(imageTargetRect, textureEntry.world);
+                Quadf imageTargetRect_world = ProduceWorldCoordsFromCenterPoint(textureEntry.world.pos, textureEntry.dimensions, textureEntry.world);
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
                 Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
@@ -855,9 +856,7 @@ void DoRenderWork(void* data)
 
                 ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
 
-                Quadf targetQuad = _ProduceQuadFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions.x, rectEntry.dimensions.y);
-
-                Quadf targetQuad_world = WorldTransform_CenterPoint(targetQuad, rectEntry.world);
+                Quadf targetQuad_world = ProduceWorldCoordsFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions, rectEntry.world);
                 Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
                 Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera, pixelsPerMeter);
 

@@ -112,6 +112,7 @@ struct Object_Transform
 
 enum Render_Entry_Type
 {
+    EntryType_Line,
     EntryType_Rect,
     EntryType_Texture
 };
@@ -127,7 +128,6 @@ struct RenderEntry_Rect
     v2f dimensions{};
     v3f color{};
     Object_Transform world;
-    v2i targetRectSize{};
 };
 
 struct RenderEntry_Texture
@@ -138,8 +138,16 @@ struct RenderEntry_Texture
     ui8* colorData{nullptr};
     v2i size{};
     i32 pitch_pxls{};
-    v2f targetRectSize{};
+    v2f dimensions{};
     Array<v2f, 2> uvBounds;
+};
+
+struct RenderEntry_Line
+{
+    RenderEntry_Header header;
+    v2f minPoint;
+    v2f maxPoint;
+    v3f color;
 };
 
 //Helpers
@@ -150,6 +158,8 @@ v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 //Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, f32 objectHeight_inMeters, f32 worldRotation, v2f worldPos, v2f worldScale, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Image bitmap, v2f objectSize_meters, f32 worldRotation, v2f worldPos, v2f worldScale, const char* name);
+void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color);
+void PushRect(Rendering_Info* renderingInfo, v2f worldPos, f32 rotation, v2f scale, v2f dimensions, v3f color);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenCoords, f32 zoomFactor);
 void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
@@ -159,7 +169,8 @@ void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
 //void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
-Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformInfo_world);
+Quadf ProduceWorldCoordsFromCenterPoint(v2f worldPos_actingAsCenterPoint, v2f objectDimensions, Object_Transform transformInfo_world);
+Quadf ProduceWorldCoordsFromCenterPoint(v2f worldPoint_actingAsCenterPoint, v2i objectDimensions, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
@@ -183,6 +194,18 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
     return memoryPointer;
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
+
+void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color)
+{
+    RenderEntry_Line* lineEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Line);
+
+    lineEntry->header.type = EntryType_Line;
+    lineEntry->minPoint = minPoint;
+    lineEntry->maxPoint = maxPoint;
+    lineEntry->color = color;
+
+    ++renderingInfo->cmdBuffer.entryCount;
+};
 
 void PushRect(Rendering_Info* renderingInfo, v2f worldPos, f32 rotation, v2f scale, v2f dimensions, v3f color)
 {
@@ -212,7 +235,7 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, v2f objectSize_met
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     
-    textureEntry->targetRectSize= {objectSize_meters.width, objectSize_meters.height};
+    textureEntry->dimensions= {objectSize_meters.width, objectSize_meters.height};
 
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -236,7 +259,7 @@ void PushTexture(Rendering_Info* renderingInfo, Image bitmap, f32 objectHeight_m
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     
-    textureEntry->targetRectSize = {desiredWidth, desiredHeight};
+    textureEntry->dimensions= {desiredWidth, desiredHeight};
 
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -360,8 +383,10 @@ Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world)
     return transformedCoords;
 };
 
-Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformInfo_world)
+Quadf ProduceWorldCoordsFromCenterPoint(v2f worldPoint_actingAsCenterPoint, v2f objectDimensions, Object_Transform transformInfo_world)
 {
+    Quadf worldCoords_nonTransformed = _ProduceQuadFromCenterPoint(worldPoint_actingAsCenterPoint, objectDimensions.width, objectDimensions.height);
+
     //With world space origin at 0, 0
     Coordinate_Space localSpace{};
     localSpace.origin = transformInfo_world.pos;
@@ -372,9 +397,11 @@ Quadf WorldTransform_CenterPoint(Quadf localCoords, Object_Transform transformIn
     Quadf transformedCoords{};
     for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
     {
-        localCoords.vertices.At(vertIndex) -= localSpace.origin;
+        //Move coords to center of world first in order for rotation to be correct
+        worldCoords_nonTransformed.vertices.At(vertIndex) -= localSpace.origin;
+
         //This equation rotates first then moves to correct world position
-        transformedCoords.vertices.At(vertIndex) = localSpace.origin + (localCoords.vertices.At(vertIndex).x * localSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * localSpace.yBasis);
+        transformedCoords.vertices.At(vertIndex) = localSpace.origin + (worldCoords_nonTransformed.vertices.At(vertIndex).x * localSpace.xBasis) + (worldCoords_nonTransformed.vertices.At(vertIndex).y * localSpace.yBasis);
     };
 
     return transformedCoords;

@@ -541,6 +541,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         DrawFighter(*enemy);
 
+        for(i32 i{}; i < player->skel.bones.size; ++i)
+        {
+            Bone bone = player->skel.bones.At(i);
+            PushRect(global_renderingInfo, bone.worldPos, 0.0f, {1.0f, 1.0f}, {.2f, .2f}, {1.0f, 0.0f, 0.0f});
+        }
+
+#if 0
         //Draw collision boxes
         PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
         PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
@@ -550,5 +557,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             if(player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
                 PushRect(global_renderingInfo, player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBoxes.At(hitBoxIndex).size, {0.0f, 1.0f, 0.0f});
         };
+#endif
     };
 };
