@@ -824,8 +824,9 @@ void DoRenderWork(void* data)
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &work->renderingInfo.camera;
 
-    f32 pixelsPerMeter = (f32)work->colorBufferSize.y * .10f;
-    camera->dilatePoint_inScreenCoords = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter) / 2.0f;
+    f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
+    v2f screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
+    camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
 
     v2f screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
     camera->viewCenter = screenDimensions_meters / 2.0f;
@@ -845,7 +846,7 @@ void DoRenderWork(void* data)
                 Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
                 Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
-                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_camera, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }break;
@@ -899,7 +900,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             renderWork->colorBufferPitch = colorBufferPitch;
             renderWork->screenRegionCoords = screenRegionCoords;
 
-#if 1 //Multi-Threaded
+#if 0 //Multi-Threaded
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else //Single Threaded
             Screen_Region_Render_Work* work = &workArray.At(workIndex);
