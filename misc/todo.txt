@@ -1,0 +1,4 @@
+1.) Have a more well defined rule or convention on what 'world pos' means (is that single point referring to the middle of a rectangle? center of a fighter? etc)
+2.) Bullet proof animation timing by thinking through it a bit more (Does it make more sense to update animation playback time at beginning or end of the anim state update function? Do all the if else statements for checking what ranges shoulde be lerped make sense? Etc.)
+3.) Make all heap allocations explicit. So if a class requires heap allocation make sure you have to pass the heap id at initialization. This should help make the programmer aware of whats needs cleanedup
+4.) Figure out a way to guard against mistake that I've made a couple times with Dynam_Array (Using pushback when I don't want elements inserted into last array slot).

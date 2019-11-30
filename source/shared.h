@@ -1,21 +1,7 @@
 #pragma once
 
-#include "atomic_types.h"
-#include "math.h"
+#include "my_math.h"
 #include "utilities.h"
-
-struct Game_Memory
-{
-    bool IsInitialized { false };
-
-    ui32 SizeOfPermanentStorage {};
-    void* PermanentStorage { nullptr };
-
-    ui64 SizeOfTemporaryStorage {};
-    ui64 TemporaryStorageUsed {};
-    void* TemporaryStorage { nullptr };
-    ui64 TotalSize {};
-};
 
 struct Button_State
 {
@@ -78,151 +64,69 @@ struct Game_Sound_Output_Buffer
 {
 };
 
-struct Read_File_Result
+struct Game_Offscreen_Buffer
 {
-    void* FileContents { nullptr };
-    ui32 FileSize {};
+    //Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
+    void *memory;
+    i32 width;
+    i32 height;
+    i32 pitch;
 };
+
+#define PLATFORM_WORK_QUEUE_CALLBACK(name) void name(void *data)
+typedef PLATFORM_WORK_QUEUE_CALLBACK(platform_work_queue_callback);
+
 struct Platform_Services
 {
-    Read_File_Result (*ReadEntireFile)(const char*);
-    char* (*ReadFileOfLength)(ui32*, const char*);
+    char* (*ReadEntireFile)(i32&&, const char*);
     bool (*WriteEntireFile)(const char*, void*, ui32);
     void (*FreeFileMemory)(void*);
-    ui8* (*LoadRGBAImage)(const char*, int*, int*);
+    ui8* (*LoadBGRAImage)(const char*, i32&&, i32&&);
     void* (*Malloc)(sizet);
     void* (*Calloc)(sizet, sizet);
     void* (*Realloc)(void*, sizet);
     void (*Free)(void*);
+    void (*AddWorkQueueEntry)(platform_work_queue_callback, void*);
+    void (*FinishAllWork)(void);
     b DLLJustReloaded { false };
     f32 prevFrameTimeInSecs {};
     f32 targetFrameTimeInSecs {};
     f32 realLifeTimeInSecs {};
 };
 
-////////RENDER/GAME STUFF - NEED TO MOVE OUT////////////////////////////////////////////
-
-struct Image
+enum ChannelType
 {
-    ui8* Data;
-    v2i size;
+    RGBA = 1,
+    BGRA
 };
 
-struct Texture
+local_func v4f
+UnPackPixelValues(ui32 pixel, ChannelType channelType)
 {
-    ui32 ID;
-    v2i size;
-};
+    v4f result {};
 
-struct Drawable_Rect
-{
-    union
+    ui32* pixelInfo = &pixel;
+
+    switch(channelType)
     {
-        v2f Corners[4];
-        struct
+        case RGBA:
         {
-            v2f BottomLeft;
-            v2f BottomRight;
-            v2f TopRight;
-            v2f TopLeft;
-        };
-    };
-};
+            result.r = (f32)*((ui8*)pixelInfo + 0);
+            result.g = (f32)*((ui8*)pixelInfo + 1);
+            result.b = (f32)*((ui8*)pixelInfo + 2);
+            result.a = (f32)*((ui8*)pixelInfo + 3);
+        }break;
 
-struct Coordinate_System
-{
-    v2f Origin;
-    v2f XBasis;
-    v2f YBasis;
-};
+        case BGRA:
+        {
+            result.b = (f32)*((ui8*)pixelInfo + 0);
+            result.g = (f32)*((ui8*)pixelInfo + 1);
+            result.r = (f32)*((ui8*)pixelInfo + 2);
+            result.a = (f32)*((ui8*)pixelInfo + 3);
+        }break;
 
-auto ProduceRectFromCenterPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
-{
-    Drawable_Rect Result;
-    v2f MinPoint;
-    v2f MaxPoint;
-
-    MinPoint = { OriginPoint.x - (Width / 2), OriginPoint.y - (Height / 2) };
-    MaxPoint = { OriginPoint.x + (Width / 2), OriginPoint.y + (Height / 2) };
-
-    Result.BottomLeft = MinPoint;
-    Result.BottomRight.x = MinPoint.x + Width;
-    Result.BottomRight.y = MinPoint.y;
-    Result.TopRight = MaxPoint;
-    Result.TopLeft.x = MinPoint.x;
-    Result.TopLeft.y = MaxPoint.y;
-
-    return Result;
-};
-
-auto ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
-{
-    Drawable_Rect Result;
-
-    Result.BottomLeft = { OriginPoint.x - (Width / 2.0f), OriginPoint.y };
-    Result.BottomRight = { OriginPoint.x + (Width / 2.0f), OriginPoint.y };
-    Result.TopRight = { Result.BottomRight.x, OriginPoint.y + Height };
-    Result.TopLeft = { Result.BottomLeft.x, OriginPoint.y + Height };
-
-    return Result;
-};
-
-auto ProduceRectFromBottomLeftPoint(v2f OriginPoint, f32 Width, f32 Height) -> Drawable_Rect
-{
-    Drawable_Rect Result;
-
-    Result.BottomLeft = OriginPoint;
-    Result.BottomRight.x = OriginPoint.x + Width;
-    Result.BottomRight.y = OriginPoint.y;
-    Result.TopRight.x = OriginPoint.x + Width;
-    Result.TopRight.y = OriginPoint.y + Height;
-    Result.TopLeft.x = OriginPoint.x;
-    Result.TopLeft.y = OriginPoint.y + Height;
-
-    return Result;
-};
-
-auto LinearRotation(f32 RotationInDegress, v2f VectorToRotate) -> v2f
-{
-    f32 RotationInRadians = RotationInDegress * (PI / 180.0f);
-    v2f RotatedXBasis = VectorToRotate.x * v2f { Cos(RotationInRadians), Sin(RotationInRadians) };
-    v2f RotatedYBasis = VectorToRotate.y * v2f { -Sin(RotationInRadians), Cos(RotationInRadians) };
-    v2f NewRotatedVector = RotatedXBasis + RotatedYBasis;
-
-    return NewRotatedVector;
-};
-
-auto DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Drawable_Rect RectToDilate) -> Drawable_Rect
-{
-    Drawable_Rect DilatedRect {};
-
-    for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToDilate.Corners); ++CornerIndex)
-    {
-        v2f Distance = PointOfDilation - RectToDilate.Corners[CornerIndex];
-        Distance *= ScaleFactor;
-        DilatedRect.Corners[CornerIndex] = PointOfDilation - Distance;
+        default : break;
     };
 
-    return DilatedRect;
-};
-
-auto RotateAboutArbitraryPoint(v2f PointOfRotation, f32 DegreeOfRotation, Drawable_Rect RectToRotate) -> Drawable_Rect
-{
-    Drawable_Rect RotatedRect {};
-
-    for (i32 CornerIndex = 0; CornerIndex < ArrayCount(RectToRotate.Corners); ++CornerIndex)
-    {
-    };
-
-    return RotatedRect;
-};
-
-struct Game_Render_Cmds
-{
-    void (*ClearScreen)();
-    void (*DrawRect)(v2f, v2f, v4f);
-    void (*DrawBackground)(ui32, Drawable_Rect, v2f, v2f);
-    void (*DrawTexture)(ui32, Drawable_Rect, v2f*);
-    Texture (*LoadTexture)(Image);
-    void (*Init)();
+    return result;
 };

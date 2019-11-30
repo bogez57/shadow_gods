@@ -1,50 +1,75 @@
-#include "memory_allocators.h"
+//TODO: don't use member functions
 
 template <typename Type>
 class Ring_Buffer
 {
 public:
     Ring_Buffer() = default;
+    Ring_Buffer(i64 size, i32 memPartitionID_dynamic)
+        : maxSize(size)
+    {
+        this->buffer = CallocType(memPartitionID_dynamic, Type, size);
+    };
 
-    void Init(i64 size)
+    void Init(i64 size, i32 memPartitionID_dynamic)
     {
         this->maxSize = size;
-        this->buffer = MallocType(Type, size);
+        this->buffer = CallocType(memPartitionID_dynamic, Type, size);
     };
 
     void PushBack(Type elem)
     {
-        this->buffer[head] = elem;
+        this->buffer[write] = elem;
 
         if (this->full)
         {
-            this->tail = (this->tail + 1) % this->maxSize;
+            this->read = (this->read + 1) % this->maxSize;
         }
 
-        this->head = (this->head + 1) % this->maxSize;
-        this->full = this->head == this->tail;
+        this->write = (this->write + 1) % this->maxSize;
+        this->full = this->write == this->read;
     };
 
-    Type GetFirstElem()
+    Type* GetFirstElem()
     {
         if (this->Empty())
-        {
-            return Type();
-        }
+            return nullptr; 
 
-        auto value = buffer[tail];
+        auto* value = &this->buffer[this->read];
 
         return value;
     };
 
+    Type* GetLastElem()
+    {
+        if (this->Empty())
+            return nullptr; 
+
+        return &this->buffer[this->write - 1];
+    };
+
+    Type* GetNextElem()
+    {
+        if(NOT this->Empty() && this->read != this->write && this->Size() > 1)
+        {
+            if((this->read + 1) == this->maxSize)
+                return &this->buffer[0];
+            else
+                return &this->buffer[this->read + 1];
+        }
+        else
+        {
+            return nullptr;
+        }
+    };
+
     Type GetFirstElemAndRemove()
     {
-
         BGZ_ASSERT(NOT this->Empty(), "Trying to access an element from an empty ring buffer container!");
 
-        auto value = buffer[tail];
-        full = false;
-        tail = (tail + 1) % maxSize;
+        auto value = this->buffer[this->read];
+        this->full = false;
+        this->read = (this->read + 1) % maxSize;
 
         return value;
     };
@@ -53,49 +78,56 @@ public:
     {
         BGZ_ASSERT(NOT this->Empty(), "Trying to remove an element from an empty ring buffer container!");
 
-        full = false;
-        tail = (tail + 1) % maxSize;
+        this->full = false;
+        this->read = (this->read + 1) % this->maxSize;
     };
 
     b Empty()
     {
-        return (!full && (head == tail));
+        return (NOT this->full && (this->write == this->read));
     };
 
     b Full()
     {
-        return full;
+        return this->full;
     };
 
     void Reset()
     {
-        head = tail;
-        full = false;
+        this->write = this->read;
+        this->full = false;
     };
 
     i64 Size()
     {
-        i64 size = maxSize;
+        i64 size = this->maxSize;
 
-        if (NOT full)
+        if (NOT this->full)
         {
-            if (head >= tail)
+            if (this->write >= this->read)
             {
-                size = head - tail;
+                size = this->write - this->read;
             }
             else
             {
-                size = maxSize + head - tail;
+                size = this->maxSize + this->write - this->read;
             };
         };
 
         return size;
     };
 
-private:
+    void ClearRemaining()
+    {
+        if(this->read == this->maxSize - 1)
+            this->write = 0;
+        else
+            this->write = this->read + 1;
+    };
+
     i64 maxSize {};
-    i64 head {};
-    i64 tail {};
+    i64 write {};
+    i64 read {};
     b full {};
     Type* buffer { nullptr };
 };

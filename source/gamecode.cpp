@@ -1,6 +1,7 @@
 /*
     TODO List:
-
+    1.) Figure out if stb_image has a way to modify how images are read (so I can have all reads go through my platform services struct)
+    2.) Figure out a way to remove pixelsPerMeter constant that I have strune about in my skeleton and animaiton intialization code
 */
 
 #if (DEVELOPMENT_BUILD)
@@ -15,42 +16,125 @@
 
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
+#include <stb/stb_image.h>
 
+#define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
-#include "shared.h"
+
+global_variable i32 heap;
+
 #include "memory_handling.h"
+#include "array.h"
 #include "dynamic_array.h"
-#include "linked_list.h"
+#include "hashmap_str.h"
 #include "ring_buffer.h"
+#include "linked_list.h"
+#include <utility>
+
+#include "shared.h"
+#include "renderer_stuff.h"
 #include "gamecode.h"
-#include "math.h"
+#include "my_math.h"
 #include "utilities.h"
 
 global_variable Platform_Services* globalPlatformServices;
-global_variable Game_Render_Cmds globalRenderCmds;
-global_variable Memory_Handler* globalMemHandler;
+global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
-global_variable f32 viewportWidth;
-global_variable f32 viewportHeight;
+global_variable i32 renderBuffer;
 
-global_variable spAnimation* idle;
-global_variable spAnimation* rightCrossAnim;
-global_variable spAnimation* leftJabAnim;
-global_variable spAnimation* rightUpperCutAnim;
-global_variable spAnimation* highKickAnim;
-global_variable spAnimation* lowKickAnim;
-global_variable spAnimation* punchFlurryAnim;
-
-#include "memory_handling.cpp"
-#include "memory_allocators.cpp"
-#include "collisions.cpp"
-
-// Third Party
-#include "spine.cpp"
+//Third Party source
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MALLOC(sz) MallocSize(heap, sz) 
+#define STBI_REALLOC(p, newsz) ReAllocSize(heap, p, newsz) 
+#define STBI_FREE(p) DeAlloc(heap, p) 
+#include <stb/stb_image.h>
 #include <boagz/error_context.cpp>
 
-local_func auto FlipImage(Image image) -> Image
+//User source
+#define MEMORY_HANDLING_IMPL
+#include "memory_handling.h"
+#define DYNAMIC_ALLOCATOR_IMPL
+#include "dynamic_allocator.h"
+#define LINEAR_ALLOCATOR_IMPL
+#include "linear_allocator.h"
+#define COLLISION_DETECTION_IMPL
+#include "collision_detection.h"
+#define JSON_IMPL
+#include "json.h"
+#define ATLAS_IMPL
+#include "atlas.h"
+#define SKELETON_IMPL
+#include "skeleton.h"
+#define ANIMATION_IMPL
+#include "animation.h"
+#define FIGHTER_IMPL
+#include "fighter.h"
+#define GAME_RENDERER_STUFF_IMPL
+#include "renderer_stuff.h"
+
+//Move out to Renderer eventually
+#if 0
+local_func
+Image CreateEmptyImage(i32 width, i32 height)
+{
+    Image image{};
+
+    i32 numBytesPerPixel{4};
+    image.data = (ui8*)MallocSize(heap, width*height*numBytesPerPixel);
+    image.size = v2i{width, height};
+    image.pitch = width*numBytesPerPixel;
+
+    return image;
+};
+
+local_func
+void GenerateSphereNormalMap(Image&& sourceImage)
+{
+    f32 invWidth = 1.0f / (f32)(sourceImage.size.width - 1);
+    f32 invHeight = 1.0f / (f32)(sourceImage.size.height - 1);
+                                
+    ui8* row = (ui8*)sourceImage.data;
+    for(i32 y = 0; y < sourceImage.size.height; ++y)
+    {
+        ui32* pixel = (ui32*)row;
+
+        for(i32 x = 0; x < sourceImage.size.width; ++x)
+        {
+            v2f normalUV = {invWidth*(f32)x, invHeight*(f32)y};
+            
+            f32 normalX = 2.0f*normalUV.x - 1.0f;
+            f32 normalY = 2.0f*normalUV.y - 1.0f;
+                                        
+            f32 rootTerm = 1.0f - normalX*normalX - normalY*normalY;
+            f32 normalZ = 0.0f;
+
+            v3f normal {0.0f, 0.0f, 1.0f};
+
+            if(rootTerm >= 0.0f)
+            {
+                normalZ = Sqrt(rootTerm);
+                normal = v3f{normalX, normalY, normalZ};
+            };
+
+            //Convert from -1 to 1 range to value between 0 and 255
+            v4f color = {255.0f*(.5f*(normal.x + 1.0f)),
+                         255.0f*(.5f*(normal.y + 1.0f)),
+                         255.0f*(.5f*(normal.z + 1.0f)),
+                         0.0f};
+
+            *pixel++ = (((ui8)(color.a + .5f) << 24) |
+                        ((ui8)(color.r + .5f) << 16) |
+                        ((ui8)(color.g + .5f) << 8) |
+                        ((ui8)(color.b + .5f) << 0));
+            };
+
+        row += sourceImage.pitch;
+    };
+};
+
+local_func 
+Image FlipImage(Image image)
 {
     i32 widthInBytes = image.size.width * 4;
     ui8* p_topRowOfTexels = nullptr;
@@ -60,8 +144,8 @@ local_func auto FlipImage(Image image) -> Image
 
     for (i32 row = 0; row < halfHeight; ++row)
     {
-        p_topRowOfTexels = image.Data + row * widthInBytes;
-        p_bottomRowOfTexels = image.Data + (image.size.height - row - 1) * widthInBytes;
+        p_topRowOfTexels = image.data + row * widthInBytes;
+        p_bottomRowOfTexels = image.data + (image.size.height - row - 1) * widthInBytes;
 
         for (i32 col = 0; col < widthInBytes; ++col)
         {
@@ -75,179 +159,7 @@ local_func auto FlipImage(Image image) -> Image
 
     return image;
 };
-
-//Set to animationState->listener
-local_func auto SpineEventCallBack(spAnimationState* state, spEventType type, spTrackEntry* entry, spEvent* event) -> void
-{
-    switch (type)
-    {
-    case SP_ANIMATION_START:
-    {
-        break;
-    }
-    case SP_ANIMATION_INTERRUPT:
-    {
-        break;
-    }
-    case SP_ANIMATION_END:
-    {
-        break;
-    }
-    case SP_ANIMATION_COMPLETE:
-    {
-        break;
-    }
-    case SP_ANIMATION_DISPOSE:
-    {
-        break;
-    }
-    case SP_ANIMATION_EVENT:
-    {
-        break;
-    }
-    default:
-        printf("Unknown event type: %i", type);
-    }
-}
-
-local_func auto ReloadAllSpineTimelineFunctionPtrs(spSkeletonData skelData) -> spSkeletonData
-{
-    for (i32 animationIndex { 0 }; animationIndex < skelData.animationsCount;
-         ++animationIndex)
-    {
-        for (i32 timelineIndex { 0 };
-             timelineIndex < skelData.animations[animationIndex]->timelinesCount;
-             ++timelineIndex)
-        {
-            spTimeline* Timeline = skelData.animations[animationIndex]->timelines[timelineIndex];
-
-            switch (Timeline->type)
-            {
-            case SP_TIMELINE_ROTATE:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spRotateTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spRotateTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_SCALE:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spScaleTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spScaleTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_SHEAR:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spShearTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spShearTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_TRANSLATE:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spTranslateTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spTranslateTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_EVENT:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spEventTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spEventTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spEventTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_ATTACHMENT:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spAttachmentTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spAttachmentTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spAttachmentTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_COLOR:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spColorTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spColorTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_DEFORM:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spDeformTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spDeformTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spDeformTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_IKCONSTRAINT:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spIkConstraintTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spIkConstraintTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_PATHCONSTRAINTMIX:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintMixTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintMixTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_PATHCONSTRAINTPOSITION:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintPositionTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintPositionTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_PATHCONSTRAINTSPACING:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spPathConstraintSpacingTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spPathConstraintSpacingTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_TRANSFORMCONSTRAINT:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spTransformConstraintTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spTransformConstraintTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_TWOCOLOR:
-            {
-                VTABLE(spTimeline, Timeline)->dispose = _spBaseTimeline_dispose;
-                VTABLE(spTimeline, Timeline)->apply = _spTwoColorTimeline_apply;
-                VTABLE(spTimeline, Timeline)->getPropertyId = _spTwoColorTimeline_getPropertyId;
-            }
-            break;
-
-            case SP_TIMELINE_DRAWORDER:
-            {
-                // Adding this currently to satisfy
-                // clang compiler warning. Might need to
-                // implement in future
-            }
-            break;
-            };
-        };
-    };
-
-    return skelData;
-};
+#endif
 
 inline b KeyPressed(Button_State KeyState)
 {
@@ -299,373 +211,351 @@ inline b KeyReleased(Button_State KeyState)
     return false;
 };
 
-void DoComboMoveWith(Fighter* fighter, spAnimation* comboAnim1, spAnimation* comboAnim2, spAnimation* comboAnim3)
+f32 WidthInMeters(Image bitmap, f32 heightInMeters)
 {
-    ui32 const comboMove1 { 0 };
-    ui32 const comboMove2 { 1 };
-    ui32 const comboMove3 { 2 };
+    f32 width_meters = bitmap.aspectRatio * heightInMeters;
 
-    if (fighter->currentAnimTrackEntry)
+    return width_meters;
+};
+
+f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
+{
+    rotation += *bone.parentLocalRotation;
+
+    if (bone.isRoot)
+        return rotation;
+    else
+        return RecursivelyAddBoneRotations(rotation, *bone.parentBone);
+};
+
+f32 WorldRotation_Bone(Bone bone)
+{
+    if(bone.isRoot)
+        return 0;
+    else
+        return RecursivelyAddBoneRotations(*bone.parentLocalRotation, *bone.parentBone);
+};
+
+v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
+{
+    //With world space origin at 0, 0
+    Coordinate_Space localSpace{};
+    localSpace.origin = parentTransform.translation;
+    localSpace.xBasis = v2f{ CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
+    localSpace.yBasis = parentTransform.scale.y * PerpendicularOp(localSpace.xBasis);
+    localSpace.xBasis *= parentTransform.scale.x;
+
+    v2f transformedCoords{};
+
+    //This equation rotates first then moves to correct world position
+    transformedCoords = localSpace.origin + (localCoords.x * localSpace.xBasis) + (localCoords.y * localSpace.yBasis);
+
+    return transformedCoords;
+};
+
+v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
+{
+    v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.transform);
+
+    if (boneToGrabTransformFrom.isRoot) //If root bone has been hit then exit recursion by returning world pos of main bone
     {
-        if (spTrackEntry_getAnimationTime(fighter->currentAnimTrackEntry) == fighter->currentAnimTrackEntry->animationEnd)
+        return parentLocalPos;
+    }
+    else
+    {
+        return WorldTransform_Bone(parentLocalPos, *boneToGrabTransformFrom.parentBone);
+    };
+};
+
+inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
+{
+    if (mainBone.childBones.size > 0)
+    {
+        for (i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
-            fighter->currentActionComboMove = comboMove1;
+            Bone* childBone = mainBone.childBones[childBoneIndex];
+            childBone->worldPos = WorldTransform_Bone(*childBone->parentLocalPos, *childBone->parentBone);
+
+            UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
+        };
+    };
+}
+
+void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPos)
+{
+    Bone* root = &fighterSkel.bones[0];
+    Bone* pelvis = &fighterSkel.bones[1];
+
+    root->transform.scale.x = 1.0f;
+
+    UpdateBoneChainsWorldPositions_StartingFrom($(*root));
+
+    for(i32 i{}; i < fighterSkel.bones.size; ++i)
+    {
+        //v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
+        //fighterSkel.bones.At(i).worldPos = flippedX;
+        fighterSkel.bones.At(i).worldPos += fighterWorldPos;
+        fighterSkel.bones.At(i).worldRotation = WorldRotation_Bone(fighterSkel.bones.At(i));
+        //fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
+    };
+
+    root->worldPos = fighterWorldPos;
+    root->transform.translation = fighterWorldPos;
+};
+
+
+
+extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+{
+    auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel, AnimationData&& animData)
+    {
+        f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
+
+        skel.width /= pixelsPerMeter;
+        skel.height /= pixelsPerMeter;
+
+        for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+        {
+            skel.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
+            skel.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
+            skel.bones.At(boneIndex).originalParentLocalPos.x /= pixelsPerMeter;
+            skel.bones.At(boneIndex).originalParentLocalPos.y /= pixelsPerMeter;
+
+            skel.bones.At(boneIndex).transform.rotation = Radians(skel.bones.At(boneIndex).transform.rotation);
+            skel.bones.At(boneIndex).originalParentLocalRotation = Radians(skel.bones.At(boneIndex).originalParentLocalRotation);
+
+            skel.bones.At(boneIndex).length /= pixelsPerMeter; 
+        };
+
+        for (i32 slotI{}; slotI < skel.slots.size; ++slotI)
+        {
+            skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation = Radians(skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation);
+            skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
+        };
+
+        for(i32 animIndex{}; animIndex < animData.animations.keyInfos.size; ++animIndex)
+        {
+            Animation* anim = (Animation*)&animData.animations.keyInfos.At(animIndex).value;
+
+            if(anim->name)
+            {
+                for(i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
+                {
+                    TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
+                    for(i32 keyFrameIndex{}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
+                    {
+                        boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
+                        boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
+                    }
+
+                    RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
+                    for(i32 keyFrameIndex{}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
+                    {
+                        boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
+                    }
+                };
+
+                for(i32 hitBoxIndex{}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                {
+                    anim->hitBoxes.At(hitBoxIndex).size.width /= pixelsPerMeter;
+                    anim->hitBoxes.At(hitBoxIndex).size.height /= pixelsPerMeter;
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x /= pixelsPerMeter;
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.y /= pixelsPerMeter;
+                };
+            };
         }
     };
 
-    switch (fighter->currentActionComboMove)
-    {
-    case comboMove1:
-    {
-        fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim1, 0, 0.0f);
-        fighter->trackEntries.PushBack(fighter->currentAnimTrackEntry);
-        fighter->currentActionComboMove++;
-    }
-    break;
-
-    case comboMove2:
-    {
-        fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim2, 0, 0.0f);
-        fighter->trackEntries.PushBack(fighter->currentAnimTrackEntry);
-        fighter->currentActionComboMove++;
-    }
-    break;
-
-    case comboMove3:
-    {
-        fighter->currentAnimTrackEntry = spAnimationState_addAnimation(fighter->animationState, 0, comboAnim3, 0, 0.0f);
-        fighter->trackEntries.PushBack(fighter->currentAnimTrackEntry);
-        fighter->currentActionComboMove++;
-    }
-    break;
-    }
-};
-
-extern "C" void GameUpdate(Game_Memory* gameMemory, Platform_Services* platformServices, Game_Render_Cmds renderCmds, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
-{
     BGZ_ERRCTXT1("When entering GameUpdate");
-
-    Game_State* gameState = (Game_State*)gameMemory->PermanentStorage;
-    deltaT = platformServices->prevFrameTimeInSecs;
-
-    globalMemHandler = &gameState->memHandler;
-    globalPlatformServices = platformServices;
-    globalRenderCmds = renderCmds;
-
-    Stage_Data* stage = &gameState->stage;
-    Fighter* player = &stage->player;
-    Fighter* ai = &stage->ai;
 
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
 
-    if (!gameMemory->IsInitialized)
+    Game_State* gState = (Game_State*)gameMemory->PermanentStorage;
+
+    //Setup globals
+    deltaT = platformServices->prevFrameTimeInSecs;
+    deltaTFixed = platformServices->targetFrameTimeInSecs;
+    globalPlatformServices = platformServices;
+    global_renderingInfo = renderingInfo;
+
+    Stage_Data* stage = &gState->stage;
+    Fighter* player = &stage->player;
+    Fighter* enemy = &stage->enemy;
+    Fighter* enemy2 = &stage->enemy2;
+
+    if (NOT gameMemory->Initialized)
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
-        gameMemory->IsInitialized = true;
+        gameMemory->Initialized = true;
 
-        viewportWidth = 1280.0f;
-        viewportHeight = 720.0f;
-
-        deltaTFixed = platformServices->targetFrameTimeInSecs;
-
-        { // Split game memory into more specific memory regions
-            gameState->memHandler.memRegions[DYNAMIC] = CreateRegionFromGameMem_1(gameMemory, Megabytes(10));
-            InitDynamAllocator_1(&gameState->memHandler.dynamAllocator);
+        { //Initialize memory/allocator stuff
+            InitApplicationMemory(gameMemory);
+            heap = CreatePartitionFromMemoryBlock(gameMemory, Megabytes(800), DYNAMIC);
+            InitDynamAllocator(heap);
         };
 
-        { // Init spine stuff
-            BGZ_ERRCTXT1("When Initializing Spine stuff");
+        *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
-            spAtlas* atlas = spAtlas_createFromFile("data/yellow_god.atlas", 0);
-            spSkeletonJson* skelJson = spSkeletonJson_create(atlas);
-            stage->commonSkeletonData = spSkeletonJson_readSkeletonDataFile(skelJson, "data/yellow_god.json");
-            stage->commonAnimationData = spAnimationStateData_create(stage->commonSkeletonData);
-            spSkeletonJson_dispose(skelJson);
-        };
+        //Read in data
+        Skeleton playerSkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};//TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        Skeleton enemySkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
+        AnimationData playerAnimData{"data/yellow_god.json", playerSkel};
+        AnimationData enemyAnimData{"data/yellow_god.json", enemySkel};
 
-        { //Init stage info
-            stage->info.displayImage.Data = platformServices->LoadRGBAImage("data/4k.jpg", &stage->info.displayImage.size.width, &stage->info.displayImage.size.height);
-            stage->info.displayImage = FlipImage(stage->info.displayImage); // Since opengl will read-in image upside down
-            stage->info.currentTexture = renderCmds.LoadTexture(stage->info.displayImage); // TODO: Move out to renderer
-            stage->info.size.width = (f32)stage->info.displayImage.size.width;
-            stage->info.size.height = (f32)stage->info.displayImage.size.height;
-            stage->info.centerPoint = { (f32)stage->info.size.width / 2, (f32)stage->info.size.height / 2 };
-        };
+        //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
+        TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
+        TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
 
-        { // Set stage camera
-            stage->camera.viewWidth = viewportWidth;
-            stage->camera.viewHeight = viewportHeight;
-            stage->camera.lookAt = { stage->info.centerPoint.x, stage->info.centerPoint.y - 600.0f };
-            stage->camera.viewCenter = { stage->camera.viewWidth / 2.0f, stage->camera.viewHeight / 2.0f };
-            stage->camera.dilatePoint = stage->camera.viewCenter - v2f { 0.0f, 200.0f };
-            stage->camera.zoomFactor = 1.0f;
-        };
+        //Stage Init
+        stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
+        stage->size.height = 40.0f;
+        stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
+        stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
-        { // Setup fighters
-            player->skeleton = spSkeleton_create(stage->commonSkeletonData);
-            player->animationState = spAnimationState_create(stage->commonAnimationData);
-            player->worldPos = { (stage->info.size.width / 2.0f) - 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-            player->skeleton->x = player->worldPos.x;
-            player->skeleton->y = player->worldPos.y;
-            player->skeleton->scaleX = .6f;
-            player->skeleton->scaleY = .6f;
+        //Camera Init
+        stage->camera.dilatePointOffset_normalized = {0.0f, -0.3f};
+        stage->camera.lookAt = {stage->size.width/2.0f, 10.0f};
+        stage->camera.zoomFactor = .4f;
 
-            ai->skeleton = spSkeleton_create(stage->commonSkeletonData);
-            ai->animationState = spAnimationState_create(stage->commonAnimationData);
-            ai->worldPos = { (stage->info.size.width / 2.0f) + 300.0f, (stage->info.size.height / 2.0f) - 900.0f };
-            ai->skeleton->x = ai->worldPos.x;
-            ai->skeleton->y = ai->worldPos.y;
-            ai->skeleton->scaleX = -.6f;
-            ai->skeleton->scaleY = .6f;
-        };
+        //Init fighters
+        v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
+        HurtBox playerDefaultHurtBox{playerWorldPos, v2f{2.0f, 8.9f}, v2f{2.3f, 2.3f}};
+        HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{2.0f, 8.9f}, v2f{2.3f, 2.3f}};
+        *player = {playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox};
+        *enemy = {enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox};
 
-        { //Setup animation stuff
-            spAnimationState_setAnimationByName(player->animationState, 0, "idle", 1);
-            spAnimationState_setAnimationByName(ai->animationState, 0, "idle", 1);
+        MixAnimations($(player->animData), "idle", "walk", .2f);
+        MixAnimations($(player->animData), "walk", "run", .2f);
+        MixAnimations($(player->animData), "right-jab", "idle", .1f);
 
-            idle = spSkeletonData_findAnimation(stage->commonSkeletonData, "idle");
-            rightCrossAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
-            leftJabAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
-            rightUpperCutAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
-            highKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
-            lowKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "low_kick");
-            punchFlurryAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch_flurry");
-
-            { //Setup animation collision boxes which are unique to each animation
-                { //Setup hit boxes
-                    rightCrossAnim->hitBoxCenterOffset = { 300.0f, 400.0f };
-                    rightCrossAnim->hitBoxSize = { 80.0f, 40.0f };
-                    rightCrossAnim->hitBoxDuration = .1f;
-
-                    leftJabAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
-                    leftJabAnim->hitBoxSize = { 60.0f, 40.0f };
-                    leftJabAnim->hitBoxDuration = .1f;
-
-                    rightUpperCutAnim->hitBoxCenterOffset = { 100.0f, 400.0f };
-                    rightUpperCutAnim->hitBoxSize = { 30.0f, 100.0f };
-                    rightUpperCutAnim->hitBoxDuration = .1f;
-
-                    lowKickAnim->hitBoxCenterOffset = { 200.0f, 210.0f };
-                    lowKickAnim->hitBoxSize = { 30.0f, 130.0f };
-                    lowKickAnim->hitBoxDuration = .15f;
-
-                    punchFlurryAnim->hitBoxCenterOffset = { 200.0f, 400.0f };
-                    punchFlurryAnim->hitBoxSize = { 80.0f, 80.0f };
-                    punchFlurryAnim->hitBoxDuration = .15f;
-                };
-
-                { //Setup hurt boxes
-                    idle->hurtBoxCenterOffset = { 0.0f, 0.0f };
-                    idle->hurtBoxSize = { 100.0f, 500.0f };
-
-                    rightCrossAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
-                    rightCrossAnim->hurtBoxSize = { 100.0f, 500.0f };
-
-                    leftJabAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
-                    leftJabAnim->hurtBoxSize = { 100.0f, 500.0f };
-
-                    rightUpperCutAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
-                    rightUpperCutAnim->hurtBoxSize = { 100.0f, 500.0f };
-
-                    lowKickAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
-                    lowKickAnim->hurtBoxSize = { 100.0f, 500.0f };
-
-                    punchFlurryAnim->hurtBoxCenterOffset = { 0.0f, 0.0f };
-                    punchFlurryAnim->hurtBoxSize = { 100.0f, 500.0f };
-                };
-
-                player->trackEntries.Init(10);
-            };
-        };
-
-        // For dll reloading/live code editing purposes
-        gameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
-        gameState->emptyAnim = SP_EMPTY_ANIMATION;
+        SetIdleAnimation($(player->animQueue), player->animData, "idle");
+        SetIdleAnimation($(enemy->animQueue), enemy->animData, "idle");
     };
 
-    if (globalPlatformServices->DLLJustReloaded || gameState->SpineFuncPtrTest != _spAttachmentTimeline_apply)
+    if (globalPlatformServices->DLLJustReloaded)
     {
         BGZ_CONSOLE("Dll reloaded!");
-
-        { //Perform necessary operations to keep spine working with live code editing/input playback
-            gameState->SpineFuncPtrTest = _spAttachmentTimeline_apply;
-            SP_EMPTY_ANIMATION = gameState->emptyAnim;
-            globalPlatformServices->DLLJustReloaded = false;
-            *stage->commonSkeletonData = ReloadAllSpineTimelineFunctionPtrs(*stage->commonSkeletonData);
-            player->animationState->listener = SpineEventCallBack;
-            rightCrossAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_cross");
-            leftJabAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "left_jab");
-            rightUpperCutAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "right_uppercut");
-            highKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "high_kick");
-            lowKickAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "low_kick");
-            punchFlurryAnim = spSkeletonData_findAnimation(stage->commonSkeletonData, "punch_flurry");
-        };
+        globalPlatformServices->DLLJustReloaded = false;
     };
-
-    spAnimationState_update(player->animationState, deltaT);
-    spAnimationState_update(ai->animationState, deltaT);
-
-    if (KeyComboPressed(keyboard->ActionLeft, keyboard->MoveRight))
-    {
-        spTrackEntry* entry = spAnimationState_addAnimation(stage->player.animationState, 0, highKickAnim, 0, 0.0f);
-        player->trackEntries.PushBack(entry);
-    }
-
-    else if (KeyPressed(keyboard->ActionLeft))
-    {
-        DoComboMoveWith(player, rightCrossAnim, leftJabAnim, rightUpperCutAnim);
-    };
-
-    if (KeyPressed(keyboard->ActionRight))
-    {
-        DoComboMoveWith(player, lowKickAnim, rightCrossAnim, punchFlurryAnim);
-    }
 
     if (KeyHeld(keyboard->MoveRight))
     {
-        player->worldPos.x += 2.0f;
-    }
+        player->world.translation.x += .1f;
+        QueueAnimation($(player->animQueue), player->animData, "walk", PlayBackStatus::NEXT);
+    };
 
     if (KeyHeld(keyboard->MoveLeft))
     {
-        player->worldPos.x -= 2.0f;
+        player->world.translation.x -= .1f;
     }
 
-    ApplyAnimationStateToSkeleton_2(player->skeleton, player->animationState, player->worldPos);
-    ApplyAnimationStateToSkeleton_2(ai->skeleton, ai->animationState, ai->worldPos);
-    TransformSkeletonToWorldSpace_1(player->skeleton);
-    TransformSkeletonToWorldSpace_1(ai->skeleton);
-
-    { //Create hit boxes if need be
-        if (player->trackEntries.Size() > 0)
-        {
-            //If animation has started
-            if (spTrackEntry_getAnimationTime(player->trackEntries.GetFirstElem()) > 0.0f)
-            {
-                spTrackEntry* entry = player->trackEntries.GetFirstElem();
-
-                if (NOT entry->animation->hitBoxTimerStarted)
-                {
-                    entry->animation->hitBoxTimerStarted = true;
-                    entry->animation->hitBoxEndTime = platformServices->realLifeTimeInSecs + entry->animation->hitBoxDuration;
-                }
-
-                //Have collision detection based on realtime instad of tying to animations for more consistency
-                if (platformServices->realLifeTimeInSecs <= entry->animation->hitBoxEndTime)
-                {
-                    v2f hitBoxCenterWorldPos = entry->animation->hitBoxCenterOffset + player->worldPos;
-                    InitCollisionBox_1(&player->hitBox, hitBoxCenterWorldPos, entry->animation->hitBoxSize);
-                }
-                else
-                {
-                    entry->animation->hitBoxTimerStarted = false;
-                    player->trackEntries.RemoveElem();
-                }
-            };
-        };
+    if (KeyHeld(keyboard->MoveUp))
+    {
+        stage->camera.zoomFactor += .06f;
     };
 
-    { //Create hurt boxes
-        if (player->trackEntries.Size() > 0)
-        {
-            spTrackEntry* entry = player->trackEntries.GetFirstElem();
-
-            v2f hurtBoxCenterWorldPos = entry->animation->hurtBoxCenterOffset + player->worldPos;
-            InitCollisionBox_1(&player->hurtBox, hurtBoxCenterWorldPos, entry->animation->hurtBoxSize);
-        };
+    if (KeyHeld(keyboard->MoveDown))
+    {
+        stage->camera.zoomFactor -= .02f;
     };
 
-    { // Render
-        renderCmds.Init();
+    if (KeyPressed(keyboard->ActionLeft))
+    {
+        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::IMMEDIATE);
+    };
 
-        renderCmds.ClearScreen();
+    if(KeyComboHeld(keyboard->ActionLeft, keyboard->MoveRight))
+    {
+        QueueAnimation($(player->animQueue), player->animData, "run", PlayBackStatus::DEFAULT);
+    }
 
-        { // Draw Level Background
-            Coordinate_System backgroundWorldSpace {};
-            Coordinate_System backgroundCameraSpace {};
-            Drawable_Rect backgroundCanvas {};
+    if (KeyPressed(keyboard->ActionRight))
+    {
+        QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
+    };
 
-            backgroundWorldSpace.Origin = { 0.0f, 0.0f };
+    player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
+    enemy->currentAnim = UpdateAnimationState($(enemy->animQueue), deltaT);
+    defer { CleanUpAnimation($(player->currentAnim)); };
+    defer { CleanUpAnimation($(enemy->currentAnim)); };
 
-            { // Transform to Camera Space
-                v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-                backgroundCameraSpace.Origin = backgroundWorldSpace.Origin + translationToCameraSpace;
-            };
+    ApplyAnimationToSkeleton($(player->skel), player->currentAnim);
+    ApplyAnimationToSkeleton($(enemy->skel), enemy->currentAnim);
 
-            backgroundCanvas = ProduceRectFromBottomLeftPoint(backgroundCameraSpace.Origin, (f32)stage->info.size.width, (f32)stage->info.size.height);
+    UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
+    UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
 
-            backgroundCanvas = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, backgroundCanvas);
+    UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
+    UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-            renderCmds.DrawBackground(stage->info.currentTexture.ID, backgroundCanvas, v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f });
+    for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
+    {
+        UpdateHitBoxStatus($(player->currentAnim.hitBoxes.At(hitBoxIndex)), player->currentAnim.currentTime);
+
+        if(player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+        {
+            player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos = {0.0f, 0.0f};
+
+            Bone* bone = GetBoneFromSkeleton(player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->worldPos);
+            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes.At(hitBoxIndex), enemy->hurtBox);
+
+            if(collisionOccurred)
+                BGZ_CONSOLE("ahhahha");
         };
+    };
+    
+    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
-        { //Draw fighters
-            Fighter* fighters[2] = { player, ai };
-            for (i32 FighterIndex { 0 }; FighterIndex < ArrayCount(fighters); ++FighterIndex)
+    {//Render 
+        auto DrawFighter = [](Fighter fighter) -> void {
+            for (i32 slotIndex{ 0 }; slotIndex < 2; ++slotIndex)
             {
-                for (i32 SlotIndex { 0 }; SlotIndex < fighters[FighterIndex]->skeleton->slotsCount; ++SlotIndex)
-                {
-                    float verts[8] = { 0 };
-                    Texture* texture {};
-                    spRegionAttachment* regionAttachment {};
-                    spSkeleton* skeleton = fighters[FighterIndex]->skeleton;
+                Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
-                    // If no current active attachment for slot then continue to next slot
-                    if (!skeleton->slots[SlotIndex]->attachment)
-                        continue;
+                Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
 
-                    if (skeleton->slots[SlotIndex]->attachment->type == SP_ATTACHMENT_REGION)
-                    {
-                        regionAttachment = (spRegionAttachment*)skeleton->slots[SlotIndex]->attachment;
-                        texture = (Texture*)((spAtlasRegion*)regionAttachment->rendererObject)->page->rendererObject;
+                //if(StringCmp(currentSlot->bone->name, "left-hand"))
 
-                        spRegionAttachment_computeWorldVertices(regionAttachment, skeleton->slots[SlotIndex]->bone, verts, 0, 2);
+                AtlasRegion* region = &currentSlot->regionAttachment.region_image;
+                Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };
 
-                        Drawable_Rect spineImage {
-                            v2f { verts[0], verts[1] },
-                            v2f { verts[2], verts[3] },
-                            v2f { verts[4], verts[5] },
-                            v2f { verts[6], verts[7] }
-                        };
+                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform{currentSlot->bone->worldRotation, currentSlot->bone->worldPos, {1.0f, 1.0f}});
+                f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + currentSlot->bone->worldRotation;
+                v2f worldSclaeOfImage = currentSlot->regionAttachment.scale;
 
-                        v2f UVArray[4] = {
-                            v2f { regionAttachment->uvs[0], regionAttachment->uvs[1] },
-                            v2f { regionAttachment->uvs[2], regionAttachment->uvs[3] },
-                            v2f { regionAttachment->uvs[4], regionAttachment->uvs[5] },
-                            v2f { regionAttachment->uvs[6], regionAttachment->uvs[7] }
-                        };
-
-                        { // Transform to Camera Space
-                            v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-
-                            for (ui32 VertIndex { 0 }; VertIndex < ArrayCount(spineImage.Corners);
-                                 ++VertIndex)
-                            {
-                                spineImage.Corners[VertIndex] += translationToCameraSpace;
-                            };
-                        };
-
-                        spineImage = DilateAboutArbitraryPoint(stage->camera.dilatePoint, stage->camera.zoomFactor, spineImage);
-
-                        renderCmds.DrawTexture(texture->ID, spineImage, UVArray);
-                    };
-                };
+                PushTexture(global_renderingInfo, region->page->rendererObject, v2f{ currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);
             };
-        }; //Draw Fighters
-
-        { //Draw collision boxes
-            v2f translationToCameraSpace = stage->camera.viewCenter - stage->camera.lookAt;
-
-            player->hitBox.bounds.minCorner += translationToCameraSpace;
-            player->hitBox.bounds.maxCorner += translationToCameraSpace;
-
-            player->hurtBox.bounds.minCorner += translationToCameraSpace;
-            player->hurtBox.bounds.maxCorner += translationToCameraSpace;
-
-            renderCmds.DrawRect(player->hitBox.bounds.minCorner, player->hitBox.bounds.maxCorner, v4f { 0.9f, 0.0f, 0.0f, 0.6f });
-            renderCmds.DrawRect(player->hurtBox.bounds.minCorner, player->hurtBox.bounds.maxCorner, v4f { 0.0f, 0.9f, 0.0f, 0.6f });
         };
+
+        //Push background
+        Array<v2f, 2> uvs = { v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f } };
+        PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{ stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f{ 1.0f, 1.0f }, uvs, "background");
+
+        //Push Fighters
+        DrawFighter(*player);
+
+        for(i32 i{}; i < player->skel.bones.size; ++i)
+        {
+            Bone bone = player->skel.bones.At(i);
+            PushRect(global_renderingInfo, bone.worldPos, 0.0f, {1.0f, 1.0f}, {.2f, .2f}, {1.0f, 0.0f, 0.0f});
+        }
+
+#if 0
+        //Draw collision boxes
+        PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
+        PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
+
+        for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
+        {
+            if(player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+                PushRect(global_renderingInfo, player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBoxes.At(hitBoxIndex).size, {0.0f, 1.0f, 0.0f});
+        };
+#endif
     };
 };

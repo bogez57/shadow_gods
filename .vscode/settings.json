@@ -12,7 +12,27 @@
         "*.rh": "cpp",
         "xiosbase": "cpp",
         "boundingboxattachment.c": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "skeletonjson.h": "c",
+        "ctype.h": "c",
+        "atlas.h": "c",
+        "extension.h": "c",
+        "dll.h": "c",
+        "locale": "cpp",
+        "cmath": "c",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "random": "cpp",
+        "regex": "cpp",
+        "stack": "cpp",
+        "type_traits": "cpp",
+        "vector": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp",
+        "sstream": "c",
+        "ios": "cpp"
     },
     /********************
         Vim Settings
@@ -61,4 +81,5 @@
     "C_Cpp.clang_format_fallbackStyle": "none",
     "C_Cpp.clang_format_path": "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
     "C_Cpp.errorSquiggles": "Disabled",
+    "C_Cpp.dimInactiveRegions": false,
 }
