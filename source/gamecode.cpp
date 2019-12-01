@@ -274,7 +274,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldPos = WorldTransform_Bone(*childBone->parentLocalPos, *childBone->parentBone);
+            childBone->pos_worldSpace = WorldTransform_Bone(*childBone->parentLocalPos, *childBone->parentBone);
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
         };
@@ -294,12 +294,12 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     {
         //v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
         //fighterSkel.bones.At(i).worldPos = flippedX;
-        fighterSkel.bones.At(i).worldPos += fighterWorldPos;
+        fighterSkel.bones.At(i).pos_worldSpace += fighterWorldPos;
         fighterSkel.bones.At(i).worldRotation = WorldRotation_Bone(fighterSkel.bones.At(i));
         //fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
     };
 
-    root->worldPos = fighterWorldPos;
+    root->pos_worldSpace = fighterWorldPos;
     root->transform.translation = fighterWorldPos;
 };
 
@@ -496,10 +496,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
         {
-            player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos = { 0.0f, 0.0f };
+            player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace = { 0.0f, 0.0f };
 
             Bone* bone = GetBoneFromSkeleton(player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->worldPos);
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->pos_worldSpace);
             b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes.At(hitBoxIndex), enemy->hurtBox);
 
             if (collisionOccurred)
@@ -517,12 +517,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
                 Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
 
-                //if(StringCmp(currentSlot->bone->name, "left-hand"))
+                if (StringCmp(currentSlot->bone->name, "left-hand"))
+                    int x {};
 
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
-                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform { currentSlot->bone->worldRotation, currentSlot->bone->worldPos, { 1.0f, 1.0f } });
+                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform { currentSlot->bone->worldRotation, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
                 f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + currentSlot->bone->worldRotation;
                 v2f worldSclaeOfImage = { -currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
 
@@ -540,7 +541,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         for (i32 i {}; i < player->skel.bones.size; ++i)
         {
             Bone bone = player->skel.bones.At(i);
-            PushRect(global_renderingInfo, bone.worldPos, 0.0f, { 1.0f, 1.0f }, { .2f, .2f }, { 1.0f, 0.0f, 0.0f });
+            PushRect(global_renderingInfo, bone.pos_worldSpace, 0.0f, { 1.0f, 1.0f }, { .2f, .2f }, { 1.0f, 0.0f, 0.0f });
         }
 
 #if 0

@@ -890,6 +890,9 @@ void DoRenderWork(void* data)
         {
             RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
+            if (StringCmp(textureEntry.name, "left-hand"))
+                int x { 3 };
+
             ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
             Quadf imageTargetRect_world = ProduceWorldCoordsFromCenterPoint(textureEntry.world.pos, textureEntry.dimensions, textureEntry.world);

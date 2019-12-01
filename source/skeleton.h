@@ -34,11 +34,11 @@
 
 struct Region_Attachment
 {
-    f32 width, height{};
-    v2f scale{};
-    v2f parentBoneLocalPos{};
-    v2f parentBoneLocalScale{};
-    f32 parentBoneLocalRotation{};
+    f32 width, height {};
+    v2f scale {};
+    v2f parentBoneLocalPos {};
+    v2f parentBoneLocalScale {};
+    f32 parentBoneLocalRotation {};
     AtlasRegion region_image;
 };
 
@@ -46,35 +46,35 @@ struct Bone
 {
     Bone() = default;
     Bone(Init)
-        : childBones{heap},
-          originalCollisionBoxVerts{heap}
+        : childBones { heap }
+        , originalCollisionBoxVerts { heap }
     {
         Reserve($(childBones), 10);
     };
 
-    v2f worldPos{};
-    f32 worldRotation{};
-    f32 originalParentLocalRotation{};
-    v2f originalParentLocalPos{};
-    v2f* scale{nullptr};
-    v2f* parentLocalPos{nullptr};
-    f32* parentLocalRotation{nullptr};
+    v2f pos_worldSpace {};
+    f32 worldRotation {};
+    f32 originalParentLocalRotation {};
+    v2f originalParentLocalPos {};
+    v2f* scale { nullptr };
+    v2f* parentLocalPos { nullptr };
+    f32* parentLocalRotation { nullptr };
     Transform transform;
-    v2f initialTranslationForMixing{};
-    f32 initialRotationForMixing{};
-    f32 length{};
-    Bone* parentBone{nullptr};
+    v2f initialTranslationForMixing {};
+    f32 initialRotationForMixing {};
+    f32 length {};
+    Bone* parentBone { nullptr };
     Dynam_Array<v2f> originalCollisionBoxVerts;
-    Dynam_Array<Bone*> childBones; 
-    b isRoot{false};
-    const char* name{nullptr};
+    Dynam_Array<Bone*> childBones;
+    b isRoot { false };
+    const char* name { nullptr };
 };
 
 struct Slot
 {
-    char* name{nullptr};
-    Bone* bone{nullptr};
-    Region_Attachment regionAttachment{};
+    char* name { nullptr };
+    Bone* bone { nullptr };
+    Region_Attachment regionAttachment {};
 };
 
 struct Skeleton
@@ -82,9 +82,9 @@ struct Skeleton
     Skeleton() = default;
     Skeleton(const char* atlasFilePath, const char* jsonFilepath, i32 memParitionID);
 
-    Dynam_Array<Bone> bones; 
+    Dynam_Array<Bone> bones;
     Dynam_Array<Slot> slots;
-    f32 width{}, height{};
+    f32 width {}, height {};
 };
 
 Skeleton CopySkeleton(Skeleton src);
@@ -103,9 +103,9 @@ Skeleton CopySkeleton(Skeleton src)
     CopyArray(src.bones, $(dest.bones));
     CopyArray(src.slots, $(dest.slots));
 
-    for(i32 boneIndex{}; boneIndex < src.bones.size; ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < src.bones.size; ++boneIndex)
     {
-        for(i32 childBoneIndex{}; childBoneIndex < src.bones.At(boneIndex).childBones.size; ++childBoneIndex)
+        for (i32 childBoneIndex {}; childBoneIndex < src.bones.At(boneIndex).childBones.size; ++childBoneIndex)
         {
             const char* childBoneName = src.bones.At(boneIndex).childBones.At(childBoneIndex)->name;
             Bone* bone = GetBoneFromSkeleton(dest, (char*)childBoneName);
@@ -116,9 +116,9 @@ Skeleton CopySkeleton(Skeleton src)
     return dest;
 };
 
-Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID) :
-        bones{memParitionID},
-        slots{memParitionID}
+Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID)
+    : bones { memParitionID }
+    , slots { memParitionID }
 {
     i32 length;
 
@@ -142,16 +142,16 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
         this->width = Json_getFloat(jsonSkeleton, "width", 0.0f);
         this->height = Json_getFloat(jsonSkeleton, "height", 0.0f);
 
-        {//Read in Bone data
+        { //Read in Bone data
             i32 boneIndex {};
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
-                Bone newBone{Init::_};
+                Bone newBone { Init::_ };
                 PushBack($(this->bones), newBone);
                 Bone* bone = GetLastElem(this->bones);
 
                 bone->name = Json_getString(currentBone_json, "name", 0);
-                if(StringCmp(bone->name, "root"))
+                if (StringCmp(bone->name, "root"))
                     bone->isRoot = true;
                 bone->transform.scale.x = Json_getFloat(currentBone_json, "scaleX", 1.0f);
                 bone->transform.scale.y = Json_getFloat(currentBone_json, "scaleY", 1.0f);
@@ -168,20 +168,20 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
 
                 bone->length = Json_getFloat(currentBone_json, "length", 0.0f);
 
-                {//Read in collision box data
+                { //Read in collision box data
                     Json* defaultSkinAttachments_json = Json_getItem(skins_json->child, "attachments");
 
-                    char nameOfCollisionBoxAttachment[100] = {"box-"};
+                    char nameOfCollisionBoxAttachment[100] = { "box-" };
                     strcat(nameOfCollisionBoxAttachment, bone->name);
-                    if(NOT StringCmp(bone->name, "root"))
+                    if (NOT StringCmp(bone->name, "root"))
                     {
                         Json* collisionBox_json = Json_getItem(defaultSkinAttachments_json, nameOfCollisionBoxAttachment)->child;
                         Json* verts_json = Json_getItem(collisionBox_json, "vertices")->child;
 
                         i32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
-                        for(i32 i{}; i < numVerts; ++i)
+                        for (i32 i {}; i < numVerts; ++i)
                         {
-                            PushBack($(bone->originalCollisionBoxVerts), v2f{verts_json->valueFloat, verts_json->next->valueFloat});
+                            PushBack($(bone->originalCollisionBoxVerts), v2f { verts_json->valueFloat, verts_json->next->valueFloat });
                             verts_json = verts_json->next->next;
                         };
                     }
@@ -190,7 +190,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                 if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
                 {
                     bone->parentBone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentBone_json, "parent", 0));
-                    PushBack($(bone->parentBone->childBones), bone); 
+                    PushBack($(bone->parentBone->childBones), bone);
                 };
             };
         };
@@ -199,19 +199,18 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
             i32 slotIndex {};
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
-                //Ignore creating slots here for collision boxes. Don't think I need it 
+                //Ignore creating slots here for collision boxes. Don't think I need it
                 char* slotName = (char*)Json_getString(currentSlot_json, "name", 0);
-                char slotName_firstThreeLetters[3] = {slotName[0], slotName[1], slotName[2]};
-                if(NOT StringCmp(slotName_firstThreeLetters, "box"))
+                char slotName_firstThreeLetters[3] = { slotName[0], slotName[1], slotName[2] };
+                if (NOT StringCmp(slotName_firstThreeLetters, "box"))
                 {
                     //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
-                    Slot newSlot{};
+                    Slot newSlot {};
                     PushBack($(this->slots), newSlot);
                     Slot* slot = GetLastElem(this->slots);
 
                     slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
-                    slot->regionAttachment = [currentSlot_json, skins_json, atlas]() -> Region_Attachment 
-                    {
+                    slot->regionAttachment = [currentSlot_json, skins_json, atlas]() -> Region_Attachment {
                         Region_Attachment resultRegionAttch {};
 
                         const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
@@ -230,11 +229,10 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                                 resultRegionAttch.scale.y = (f32)Json_getFloat(jsonAttachment, "scaleY", 1.0f);
                                 resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
                                 resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
-                                resultRegionAttch.parentBoneLocalRotation= Json_getFloat(jsonAttachment, "rotation", 0.0f);
+                                resultRegionAttch.parentBoneLocalRotation = Json_getFloat(jsonAttachment, "rotation", 0.0f);
                                 resultRegionAttch.parentBoneLocalScale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
                                 resultRegionAttch.parentBoneLocalScale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
-                                resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion 
-                                {
+                                resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion {
                                     AtlasRegion resultAtlasRegion {};
                                     AtlasRegion* region = atlas->regions;
 
@@ -258,9 +256,9 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
 
                         return resultRegionAttch;
                     }();
-                }; 
+                };
             };
-        };   
+        };
     }
     else
     {
@@ -272,7 +270,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
 
 void ResetBonesToSetupPose(Skeleton&& skel)
 {
-    for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
     {
         *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation;
         *skel.bones.At(boneIndex).parentLocalPos = skel.bones.At(boneIndex).originalParentLocalPos;
