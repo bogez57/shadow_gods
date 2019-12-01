@@ -220,7 +220,7 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
 
 f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
 {
-    rotation += *bone.parentLocalRotation;
+    rotation += *bone.rotation_parentBoneSpace;
 
     if (bone.isRoot)
         return rotation;
@@ -233,7 +233,7 @@ f32 WorldRotation_Bone(Bone bone)
     if (bone.isRoot)
         return 0;
     else
-        return RecursivelyAddBoneRotations(*bone.parentLocalRotation, *bone.parentBone);
+        return RecursivelyAddBoneRotations(*bone.rotation_parentBoneSpace, *bone.parentBone);
 };
 
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
@@ -274,7 +274,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->pos_worldSpace = WorldTransform_Bone(*childBone->parentLocalPos, *childBone->parentBone);
+            childBone->pos_worldSpace = WorldTransform_Bone(*childBone->pos_parentBoneSpace, *childBone->parentBone);
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
         };
@@ -295,7 +295,7 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
         //v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
         //fighterSkel.bones.At(i).worldPos = flippedX;
         fighterSkel.bones.At(i).pos_worldSpace += fighterWorldPos;
-        fighterSkel.bones.At(i).worldRotation = WorldRotation_Bone(fighterSkel.bones.At(i));
+        fighterSkel.bones.At(i).rotation_worldSpace = WorldRotation_Bone(fighterSkel.bones.At(i));
         //fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
     };
 
@@ -315,11 +315,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         {
             skel.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
             skel.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
-            skel.bones.At(boneIndex).originalParentLocalPos.x /= pixelsPerMeter;
-            skel.bones.At(boneIndex).originalParentLocalPos.y /= pixelsPerMeter;
+            skel.bones.At(boneIndex).initialPos_parentBoneSpace.x /= pixelsPerMeter;
+            skel.bones.At(boneIndex).initialPos_parentBoneSpace.y /= pixelsPerMeter;
 
             skel.bones.At(boneIndex).transform.rotation = Radians(skel.bones.At(boneIndex).transform.rotation);
-            skel.bones.At(boneIndex).originalParentLocalRotation = Radians(skel.bones.At(boneIndex).originalParentLocalRotation);
+            skel.bones.At(boneIndex).initialRotation_parentBoneSpace = Radians(skel.bones.At(boneIndex).initialRotation_parentBoneSpace);
 
             skel.bones.At(boneIndex).length /= pixelsPerMeter;
         };
@@ -328,9 +328,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         {
             skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
             skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
-            skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation = Radians(skel.slots.At(slotI).regionAttachment.parentBoneLocalRotation);
-            skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x /= pixelsPerMeter;
-            skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.rotation_parentBoneSpace = Radians(skel.slots.At(slotI).regionAttachment.rotation_parentBoneSpace);
+            skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.x /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.y /= pixelsPerMeter;
         };
 
         for (i32 animIndex {}; animIndex < animData.animations.keyInfos.size; ++animIndex)
@@ -523,8 +523,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
-                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform { currentSlot->bone->worldRotation, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
-                f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + currentSlot->bone->worldRotation;
+                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.pos_parentBoneSpace, Transform { currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
+                f32 worldRotationOfImage = currentSlot->regionAttachment.rotation_parentBoneSpace + currentSlot->bone->rotation_worldSpace;
                 v2f worldSclaeOfImage = { -currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
 
                 PushTexture(global_renderingInfo, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);

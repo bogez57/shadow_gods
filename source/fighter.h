@@ -47,8 +47,8 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
         {
             this->skel.bones.At(boneIndex).transform.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
             this->skel.bones.At(boneIndex).transform.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
-            this->skel.bones.At(boneIndex).originalParentLocalPos.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.bones.At(boneIndex).originalParentLocalPos.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.bones.At(boneIndex).initialPos_parentBoneSpace.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.bones.At(boneIndex).initialPos_parentBoneSpace.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
             this->skel.bones.At(boneIndex).length *= (scaleFactorForHeightAdjustment * this->world.scale.x);
         };
 
@@ -56,8 +56,8 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
         {
             this->skel.slots.At(slotI).regionAttachment.height *= (scaleFactorForHeightAdjustment * this->world.scale.y);
             this->skel.slots.At(slotI).regionAttachment.width *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
         };
 
         for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)

@@ -36,9 +36,9 @@ struct Region_Attachment
 {
     f32 width, height {};
     v2f scale {};
-    v2f parentBoneLocalPos {};
-    v2f parentBoneLocalScale {};
-    f32 parentBoneLocalRotation {};
+    v2f pos_parentBoneSpace {};
+    v2f scale_parentBoneSpace {};
+    f32 rotation_parentBoneSpace {};
     AtlasRegion region_image;
 };
 
@@ -53,12 +53,12 @@ struct Bone
     };
 
     v2f pos_worldSpace {};
-    f32 worldRotation {};
-    f32 originalParentLocalRotation {};
-    v2f originalParentLocalPos {};
+    f32 rotation_worldSpace {};
+    f32 initialRotation_parentBoneSpace {};
+    v2f initialPos_parentBoneSpace {};
     v2f* scale { nullptr };
-    v2f* parentLocalPos { nullptr };
-    f32* parentLocalRotation { nullptr };
+    v2f* pos_parentBoneSpace { nullptr };
+    f32* rotation_parentBoneSpace { nullptr };
     Transform transform;
     v2f initialTranslationForMixing {};
     f32 initialRotationForMixing {};
@@ -158,13 +158,13 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                 bone->scale = &bone->transform.scale;
 
                 bone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
-                bone->parentLocalRotation = &bone->transform.rotation;
-                bone->originalParentLocalRotation = *bone->parentLocalRotation;
+                bone->rotation_parentBoneSpace = &bone->transform.rotation;
+                bone->initialRotation_parentBoneSpace = *bone->rotation_parentBoneSpace;
 
                 bone->transform.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
                 bone->transform.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
-                bone->parentLocalPos = &bone->transform.translation;
-                bone->originalParentLocalPos = *bone->parentLocalPos;
+                bone->pos_parentBoneSpace = &bone->transform.translation;
+                bone->initialPos_parentBoneSpace = *bone->pos_parentBoneSpace;
 
                 bone->length = Json_getFloat(currentBone_json, "length", 0.0f);
 
@@ -227,11 +227,11 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                                 resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
                                 resultRegionAttch.scale.x = (f32)Json_getFloat(jsonAttachment, "scaleX", 1.0f);
                                 resultRegionAttch.scale.y = (f32)Json_getFloat(jsonAttachment, "scaleY", 1.0f);
-                                resultRegionAttch.parentBoneLocalPos.x = Json_getFloat(jsonAttachment, "x", 0.0f);
-                                resultRegionAttch.parentBoneLocalPos.y = Json_getFloat(jsonAttachment, "y", 0.0f);
-                                resultRegionAttch.parentBoneLocalRotation = Json_getFloat(jsonAttachment, "rotation", 0.0f);
-                                resultRegionAttch.parentBoneLocalScale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
-                                resultRegionAttch.parentBoneLocalScale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
+                                resultRegionAttch.pos_parentBoneSpace.x = Json_getFloat(jsonAttachment, "x", 0.0f);
+                                resultRegionAttch.pos_parentBoneSpace.y = Json_getFloat(jsonAttachment, "y", 0.0f);
+                                resultRegionAttch.rotation_parentBoneSpace = Json_getFloat(jsonAttachment, "rotation", 0.0f);
+                                resultRegionAttch.scale_parentBoneSpace.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
+                                resultRegionAttch.scale_parentBoneSpace.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
                                 resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion {
                                     AtlasRegion resultAtlasRegion {};
                                     AtlasRegion* region = atlas->regions;
@@ -272,8 +272,8 @@ void ResetBonesToSetupPose(Skeleton&& skel)
 {
     for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
     {
-        *skel.bones.At(boneIndex).parentLocalRotation = skel.bones.At(boneIndex).originalParentLocalRotation;
-        *skel.bones.At(boneIndex).parentLocalPos = skel.bones.At(boneIndex).originalParentLocalPos;
+        *skel.bones.At(boneIndex).rotation_parentBoneSpace = skel.bones.At(boneIndex).initialRotation_parentBoneSpace;
+        *skel.bones.At(boneIndex).pos_parentBoneSpace = skel.bones.At(boneIndex).initialPos_parentBoneSpace;
     };
 };
 
