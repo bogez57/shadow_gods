@@ -45,9 +45,9 @@ global_variable i32 renderBuffer;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz) MallocSize(heap, sz) 
-#define STBI_REALLOC(p, newsz) ReAllocSize(heap, p, newsz) 
-#define STBI_FREE(p) DeAlloc(heap, p) 
+#define STBI_MALLOC(sz) MallocSize(heap, sz)
+#define STBI_REALLOC(p, newsz) ReAllocSize(heap, p, newsz)
+#define STBI_FREE(p) DeAlloc(heap, p)
 #include <stb/stb_image.h>
 #include <boagz/error_context.cpp>
 
@@ -230,7 +230,7 @@ f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
 
 f32 WorldRotation_Bone(Bone bone)
 {
-    if(bone.isRoot)
+    if (bone.isRoot)
         return 0;
     else
         return RecursivelyAddBoneRotations(*bone.parentLocalRotation, *bone.parentBone);
@@ -239,13 +239,13 @@ f32 WorldRotation_Bone(Bone bone)
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
     //With world space origin at 0, 0
-    Coordinate_Space localSpace{};
+    Coordinate_Space localSpace {};
     localSpace.origin = parentTransform.translation;
-    localSpace.xBasis = v2f{ CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
+    localSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
     localSpace.yBasis = parentTransform.scale.y * PerpendicularOp(localSpace.xBasis);
     localSpace.xBasis *= parentTransform.scale.x;
 
-    v2f transformedCoords{};
+    v2f transformedCoords {};
 
     //This equation rotates first then moves to correct world position
     transformedCoords = localSpace.origin + (localCoords.x * localSpace.xBasis) + (localCoords.y * localSpace.yBasis);
@@ -271,7 +271,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
 {
     if (mainBone.childBones.size > 0)
     {
-        for (i32 childBoneIndex{}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
+        for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
             childBone->worldPos = WorldTransform_Bone(*childBone->parentLocalPos, *childBone->parentBone);
@@ -290,7 +290,7 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 
-    for(i32 i{}; i < fighterSkel.bones.size; ++i)
+    for (i32 i {}; i < fighterSkel.bones.size; ++i)
     {
         //v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
         //fighterSkel.bones.At(i).worldPos = flippedX;
@@ -303,18 +303,15 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     root->transform.translation = fighterWorldPos;
 };
 
-
-
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
-    auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel, AnimationData&& animData)
-    {
-        f32 pixelsPerMeter{global_renderingInfo->_pixelsPerMeter};
+    auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel, AnimationData&& animData) {
+        f32 pixelsPerMeter { global_renderingInfo->_pixelsPerMeter };
 
         skel.width /= pixelsPerMeter;
         skel.height /= pixelsPerMeter;
 
-        for (i32 boneIndex{}; boneIndex < skel.bones.size; ++boneIndex)
+        for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
         {
             skel.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
             skel.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
@@ -324,10 +321,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.bones.At(boneIndex).transform.rotation = Radians(skel.bones.At(boneIndex).transform.rotation);
             skel.bones.At(boneIndex).originalParentLocalRotation = Radians(skel.bones.At(boneIndex).originalParentLocalRotation);
 
-            skel.bones.At(boneIndex).length /= pixelsPerMeter; 
+            skel.bones.At(boneIndex).length /= pixelsPerMeter;
         };
 
-        for (i32 slotI{}; slotI < skel.slots.size; ++slotI)
+        for (i32 slotI {}; slotI < skel.slots.size; ++slotI)
         {
             skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
             skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
@@ -336,29 +333,29 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.slots.At(slotI).regionAttachment.parentBoneLocalPos.y /= pixelsPerMeter;
         };
 
-        for(i32 animIndex{}; animIndex < animData.animations.keyInfos.size; ++animIndex)
+        for (i32 animIndex {}; animIndex < animData.animations.keyInfos.size; ++animIndex)
         {
             Animation* anim = (Animation*)&animData.animations.keyInfos.At(animIndex).value;
 
-            if(anim->name)
+            if (anim->name)
             {
-                for(i32 boneIndex{}; boneIndex < anim->bones.size; ++boneIndex)
+                for (i32 boneIndex {}; boneIndex < anim->bones.size; ++boneIndex)
                 {
                     TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
-                    for(i32 keyFrameIndex{}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
+                    for (i32 keyFrameIndex {}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
                     {
                         boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
                         boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
                     }
 
                     RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
-                    for(i32 keyFrameIndex{}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
+                    for (i32 keyFrameIndex {}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
                     {
                         boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
                     }
                 };
 
-                for(i32 hitBoxIndex{}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
                 {
                     anim->hitBoxes.At(hitBoxIndex).size.width /= pixelsPerMeter;
                     anim->hitBoxes.At(hitBoxIndex).size.height /= pixelsPerMeter;
@@ -402,10 +399,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
         //Read in data
-        Skeleton playerSkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};//TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        Skeleton enemySkel{"data/yellow_god.atlas", "data/yellow_god.json", heap};
-        AnimationData playerAnimData{"data/yellow_god.json", playerSkel};
-        AnimationData enemyAnimData{"data/yellow_god.json", enemySkel};
+        Skeleton playerSkel { "data/yellow_god.atlas", "data/yellow_god.json", heap }; //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        Skeleton enemySkel { "data/yellow_god.atlas", "data/yellow_god.json", heap };
+        AnimationData playerAnimData { "data/yellow_god.json", playerSkel };
+        AnimationData enemyAnimData { "data/yellow_god.json", enemySkel };
 
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
@@ -418,16 +415,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
 
         //Camera Init
-        stage->camera.dilatePointOffset_normalized = {0.0f, -0.3f};
-        stage->camera.lookAt = {stage->size.width/2.0f, 10.0f};
+        stage->camera.dilatePointOffset_normalized = { 0.0f, -0.3f };
+        stage->camera.lookAt = { stage->size.width / 2.0f, 10.0f };
         stage->camera.zoomFactor = .4f;
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
-        HurtBox playerDefaultHurtBox{playerWorldPos, v2f{2.0f, 8.9f}, v2f{2.3f, 2.3f}};
-        HurtBox enemyDefaultHurtBox{enemyWorldPos, v2f{2.0f, 8.9f}, v2f{2.3f, 2.3f}};
-        *player = {playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox};
-        *enemy = {enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox};
+        HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
+        HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
+        *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox };
+        *enemy = { enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox };
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
@@ -469,7 +466,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::IMMEDIATE);
     };
 
-    if(KeyComboHeld(keyboard->ActionLeft, keyboard->MoveRight))
+    if (KeyComboHeld(keyboard->ActionLeft, keyboard->MoveRight))
     {
         QueueAnimation($(player->animQueue), player->animData, "run", PlayBackStatus::DEFAULT);
     }
@@ -493,28 +490,28 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-    for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
+    for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
     {
         UpdateHitBoxStatus($(player->currentAnim.hitBoxes.At(hitBoxIndex)), player->currentAnim.currentTime);
 
-        if(player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+        if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
         {
-            player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos = {0.0f, 0.0f};
+            player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos = { 0.0f, 0.0f };
 
             Bone* bone = GetBoneFromSkeleton(player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
             UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->worldPos);
             b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes.At(hitBoxIndex), enemy->hurtBox);
 
-            if(collisionOccurred)
+            if (collisionOccurred)
                 BGZ_CONSOLE("ahhahha");
         };
     };
-    
+
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
-    {//Render 
+    { //Render
         auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex{ 0 }; slotIndex < 2; ++slotIndex)
+            for (i32 slotIndex { 0 }; slotIndex < 2; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
@@ -523,27 +520,27 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 //if(StringCmp(currentSlot->bone->name, "left-hand"))
 
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
-                Array<v2f, 2> uvs2 = { v2f{ region->u, region->v }, v2f{ region->u2, region->v2 } };
+                Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
-                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform{currentSlot->bone->worldRotation, currentSlot->bone->worldPos, {1.0f, 1.0f}});
+                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.parentBoneLocalPos, Transform { currentSlot->bone->worldRotation, currentSlot->bone->worldPos, { 1.0f, 1.0f } });
                 f32 worldRotationOfImage = currentSlot->regionAttachment.parentBoneLocalRotation + currentSlot->bone->worldRotation;
-                v2f worldSclaeOfImage = currentSlot->regionAttachment.scale;
+                v2f worldSclaeOfImage = { -currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
 
-                PushTexture(global_renderingInfo, region->page->rendererObject, v2f{ currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);
+                PushTexture(global_renderingInfo, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);
             };
         };
 
         //Push background
-        Array<v2f, 2> uvs = { v2f{ 0.0f, 0.0f }, v2f{ 1.0f, 1.0f } };
-        PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f{ stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f{ 1.0f, 1.0f }, uvs, "background");
+        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
+        PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f { stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f { 1.0f, 1.0f }, uvs, "background");
 
         //Push Fighters
         DrawFighter(*player);
 
-        for(i32 i{}; i < player->skel.bones.size; ++i)
+        for (i32 i {}; i < player->skel.bones.size; ++i)
         {
             Bone bone = player->skel.bones.At(i);
-            PushRect(global_renderingInfo, bone.worldPos, 0.0f, {1.0f, 1.0f}, {.2f, .2f}, {1.0f, 0.0f, 0.0f});
+            PushRect(global_renderingInfo, bone.worldPos, 0.0f, { 1.0f, 1.0f }, { .2f, .2f }, { 1.0f, 0.0f, 0.0f });
         }
 
 #if 0

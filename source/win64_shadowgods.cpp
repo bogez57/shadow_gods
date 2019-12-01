@@ -173,10 +173,10 @@ namespace Win32::Dbg
     local_func auto
     LoadBGRAImage(const char* ImagePath, i32&& width, i32&& height) -> ui8*
     {
-        stbi_set_flip_vertically_on_load(true);//So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
+        stbi_set_flip_vertically_on_load(true); //So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
 
         i32 numOfLoadedChannels {};
-        i32 desiredChannels{4};//Since I still draw assuming 4 byte pixels I need 4 channels
+        i32 desiredChannels { 4 }; //Since I still draw assuming 4 byte pixels I need 4 channels
 
         //Returns RGBA
         unsigned char* imageData = stbi_load(ImagePath, &width, &height, &numOfLoadedChannels, desiredChannels);
@@ -186,7 +186,7 @@ namespace Win32::Dbg
         ui32* imagePixel = (ui32*)imageData;
 
         //Swap R and B channels of image
-        for(int i = 0; i < totalPixelCountOfImg; ++i)
+        for (int i = 0; i < totalPixelCountOfImg; ++i)
         {
             auto color = UnPackPixelValues(*imagePixel, RGBA);
 
@@ -194,10 +194,7 @@ namespace Win32::Dbg
             f32 alphaBlend = color.a / 255.0f;
             color.rgb *= alphaBlend;
 
-            ui32 newSwappedPixelColor = (((ui8)color.a << 24) |
-                                         ((ui8)color.r << 16) |
-                                         ((ui8)color.g << 8) |
-                                         ((ui8)color.b << 0));
+            ui32 newSwappedPixelColor = (((ui8)color.a << 24) | ((ui8)color.r << 16) | ((ui8)color.g << 8) | ((ui8)color.b << 0));
 
             *imagePixel++ = newSwappedPixelColor;
         }
@@ -364,18 +361,18 @@ namespace Win32::Dbg
 
 namespace Win32
 {
-    local_func Window_Dimension 
+    local_func Window_Dimension
     GetWindowDimension(HWND window)
     {
         Window_Dimension Result;
-    
+
         RECT ClientRect;
         GetClientRect(window, &ClientRect);
 
         Result.width = ClientRect.right - ClientRect.left;
         Result.height = ClientRect.bottom - ClientRect.top;
 
-        return(Result);
+        return (Result);
     };
 
     local_func void
@@ -384,7 +381,7 @@ namespace Win32
         // TODO: Bulletproof this.
         // Maybe don't free first, free after, then free first if that fails.
 
-        if(buffer.memory)
+        if (buffer.memory)
         {
             VirtualFree(buffer.memory, 0, MEM_RELEASE);
         }
@@ -408,9 +405,9 @@ namespace Win32
         // Thank you to Chris Hecker of Spy Party fame
         // for clarifying the deal with StretchDIBits and BitBlt!
         // No more DC for us.
-        int BitmapMemorySize = (buffer.width*buffer.height)*buffer.bytesPerPixel;
-        buffer.memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-        buffer.pitch = width*buffer.bytesPerPixel;
+        int BitmapMemorySize = (buffer.width * buffer.height) * buffer.bytesPerPixel;
+        buffer.memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        buffer.pitch = width * buffer.bytesPerPixel;
 
         // TODO: Probably clear this to black
     }
@@ -418,34 +415,33 @@ namespace Win32
     local_func void
     DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
-        b renderThroughHardware{false};
-        if(renderThroughHardware)
+        b renderThroughHardware { false };
+        if (renderThroughHardware)
         {
-
         }
         else
         {
-            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i{globalBackBuffer.width, globalBackBuffer.height}, globalBackBuffer.pitch, &platformServices); 
+            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i { globalBackBuffer.width, globalBackBuffer.height }, globalBackBuffer.pitch, &platformServices);
 
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
             PatBlt(deviceContext, 0, globalBackBuffer.height, windowWidth, windowHeight, BLACKNESS);
             PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
             PatBlt(deviceContext, globalBackBuffer.width, 0, windowWidth, windowHeight, BLACKNESS);
-            
-            {//Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
-                v2i displayRect_BottomLeftCoords{0, 0};
-                v2i displayRect_Dimensions{};
+
+            { //Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
+                v2i displayRect_BottomLeftCoords { 0, 0 };
+                v2i displayRect_Dimensions {};
                 displayRect_Dimensions.width = globalBackBuffer.width;
                 displayRect_Dimensions.height = globalBackBuffer.height;
 
                 //Copy game's rendered back buffer to whatever display area size you want
                 StretchDIBits(deviceContext,
-                            displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
-                            0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
-                            globalBackBuffer.memory,
-                            &globalBackBuffer.Info,
-                            DIB_RGB_COLORS, SRCCOPY);
+                    displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
+                    0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
+                    globalBackBuffer.memory,
+                    &globalBackBuffer.Info,
+                    DIB_RGB_COLORS, SRCCOPY);
             };
         };
 
@@ -688,17 +684,20 @@ namespace Win32
             Win32::DisplayBufferInWindow(deviceContext, windowDimension.width, windowDimension.height);
 #endif
             EndPaint(WindowHandle, &Paint);
-        }break;
+        }
+        break;
 
         case WM_DESTROY:
         {
             GameRunning = false;
-        }break;
+        }
+        break;
 
         case WM_CLOSE:
         {
             GameRunning = false;
-        }break;
+        }
+        break;
 
         case WM_ACTIVATEAPP:
         {
@@ -756,7 +755,7 @@ struct Work_Queue
     i32 volatile entryCompletionCount;
     i32 volatile nextEntryToWrite;
     i32 volatile nextEntryToRead;
-    Work_Queue_Entry entries[256]; 
+    Work_Queue_Entry entries[256];
 };
 
 global_variable Work_Queue globalWorkQueue;
@@ -771,7 +770,7 @@ void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
     i32 newNextEntryToWrite = (globalWorkQueue.nextEntryToWrite + 1) % ArrayCount(globalWorkQueue.entries);
     Assert(newNextEntryToWrite != globalWorkQueue.nextEntryToRead);
 
-    Work_Queue_Entry entry{callback, data};
+    Work_Queue_Entry entry { callback, data };
     globalWorkQueue.entries[globalWorkQueue.nextEntryToWrite] = entry;
     ++globalWorkQueue.entryCompletionGoal;
 
@@ -785,7 +784,7 @@ void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
 b DoWork();
 void FinishAllWork()
 {
-    while(globalWorkQueue.entryCompletionGoal != globalWorkQueue.entryCompletionCount)
+    while (globalWorkQueue.entryCompletionGoal != globalWorkQueue.entryCompletionCount)
     {
         DoWork();
     };
@@ -796,20 +795,20 @@ void FinishAllWork()
 
 b DoWork()
 {
-    b isThereStillWork{};
+    b isThereStillWork {};
 
     i32 originalNextEntryToRead = globalWorkQueue.nextEntryToRead;
     i32 newNextEntryToRead = (originalNextEntryToRead + 1) % ArrayCount(globalWorkQueue.entries);
-    if(originalNextEntryToRead != globalWorkQueue.nextEntryToWrite)
+    if (originalNextEntryToRead != globalWorkQueue.nextEntryToWrite)
     {
-        i32 entryIndex = _InterlockedCompareExchange((LONG volatile*) &globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
+        i32 entryIndex = _InterlockedCompareExchange((LONG volatile*)&globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
         _ReadBarrier();
 
-        if(entryIndex == originalNextEntryToRead)
+        if (entryIndex == originalNextEntryToRead)
         {
             Work_Queue_Entry entry = globalWorkQueue.entries[entryIndex];
             entry.callback(entry.data);
-            _InterlockedIncrement((LONG volatile*) &globalWorkQueue.entryCompletionCount);
+            _InterlockedIncrement((LONG volatile*)&globalWorkQueue.entryCompletionCount);
         };
 
         isThereStillWork = true;
@@ -827,9 +826,9 @@ ThreadProc(LPVOID param)
 {
     Thread_Info* info = (Thread_Info*)param;
 
-    while(1)
+    while (1)
     {
-        if(DoWork()) 
+        if (DoWork())
         {
             //Keep doing work
         }
@@ -852,7 +851,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     i32 initialThreadCount = 0;
     globalWorkQueue.semaphoreHandle = CreateSemaphoreExA(0, initialThreadCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
 
-    for(i32 threadIndex{}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
+    for (i32 threadIndex {}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
     {
 
         Thread_Info* info = threadInfo + threadIndex;
@@ -882,9 +881,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         DWORD windowStyles = WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
         RECT rect = { 0, 0, (LONG)globalWindowWidth, (LONG)globalWindowHeight };
         BOOL success = AdjustWindowRectEx(&rect, windowStyles, false, 0);
-        if (NOT success) InvalidCodePath;
+        if (NOT success)
+            InvalidCodePath;
 
-        HWND window= CreateWindowEx(0, WindowProperties.lpszClassName, "Shadow Gods", WS_VISIBLE | WS_OVERLAPPEDWINDOW,
+        HWND window = CreateWindowEx(0, WindowProperties.lpszClassName, "Shadow Gods", WS_VISIBLE | WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left - 2, rect.bottom - rect.top, 0, 0, CurrentProgramInstance, 0);
 
         HDC WindowContext = GetDC(window);
@@ -900,7 +900,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             Game_Input Input {};
             Game_Sound_Output_Buffer SoundBuffer {};
-            Rendering_Info renderingInfo{};
+            Rendering_Info renderingInfo {};
             Platform_Services platformServices {};
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
@@ -910,9 +910,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 InitApplicationMemory(&GameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
             }
 
-            {//Init render command buffer and other render stuff
+            { //Init render command buffer and other render stuff
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + appMemory->TotalSize + 1);
-                renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); 
+                renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
                 renderingInfo.cmdBuffer.size = Megabytes(10);
                 renderingInfo.cmdBuffer.entryCount = 0;
                 renderingInfo.cmdBuffer.usedAmount = 0;
@@ -950,6 +950,14 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
             }
             break;
+
+            case 40:
+            {
+                GameRefreshRate = MonitorRefreshRate;
+                TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
+            }
+            break;
+
             case 60:
             {
                 GameRefreshRate = MonitorRefreshRate;
@@ -989,9 +997,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 }
 
 #if 1
-	            //helps to prevent overly large detlatimes from getting passed when using debugger and breakpoints
-	            if (platformServices.prevFrameTimeInSecs > 1.0f/30.0f)
-	                platformServices.prevFrameTimeInSecs = 1.0f/30.0f;
+                //helps to prevent overly large detlatimes from getting passed when using debugger and breakpoints
+                if (platformServices.prevFrameTimeInSecs > 1.0f / 30.0f)
+                    platformServices.prevFrameTimeInSecs = 1.0f / 30.0f;
 #endif
 
                 //TODO: Should we poll more frequently?
@@ -1124,7 +1132,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
                 FramePerformanceTimer.UpdateTimeCount();
             };
-
 
             //Hardware Rendering shutdown procedure
             wglMakeCurrent(NULL, NULL);
