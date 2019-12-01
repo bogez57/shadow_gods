@@ -981,6 +981,84 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             bgz::Timer FramePerformanceTimer {};
             FramePerformanceTimer.Init();
 
+            auto UpdateInput = [](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
+                for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
+                {
+                    ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
+                }
+
+                //Poll Keyboard Input
+                Win32::ProcessPendingMessages($(Input), $(GameReplayState));
+
+                { //Poll GamePad Input(s)
+                    for (DWORD ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
+                    {
+                        Game_Controller* MyGamePad = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
+
+                        XINPUT_STATE ControllerState;
+                        if (XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
+                        {
+                            if (ControllerIndex == ArrayCount(Input.Controllers)) //Since index 0 is reserved for keyboard
+                                break;
+
+                            //This controller is plugged in
+                            XINPUT_GAMEPAD* XGamePad = &ControllerState.Gamepad;
+                            MyGamePad->IsConnected = true;
+
+                            MyGamePad->LThumbStick.x = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                            MyGamePad->LThumbStick.y = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+
+                            if ((MyGamePad->LThumbStick.x != 0.0f) || (MyGamePad->LThumbStick.y != 0.0f))
+                            {
+                                MyGamePad->IsAnalog = true;
+                            }
+
+                            if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_UP)
+                            {
+                                MyGamePad->LThumbStick.y = 1.0f;
+                                MyGamePad->IsAnalog = false;
+                            }
+
+                            if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)
+                            {
+                                MyGamePad->LThumbStick.y = -1.0f;
+                                MyGamePad->IsAnalog = false;
+                            }
+
+                            if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)
+                            {
+                                MyGamePad->LThumbStick.x = -1.0f;
+                                MyGamePad->IsAnalog = false;
+                            }
+
+                            if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)
+                            {
+                                MyGamePad->LThumbStick.x = 1.0f;
+                                MyGamePad->IsAnalog = false;
+                            }
+
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveUp), XINPUT_GAMEPAD_DPAD_UP);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveDown), XINPUT_GAMEPAD_DPAD_DOWN);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveLeft), XINPUT_GAMEPAD_DPAD_LEFT);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveRight), XINPUT_GAMEPAD_DPAD_RIGHT);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->LeftShoulder), XINPUT_GAMEPAD_LEFT_SHOULDER);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->RightShoulder), XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionUp), XINPUT_GAMEPAD_Y);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionDown), XINPUT_GAMEPAD_A);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionLeft), XINPUT_GAMEPAD_X);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionRight), XINPUT_GAMEPAD_B);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->Start), XINPUT_GAMEPAD_START);
+                            Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->Back), XINPUT_GAMEPAD_BACK);
+                        }
+                        else
+                        {
+                            //Controller not available
+                            MyGamePad->IsConnected = false;
+                        }
+                    }
+                };
+            };
+
             while (GameRunning)
             {
                 Win32::Window_Dimension windowDimension = Win32::GetWindowDimension(window);
@@ -1003,112 +1081,22 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 #endif
 
                 //TODO: Should we poll more frequently?
-                auto [UpdatedInput, UpdatedReplayState] = [](Game_Input Input, Win32::Dbg::Game_Replay_State GameReplayState) -> auto
+                UpdateInput($(Input), $(GameReplayState));
+
+                if (GameReplayState.InputRecording)
                 {
-                    struct Input_Result
-                    {
-                        Game_Input NewInput;
-                        Win32::Dbg::Game_Replay_State NewGameReplayState;
-                    };
-                    Input_Result Result {};
-
-                    for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
-                    {
-                        ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
-                    }
-
-                    //Poll Keyboard Input
-                    Win32::ProcessPendingMessages($(Input), $(GameReplayState));
-
-                    { //Poll GamePad Input(s)
-                        for (DWORD ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
-                        {
-                            Game_Controller* MyGamePad = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
-
-                            XINPUT_STATE ControllerState;
-                            if (XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
-                            {
-                                if (ControllerIndex == ArrayCount(Input.Controllers)) //Since index 0 is reserved for keyboard
-                                    break;
-
-                                //This controller is plugged in
-                                XINPUT_GAMEPAD* XGamePad = &ControllerState.Gamepad;
-                                MyGamePad->IsConnected = true;
-
-                                MyGamePad->LThumbStick.x = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-                                MyGamePad->LThumbStick.y = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-
-                                if ((MyGamePad->LThumbStick.x != 0.0f) || (MyGamePad->LThumbStick.y != 0.0f))
-                                {
-                                    MyGamePad->IsAnalog = true;
-                                }
-
-                                if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_UP)
-                                {
-                                    MyGamePad->LThumbStick.y = 1.0f;
-                                    MyGamePad->IsAnalog = false;
-                                }
-
-                                if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)
-                                {
-                                    MyGamePad->LThumbStick.y = -1.0f;
-                                    MyGamePad->IsAnalog = false;
-                                }
-
-                                if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)
-                                {
-                                    MyGamePad->LThumbStick.x = -1.0f;
-                                    MyGamePad->IsAnalog = false;
-                                }
-
-                                if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)
-                                {
-                                    MyGamePad->LThumbStick.x = 1.0f;
-                                    MyGamePad->IsAnalog = false;
-                                }
-
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveUp), XINPUT_GAMEPAD_DPAD_UP);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveDown), XINPUT_GAMEPAD_DPAD_DOWN);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveLeft), XINPUT_GAMEPAD_DPAD_LEFT);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveRight), XINPUT_GAMEPAD_DPAD_RIGHT);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->LeftShoulder), XINPUT_GAMEPAD_LEFT_SHOULDER);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->RightShoulder), XINPUT_GAMEPAD_RIGHT_SHOULDER);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionUp), XINPUT_GAMEPAD_Y);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionDown), XINPUT_GAMEPAD_A);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionLeft), XINPUT_GAMEPAD_X);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->ActionRight), XINPUT_GAMEPAD_B);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->Start), XINPUT_GAMEPAD_START);
-                                Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->Back), XINPUT_GAMEPAD_BACK);
-                            }
-                            else
-                            {
-                                //Controller not available
-                                MyGamePad->IsConnected = false;
-                            }
-                        }
-                    };
-
-                    Result.NewInput = Input;
-                    Result.NewGameReplayState = GameReplayState;
-
-                    return Result;
-                }
-                (Input, GameReplayState);
-
-                if (UpdatedReplayState.InputRecording)
-                {
-                    Win32::Dbg::RecordInput(&UpdatedInput, $(UpdatedReplayState));
+                    Win32::Dbg::RecordInput(&Input, $(GameReplayState));
                 }
 
-                if (UpdatedReplayState.InputPlayBack)
+                if (GameReplayState.InputPlayBack)
                 {
-                    Win32::Dbg::PlayBackInput($(UpdatedInput), $(UpdatedReplayState));
+                    Win32::Dbg::PlayBackInput($(Input), $(GameReplayState));
                 }
 
-                GameCode.UpdateFunc(&GameMemory, &platformServices, &renderingInfo, &SoundBuffer, &UpdatedInput);
+                GameCode.UpdateFunc(&GameMemory, &platformServices, &renderingInfo, &SoundBuffer, &Input);
 
-                Input = UpdatedInput;
-                GameReplayState = UpdatedReplayState;
+                Input = Input;
+                GameReplayState = GameReplayState;
 
                 f32 SecondsElapsedForWork = FramePerformanceTimer.SecondsElapsed();
 
