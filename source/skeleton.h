@@ -209,6 +209,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                     PushBack($(this->slots), newSlot);
                     Slot* slot = GetLastElem(this->slots);
 
+                    slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
                     slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
                     slot->regionAttachment = [currentSlot_json, skins_json, atlas]() -> Region_Attachment {
                         Region_Attachment resultRegionAttch {};

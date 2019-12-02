@@ -326,6 +326,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         for (i32 slotI {}; slotI < skel.slots.size; ++slotI)
         {
+            StringCmp(skel.slots.At(slotI).name, "left-hand");
+                int x{};
+
             skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
             skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
             skel.slots.At(slotI).regionAttachment.rotation_parentBoneSpace = Radians(skel.slots.At(slotI).regionAttachment.rotation_parentBoneSpace);
@@ -523,9 +526,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
+                //v2f worldPosOfImage = ParentTransform_1Vector(v2f{0.0f, 0.0f}, Transform { currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, { 1.0f, 1.0f } });
                 v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.pos_parentBoneSpace, Transform { currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
                 f32 worldRotationOfImage = currentSlot->regionAttachment.rotation_parentBoneSpace + currentSlot->bone->rotation_worldSpace;
-                v2f worldSclaeOfImage = { -currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
+                v2f worldSclaeOfImage = { currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
 
                 PushTexture(global_renderingInfo, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);
             };
