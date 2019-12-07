@@ -368,4 +368,3 @@ void ConvertToCorrectPositiveRadian(f32&& angle)
     f32 unitCircleCircumferenceInRadians = 2*PI;
     angle = Mod(angle, unitCircleCircumferenceInRadians);
 };
-

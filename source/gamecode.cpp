@@ -531,6 +531,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             Quadf image_worldCoords = ParentTransform(image_boneCoords, bone->worldTransform);
 
             Push(worldCoords);
+
+            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+
+            Object_Transform transform { .772f, v2f { .538f, .057f }, v2f { 1.0f, 1.0f } };
+            Quadf imageTargetRect_parentBone = ProduceWorldCoordsFromCenterPoint(v2f { 0.0f, 0.0f }, textureEntry.dimensions, transform);
+            imageTargetRect_parentBone.bottomLeft = { imageTargetRect_parentBone.bottomLeft.x, imageTargetRect_parentBone.bottomLeft.y };
+            imageTargetRect_parentBone.bottomRight = { imageTargetRect_parentBone.bottomRight.x, imageTargetRect_parentBone.bottomRight.y };
+            imageTargetRect_parentBone.topRight = { imageTargetRect_parentBone.topRight.x, imageTargetRect_parentBone.topRight.y };
+            imageTargetRect_parentBone.topLeft = { imageTargetRect_parentBone.topLeft.x, imageTargetRect_parentBone.topLeft.y };
+
+            Quadf thing = WorldTransform(imageTargetRect_parentBone, textureEntry.world);
         */
         auto DrawFighter = [](Fighter fighter) -> void {
             for (i32 slotIndex { 0 }; slotIndex < 2; ++slotIndex)
@@ -545,13 +556,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
                 //v2f worldPosOfImage = ParentTransform_1Vector(v2f{0.0f, 0.0f}, Transform { currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, { 1.0f, 1.0f } });
-                v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.pos_parentBoneSpace, Transform { currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
-                f32 worldRotationOfImage = currentSlot->regionAttachment.rotation_parentBoneSpace + currentSlot->bone->rotation_worldSpace;
-                v2f worldSclaeOfImage = { currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
+                Quadf targetRect_localCoords = _ProduceQuadFromCenterPoint(currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
 
-                //ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+                Object_Transform boneTransform{currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.scale_parentBoneSpace};
+                Quadf targetRect_boneSpaceCoords = WorldTransform(targetRect_localCoords, boneTransform);
 
-                PushTexture(global_renderingInfo, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);
+                ConvertToCorrectPositiveRadian($(currentSlot->bone->rotation_worldSpace));
+                Object_Transform worldTransform{currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, *currentSlot->bone->scale};
+                Quadf targetRect_worldSpaceCoords = WorldTransform(targetRect_boneSpaceCoords, worldTransform);
+
+                PushTexture(global_renderingInfo, targetRect_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
+
+                //v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.pos_parentBoneSpace, Transform { currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
+                //f32 worldRotationOfImage = currentSlot->regionAttachment.rotation_parentBoneSpace + currentSlot->bone->rotation_worldSpace;
+                //v2f worldSclaeOfImage = { currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
             };
         };
 
