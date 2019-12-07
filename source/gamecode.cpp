@@ -556,7 +556,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
                 //v2f worldPosOfImage = ParentTransform_1Vector(v2f{0.0f, 0.0f}, Transform { currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, { 1.0f, 1.0f } });
-                Quadf targetRect_localCoords = _ProduceQuadFromCenterPoint(currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
+                Quadf targetRect_localCoords = ProduceQuadFromCenterPoint(currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
 
                 Object_Transform boneTransform{currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.scale_parentBoneSpace};
                 Quadf targetRect_boneSpaceCoords = WorldTransform(targetRect_localCoords, boneTransform);
@@ -573,13 +573,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             };
         };
 
+        //Push Fighters
+        DrawFighter(*player);
+
 #if 0
         //Push background
         Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
         PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f { stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f { 1.0f, 1.0f }, uvs, "background");
-
-        //Push Fighters
-        DrawFighter(*player);
 
         for (i32 i {}; i < player->skel.bones.size; ++i)
         {

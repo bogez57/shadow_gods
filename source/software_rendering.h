@@ -844,6 +844,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
         case EntryType_Rect:
         {
+#if 0
             RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
             ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
@@ -854,6 +855,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
             DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_projection, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
             currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+#endif 
         }
         break;
 
@@ -906,6 +908,7 @@ void DoRenderWork(void* data)
 
         case EntryType_Rect:
         {
+#if 0
             RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
             ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
@@ -916,6 +919,7 @@ void DoRenderWork(void* data)
 
             DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
             currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+#endif
         }
         break;
 
