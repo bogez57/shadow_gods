@@ -408,8 +408,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         AnimationData enemyAnimData { "data/yellow_god.json", enemySkel };
 
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
-        TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
-        TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
+        //TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
+        //TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
@@ -428,6 +428,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox };
         *enemy = { enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox };
+
+        Slot* slot = &player->skel.slots[0];
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
