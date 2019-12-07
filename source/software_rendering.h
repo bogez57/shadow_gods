@@ -126,11 +126,11 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 #endif
 
 local_func void
-DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, v2f rectDims, v3f rectColor, Rectf clipRect)
+DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v2f rectDims, v3f rectColor, Rectf clipRect)
 {
-    v2f origin = cameraCoords.bottomLeft;
-    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
-    v2f targetRectYAxis = cameraCoords.topLeft - origin;
+    v2f origin = targetRect_screenCoords.bottomLeft;
+    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - origin;
+    v2f targetRectYAxis = targetRect_screenCoords.topLeft - origin;
 
     ui32 pixelColor = { (0xFF << 24) | (RoundFloat32ToUInt32(rectColor.r * 255.0f) << 16) | (RoundFloat32ToUInt32(rectColor.g * 255.0f) << 8) | (RoundFloat32ToUInt32(rectColor.b * 255.0f) << 0) };
 
@@ -219,11 +219,11 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
 };
 
 #include <immintrin.h>
-void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, Rectf clipRect)
+void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, RenderEntry_Texture image, Rectf clipRect)
 {
-    v2f origin = cameraCoords.bottomLeft;
-    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
-    v2f targetRectYAxis = cameraCoords.topLeft - origin;
+    v2f origin = targetRect_screenCoords.bottomLeft;
+    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - origin;
+    v2f targetRectYAxis = targetRect_screenCoords.topLeft - origin;
 
     i32 widthMax = (i32)clipRect.max.x;
     i32 heightMax = (i32)clipRect.max.y;
@@ -562,7 +562,7 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
 
 //TODO: Will eventually be removed
 local_func void
-DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, Rectf clipRect, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
+DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, RenderEntry_Texture image, Rectf clipRect, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
 {
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32 {
         v4ui32 result {};
@@ -589,9 +589,9 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
         return newBlendedValue;
     };
 
-    v2f origin = cameraCoords.bottomLeft;
-    v2f targetRectXAxis = cameraCoords.bottomRight - origin;
-    v2f targetRectYAxis = cameraCoords.topLeft - origin;
+    v2f origin = targetRect_screenCoords.bottomLeft;
+    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - origin;
+    v2f targetRectYAxis = targetRect_screenCoords.topLeft - origin;
 
     f32 widthMax = clipRect.max.x;
     f32 heightMax = clipRect.max.y;
