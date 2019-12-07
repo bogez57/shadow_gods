@@ -439,6 +439,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (globalPlatformServices->DLLJustReloaded)
     {
+        /*
+            player->world.pos = -1.0f;
+            player->bone.pos = -3.0f;
+        */
         BGZ_CONSOLE("Dll reloaded!");
         globalPlatformServices->DLLJustReloaded = false;
     };
@@ -513,23 +517,39 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
     { //Render
+        /*
+            v2f pos_boneSpace = BoneTransform(slot->bone.transform);
+            v2f pos_worldSpace = WorldTransform(pos_boneSpace, worldTransform)
+            Push(pos_worldSpace, worldTransform);
+
+            v2f pos_local = regionAttachemnt.localTransform.translation;
+            v2f pos_boneSpace = BoneTransform(pos_local, bone->transform)
+            v2f 
+
+            Quadf image_localCoords = ProduceCoords(regionAtatchment.localTransform, width, height);
+            Quadf image_boneCoords = ParentTransform(localCoords, bone->transform);
+            Quadf image_worldCoords = ParentTransform(image_boneCoords, bone->worldTransform);
+
+            Push(worldCoords);
+        */
         auto DrawFighter = [](Fighter fighter) -> void {
             for (i32 slotIndex { 0 }; slotIndex < 2; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
-                Bone* bone = GetBoneFromSkeleton($(fighter.skel), "root");
+                AtlasRegion* region = &currentSlot->regionAttachment.region_image;
 
                 if (StringCmp(currentSlot->bone->name, "left-hand"))
                     int x {};
 
-                AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
                 //v2f worldPosOfImage = ParentTransform_1Vector(v2f{0.0f, 0.0f}, Transform { currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, { 1.0f, 1.0f } });
                 v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.pos_parentBoneSpace, Transform { currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
                 f32 worldRotationOfImage = currentSlot->regionAttachment.rotation_parentBoneSpace + currentSlot->bone->rotation_worldSpace;
                 v2f worldSclaeOfImage = { currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
+
+                //ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
 
                 PushTexture(global_renderingInfo, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, worldRotationOfImage, worldPosOfImage, worldSclaeOfImage, uvs2, region->name);
             };

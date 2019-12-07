@@ -219,7 +219,7 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
 };
 
 #include <immintrin.h>
-void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Rectf clipRect)
+void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, Rectf clipRect)
 {
     v2f origin = cameraCoords.bottomLeft;
     v2f targetRectXAxis = cameraCoords.bottomRight - origin;
@@ -562,7 +562,7 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
 
 //TODO: Will eventually be removed
 local_func void
-DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, f32 rotation, v2f scale, Rectf clipRect, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
+DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf cameraCoords, RenderEntry_Texture image, Rectf clipRect, Image normalMap = {}, f32 lightAngle = {}, f32 lightThreshold = {})
 {
     auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32 {
         v4ui32 result {};
@@ -697,6 +697,8 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 v4f finalBlendedColor = (1.0f - alphaBlend) * backgroundColors + newBlendedTexel;
 
                 b shadePixel { false };
+
+#if 0 //Lighting code
                 if (normalMap.data)
                 {
                     ui8* normalPtr = ((ui8*)normalMap.data) + ((ui32)texelPos_y * image.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
@@ -782,6 +784,9 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 {
                     *destPixel = ((0xFF << 24) | ((ui8)finalBlendedColor.r << 16) | ((ui8)finalBlendedColor.g << 8) | ((ui8)finalBlendedColor.b << 0));
                 }
+#endif
+
+                *destPixel = ((0xFF << 24) | ((ui8)finalBlendedColor.r << 16) | ((ui8)finalBlendedColor.g << 8) | ((ui8)finalBlendedColor.b << 0));
             }
 
             ++destPixel;
@@ -828,13 +833,10 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
         {
             RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
-
-            Quadf imageTargetRect_world = ProduceWorldCoordsFromCenterPoint(textureEntry.world.pos, textureEntry.dimensions, textureEntry.world);
-            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
+            Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
             Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
-            DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+            DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, work->screenRegionCoords);
 
             currentRenderBufferEntry += sizeof(RenderEntry_Texture);
         }
@@ -893,13 +895,10 @@ void DoRenderWork(void* data)
             if (StringCmp(textureEntry.name, "left-hand"))
                 int x { 3 };
 
-            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
+            Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+            Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);//Screen coordinates
 
-            Quadf imageTargetRect_world = ProduceWorldCoordsFromCenterPoint(textureEntry.world.pos, textureEntry.dimensions, textureEntry.world);
-            Quadf imageTargetRect_camera = CameraTransform(imageTargetRect_world, *camera);
-            Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
-
-            DrawTexture_UnOptimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, textureEntry.world.rotation, textureEntry.world.scale, work->screenRegionCoords);
+            DrawTexture_UnOptimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, work->screenRegionCoords);
 
             currentRenderBufferEntry += sizeof(RenderEntry_Texture);
         }
