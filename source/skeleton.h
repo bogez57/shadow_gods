@@ -36,10 +36,7 @@ struct Region_Attachment
 {
     f32 width, height {};
     v2f scale {};
-    Transform parentBonespace{};
-    v2f pos_parentBoneSpace {};
-    v2f scale_parentBoneSpace {};
-    f32 rotation_parentBoneSpace {};
+    Transform parentBoneSpace{};
     AtlasRegion region_image;
 };
 
@@ -231,11 +228,11 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                                 resultRegionAttch.height = (f32)Json_getInt(jsonAttachment, "height", 0);
                                 resultRegionAttch.scale.x = (f32)Json_getFloat(jsonAttachment, "scaleX", 1.0f);
                                 resultRegionAttch.scale.y = (f32)Json_getFloat(jsonAttachment, "scaleY", 1.0f);
-                                resultRegionAttch.pos_parentBoneSpace.x = Json_getFloat(jsonAttachment, "x", 0.0f);
-                                resultRegionAttch.pos_parentBoneSpace.y = Json_getFloat(jsonAttachment, "y", 0.0f);
-                                resultRegionAttch.rotation_parentBoneSpace = Json_getFloat(jsonAttachment, "rotation", 0.0f);
-                                resultRegionAttch.scale_parentBoneSpace.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
-                                resultRegionAttch.scale_parentBoneSpace.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
+                                resultRegionAttch.parentBoneSpace.translation.x = Json_getFloat(jsonAttachment, "x", 0.0f);
+                                resultRegionAttch.parentBoneSpace.translation.y = Json_getFloat(jsonAttachment, "y", 0.0f);
+                                resultRegionAttch.parentBoneSpace.rotation = Json_getFloat(jsonAttachment, "rotation", 0.0f);
+                                resultRegionAttch.parentBoneSpace.scale.x = Json_getFloat(jsonAttachment, "scaleX", 1.0f);
+                                resultRegionAttch.parentBoneSpace.scale.y = Json_getFloat(jsonAttachment, "scaleY", 1.0f);
                                 resultRegionAttch.region_image = [atlas, attachmentName]() -> AtlasRegion {
                                     AtlasRegion resultAtlasRegion {};
                                     AtlasRegion* region = atlas->regions;

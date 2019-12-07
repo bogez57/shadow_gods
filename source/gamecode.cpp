@@ -352,9 +352,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
             skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
-            skel.slots.At(slotI).regionAttachment.rotation_parentBoneSpace = Radians(skel.slots.At(slotI).regionAttachment.rotation_parentBoneSpace);
-            skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.x /= pixelsPerMeter;
-            skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.y /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.parentBoneSpace.rotation = Radians(skel.slots.At(slotI).regionAttachment.parentBoneSpace.rotation);
+            skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.x /= pixelsPerMeter;
+            skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.y /= pixelsPerMeter;
         };
 
         for (i32 animIndex {}; animIndex < animData.animations.keyInfos.size; ++animIndex)
@@ -552,7 +552,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
                 Quadf targetRect_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
 
-                Transform boneTransform{currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.scale_parentBoneSpace};
+                Transform boneTransform{currentSlot->regionAttachment.parentBoneSpace.translation, currentSlot->regionAttachment.parentBoneSpace.rotation, currentSlot->regionAttachment.parentBoneSpace.scale};
                 Quadf targetRect_boneSpaceCoords = ParentTransform(targetRect_localCoords, boneTransform);
 
                 ConvertToCorrectPositiveRadian($(currentSlot->bone->rotation_worldSpace));

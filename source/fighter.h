@@ -56,8 +56,8 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
         {
             this->skel.slots.At(slotI).regionAttachment.height *= (scaleFactorForHeightAdjustment * this->world.scale.y);
             this->skel.slots.At(slotI).regionAttachment.width *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.slots.At(slotI).regionAttachment.pos_parentBoneSpace.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
         };
 
         for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
