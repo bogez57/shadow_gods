@@ -555,6 +555,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             };
         };
 
+#if 0
         //Push background
         Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
         PushTexture(global_renderingInfo, stage->backgroundImg, stage->size.height, 0.0f, v2f { stage->size.width / 2.0f, stage->size.height / 2.0f }, v2f { 1.0f, 1.0f }, uvs, "background");
@@ -567,6 +568,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             Bone bone = player->skel.bones.At(i);
             PushRect(global_renderingInfo, bone.pos_worldSpace, 0.0f, { 1.0f, 1.0f }, { .2f, .2f }, { 1.0f, 0.0f, 0.0f });
         }
+#endif
 
 #if 0
         //Draw collision boxes
