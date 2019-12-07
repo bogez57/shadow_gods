@@ -32,14 +32,14 @@ Defer<F> operator+( defer_dummy, F&& f )
 struct Transform
 {
     Transform() = default;
-    Transform(f32 rotation, v2f translation, v2f scale) :
-        rotation{rotation},
+    Transform(v2f translation, f32 rotation, v2f scale) :
         translation{translation},
+        rotation{rotation},
         scale{scale}
     {}
 
-    f32 rotation{};
     v2f translation{};
+    f32 rotation{};
     v2f scale{};
 };
 

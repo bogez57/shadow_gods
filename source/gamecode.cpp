@@ -303,6 +303,27 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     root->transform.translation = fighterWorldPos;
 };
 
+Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
+{
+    //With world space origin at 0, 0
+    Coordinate_Space localSpace{};
+    localSpace.origin = transformInfo_world.translation;
+    localSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
+    localSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(localSpace.xBasis);
+    localSpace.xBasis *= transformInfo_world.scale.x;
+
+    Quadf transformedCoords{};
+    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
+    {
+        //localCoords.vertices.At(vertIndex) -= localSpace.origin;
+
+        //This equation rotates first then moves to correct world position
+        transformedCoords.vertices.At(vertIndex) = localSpace.origin + (localCoords.vertices.At(vertIndex).x * localSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * localSpace.yBasis);
+    };
+
+    return transformedCoords;
+};
+
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel, AnimationData&& animData) {
@@ -429,8 +450,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox };
         *enemy = { enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox };
 
-        Slot* slot = &player->skel.slots[0];
-
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
         MixAnimations($(player->animData), "right-jab", "idle", .1f);
@@ -519,32 +538,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
 
     { //Render
-        /*
-            v2f pos_boneSpace = BoneTransform(slot->bone.transform);
-            v2f pos_worldSpace = WorldTransform(pos_boneSpace, worldTransform)
-            Push(pos_worldSpace, worldTransform);
-
-            v2f pos_local = regionAttachemnt.localTransform.translation;
-            v2f pos_boneSpace = BoneTransform(pos_local, bone->transform)
-            v2f 
-
-            Quadf image_localCoords = ProduceCoords(regionAtatchment.localTransform, width, height);
-            Quadf image_boneCoords = ParentTransform(localCoords, bone->transform);
-            Quadf image_worldCoords = ParentTransform(image_boneCoords, bone->worldTransform);
-
-            Push(worldCoords);
-
-            ConvertToCorrectPositiveRadian($(textureEntry.world.rotation));
-
-            Object_Transform transform { .772f, v2f { .538f, .057f }, v2f { 1.0f, 1.0f } };
-            Quadf imageTargetRect_parentBone = ProduceWorldCoordsFromCenterPoint(v2f { 0.0f, 0.0f }, textureEntry.dimensions, transform);
-            imageTargetRect_parentBone.bottomLeft = { imageTargetRect_parentBone.bottomLeft.x, imageTargetRect_parentBone.bottomLeft.y };
-            imageTargetRect_parentBone.bottomRight = { imageTargetRect_parentBone.bottomRight.x, imageTargetRect_parentBone.bottomRight.y };
-            imageTargetRect_parentBone.topRight = { imageTargetRect_parentBone.topRight.x, imageTargetRect_parentBone.topRight.y };
-            imageTargetRect_parentBone.topLeft = { imageTargetRect_parentBone.topLeft.x, imageTargetRect_parentBone.topLeft.y };
-
-            Quadf thing = WorldTransform(imageTargetRect_parentBone, textureEntry.world);
-        */
         auto DrawFighter = [](Fighter fighter) -> void {
             for (i32 slotIndex { 0 }; slotIndex < 2; ++slotIndex)
             {
@@ -557,15 +550,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
-                //v2f worldPosOfImage = ParentTransform_1Vector(v2f{0.0f, 0.0f}, Transform { currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, { 1.0f, 1.0f } });
                 Quadf targetRect_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
 
-                Object_Transform boneTransform{currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.scale_parentBoneSpace};
-                Quadf targetRect_boneSpaceCoords = WorldTransform(targetRect_localCoords, boneTransform);
+                Transform boneTransform{currentSlot->regionAttachment.pos_parentBoneSpace, currentSlot->regionAttachment.rotation_parentBoneSpace, currentSlot->regionAttachment.scale_parentBoneSpace};
+                Quadf targetRect_boneSpaceCoords = ParentTransform(targetRect_localCoords, boneTransform);
 
                 ConvertToCorrectPositiveRadian($(currentSlot->bone->rotation_worldSpace));
-                Object_Transform worldTransform{currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, *currentSlot->bone->scale};
-                Quadf targetRect_worldSpaceCoords = WorldTransform(targetRect_boneSpaceCoords, worldTransform);
+                Transform worldTransform{currentSlot->bone->pos_worldSpace, currentSlot->bone->rotation_worldSpace, *currentSlot->bone->scale};
+                Quadf targetRect_worldSpaceCoords = ParentTransform(targetRect_boneSpaceCoords, worldTransform);
 
                 PushTexture(global_renderingInfo, targetRect_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
 

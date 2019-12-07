@@ -36,6 +36,7 @@ struct Region_Attachment
 {
     f32 width, height {};
     v2f scale {};
+    Transform parentBonespace{};
     v2f pos_parentBoneSpace {};
     v2f scale_parentBoneSpace {};
     f32 rotation_parentBoneSpace {};

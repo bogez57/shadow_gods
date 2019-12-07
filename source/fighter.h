@@ -30,7 +30,7 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
     , animData { animData }
     , animQueue { Init::_ }
     , currentAnim { Init::_ }
-    , world { 0.0f, worldPos, { 1.0f, 1.0f } }
+    , world { worldPos, 0.0f, { 1.0f, 1.0f } }
     , height { fighterHeight }
     , hurtBox { defaultHurtBox }
 {

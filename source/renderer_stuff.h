@@ -322,26 +322,7 @@ Image LoadBitmap_BGRA(const char* fileName)
     return result;
 };
 
-Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world)
-{
-    //With world space origin at 0, 0
-    Coordinate_Space localSpace{};
-    localSpace.origin = transformInfo_world.pos;
-    localSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
-    localSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(localSpace.xBasis);
-    localSpace.xBasis *= transformInfo_world.scale.x;
 
-    Quadf transformedCoords{};
-    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
-    {
-        //localCoords.vertices.At(vertIndex) -= localSpace.origin;
-
-        //This equation rotates first then moves to correct world position
-        transformedCoords.vertices.At(vertIndex) = localSpace.origin + (localCoords.vertices.At(vertIndex).x * localSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * localSpace.yBasis);
-    };
-
-    return transformedCoords;
-};
 
 Quadf ProduceQuadFromCenterPoint(v2f originPoint, f32 width, f32 height)
 {
