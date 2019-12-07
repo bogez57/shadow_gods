@@ -284,7 +284,6 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
 void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPos)
 {
     Bone* root = &fighterSkel.bones[0];
-    Bone* pelvis = &fighterSkel.bones[1];
 
     root->parentBoneSpace.scale.x = 1.0f;
 
@@ -296,7 +295,7 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
         //fighterSkel.bones.At(i).worldPos = flippedX;
         fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
         fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
-        //fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
+        //fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
     };
 
     root->worldSpace.translation = fighterWorldPos;
@@ -460,10 +459,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     if (globalPlatformServices->DLLJustReloaded)
     {
-        /*
-            player->world.pos = -1.0f;
-            player->bone.pos = -3.0f;
-        */
         BGZ_CONSOLE("Dll reloaded!");
         globalPlatformServices->DLLJustReloaded = false;
     };
@@ -547,6 +542,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
                 Quadf region_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
+                currentSlot->regionAttachment.parentBoneSpace.scale.y = 1.0f; 
                 Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
                 ConvertToCorrectPositiveRadian($(currentSlot->bone->worldSpace.rotation));
                 Quadf region_worldSpaceCoords = ParentTransform(region_boneSpaceCoords, currentSlot->bone->worldSpace);

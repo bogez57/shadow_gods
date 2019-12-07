@@ -129,8 +129,8 @@ local_func void
 DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v2f rectDims, v3f rectColor, Rectf clipRect)
 {
     v2f origin = targetRect_screenCoords.bottomLeft;
-    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - origin;
-    v2f targetRectYAxis = targetRect_screenCoords.topLeft - origin;
+    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
+    v2f targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
 
     ui32 pixelColor = { (0xFF << 24) | (RoundFloat32ToUInt32(rectColor.r * 255.0f) << 16) | (RoundFloat32ToUInt32(rectColor.g * 255.0f) << 8) | (RoundFloat32ToUInt32(rectColor.b * 255.0f) << 0) };
 
@@ -222,8 +222,8 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
 void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, RenderEntry_Texture image, Rectf clipRect)
 {
     v2f origin = targetRect_screenCoords.bottomLeft;
-    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - origin;
-    v2f targetRectYAxis = targetRect_screenCoords.topLeft - origin;
+    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
+    v2f targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
 
     i32 widthMax = (i32)clipRect.max.x;
     i32 heightMax = (i32)clipRect.max.y;
@@ -590,8 +590,8 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
     };
 
     v2f origin = targetRect_screenCoords.bottomLeft;
-    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - origin;
-    v2f targetRectYAxis = targetRect_screenCoords.topLeft - origin;
+    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
+    v2f targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
 
     f32 widthMax = clipRect.max.x;
     f32 heightMax = clipRect.max.y;
