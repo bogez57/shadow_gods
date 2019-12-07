@@ -220,7 +220,7 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
 
 f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
 {
-    rotation += *bone.rotation_parentBoneSpace;
+    rotation += bone.parentBoneSpace.rotation;
 
     if (bone.isRoot)
         return rotation;
@@ -233,7 +233,7 @@ f32 WorldRotation_Bone(Bone bone)
     if (bone.isRoot)
         return 0;
     else
-        return RecursivelyAddBoneRotations(*bone.rotation_parentBoneSpace, *bone.parentBone);
+        return RecursivelyAddBoneRotations(bone.parentBoneSpace.rotation, *bone.parentBone);
 };
 
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
@@ -255,7 +255,7 @@ v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 
 v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
 {
-    v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.transform);
+    v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.parentBoneSpace);
 
     if (boneToGrabTransformFrom.isRoot) //If root bone has been hit then exit recursion by returning world pos of main bone
     {
@@ -274,7 +274,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
         for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->pos_worldSpace = WorldTransform_Bone(*childBone->pos_parentBoneSpace, *childBone->parentBone);
+            childBone->worldSpace.translation = WorldTransform_Bone(childBone->parentBoneSpace.translation, *childBone->parentBone);
 
             UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
         };
@@ -286,7 +286,7 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     Bone* root = &fighterSkel.bones[0];
     Bone* pelvis = &fighterSkel.bones[1];
 
-    root->transform.scale.x = 1.0f;
+    root->parentBoneSpace.scale.x = 1.0f;
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 
@@ -294,13 +294,13 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     {
         //v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
         //fighterSkel.bones.At(i).worldPos = flippedX;
-        fighterSkel.bones.At(i).pos_worldSpace += fighterWorldPos;
-        fighterSkel.bones.At(i).rotation_worldSpace = WorldRotation_Bone(fighterSkel.bones.At(i));
+        fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
+        fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
         //fighterSkel.bones.At(i).worldRotation = PI - fighterSkel.bones.At(i).worldRotation;
     };
 
-    root->pos_worldSpace = fighterWorldPos;
-    root->transform.translation = fighterWorldPos;
+    root->worldSpace.translation = fighterWorldPos;
+    root->parentBoneSpace.translation = fighterWorldPos;
 };
 
 Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
@@ -334,12 +334,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
         {
-            skel.bones.At(boneIndex).transform.translation.x /= pixelsPerMeter;
-            skel.bones.At(boneIndex).transform.translation.y /= pixelsPerMeter;
+            skel.bones.At(boneIndex).parentBoneSpace.translation.x /= pixelsPerMeter;
+            skel.bones.At(boneIndex).parentBoneSpace.translation.y /= pixelsPerMeter;
             skel.bones.At(boneIndex).initialPos_parentBoneSpace.x /= pixelsPerMeter;
             skel.bones.At(boneIndex).initialPos_parentBoneSpace.y /= pixelsPerMeter;
 
-            skel.bones.At(boneIndex).transform.rotation = Radians(skel.bones.At(boneIndex).transform.rotation);
+            skel.bones.At(boneIndex).parentBoneSpace.rotation = Radians(skel.bones.At(boneIndex).parentBoneSpace.rotation);
             skel.bones.At(boneIndex).initialRotation_parentBoneSpace = Radians(skel.bones.At(boneIndex).initialRotation_parentBoneSpace);
 
             skel.bones.At(boneIndex).length /= pixelsPerMeter;
@@ -527,7 +527,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace = { 0.0f, 0.0f };
 
             Bone* bone = GetBoneFromSkeleton(player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->pos_worldSpace);
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->worldSpace.translation);
             b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes.At(hitBoxIndex), enemy->hurtBox);
 
             if (collisionOccurred)
@@ -544,26 +544,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
-
-                if (StringCmp(currentSlot->bone->name, "left-hand"))
-                    int x {};
-
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
-                Quadf targetRect_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
+                Quadf region_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
+                Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
+                ConvertToCorrectPositiveRadian($(currentSlot->bone->worldSpace.rotation));
+                Quadf region_worldSpaceCoords = ParentTransform(region_boneSpaceCoords, currentSlot->bone->worldSpace);
 
-                Transform boneTransform{currentSlot->regionAttachment.parentBoneSpace.translation, currentSlot->regionAttachment.parentBoneSpace.rotation, currentSlot->regionAttachment.parentBoneSpace.scale};
-                Quadf targetRect_boneSpaceCoords = ParentTransform(targetRect_localCoords, boneTransform);
-
-                ConvertToCorrectPositiveRadian($(currentSlot->bone->rotation_worldSpace));
-                Transform worldTransform{currentSlot->bone->pos_worldSpace, currentSlot->bone->rotation_worldSpace, *currentSlot->bone->scale};
-                Quadf targetRect_worldSpaceCoords = ParentTransform(targetRect_boneSpaceCoords, worldTransform);
-
-                PushTexture(global_renderingInfo, targetRect_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
-
-                //v2f worldPosOfImage = ParentTransform_1Vector(currentSlot->regionAttachment.pos_parentBoneSpace, Transform { currentSlot->bone->rotation_worldSpace, currentSlot->bone->pos_worldSpace, { 1.0f, 1.0f } });
-                //f32 worldRotationOfImage = currentSlot->regionAttachment.rotation_parentBoneSpace + currentSlot->bone->rotation_worldSpace;
-                //v2f worldSclaeOfImage = { currentSlot->regionAttachment.scale.x, currentSlot->regionAttachment.scale.y };
+                PushTexture(global_renderingInfo, region_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
             };
         };
 

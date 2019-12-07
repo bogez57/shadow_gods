@@ -50,14 +50,10 @@ struct Bone
         Reserve($(childBones), 10);
     };
 
-    v2f pos_worldSpace {};
-    f32 rotation_worldSpace {};
+    Transform parentBoneSpace;
+    Transform worldSpace;
     f32 initialRotation_parentBoneSpace {};
     v2f initialPos_parentBoneSpace {};
-    v2f* scale { nullptr };
-    v2f* pos_parentBoneSpace { nullptr };
-    f32* rotation_parentBoneSpace { nullptr };
-    Transform transform;
     v2f initialTranslationForMixing {};
     f32 initialRotationForMixing {};
     f32 length {};
@@ -151,18 +147,16 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                 bone->name = Json_getString(currentBone_json, "name", 0);
                 if (StringCmp(bone->name, "root"))
                     bone->isRoot = true;
-                bone->transform.scale.x = Json_getFloat(currentBone_json, "scaleX", 1.0f);
-                bone->transform.scale.y = Json_getFloat(currentBone_json, "scaleY", 1.0f);
-                bone->scale = &bone->transform.scale;
+                bone->parentBoneSpace.scale.x = Json_getFloat(currentBone_json, "scaleX", 1.0f);
+                bone->parentBoneSpace.scale.y = Json_getFloat(currentBone_json, "scaleY", 1.0f);
+                bone->worldSpace.scale = {1.0f, 1.0f};
 
-                bone->transform.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
-                bone->rotation_parentBoneSpace = &bone->transform.rotation;
-                bone->initialRotation_parentBoneSpace = *bone->rotation_parentBoneSpace;
+                bone->parentBoneSpace.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
+                bone->initialRotation_parentBoneSpace = bone->parentBoneSpace.rotation;
 
-                bone->transform.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
-                bone->transform.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
-                bone->pos_parentBoneSpace = &bone->transform.translation;
-                bone->initialPos_parentBoneSpace = *bone->pos_parentBoneSpace;
+                bone->parentBoneSpace.translation.x = Json_getFloat(currentBone_json, "x", 0.0f);
+                bone->parentBoneSpace.translation.y = Json_getFloat(currentBone_json, "y", 0.0f);
+                bone->initialPos_parentBoneSpace = bone->parentBoneSpace.translation;
 
                 bone->length = Json_getFloat(currentBone_json, "length", 0.0f);
 
@@ -273,8 +267,8 @@ void ResetBonesToSetupPose(Skeleton&& skel)
 {
     for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
     {
-        *skel.bones.At(boneIndex).rotation_parentBoneSpace = skel.bones.At(boneIndex).initialRotation_parentBoneSpace;
-        *skel.bones.At(boneIndex).pos_parentBoneSpace = skel.bones.At(boneIndex).initialPos_parentBoneSpace;
+        skel.bones.At(boneIndex).parentBoneSpace.rotation = skel.bones.At(boneIndex).initialRotation_parentBoneSpace;
+        skel.bones.At(boneIndex).parentBoneSpace.translation = skel.bones.At(boneIndex).initialPos_parentBoneSpace;
     };
 };
 

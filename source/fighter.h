@@ -45,8 +45,9 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
 
         for (i32 boneIndex {}; boneIndex < this->skel.bones.size; ++boneIndex)
         {
-            this->skel.bones.At(boneIndex).transform.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.bones.At(boneIndex).transform.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.bones.At(boneIndex).worldSpace.scale = this->world.scale;
+            this->skel.bones.At(boneIndex).parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.bones.At(boneIndex).parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
             this->skel.bones.At(boneIndex).initialPos_parentBoneSpace.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
             this->skel.bones.At(boneIndex).initialPos_parentBoneSpace.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
             this->skel.bones.At(boneIndex).length *= (scaleFactorForHeightAdjustment * this->world.scale.x);

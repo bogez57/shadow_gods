@@ -752,10 +752,10 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
     for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
     {
         f32 boneRotationToAdd = anim.boneRotations.At(boneIndex);
-        *skel.bones.At(boneIndex).rotation_parentBoneSpace += boneRotationToAdd;
+        skel.bones.At(boneIndex).parentBoneSpace.rotation += boneRotationToAdd;
 
         v2f boneTranslationToAdd = anim.boneTranslations.At(boneIndex);
-        *skel.bones.At(boneIndex).pos_parentBoneSpace += boneTranslationToAdd;
+        skel.bones.At(boneIndex).parentBoneSpace.translation += boneTranslationToAdd;
     };
 };
 

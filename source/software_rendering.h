@@ -834,9 +834,9 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
             RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
             Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
-            Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
+            Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
-            DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, work->screenRegionCoords);
+            DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
 
             currentRenderBufferEntry += sizeof(RenderEntry_Texture);
         }
@@ -898,9 +898,9 @@ void DoRenderWork(void* data)
                 int x { 3 };
 
             Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
-            Quadf imageTargetRect_projection = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);//Screen coordinates
+            Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
-            DrawTexture_UnOptimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_projection, textureEntry, work->screenRegionCoords);
+            DrawTexture_UnOptimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
 
             currentRenderBufferEntry += sizeof(RenderEntry_Texture);
         }
