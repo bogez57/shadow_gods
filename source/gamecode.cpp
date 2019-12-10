@@ -238,14 +238,14 @@ v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 
 Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
 {
-    Coordinate_Space parentSpace{};
+    Coordinate_Space parentSpace {};
     parentSpace.origin = transformInfo_world.translation;
-    parentSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
+    parentSpace.xBasis = v2f { CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation) };
     parentSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(parentSpace.xBasis);
     parentSpace.xBasis *= transformInfo_world.scale.x;
 
-    Quadf transformedCoords{};
-    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
+    Quadf transformedCoords {};
+    for (i32 vertIndex {}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
     {
         //This equation rotates first then moves to correct parent position
         transformedCoords.vertices.At(vertIndex) = parentSpace.origin + (localCoords.vertices.At(vertIndex).x * parentSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * parentSpace.yBasis);
@@ -343,7 +343,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         for (i32 slotI {}; slotI < skel.slots.size; ++slotI)
         {
             StringCmp(skel.slots.At(slotI).name, "left-hand");
-                int x{};
+            int x {};
 
             skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
             skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
@@ -539,7 +539,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
                 currentSlot->bone->worldSpace.scale.y = -1.0f;
 
-                Quadf region_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
+                Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
                 Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
                 Quadf region_worldSpaceCoords = ParentTransform(region_boneSpaceCoords, currentSlot->bone->worldSpace);
 
@@ -564,16 +564,24 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         }
 #endif
 
-#if 0
-        //Draw collision boxes
-        PushRect(global_renderingInfo, enemy->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, enemy->hurtBox.size, {1.0f, 0.0f, 0.0f});
-        PushRect(global_renderingInfo, player->hurtBox.worldPos, 0.0f, {1.0f, 1.0f}, player->hurtBox.size, {1.0f, 0.0f, 0.0f});
+        { //Draw collision boxes
+            Quadf playerTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->hurtBox.size.width, player->hurtBox.size.height);
+            Quadf enemyTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, enemy->hurtBox.size.width, enemy->hurtBox.size.height);
 
-        for(i32 hitBoxIndex{}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
-        {
-            if(player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
-                PushRect(global_renderingInfo, player->currentAnim.hitBoxes.At(hitBoxIndex).worldPos, 0.0f, {1.0f, 1.0f}, player->currentAnim.hitBoxes.At(hitBoxIndex).size, {0.0f, 1.0f, 0.0f});
-        };
-#endif
+            Quadf playerTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { player->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
+            Quadf enemyTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { enemy->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
+
+            PushRect(global_renderingInfo, playerTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+            PushRect(global_renderingInfo, enemyTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+
+            for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
+            {
+                Quadf playerHitBox_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
+                Quadf playerHitBox_worldCoords = ParentTransform(playerHitBox_localCoords, Transform { player->hitBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
+
+                if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+                    PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
+            };
+        }
     };
 };

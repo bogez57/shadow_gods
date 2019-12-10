@@ -126,7 +126,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 #endif
 
 local_func void
-DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v2f rectDims, v3f rectColor, Rectf clipRect)
+DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect)
 {
     v2f origin = targetRect_screenCoords.bottomLeft;
     v2f targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
@@ -844,18 +844,14 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
 
         case EntryType_Rect:
         {
-#if 0
             RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
-            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
+            Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+            Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
 
-            Quadf targetQuad_world = ProduceWorldCoordsFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions, rectEntry.world);
-            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
-            Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera, pixelsPerMeter);
+            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
 
-            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_projection, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
             currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-#endif 
         }
         break;
 
@@ -894,9 +890,6 @@ void DoRenderWork(void* data)
         {
             RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
 
-            if (StringCmp(textureEntry.name, "left-hand"))
-                int x { 3 };
-
             Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
             Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
 
@@ -908,18 +901,14 @@ void DoRenderWork(void* data)
 
         case EntryType_Rect:
         {
-#if 0
             RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
 
-            ConvertToCorrectPositiveRadian($(rectEntry.world.rotation));
+            Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+            Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
 
-            Quadf targetQuad_world = ProduceWorldCoordsFromCenterPoint(rectEntry.world.pos, rectEntry.dimensions, rectEntry.world);
-            Quadf targetQuad_camera = CameraTransform(targetQuad_world, *camera);
-            Quadf targetQuad_projection = ProjectionTransform_Ortho(targetQuad_camera, pixelsPerMeter);
+            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
 
-            DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetQuad_camera, rectEntry.dimensions, rectEntry.color, work->screenRegionCoords);
             currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-#endif
         }
         break;
 
