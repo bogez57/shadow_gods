@@ -218,6 +218,42 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
+v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
+{
+    ConvertToCorrectPositiveRadian($(parentTransform.rotation));
+
+    Coordinate_Space parentSpace {};
+    parentSpace.origin = parentTransform.translation;
+    parentSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
+    parentSpace.yBasis = parentTransform.scale.y * PerpendicularOp(parentSpace.xBasis);
+    parentSpace.xBasis *= parentTransform.scale.x;
+
+    v2f transformedCoords {};
+
+    //This equation rotates first then moves to correct world position
+    transformedCoords = parentSpace.origin + (localCoords.x * parentSpace.xBasis) + (localCoords.y * parentSpace.yBasis);
+
+    return transformedCoords;
+};
+
+Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
+{
+    Coordinate_Space parentSpace{};
+    parentSpace.origin = transformInfo_world.translation;
+    parentSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
+    parentSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(parentSpace.xBasis);
+    parentSpace.xBasis *= transformInfo_world.scale.x;
+
+    Quadf transformedCoords{};
+    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
+    {
+        //This equation rotates first then moves to correct parent position
+        transformedCoords.vertices.At(vertIndex) = parentSpace.origin + (localCoords.vertices.At(vertIndex).x * parentSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * parentSpace.yBasis);
+    };
+
+    return transformedCoords;
+};
+
 f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
 {
     rotation += bone.parentBoneSpace.rotation;
@@ -234,23 +270,6 @@ f32 WorldRotation_Bone(Bone bone)
         return 0;
     else
         return RecursivelyAddBoneRotations(bone.parentBoneSpace.rotation, *bone.parentBone);
-};
-
-v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
-{
-    //With world space origin at 0, 0
-    Coordinate_Space localSpace {};
-    localSpace.origin = parentTransform.translation;
-    localSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
-    localSpace.yBasis = parentTransform.scale.y * PerpendicularOp(localSpace.xBasis);
-    localSpace.xBasis *= parentTransform.scale.x;
-
-    v2f transformedCoords {};
-
-    //This equation rotates first then moves to correct world position
-    transformedCoords = localSpace.origin + (localCoords.x * localSpace.xBasis) + (localCoords.y * localSpace.yBasis);
-
-    return transformedCoords;
 };
 
 v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
@@ -285,42 +304,19 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
 {
     Bone* root = &fighterSkel.bones[0];
 
-    root->parentBoneSpace.scale.x = 1.0f;
+    root->parentBoneSpace.scale.x = -1.0f;
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 
     for (i32 i {}; i < fighterSkel.bones.size; ++i)
     {
-        //v2f flippedX = {fighterSkel.bones.At(i).worldPos.x * -1.0f, fighterSkel.bones.At(i).worldPos.y};
-        //fighterSkel.bones.At(i).worldPos = flippedX;
         fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
         fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
-        //fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
+        fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
     };
 
     root->worldSpace.translation = fighterWorldPos;
     root->parentBoneSpace.translation = fighterWorldPos;
-};
-
-Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
-{
-    //With world space origin at 0, 0
-    Coordinate_Space localSpace{};
-    localSpace.origin = transformInfo_world.translation;
-    localSpace.xBasis = v2f{CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation)};
-    localSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(localSpace.xBasis);
-    localSpace.xBasis *= transformInfo_world.scale.x;
-
-    Quadf transformedCoords{};
-    for(i32 vertIndex{}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
-    {
-        //localCoords.vertices.At(vertIndex) -= localSpace.origin;
-
-        //This equation rotates first then moves to correct world position
-        transformedCoords.vertices.At(vertIndex) = localSpace.origin + (localCoords.vertices.At(vertIndex).x * localSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * localSpace.yBasis);
-    };
-
-    return transformedCoords;
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -534,17 +530,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     { //Render
         auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex { 0 }; slotIndex < 2; ++slotIndex)
+            for (i32 slotIndex { 0 }; slotIndex < 19; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
 
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
 
-                Quadf region_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
-                currentSlot->regionAttachment.parentBoneSpace.scale.y = 1.0f; 
+                currentSlot->bone->worldSpace.scale.y = -1.0f;
+
+                Quadf region_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
                 Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
-                ConvertToCorrectPositiveRadian($(currentSlot->bone->worldSpace.rotation));
                 Quadf region_worldSpaceCoords = ParentTransform(region_boneSpaceCoords, currentSlot->bone->worldSpace);
 
                 PushTexture(global_renderingInfo, region_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
@@ -553,6 +549,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         //Push Fighters
         DrawFighter(*player);
+        DrawFighter(*enemy);
 
 #if 0
         //Push background
