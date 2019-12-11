@@ -9,7 +9,7 @@
 struct Fighter
 {
     Fighter() = default;
-    Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox);
+    Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox, b flipX);
 
     Transform world;
     f32 height {};
@@ -25,7 +25,7 @@ struct Fighter
 
 #ifdef FIGHTER_IMPL
 
-Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox)
+Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox, b flipX = false)
     : skel { skel }
     , animData { animData }
     , animQueue { Init::_ }
@@ -103,6 +103,24 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
             };
         };
     };
+
+    { //Flip skeleton/transforms if marked
+        if (flipX)
+        {
+            for (i32 i {}; i < this->skel.bones.size; ++i)
+            {
+                if (this->skel.bones.At(i).isRoot)
+                    this->skel.bones.At(i).parentBoneSpace.scale.x = -1.0f;
+            };
+
+            UpdateSkeletonBoneWorldPositions($(this->skel), this->world.translation);
+
+            for (i32 i {}; i < this->skel.bones.size; ++i)
+            {
+                this->skel.bones.At(i).worldSpace.rotation = PI - this->skel.bones.At(i).worldSpace.rotation;
+            }
+        }
+    }
 };
 
 #endif //FIGHTER_IMPL

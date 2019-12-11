@@ -218,24 +218,6 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
-v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
-{
-    ConvertToCorrectPositiveRadian($(parentTransform.rotation));
-
-    Coordinate_Space parentSpace {};
-    parentSpace.origin = parentTransform.translation;
-    parentSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
-    parentSpace.yBasis = parentTransform.scale.y * PerpendicularOp(parentSpace.xBasis);
-    parentSpace.xBasis *= parentTransform.scale.x;
-
-    v2f transformedCoords {};
-
-    //This equation rotates first then moves to correct world position
-    transformedCoords = parentSpace.origin + (localCoords.x * parentSpace.xBasis) + (localCoords.y * parentSpace.yBasis);
-
-    return transformedCoords;
-};
-
 Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
 {
     Coordinate_Space parentSpace {};
@@ -252,71 +234,6 @@ Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
     };
 
     return transformedCoords;
-};
-
-f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
-{
-    rotation += bone.parentBoneSpace.rotation;
-
-    if (bone.isRoot)
-        return rotation;
-    else
-        return RecursivelyAddBoneRotations(rotation, *bone.parentBone);
-};
-
-f32 WorldRotation_Bone(Bone bone)
-{
-    if (bone.isRoot)
-        return 0;
-    else
-        return RecursivelyAddBoneRotations(bone.parentBoneSpace.rotation, *bone.parentBone);
-};
-
-v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
-{
-    v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.parentBoneSpace);
-
-    if (boneToGrabTransformFrom.isRoot) //If root bone has been hit then exit recursion by returning world pos of main bone
-    {
-        return parentLocalPos;
-    }
-    else
-    {
-        return WorldTransform_Bone(parentLocalPos, *boneToGrabTransformFrom.parentBone);
-    };
-};
-
-inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
-{
-    if (mainBone.childBones.size > 0)
-    {
-        for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
-        {
-            Bone* childBone = mainBone.childBones[childBoneIndex];
-            childBone->worldSpace.translation = WorldTransform_Bone(childBone->parentBoneSpace.translation, *childBone->parentBone);
-
-            UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
-        };
-    };
-}
-
-void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPos)
-{
-    Bone* root = &fighterSkel.bones[0];
-
-    root->parentBoneSpace.scale.x = -1.0f;
-
-    UpdateBoneChainsWorldPositions_StartingFrom($(*root));
-
-    for (i32 i {}; i < fighterSkel.bones.size; ++i)
-    {
-        fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
-        fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
-        fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
-    };
-
-    root->worldSpace.translation = fighterWorldPos;
-    root->parentBoneSpace.translation = fighterWorldPos;
 };
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
@@ -442,8 +359,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
         HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox };
-        *enemy = { enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox };
+        *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, true };
+        *enemy = { enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox, true };
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);

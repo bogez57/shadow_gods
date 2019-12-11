@@ -36,7 +36,7 @@ struct Region_Attachment
 {
     f32 width, height {};
     v2f scale {};
-    Transform parentBoneSpace{};
+    Transform parentBoneSpace {};
     AtlasRegion region_image;
 };
 
@@ -149,7 +149,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                     bone->isRoot = true;
                 bone->parentBoneSpace.scale.x = Json_getFloat(currentBone_json, "scaleX", 1.0f);
                 bone->parentBoneSpace.scale.y = Json_getFloat(currentBone_json, "scaleY", 1.0f);
-                bone->worldSpace.scale = {1.0f, 1.0f};
+                bone->worldSpace.scale = { 1.0f, 1.0f };
 
                 bone->parentBoneSpace.rotation = Json_getFloat(currentBone_json, "rotation", 0.0f);
                 bone->initialRotation_parentBoneSpace = bone->parentBoneSpace.rotation;
@@ -202,8 +202,8 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
                     Slot* slot = GetLastElem(this->slots);
 
                     slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
-                    if(StringCmp(slot->name, "left-hand"))
-                        int x{};
+                    if (StringCmp(slot->name, "left-hand"))
+                        int x {};
                     slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
                     slot->regionAttachment = [currentSlot_json, skins_json, atlas]() -> Region_Attachment {
                         Region_Attachment resultRegionAttch {};
@@ -288,6 +288,87 @@ Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
     BGZ_ASSERT(bone->name != nullptr, "Bone was not found!");
 
     return bone;
+};
+
+v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
+{
+    ConvertToCorrectPositiveRadian($(parentTransform.rotation));
+
+    Coordinate_Space parentSpace {};
+    parentSpace.origin = parentTransform.translation;
+    parentSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
+    parentSpace.yBasis = parentTransform.scale.y * PerpendicularOp(parentSpace.xBasis);
+    parentSpace.xBasis *= parentTransform.scale.x;
+
+    v2f transformedCoords {};
+
+    //This equation rotates first then moves to correct world position
+    transformedCoords = parentSpace.origin + (localCoords.x * parentSpace.xBasis) + (localCoords.y * parentSpace.yBasis);
+
+    return transformedCoords;
+};
+
+f32 RecursivelyAddBoneRotations(f32 rotation, Bone bone)
+{
+    rotation += bone.parentBoneSpace.rotation;
+
+    if (bone.isRoot)
+        return rotation;
+    else
+        return RecursivelyAddBoneRotations(rotation, *bone.parentBone);
+};
+
+f32 WorldRotation_Bone(Bone bone)
+{
+    if (bone.isRoot)
+        return 0;
+    else
+        return RecursivelyAddBoneRotations(bone.parentBoneSpace.rotation, *bone.parentBone);
+};
+
+v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
+{
+    v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.parentBoneSpace);
+
+    if (boneToGrabTransformFrom.isRoot) //If root bone has been hit then exit recursion by returning world pos of main bone
+    {
+        return parentLocalPos;
+    }
+    else
+    {
+        return WorldTransform_Bone(parentLocalPos, *boneToGrabTransformFrom.parentBone);
+    };
+};
+
+inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
+{
+    if (mainBone.childBones.size > 0)
+    {
+        for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
+        {
+            Bone* childBone = mainBone.childBones[childBoneIndex];
+            childBone->worldSpace.translation = WorldTransform_Bone(childBone->parentBoneSpace.translation, *childBone->parentBone);
+
+            UpdateBoneChainsWorldPositions_StartingFrom($(*childBone));
+        };
+    };
+}
+
+void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPos)
+{
+    Bone* root = &fighterSkel.bones[0];
+
+    UpdateBoneChainsWorldPositions_StartingFrom($(*root));
+
+    for (i32 i {}; i < fighterSkel.bones.size; ++i)
+    {
+        fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
+        fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
+        fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
+    };
+
+    root->worldSpace.translation = fighterWorldPos;
+    root->parentBoneSpace.translation = fighterWorldPos;
 };
 
 #endif //SKELETON_IMPL
