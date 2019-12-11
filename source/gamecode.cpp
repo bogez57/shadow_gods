@@ -556,13 +556,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
         Quadf targetRect_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, stage->size.width, stage->size.height);
         PushTexture(global_renderingInfo, targetRect_localCoords, stage->backgroundImg, stage->size.height, uvs, "background");
+#endif
 
         for (i32 i {}; i < player->skel.bones.size; ++i)
         {
             Bone bone = player->skel.bones.At(i);
-            PushRect(global_renderingInfo, bone.pos_worldSpace, 0.0f, { 1.0f, 1.0f }, { .2f, .2f }, { 1.0f, 0.0f, 0.0f });
+            Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
+            PushRect(global_renderingInfo, boneRect, { 1.0f, 0.0f, 0.0f });
         }
-#endif
 
         { //Draw collision boxes
             Quadf playerTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->hurtBox.size.width, player->hurtBox.size.height);
@@ -576,11 +577,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
             {
-                Quadf playerHitBox_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
-                Quadf playerHitBox_worldCoords = ParentTransform(playerHitBox_localCoords, Transform { player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
+                Quadf playerHitBox_localCoords = ProduceQuadFromCenterPoint(player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
+                //Quadf playerHitBox_worldCoords = ParentTransform(playerHitBox_localCoords, Transform { player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
 
                 if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
-                    PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
+                    PushRect(global_renderingInfo, playerHitBox_localCoords, { 0.0f, 1.0f, 0.0f });
             };
         }
     };
