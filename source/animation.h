@@ -229,7 +229,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
             };
 
-            if (translateTimeline_json)
+            if (scaleTimeline_json)
             {
                 //Implement
             };

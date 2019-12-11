@@ -577,7 +577,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
             {
                 Quadf playerHitBox_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
-                Quadf playerHitBox_worldCoords = ParentTransform(playerHitBox_localCoords, Transform { player->hitBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
+                Quadf playerHitBox_worldCoords = ParentTransform(playerHitBox_localCoords, Transform { player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
 
                 if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
                     PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
