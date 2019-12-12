@@ -104,22 +104,18 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
         };
     };
 
-    { //Flip skeleton/transforms if marked
-        if (flipX)
+    //Flip skeleton bones world positions/rotations
+    if (flipX)
+    {
+        for (i32 i {}; i < this->skel.bones.size; ++i)
         {
-            for (i32 i {}; i < this->skel.bones.size; ++i)
-            {
-                if (this->skel.bones.At(i).isRoot)
-                    this->skel.bones.At(i).parentBoneSpace.scale.x = -1.0f;
-            };
+            if (this->skel.bones.At(i).isRoot)
+                this->skel.bones.At(i).parentBoneSpace.scale.x = -1.0f;
+            else
+                this->skel.bones.At(i).worldSpace.scale.y = -1.0f;
+        };
 
-            UpdateSkeletonBoneWorldPositions($(this->skel), this->world.translation);
-
-            for (i32 i {}; i < this->skel.bones.size; ++i)
-            {
-                this->skel.bones.At(i).worldSpace.rotation = PI - this->skel.bones.At(i).worldSpace.rotation;
-            }
-        }
+        UpdateSkeletonBoneWorldPositions($(this->skel), this->world.translation);
     }
 };
 

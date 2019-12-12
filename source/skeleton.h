@@ -364,7 +364,9 @@ void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPo
     {
         fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
         fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
-        fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
+
+        if (root->parentBoneSpace.scale.x == -1.0f)
+            fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
     };
 
     root->worldSpace.translation = fighterWorldPos;
