@@ -354,7 +354,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
     };
 }
 
-void UpdateSkeletonBoneWorldPositions(Skeleton&& fighterSkel, v2f fighterWorldPos)
+void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldPos)
 {
     Bone* root = &fighterSkel.bones[0];
 

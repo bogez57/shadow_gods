@@ -115,7 +115,7 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
                 this->skel.bones.At(i).worldSpace.scale.y = -1.0f;
         };
 
-        UpdateSkeletonBoneWorldPositions($(this->skel), this->world.translation);
+        UpdateSkeletonBoneWorldTransforms($(this->skel), this->world.translation);
 
         for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
         {

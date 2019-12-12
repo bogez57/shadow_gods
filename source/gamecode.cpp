@@ -420,8 +420,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     ApplyAnimationToSkeleton($(player->skel), player->currentAnim);
     ApplyAnimationToSkeleton($(enemy->skel), enemy->currentAnim);
 
-    UpdateSkeletonBoneWorldPositions($(player->skel), player->world.translation);
-    UpdateSkeletonBoneWorldPositions($(enemy->skel), enemy->world.translation);
+    UpdateSkeletonBoneWorldTransforms($(player->skel), player->world.translation);
+    UpdateSkeletonBoneWorldTransforms($(enemy->skel), enemy->world.translation);
 
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
