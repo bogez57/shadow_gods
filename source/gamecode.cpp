@@ -358,8 +358,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
         HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, /*flipX*/ true };
+        HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { -2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
+        *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, /*flipX*/ false };
         *enemy = { enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox, /*flipX*/ true };
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
@@ -462,16 +462,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             };
         };
 
+        //Push background
+        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
+        Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
+        PushTexture(global_renderingInfo, targetRect_worldCoords, stage->backgroundImg, stage->size.height, uvs, "background");
+
         //Push Fighters
         DrawFighter(*player);
         DrawFighter(*enemy);
-
-#if 0
-        //Push background
-        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
-        Quadf targetRect_localCoords = ProduceQuadFromCenterPoint(v2f{0.0f, 0.0f}, stage->size.width, stage->size.height);
-        PushTexture(global_renderingInfo, targetRect_localCoords, stage->backgroundImg, stage->size.height, uvs, "background");
-#endif
 
         for (i32 i {}; i < player->skel.bones.size; ++i)
         {
@@ -492,11 +490,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
             for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
             {
-                Quadf playerHitBox_localCoords = ProduceQuadFromCenterPoint(player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
-                //Quadf playerHitBox_worldCoords = ParentTransform(playerHitBox_localCoords, Transform { player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
+                Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
 
                 if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
-                    PushRect(global_renderingInfo, playerHitBox_localCoords, { 0.0f, 1.0f, 0.0f });
+                    PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
             };
         }
     };
