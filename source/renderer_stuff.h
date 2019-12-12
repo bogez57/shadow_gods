@@ -11,7 +11,7 @@
 
     Current Renderer assumptions:
     
-    1.) User sends only one vertex (in world coordinates) instead of a quad. The vertex should be based on the center point of texture or rect user wants to draw.
+    1.) User sends world coordinates to renderer. 4 verts pushed per texture/rect.
     2.) Renderer expects all verts to be in meters and not pixels. 
     3.) Y axis is going up and bottom left corner of rect is expected to be origin
     

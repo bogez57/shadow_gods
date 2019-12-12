@@ -244,48 +244,30 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
             i32 ceiledY = CeilF32ToI32(testVec.y);
 
             if (xMin > flooredX)
-            {
                 xMin = flooredX;
-            }
             if (yMin > flooredY)
-            {
                 yMin = flooredY;
-            }
             if (xMax < ceiledX)
-            {
                 xMax = ceiledX;
-            }
             if (yMax < ceiledY)
-            {
                 yMax = ceiledY;
-            }
         }
 
         if (xMin < (i32)clipRect.min.x)
-        {
             xMin = (i32)clipRect.min.x;
-        }
         if (yMin < clipRect.min.y)
-        {
             yMin = (i32)clipRect.min.y;
-        }
         if (xMax > widthMax)
-        {
             xMax = widthMax;
-        }
         if (yMax > heightMax)
-        {
             yMax = heightMax;
-        }
     };
 
     i32 simdWidth_inBytes = 8;
 
     //Align to 8-byte boundry
     if ((xMin % simdWidth_inBytes) != 0)
-    {
         xMin = (i32)RoundDown((sizet)xMin, simdWidth_inBytes);
-    };
 
     //Pre calcuations for optimization
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
@@ -329,12 +311,14 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
             __m256 Us = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedXAxis_x), _mm256_mul_ps(dYs, normalizedXAxis_y));
             __m256 Vs = _mm256_add_ps(_mm256_mul_ps(dXs, normalizedYAxis_x), _mm256_mul_ps(dYs, normalizedYAxis_y));
 
+            /* clang-format off */
             //Using a mask to determine what colors final 8 wide pixel destintion buffer should except
             //(background texels or image texels). This replaces the need for a conditional
             __m256i writeMask = _mm256_castps_si256(_mm256_and_ps(_mm256_and_ps(_mm256_cmp_ps(Us, zero, _CMP_GE_OQ),
-                                                                      _mm256_cmp_ps(Us, one, _CMP_LE_OQ)),
-                _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
-                    _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
+                                                                  _mm256_cmp_ps(Us, one, _CMP_LE_OQ)),
+                                                                  _mm256_and_ps(_mm256_cmp_ps(Vs, zero, _CMP_GE_OQ),
+                                                                  _mm256_cmp_ps(Vs, one, _CMP_LE_OQ))));
+            /* clang-format on */
 
             __m256i clipMask = _mm256_set1_epi32(0xFFFFFFFF);
 
