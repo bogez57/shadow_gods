@@ -359,7 +359,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
         HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, /*flipX*/ false };
+        *player = { playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, /*flipX*/ true };
         *enemy = { enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox, /*flipX*/ true };
 
         MixAnimations($(player->animData), "idle", "walk", .2f);

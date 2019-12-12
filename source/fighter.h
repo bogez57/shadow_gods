@@ -116,6 +116,20 @@ Fighter::Fighter(Skeleton skel, AnimationData animData, v2f worldPos, f32 fighte
         };
 
         UpdateSkeletonBoneWorldPositions($(this->skel), this->world.translation);
+
+        for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
+        {
+            Animation* anim = (Animation*)&this->animData.animations.keyInfos.At(animIndex).value;
+
+            if (anim->name)
+            {
+                anim = GetVal(this->animData.animations, animIndex, anim->name);
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                {
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x *= -1.0f;
+                };
+            }
+        }
     }
 };
 
