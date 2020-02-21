@@ -885,7 +885,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             InvalidCodePath;
 
         HWND window = CreateWindowEx(0, WindowProperties.lpszClassName, "Shadow Gods", WS_VISIBLE | WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left - 2, rect.bottom - rect.top, 0, 0, CurrentProgramInstance, 0);
+            CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0, CurrentProgramInstance, 0);
 
         HDC WindowContext = GetDC(window);
 
