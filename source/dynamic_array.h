@@ -102,7 +102,13 @@ public:
     i64 size {}, capacity {};
     b hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
-    i32 memPartitionID{};
+    i32 memPartitionID{0};
+};
+
+template <typename Type>
+void Initialize(Dynam_Array<Type>&& arr, i32 memPartitionID_dynamic)
+{
+    arr.memPartitionID = memPartitionID_dynamic;
 };
 
 template <typename Type>

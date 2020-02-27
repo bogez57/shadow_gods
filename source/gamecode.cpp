@@ -411,7 +411,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
-
+    
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
     enemy->currentAnim = UpdateAnimationState($(enemy->animQueue), deltaT);
     defer { CleanUpAnimation($(player->currentAnim)); };

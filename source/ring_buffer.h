@@ -11,12 +11,6 @@ public:
         this->buffer = CallocType(memPartitionID_dynamic, Type, size);
     };
 
-    void Init(i64 size, i32 memPartitionID_dynamic)
-    {
-        this->maxSize = size;
-        this->buffer = CallocType(memPartitionID_dynamic, Type, size);
-    };
-
     void PushBack(Type elem)
     {
         this->buffer[write] = elem;
@@ -130,4 +124,11 @@ public:
     i64 read {};
     b full {};
     Type* buffer { nullptr };
+};
+
+template <typename Type>
+void Inititialize(Ring_Buffer<Type>&& buf, i64 size, i32 memPartitionID_dynamic)
+{
+    this->maxSize = size;
+    this->buffer = CallocType(memPartitionID_dynamic, Type, size);
 };

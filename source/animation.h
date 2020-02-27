@@ -20,11 +20,14 @@ enum class CurveType
 
 struct RotationTimeline
 {
+    RotationTimeline() = default;
+    RotationTimeline(Init, i32 memPartitionID_dynamic);
+
     f32 (*GetTransformationVal)(RotationTimeline, i32);
     b exists { false };
-    Dynam_Array<f32> times { heap };
-    Dynam_Array<CurveType> curves { heap };
-    Dynam_Array<f32> angles { heap };
+    Dynam_Array<f32> times;
+    Dynam_Array<CurveType> curves;
+    Dynam_Array<f32> angles;
 };
 
 struct TranslationTimeline
@@ -72,7 +75,7 @@ enum class PlayBackStatus
 struct Animation
 {
     Animation() = default;
-    Animation(Init);
+    Animation(Init, i32 memPartitionID_dynamic);
 
     const char* name { nullptr };
     f32 totalTime {};
@@ -91,7 +94,7 @@ struct Animation
     Array<ScaleTimeline, 20> boneScaleTimelines;
     Array<f32, 20> boneRotations;
     Array<v2f, 20> boneTranslations;
-    Dynam_Array<Animation> animsToTransitionTo { heap };
+    Dynam_Array<Animation> animsToTransitionTo;
 };
 
 struct AnimationData
@@ -127,11 +130,39 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 #ifdef ANIMATION_IMPL
 
-Animation::Animation(Init)
-    : bones { heap }
-    , hitBoxes { heap }
+RotationTimeline::RotationTimeline(Init, i32 memPartitionID_dynamic)
+    : times {memPartitionID_dynamic}
+    , curves {memPartitionID_dynamic}
+    , angles {memPartitionID_dynamic}
 {
-    Reserve($(bones), 10);
+};
+
+
+Animation::Animation(Init, i32 memPartitionID_dynamic)
+    : bones { memPartitionID_dynamic }
+    , hitBoxes { memPartitionID_dynamic }
+    , animsToTransitionTo { memPartitionID_dynamic }
+{
+    for(i32 i{}; i < this->boneRotationTimelines.Size(); ++i)
+    {
+        Initialize($(this->boneRotationTimelines.At(i).times), heap);
+        Initialize($(this->boneRotationTimelines.At(i).curves), heap);
+        Initialize($(this->boneRotationTimelines.At(i).angles), heap);
+    };
+
+    for(i32 i{}; i < this->boneTranslationTimelines.Size(); ++i)
+    {
+        Initialize($(this->boneTranslationTimelines.At(i).times), heap);
+        Initialize($(this->boneTranslationTimelines.At(i).curves), heap);
+        Initialize($(this->boneTranslationTimelines.At(i).translations), heap);
+    };
+
+    for(i32 i{}; i < this->boneScaleTimelines.Size(); ++i)
+    {
+        Initialize($(this->boneScaleTimelines.At(i).times), heap);
+        Initialize($(this->boneScaleTimelines.At(i).curves), heap);
+        Initialize($(this->boneScaleTimelines.At(i).scales), heap);
+    };
 };
 
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
@@ -148,7 +179,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
     i32 animIndex {};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {
-        Animation newAnimation { Init::_ };
+        Animation newAnimation { Init::_, heap };
         Insert<Animation>($(this->animations), currentAnimation_json->name, newAnimation);
         i32 index = GetHashIndex(this->animations, currentAnimation_json->name);
         Animation* anim = (Animation*)&this->animations.keyInfos.At(index).value;
@@ -318,7 +349,9 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
     BGZ_ASSERT(index_to != HASH_DOES_NOT_EXIST, "Wrong animations name!");
 
     Animation* anim_from = GetVal<Animation>(animData.animations, index_from, animName_from);
-    Animation anim_to { Init::_ };
+    Animation anim_to { Init::_, heap };
+    defer { CleanUpAnimation($(anim_to)); };
+
     CopyAnimation(*GetVal<Animation>(animData.animations, index_to, animName_to), $(anim_to));
     BGZ_ASSERT(anim_from->totalTime > mixDuration, "passing a mix time that is too long!");
 
