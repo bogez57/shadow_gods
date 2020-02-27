@@ -32,20 +32,26 @@ struct RotationTimeline
 
 struct TranslationTimeline
 {
+    TranslationTimeline() = default;
+    TranslationTimeline(Init, i32 memPartitionID_dynamic);
+
     v2f (*GetTransformationVal)(TranslationTimeline, i32);
     b exists { false };
-    Dynam_Array<f32> times { heap };
-    Dynam_Array<CurveType> curves { heap };
-    Dynam_Array<v2f> translations { heap };
+    Dynam_Array<f32> times;
+    Dynam_Array<CurveType> curves;
+    Dynam_Array<v2f> translations;
 };
 
 struct ScaleTimeline
 {
+    ScaleTimeline() = default;
+    ScaleTimeline(Init, i32 memPartitionID_dynamic);
+
     v2f (*GetTransformationVal)(ScaleTimeline, i32);
     b exists { false };
-    Dynam_Array<f32> times { heap };
-    Dynam_Array<CurveType> curves { heap };
-    Dynam_Array<v2f> scales { heap };
+    Dynam_Array<f32> times;
+    Dynam_Array<CurveType> curves;
+    Dynam_Array<v2f> scales;
 };
 
 f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, i32 keyFrameIndex)
@@ -137,6 +143,19 @@ RotationTimeline::RotationTimeline(Init, i32 memPartitionID_dynamic)
 {
 };
 
+TranslationTimeline::TranslationTimeline(Init, i32 memPartitionID_dynamic)
+    : times {memPartitionID_dynamic}
+    , curves {memPartitionID_dynamic}
+    , translations {memPartitionID_dynamic}
+{
+};
+
+ScaleTimeline::ScaleTimeline(Init, i32 memPartitionID_dynamic)
+    : times {memPartitionID_dynamic}
+    , curves {memPartitionID_dynamic}
+    , scales {memPartitionID_dynamic}
+{
+};
 
 Animation::Animation(Init, i32 memPartitionID_dynamic)
     : bones { memPartitionID_dynamic }

@@ -225,7 +225,7 @@ _Memory_Block* _AppendNewBlockAndMarkInUse(i32 memRegionIdentifier, i64 Size)
 void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
-    ASSERT(dynamAllocators[memRegionIdentifier].head);
+    ASSERT(dynamAllocators[memRegionIdentifier].head);//Is memory region identifier valid?
     ASSERT(Size <= (appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount)); //Not enough memory left for dynmaic memory allocation!
 
     void* Result { nullptr };
@@ -267,7 +267,7 @@ void* _MallocSize(i32 memRegionIdentifier, i64 Size)
 void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 {
     ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
-    ASSERT(dynamAllocators[memRegionIdentifier].head);
+    ASSERT(dynamAllocators[memRegionIdentifier].head);//Is memory region identifier valid?
     ASSERT(Size <= (appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount));
 
     void* MemBlockData = _MallocSize(memRegionIdentifier, Size);
@@ -286,7 +286,7 @@ void* _CallocSize(i32 memRegionIdentifier, i64 Size)
 void* _ReAlloc(i32 memRegionIdentifier, void* DataToRealloc, i64 NewSize)
 {
     ASSERT(appMemory->partitions[memRegionIdentifier].allocatorType == DYNAMIC);
-    ASSERT(dynamAllocators[memRegionIdentifier].head);
+    ASSERT(dynamAllocators[memRegionIdentifier].head);//Is memory region identifier valid?
     ASSERT((appMemory->partitions[memRegionIdentifier].Size - appMemory->partitions[memRegionIdentifier].UsedAmount)); //Not enough room left in memory region!
 
     _Memory_Block* BlockToRealloc;
