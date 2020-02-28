@@ -370,8 +370,8 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
     Animation* anim_from = GetVal<Animation>(animData.animations, index_from, animName_from);
     Animation anim_to { Init::_, heap };
     defer { CleanUpAnimation($(anim_to)); };
-    
     CopyAnimation(*GetVal<Animation>(animData.animations, index_to, animName_to), $(anim_to));
+    
     BGZ_ASSERT(anim_from->totalTime > mixDuration, "passing a mix time that is too long!");
     
     anim_to.mixTimeDuration = mixDuration;
@@ -403,6 +403,8 @@ void CopyAnimation(Animation src, Animation&& dest)
         CopyArray(src.boneRotationTimelines.At(boneIndex).angles, $(dest.boneRotationTimelines.At(boneIndex).angles));
     };
     
+    CopyArray(src.bones, $(dest.bones));
+    CopyArray(src.hitBoxes, $(dest.hitBoxes));
     CopyArray(src.animsToTransitionTo, $(dest.animsToTransitionTo));
 };
 
@@ -827,6 +829,10 @@ void CleanUpAnimation(Animation&& anim)
         CleanUp($(anim.boneRotationTimelines.At(i).times));
         CleanUp($(anim.boneRotationTimelines.At(i).angles));
     };
+    
+    CleanUp($(anim.bones));
+    CleanUp($(anim.hitBoxes));
+    CleanUp($(anim.animsToTransitionTo));
 };
 
 #endif //ANIMATION_IMPL
