@@ -114,9 +114,9 @@ struct AnimationData
 struct AnimationQueue
 {
     AnimationQueue() = default;
-    AnimationQueue(Init)
-        : queuedAnimations { 10, heap }
-    , idleAnim { Init::_, heap }
+    AnimationQueue(Init, i32 memPartitionID_dynamic)
+        : queuedAnimations { 10, memPartitionID_dynamic }
+    , idleAnim { Init::_, memPartitionID_dynamic }
     {}
     
     Ring_Buffer<Animation> queuedAnimations;
