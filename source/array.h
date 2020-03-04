@@ -34,3 +34,11 @@ public:
 
     Type elements[size ? size : 1];
 };
+
+template <typename Type, i64 size>
+void CopyArray(Array<Type, size> sourceArray, Array<Type, size>&& destinationArray)
+{
+    BGZ_ASSERT(destinationArray.Size() >= sourceArray.Size(), "Dest array needs to be at least as large as source array!");
+
+    memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.Size());
+};

@@ -7,6 +7,7 @@ public:
     Ring_Buffer() = default;
     Ring_Buffer(i64 size, i32 memPartitionID_dynamic)
         : maxSize(size)
+        , memPartitionID_dynamic(memPartitionID_dynamic)
     {
         this->buffer = CallocType(memPartitionID_dynamic, Type, size);
     };
@@ -120,6 +121,7 @@ public:
     };
 
     i64 maxSize {};
+    i32 memPartitionID_dynamic{};
     i64 write {};
     i64 read {};
     b full {};
@@ -127,8 +129,16 @@ public:
 };
 
 template <typename Type>
-void Inititialize(Ring_Buffer<Type>&& buf, i64 size, i32 memPartitionID_dynamic)
+void Inititialize(Ring_Buffer<Type>&& ringBuff, i64 size, i32 memPartitionID_dynamic)
 {
-    this->maxSize = size;
-    this->buffer = CallocType(memPartitionID_dynamic, Type, size);
+    ringBuff.memPartitionID_dynamic = memPartitionID_dynamic;
+    ringBuff.maxSize = size;
+    ringBuff.buffer = CallocType(memPartitionID_dynamic, Type, size);
 };
+
+template <typename Type>
+void CleanUp(Ring_Buffer<Type>&& ringBuff)
+{
+    DeAlloc(ringBuff.memPartitionID_dynamic, ringBuff);
+};
+

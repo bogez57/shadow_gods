@@ -275,7 +275,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             
             if (anim->name)
             {
-                for (i32 boneIndex {}; boneIndex < anim->bones.size; ++boneIndex)
+                for (i32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
                 {
                     TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
                     for (i32 keyFrameIndex {}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)

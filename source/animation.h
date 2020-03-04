@@ -93,9 +93,9 @@ struct Animation
     b repeat { false };
     b hasEnded { false };
     b MixingStarted { false };
-    Dynam_Array<Bone*> bones;
     Dynam_Array<HitBox> hitBoxes;
     Dynam_Array<Animation> animsToTransitionTo;
+    Array<Bone*, 20> bones;
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<ScaleTimeline, 20> boneScaleTimelines;
@@ -119,9 +119,9 @@ struct AnimationQueue
     , idleAnim { Init::_, memPartitionID_dynamic }
     {}
     
-    Ring_Buffer<Animation> queuedAnimations;
     b hasIdleAnim { false };
     Animation idleAnim;
+    Ring_Buffer<Animation> queuedAnimations;
 };
 
 void MixAnimations(AnimationData&& animData, const char* anim_from, const char* anim_to);
@@ -158,8 +158,7 @@ ScaleTimeline::ScaleTimeline(Init, i32 memPartitionID_dynamic)
 };
 
 Animation::Animation(Init, i32 memPartitionID_dynamic)
-: bones { memPartitionID_dynamic }
-, hitBoxes { memPartitionID_dynamic }
+: hitBoxes { memPartitionID_dynamic }
 , animsToTransitionTo { memPartitionID_dynamic }
 {
     for(i32 i{}; i < this->boneRotationTimelines.Size(); ++i)
@@ -203,9 +202,6 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
         i32 index = GetHashIndex(this->animations, currentAnimation_json->name);
         Animation* anim = (Animation*)&this->animations.keyInfos.At(index).value;
         
-        for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
-            PushBack($(anim->bones), &skel.bones.At(boneIndex));
-        
         anim->name = currentAnimation_json->name;
         
         Json* bonesOfAnimation = Json_getItem(currentAnimation_json, "bones");
@@ -214,7 +210,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
         for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex_json)
         {
             i32 boneIndex {};
-            while (boneIndex < anim->bones.size)
+            while (boneIndex < anim->bones.Size())
             {
                 if (StringCmp(anim->bones.At(boneIndex)->name, currentBone->name))
                     break;
@@ -395,7 +391,7 @@ void CopyAnimation(Animation src, Animation&& dest)
 {
     dest = src;
     
-    for (i32 boneIndex {}; boneIndex < src.bones.size; ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < src.bones.Size(); ++boneIndex)
     {
         CopyArray(src.boneTranslationTimelines.At(boneIndex).times, $(dest.boneTranslationTimelines.At(boneIndex).times));
         CopyArray(src.boneTranslationTimelines.At(boneIndex).translations, $(dest.boneTranslationTimelines.At(boneIndex).translations));
@@ -625,7 +621,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             anim.initialTimeLeftInAnimAtMixingStart = amountOfTimeLeftInAnim;
             anim.MixingStarted = true;
             
-            for (i32 boneIndex {}; boneIndex < anim.bones.size; ++boneIndex)
+            for (i32 boneIndex {}; boneIndex < anim.bones.Size(); ++boneIndex)
             {
                 anim.bones.At(boneIndex)->initialRotationForMixing = anim.boneRotations.At(boneIndex);
                 anim.bones.At(boneIndex)->initialTranslationForMixing = anim.boneTranslations.At(boneIndex);
@@ -699,7 +695,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     };
     
     f32 maxTimeOfAnimation {};
-    for (i32 boneIndex {}; boneIndex < anim->bones.size; ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
     {
         const Bone* bone = anim->bones.At(boneIndex);
         
@@ -822,7 +818,7 @@ void CleanUpAnimation(Animation&& anim)
     anim.repeat = { false };
     anim.hasEnded = { false };
     
-    for (i32 i {}; i < anim.bones.size; ++i)
+    for (i32 i {}; i < anim.bones.Size(); ++i)
     {
         CleanUp($(anim.boneTranslationTimelines.At(i).times));
         CleanUp($(anim.boneTranslationTimelines.At(i).translations));
@@ -830,9 +826,14 @@ void CleanUpAnimation(Animation&& anim)
         CleanUp($(anim.boneRotationTimelines.At(i).angles));
     };
     
-    CleanUp($(anim.bones));
     CleanUp($(anim.hitBoxes));
     CleanUp($(anim.animsToTransitionTo));
+};
+
+void CleanUpAnimQueue(AnimationQueue&& animQueue)
+{
+    CleanUpAnimation($(animQueue.idleAnim));
+    CleanUp($(animQueue.queuedAnimations));
 };
 
 #endif //ANIMATION_IMPL

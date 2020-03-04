@@ -43,9 +43,9 @@ struct Region_Attachment
 struct Bone
 {
     Bone() = default;
-    Bone(Init)
-        : childBones { heap }
-        , originalCollisionBoxVerts { heap }
+    Bone(Init, i32 memParitionID_dynamic)
+        : childBones { memParitionID_dynamic }
+        , originalCollisionBoxVerts { memParitionID_dynamic }
     {
         Reserve($(childBones), 10);
     };
@@ -140,7 +140,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memP
             i32 boneIndex {};
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
-                Bone newBone { Init::_ };
+                Bone newBone { Init::_, heap };
                 PushBack($(this->bones), newBone);
                 Bone* bone = GetLastElem(this->bones);
 
@@ -372,5 +372,18 @@ void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldP
     root->worldSpace.translation = fighterWorldPos;
     root->parentBoneSpace.translation = fighterWorldPos;
 };
+
+void CleanUpBone(Bone&& bone)
+{
+    
+};
+
+void CleanUpSkeleton(Skeleton&& skel)
+{
+    skel.width = 0;
+    skel.height = 0;
+    CleanUp($(skel.bones));
+    CleanUp($(skel.slots));
+}
 
 #endif //SKELETON_IMPL
