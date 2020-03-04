@@ -25,11 +25,6 @@ struct Fighter
 
 #ifdef FIGHTER_IMPL
 
-void CleanUpFighter(Fighter&& fighter)
-{
-    
-};
-
 Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox, b flipX = false)
 : skel { skel }
 , animData { animData }
@@ -136,6 +131,14 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
             }
         }
     }
+};
+
+void CleanUpFighter(Fighter&& fighter)
+{
+    CleanUpAnimQueue($(fighter.animQueue));    
+    CleanUpAnimation($(fighter.currentAnim));
+    CleanUpSkeleton($(fighter.skel));
+    //CleanUpAnimData(fighter.animData); //Need to create this for hashmap class
 };
 
 #endif //FIGHTER_IMPL
