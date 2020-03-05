@@ -25,7 +25,8 @@ struct RotationTimeline
     
     f32 (*GetTransformationVal)(RotationTimeline, i32);
     b exists { false };
-    Dynam_Array<f32> times;
+    Array<f32, 10> times;
+    i32 timesCount{};
     Dynam_Array<CurveType> curves;
     Dynam_Array<f32> angles;
 };
@@ -38,6 +39,7 @@ struct TranslationTimeline
     v2f (*GetTransformationVal)(TranslationTimeline, i32);
     b exists { false };
     Dynam_Array<f32> times;
+    i32 timesCount{};
     Dynam_Array<CurveType> curves;
     Dynam_Array<v2f> translations;
 };
@@ -50,6 +52,7 @@ struct ScaleTimeline
     v2f (*GetTransformationVal)(ScaleTimeline, i32);
     b exists { false };
     Dynam_Array<f32> times;
+    i32 timesCount{};
     Dynam_Array<CurveType> curves;
     Dynam_Array<v2f> scales;
 };
@@ -137,8 +140,7 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 #ifdef ANIMATION_IMPL
 
 RotationTimeline::RotationTimeline(Init, i32 memPartitionID_dynamic)
-: times {memPartitionID_dynamic}
-, curves {memPartitionID_dynamic}
+: curves {memPartitionID_dynamic}
 , angles {memPartitionID_dynamic}
 {
 };
@@ -163,7 +165,6 @@ Animation::Animation(Init, i32 memPartitionID_dynamic)
 {
     for(i32 i{}; i < this->boneRotationTimelines.Size(); ++i)
     {
-        Initialize($(this->boneRotationTimelines.At(i).times), heap);
         Initialize($(this->boneRotationTimelines.At(i).curves), heap);
         Initialize($(this->boneRotationTimelines.At(i).angles), heap);
     };
@@ -235,7 +236,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                 i32 keyFrameIndex {};
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
-                    PushBack($(boneRotationTimeline->times), Json_getFloat(jsonKeyFrame, "time", 0.0f));
+                    boneRotationTimeline->times[boneRotationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
                     PushBack($(boneRotationTimeline->angles), Json_getFloat(jsonKeyFrame, "angle", 0.0f));
                     
                     const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
@@ -245,7 +246,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                         PushBack($(boneRotationTimeline->curves), CurveType::LINEAR);
                 };
                 
-                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->times.size - 1);
+                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->timesCount);
                 
                 if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfRotationTimeline;
@@ -534,7 +535,7 @@ struct TransformationRangeResult
 template <typename TransformationType, typename TransformationTimelineType>
 TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFrames(TransformationTimelineType transformationTimelineOfBone, f32 currentAnimRunTime)
 {
-    BGZ_ASSERT(transformationTimelineOfBone.times.size != 0, "Can't get translations range from timeline w/ no keyframes!");
+    BGZ_ASSERT(transformationTimelineOfBone.timesCount != 0, "Can't get translations range from timeline w/ no keyframes!");
     
     TransformationRangeResult<TransformationType> result {};
     
@@ -826,7 +827,6 @@ void CleanUpAnimation(Animation&& anim)
     {
         CleanUp($(anim.boneTranslationTimelines.At(i).times));
         CleanUp($(anim.boneTranslationTimelines.At(i).translations));
-        CleanUp($(anim.boneRotationTimelines.At(i).times));
         CleanUp($(anim.boneRotationTimelines.At(i).angles));
     };
     
