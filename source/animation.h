@@ -38,7 +38,7 @@ struct TranslationTimeline
     
     v2f (*GetTransformationVal)(TranslationTimeline, i32);
     b exists { false };
-    Dynam_Array<f32> times;
+    Array<f32, 10> times;
     i32 timesCount{};
     Dynam_Array<CurveType> curves;
     Dynam_Array<v2f> translations;
@@ -51,7 +51,7 @@ struct ScaleTimeline
     
     v2f (*GetTransformationVal)(ScaleTimeline, i32);
     b exists { false };
-    Dynam_Array<f32> times;
+    Array<f32, 10> times;
     i32 timesCount{};
     Dynam_Array<CurveType> curves;
     Dynam_Array<v2f> scales;
@@ -146,15 +146,13 @@ RotationTimeline::RotationTimeline(Init, i32 memPartitionID_dynamic)
 };
 
 TranslationTimeline::TranslationTimeline(Init, i32 memPartitionID_dynamic)
-: times {memPartitionID_dynamic}
-, curves {memPartitionID_dynamic}
+: curves {memPartitionID_dynamic}
 , translations {memPartitionID_dynamic}
 {
 };
 
 ScaleTimeline::ScaleTimeline(Init, i32 memPartitionID_dynamic)
-: times {memPartitionID_dynamic}
-, curves {memPartitionID_dynamic}
+: curves {memPartitionID_dynamic}
 , scales {memPartitionID_dynamic}
 {
 };
@@ -171,14 +169,12 @@ Animation::Animation(Init, i32 memPartitionID_dynamic)
     
     for(i32 i{}; i < this->boneTranslationTimelines.Size(); ++i)
     {
-        Initialize($(this->boneTranslationTimelines.At(i).times), heap);
         Initialize($(this->boneTranslationTimelines.At(i).curves), heap);
         Initialize($(this->boneTranslationTimelines.At(i).translations), heap);
     };
     
     for(i32 i{}; i < this->boneScaleTimelines.Size(); ++i)
     {
-        Initialize($(this->boneScaleTimelines.At(i).times), heap);
         Initialize($(this->boneScaleTimelines.At(i).curves), heap);
         Initialize($(this->boneScaleTimelines.At(i).scales), heap);
     };
@@ -246,7 +242,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                         PushBack($(boneRotationTimeline->curves), CurveType::LINEAR);
                 };
                 
-                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->timesCount);
+                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->timesCount - 1);
                 
                 if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfRotationTimeline;
@@ -261,7 +257,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                 i32 keyFrameIndex {};
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
-                    PushBack($(boneTranslationTimeline->times), Json_getFloat(jsonKeyFrame, "time", 0.0f));
+                    boneTranslationTimeline->times[boneTranslationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
                     PushBack($(boneTranslationTimeline->translations), v2f { 0.0f, 0.0f });
                     
                     boneTranslationTimeline->translations.At(keyFrameIndex).x = Json_getFloat(jsonKeyFrame, "x", 0.0f);
@@ -274,7 +270,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                         PushBack($(boneTranslationTimeline->curves), CurveType::LINEAR);
                 };
                 
-                f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times.At(boneTranslationTimeline->times.size - 1);
+                f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times.At(boneTranslationTimeline->timesCount - 1);
                 
                 if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
@@ -500,7 +496,7 @@ i32 _CurrentActiveKeyFrame(TransformationTimelineType transformationTimelineOfBo
     BGZ_ASSERT(transformationTimelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
     
     i32 result {};
-    i32 keyFrameCount = (i32)transformationTimelineOfBone.times.size - 1;
+    i32 keyFrameCount = (i32)transformationTimelineOfBone.timesCount - 1;
     
     f32 keyFrameTime0 {};
     f32 keyFrameTime1 = transformationTimelineOfBone.times.At(keyFrameCount);
@@ -539,8 +535,8 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
     
     TransformationRangeResult<TransformationType> result {};
     
-    i32 firstKeyFrame { 0 }, lastKeyFrame { (i32)transformationTimelineOfBone.times.size - 1 };
-    if (transformationTimelineOfBone.times.size == 1)
+    i32 firstKeyFrame { 0 }, lastKeyFrame { (i32)transformationTimelineOfBone.timesCount - 1 };
+    if (transformationTimelineOfBone.timesCount == 1)
     {
         if (currentAnimRunTime >= transformationTimelineOfBone.times.At(firstKeyFrame))
         {
@@ -825,7 +821,6 @@ void CleanUpAnimation(Animation&& anim)
     
     for (i32 i {}; i < anim.bones.Size(); ++i)
     {
-        CleanUp($(anim.boneTranslationTimelines.At(i).times));
         CleanUp($(anim.boneTranslationTimelines.At(i).translations));
         CleanUp($(anim.boneRotationTimelines.At(i).angles));
     };

@@ -93,7 +93,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
                     
                     if (translationTimeline->exists)
                     {
-                        for (i32 keyFrameIndex {}; keyFrameIndex < translationTimeline->times.size; ++keyFrameIndex)
+                        for (i32 keyFrameIndex {}; keyFrameIndex < translationTimeline->timesCount; ++keyFrameIndex)
                         {
                             translationTimeline->translations.At(keyFrameIndex).x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
                             translationTimeline->translations.At(keyFrameIndex).y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
