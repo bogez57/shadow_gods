@@ -181,6 +181,7 @@ Animation::Animation(Init, i32 memPartitionID_dynamic)
         Initialize($(this->boneScaleTimelines.At(i).curves), heap);
         Initialize($(this->boneScaleTimelines.At(i).scales), heap);
     };
+    
 };
 
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
@@ -203,6 +204,9 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
         Animation* anim = (Animation*)&this->animations.keyInfos.At(index).value;
         
         anim->name = currentAnimation_json->name;
+        
+        for(i32 i{}; i < anim->bones.Size(); ++i)
+            anim->bones.At(i) = &skel.bones.At(i);
         
         Json* bonesOfAnimation = Json_getItem(currentAnimation_json, "bones");
         i32 boneIndex_json {};
