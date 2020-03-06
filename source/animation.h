@@ -95,7 +95,8 @@ struct Animation
     b MixingStarted { false };
     Array<HitBox, 10> hitBoxes;
     i32 hitBoxCount{};
-    Dynam_Array<Animation> animsToTransitionTo;
+    Array<Animation*, 10> animsToTransitionTo;
+    i32 animCount{};
     Array<Bone*, 20> bones;
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
@@ -138,7 +139,6 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 #ifdef ANIMATION_IMPL
 
 Animation::Animation(Init, i32 memPartitionID_dynamic)
-: animsToTransitionTo { memPartitionID_dynamic }
 {};
 
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
@@ -332,18 +332,20 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
     
     anim_to.mixTimeDuration = mixDuration;
     
-    if (anim_from->animsToTransitionTo.size > 0)
+    if (anim_from->animCount > 0)
     {
-        for (i32 i {}; i < anim_from->animsToTransitionTo.size; ++i)
+        for (i32 i {}; i < anim_from->animCount; ++i)
         {
-            BGZ_ASSERT(NOT StringCmp(anim_from->animsToTransitionTo.At(i).name, anim_to.name), "Duplicate mix animation tyring to be set");
+            BGZ_ASSERT(NOT StringCmp(anim_from->animsToTransitionTo.At(i)->name, anim_to.name), "Duplicate mix animation tyring to be set");
         };
         
-        PushBack($(anim_from->animsToTransitionTo), anim_to);
+        anim_from->animsToTransitionTo[++anim_from->animCount] = MallocType(heap, Animation, 1);
+        CopyAnimation(anim_to, $(*anim_from->animsToTransitionTo[anim_from->animCount]));
     }
     else
     {
-        PushBack($(anim_from->animsToTransitionTo), anim_to);
+        anim_from->animsToTransitionTo[anim_from->animCount] = MallocType(heap, Animation, 1);
+        CopyAnimation(anim_to, $(*anim_from->animsToTransitionTo[anim_from->animCount++]));
     }
 };
 
@@ -641,11 +643,11 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
         if (nextAnimInQueue)
         {
-            for (i32 animIndex {}; animIndex < anim->animsToTransitionTo.size; ++animIndex)
+            for (i32 animIndex {}; animIndex < anim->animCount; ++animIndex)
             {
-                if (StringCmp(anim->animsToTransitionTo.At(animIndex).name, nextAnimInQueue->name))
+                if (StringCmp(anim->animsToTransitionTo.At(animIndex)->name, nextAnimInQueue->name))
                 {
-                    if (amountOfTimeLeftInAnim <= anim->animsToTransitionTo.At(animIndex).mixTimeDuration)
+                    if (amountOfTimeLeftInAnim <= anim->animsToTransitionTo.At(animIndex)->mixTimeDuration)
                     {
                         InitializeMixingData($(*anim), prevFrameDT, amountOfTimeLeftInAnim);
                     }
@@ -671,7 +673,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         { //Translation Timeline
             if (anim->MixingStarted)
             {
-                BGZ_ASSERT(anim->animsToTransitionTo.size > 0, "No transition animation for mixing has been set!");
+                BGZ_ASSERT(anim->animCount > 0, "No transition animation for mixing has been set!");
                 
                 TranslationTimeline nextAnimTranslationTimeline {};
                 if (nextAnimInQueue)
@@ -693,7 +695,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         { //Rotation Timeline
             if (anim->MixingStarted)
             {
-                BGZ_ASSERT(anim->animsToTransitionTo.size > 0, "No transition animation for mixing has been set!");
+                BGZ_ASSERT(anim->animCount > 0, "No transition animation for mixing has been set!");
                 
                 RotationTimeline nextAnimRotationTimeline {};
                 if (nextAnimInQueue)
@@ -777,8 +779,6 @@ void CleanUpAnimation(Animation&& anim)
     anim.status = { PlayBackStatus::DEFAULT };
     anim.repeat = { false };
     anim.hasEnded = { false };
-    
-    CleanUp($(anim.animsToTransitionTo));
 };
 
 void CleanUpAnimQueue(AnimationQueue&& animQueue)
