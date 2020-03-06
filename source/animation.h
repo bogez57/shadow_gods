@@ -21,40 +21,37 @@ enum class CurveType
 struct RotationTimeline
 {
     RotationTimeline() = default;
-    RotationTimeline(Init, i32 memPartitionID_dynamic);
     
     f32 (*GetTransformationVal)(RotationTimeline, i32);
     b exists { false };
     Array<f32, 10> times;
-    i32 timesCount{};
-    Dynam_Array<CurveType> curves;
-    Dynam_Array<f32> angles;
+    Array<CurveType, 10> curves;
+    Array<f32, 10> angles;
+    i32 timesCount{}, curvesCount{}, anglesCount{};
 };
 
 struct TranslationTimeline
 {
     TranslationTimeline() = default;
-    TranslationTimeline(Init, i32 memPartitionID_dynamic);
     
     v2f (*GetTransformationVal)(TranslationTimeline, i32);
     b exists { false };
     Array<f32, 10> times;
-    i32 timesCount{};
-    Dynam_Array<CurveType> curves;
-    Dynam_Array<v2f> translations;
+    Array<CurveType, 10> curves;
+    Array<v2f, 10> translations;
+    i32 timesCount{}, curvesCount{}, translationCount{};
 };
 
 struct ScaleTimeline
 {
     ScaleTimeline() = default;
-    ScaleTimeline(Init, i32 memPartitionID_dynamic);
     
     v2f (*GetTransformationVal)(ScaleTimeline, i32);
     b exists { false };
     Array<f32, 10> times;
-    i32 timesCount{};
-    Dynam_Array<CurveType> curves;
-    Dynam_Array<v2f> scales;
+    Array<CurveType, 10> curves;
+    Array<v2f, 10> scales;
+    i32 timesCount{}, curvesCount{}, scaleCount{};
 };
 
 f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, i32 keyFrameIndex)
@@ -96,7 +93,8 @@ struct Animation
     b repeat { false };
     b hasEnded { false };
     b MixingStarted { false };
-    Dynam_Array<HitBox> hitBoxes;
+    Array<HitBox, 10> hitBoxes;
+    i32 hitBoxCount{};
     Dynam_Array<Animation> animsToTransitionTo;
     Array<Bone*, 20> bones;
     Array<RotationTimeline, 20> boneRotationTimelines;
@@ -139,47 +137,9 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 #ifdef ANIMATION_IMPL
 
-RotationTimeline::RotationTimeline(Init, i32 memPartitionID_dynamic)
-: curves {memPartitionID_dynamic}
-, angles {memPartitionID_dynamic}
-{
-};
-
-TranslationTimeline::TranslationTimeline(Init, i32 memPartitionID_dynamic)
-: curves {memPartitionID_dynamic}
-, translations {memPartitionID_dynamic}
-{
-};
-
-ScaleTimeline::ScaleTimeline(Init, i32 memPartitionID_dynamic)
-: curves {memPartitionID_dynamic}
-, scales {memPartitionID_dynamic}
-{
-};
-
 Animation::Animation(Init, i32 memPartitionID_dynamic)
-: hitBoxes { memPartitionID_dynamic }
-, animsToTransitionTo { memPartitionID_dynamic }
-{
-    for(i32 i{}; i < this->boneRotationTimelines.Size(); ++i)
-    {
-        Initialize($(this->boneRotationTimelines.At(i).curves), heap);
-        Initialize($(this->boneRotationTimelines.At(i).angles), heap);
-    };
-    
-    for(i32 i{}; i < this->boneTranslationTimelines.Size(); ++i)
-    {
-        Initialize($(this->boneTranslationTimelines.At(i).curves), heap);
-        Initialize($(this->boneTranslationTimelines.At(i).translations), heap);
-    };
-    
-    for(i32 i{}; i < this->boneScaleTimelines.Size(); ++i)
-    {
-        Initialize($(this->boneScaleTimelines.At(i).curves), heap);
-        Initialize($(this->boneScaleTimelines.At(i).scales), heap);
-    };
-    
-};
+: animsToTransitionTo { memPartitionID_dynamic }
+{};
 
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
 : animations { heap }
@@ -233,13 +193,13 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
                     boneRotationTimeline->times[boneRotationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                    PushBack($(boneRotationTimeline->angles), Json_getFloat(jsonKeyFrame, "angle", 0.0f));
+                    boneRotationTimeline->angles[boneRotationTimeline->anglesCount++] = Json_getFloat(jsonKeyFrame, "angle", 0.0f);
                     
                     const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
                     if (StringCmp(keyFrameCurve, "stepped"))
-                        PushBack($(boneRotationTimeline->curves), CurveType::STEPPED);
+                        boneRotationTimeline->curves[boneRotationTimeline->curvesCount++] =  CurveType::STEPPED;
                     else
-                        PushBack($(boneRotationTimeline->curves), CurveType::LINEAR);
+                        boneRotationTimeline->curves[boneRotationTimeline->curvesCount++] =  CurveType::LINEAR;
                 };
                 
                 f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->timesCount - 1);
@@ -258,16 +218,16 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
                     boneTranslationTimeline->times[boneTranslationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
-                    PushBack($(boneTranslationTimeline->translations), v2f { 0.0f, 0.0f });
+                    boneTranslationTimeline->translations[boneTranslationTimeline->translationCount++] = {0.0f, 0.0f};
                     
                     boneTranslationTimeline->translations.At(keyFrameIndex).x = Json_getFloat(jsonKeyFrame, "x", 0.0f);
                     boneTranslationTimeline->translations.At(keyFrameIndex).y = Json_getFloat(jsonKeyFrame, "y", 0.0f);
                     
                     const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
                     if (StringCmp(keyFrameCurve, "stepped"))
-                        PushBack($(boneTranslationTimeline->curves), CurveType::STEPPED);
+                        boneTranslationTimeline->curves[boneTranslationTimeline->curvesCount++] =  CurveType::STEPPED;
                     else
-                        PushBack($(boneTranslationTimeline->curves), CurveType::LINEAR);
+                        boneTranslationTimeline->curves[boneTranslationTimeline->curvesCount++] =  CurveType::LINEAR;
                 };
                 
                 f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times.At(boneTranslationTimeline->timesCount - 1);
@@ -290,8 +250,6 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                 i32 hitBoxIndex {};
                 for (Json* currentCollisionBox_json = collisionBoxesOfAnimation_json ? collisionBoxesOfAnimation_json->child : 0; currentCollisionBox_json; currentCollisionBox_json = currentCollisionBox_json->next, ++hitBoxIndex)
                 {
-                    HitBox hitBox {};
-                    PushBack($(anim->hitBoxes), hitBox);
                     anim->hitBoxes.At(hitBoxIndex).boneName = CallocType(heap, char, 100);
                     
                     { //Get bone name collision box is attached to by cutting out "box-" prefix
@@ -341,6 +299,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
                     anim->hitBoxes.At(hitBoxIndex).size.height = Magnitude(vector1_2);
                     anim->hitBoxes.At(hitBoxIndex).worldPosOffset = { (finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
                         (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f };
+                    ++anim->hitBoxCount;
                 }
             };
         }
@@ -819,13 +778,6 @@ void CleanUpAnimation(Animation&& anim)
     anim.repeat = { false };
     anim.hasEnded = { false };
     
-    for (i32 i {}; i < anim.bones.Size(); ++i)
-    {
-        CleanUp($(anim.boneTranslationTimelines.At(i).translations));
-        CleanUp($(anim.boneRotationTimelines.At(i).angles));
-    };
-    
-    CleanUp($(anim.hitBoxes));
     CleanUp($(anim.animsToTransitionTo));
 };
 

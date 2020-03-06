@@ -278,20 +278,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 for (i32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
                 {
                     TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
-                    for (i32 keyFrameIndex {}; keyFrameIndex < boneTranslationTimeline->translations.size; ++keyFrameIndex)
+                    for (i32 keyFrameIndex {}; keyFrameIndex < boneTranslationTimeline->translations.Size(); ++keyFrameIndex)
                     {
                         boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
                         boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
                     }
                     
                     RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
-                    for (i32 keyFrameIndex {}; keyFrameIndex < boneRotationTimeline->angles.size; ++keyFrameIndex)
+                    for (i32 keyFrameIndex {}; keyFrameIndex < boneRotationTimeline->angles.Size(); ++keyFrameIndex)
                     {
                         boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
                     }
                 };
                 
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
                 {
                     anim->hitBoxes.At(hitBoxIndex).size.width /= pixelsPerMeter;
                     anim->hitBoxes.At(hitBoxIndex).size.height /= pixelsPerMeter;
@@ -426,7 +426,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
     
-    for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
+    for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxCount; ++hitBoxIndex)
     {
         UpdateHitBoxStatus($(player->currentAnim.hitBoxes.At(hitBoxIndex)), player->currentAnim.currentTime);
         
@@ -488,7 +488,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             PushRect(global_renderingInfo, playerTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
             PushRect(global_renderingInfo, enemyTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
             
-            for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.size; ++hitBoxIndex)
+            for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.Size(); ++hitBoxIndex)
             {
                 Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
                 

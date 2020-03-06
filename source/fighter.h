@@ -68,7 +68,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
             if (anim->name)
             {
                 anim = GetVal(this->animData.animations, animIndex, anim->name);
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
                 {
                     anim->hitBoxes.At(hitBoxIndex).size.width *= (scaleFactorForHeightAdjustment * this->world.scale.x);
                     anim->hitBoxes.At(hitBoxIndex).size.height *= (scaleFactorForHeightAdjustment * this->world.scale.y);
@@ -124,7 +124,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
             if (anim->name)
             {
                 anim = GetVal(this->animData.animations, animIndex, anim->name);
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.size; ++hitBoxIndex)
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
                 {
                     anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x *= -1.0f;
                 };
