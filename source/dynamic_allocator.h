@@ -1,5 +1,5 @@
-#ifndef DYNAMIC_ALLOCATOR_H 
-#define DYNAMIC_ALLOCATOR_H 
+#ifndef DYNAMIC_ALLOCATOR_H
+#define DYNAMIC_ALLOCATOR_H
 
 #include <assert.h>
 
@@ -8,28 +8,28 @@
 void InitDynamAllocator(i32 memRegionIdentifier);
 
 //Prototypes so I can call below macros
-void* _MallocSize(i32, i64);
-void* _CallocSize(i32, i64);
-void* _ReAlloc(i32, void*, i64);
-void _DeAlloc(i32, void**);
-#define MallocType(MemRegionIdentifier, Type, Count) (Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count))) //(Type*)globalPlatformServices->Malloc(((sizeof(Type)) * (Count)))
-#define MallocSize(MemRegionIdentifier, Size) _MallocSize(MemRegionIdentifier, (Size)) //globalPlatformServices->Malloc(Size)
-#define CallocType(MemRegionIdentifier, Type, Count) (Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count))) //(Type*)globalPlatformServices->Calloc(1, ((sizeof(Type)) * (Count)))
-#define CallocSize(MemRegionIdentifier, Size) _CallocSize(MemRegionIdentifier, (Size)) //globalPlatformServices->Calloc(1, (Size))
-#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) (Type*)_ReAlloc(MemRegionIdentifier, Ptr, (sizeof(Type)) * (Count)) //(Type*)globalPlatformServices->Realloc(Ptr, (sizeof(Type)) * (Count))
-#define ReAllocSize(MemRegionIdentifier, Ptr, Size) _ReAlloc(MemRegionIdentifier, Ptr, Size) //globalPlatformServices->Realloc(Ptr, Size)
-#define DeAlloc(MemRegionIdentifier, PtrToMemory) _DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory) //globalPlatformServices->Free((void*)PtrToMemory)
+//void* _MallocSize(i32, i64);
+//void* _CallocSize(i32, i64);
+//void* _ReAlloc(i32, void*, i64);
+//void _DeAlloc(i32, void**);
+#define MallocType(MemRegionIdentifier, Type, Count) /*(Type*)_MallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))*/ (Type*)globalPlatformServices->Malloc(((sizeof(Type)) * (Count)))
+#define MallocSize(MemRegionIdentifier, Size) /*_MallocSize(MemRegionIdentifier, (Size))*/ globalPlatformServices->Malloc(Size)
+#define CallocType(MemRegionIdentifier, Type, Count) /*(Type*)_CallocSize(MemRegionIdentifier, ((sizeof(Type)) * (Count)))*/ (Type*)globalPlatformServices->Calloc(1, ((sizeof(Type)) * (Count)))
+#define CallocSize(MemRegionIdentifier, Size) /*_CallocSize(MemRegionIdentifier, (Size))*/ globalPlatformServices->Calloc(1, (Size))
+#define ReAllocType(MemRegionIdentifier, Ptr, Type, Count) /*(Type*)_ReAlloc(MemRegionIdentifier, Ptr, (sizeof(Type)) * (Count))*/ (Type*)globalPlatformServices->Realloc(Ptr, (sizeof(Type)) * (Count))
+#define ReAllocSize(MemRegionIdentifier, Ptr, Size) /*_ReAlloc(MemRegionIdentifier, Ptr, Size)*/ globalPlatformServices->Realloc(Ptr, Size)
+#define DeAlloc(MemRegionIdentifier, PtrToMemory) /*_DeAlloc(MemRegionIdentifier, (void**)&PtrToMemory)*/ globalPlatformServices->Free((void*)PtrToMemory)
 
 #endif
 
 #ifdef DYNAMIC_ALLOCATOR_IMPL
 
 /*
-    TODO: 
+    TODO:
     1.) Logic is pretty broken. Need to do proper testing before use
     2.) Maybe get rid of Blocks linked list data structure and use array instead?
     3.) Alignment?
-    4.) delete the multiple dynamica allocators part, don't think I need that. 
+    4.) delete the multiple dynamica allocators part, don't think I need that.
 */
 
 struct _Memory_Block

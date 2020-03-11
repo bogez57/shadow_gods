@@ -7,7 +7,7 @@
     - Pass deltatime to game
     - Fix dll reloading which currently free's and reload's game code twice upon building. I believe this is because
     when comparing file times between old and new dll write times the game tends to update fast enough that the times
-    are still the same upon the second run through of the loop since the last run through. 
+    are still the same upon the second run through of the loop since the last run through.
     - Make an array class
 */
 
@@ -906,9 +906,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
-            { //Init Game memory
                 InitApplicationMemory(&GameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
-            }
+
+i32 heap = CreatePartitionFromMemoryBlock(&GameMemory, Megabytes(300), DYNAMIC);
 
             { //Init render command buffer and other render stuff
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + appMemory->TotalSize + 1);

@@ -1,5 +1,6 @@
 //TODO: don't use member functions
 
+//TODO: Make this work without dynamic array!!
 template <typename Type>
 class Ring_Buffer
 {
@@ -28,7 +29,7 @@ public:
     Type* GetFirstElem()
     {
         if (this->Empty())
-            return nullptr; 
+            return nullptr;
 
         auto* value = &this->buffer[this->read];
 
@@ -38,7 +39,7 @@ public:
     Type* GetLastElem()
     {
         if (this->Empty())
-            return nullptr; 
+            return nullptr;
 
         return &this->buffer[this->write - 1];
     };
@@ -139,6 +140,6 @@ void Inititialize(Ring_Buffer<Type>&& ringBuff, i64 size, i32 memPartitionID_dyn
 template <typename Type>
 void CleanUp(Ring_Buffer<Type>&& ringBuff)
 {
-    DeAlloc(ringBuff.memPartitionID_dynamic, ringBuff);
+    DeAlloc(ringBuff.memPartitionID_dynamic, &ringBuff);
 };
 
