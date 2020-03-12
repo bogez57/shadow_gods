@@ -106,8 +106,6 @@ i32 CreatePartitionFromMemoryBlock(Application_Memory* appMemory, i64 size, Allo
     ASSERT(size < appMemory->SizeOfTemporaryStorage);
     ASSERT((size + appMemory->TemporaryStorageUsed) < appMemory->SizeOfTemporaryStorage);
 
-    appMemory->Initialized = true;
-
     Memory_Partition* memPartition = &appMemory->partitions[appMemory->partitionCount + 1];// Add 1 here so I keep mem region identifier 0 reserved for error state (makes it so in code I will have to specifiy explicitly where I want data to be stored; Can't accidently access mem region id 0 due to a default mem region intiailzition or something e.g. struct thing { memRegionID{0};};
     memPartition->BaseAddress = _PointerAddition(appMemory->TemporaryStorage, appMemory->TemporaryStorageUsed);
     memPartition->EndAddress = _PointerAddition(memPartition->BaseAddress, (size - 1));

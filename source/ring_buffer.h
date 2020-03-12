@@ -1,6 +1,4 @@
 //TODO: don't use member functions
-
-//TODO: Make this work without dynamic array!!
 template <typename Type, i64 size>
 class Ring_Buffer
 {
@@ -119,5 +117,5 @@ class Ring_Buffer
     i64 write {};
     i64 read {};
     b full {};
-    Array<Type, size> buffer{};
+    Array<Type, size> buffer{};//TODO: Prob need to store on the heap due to possible stack overflow
 };
