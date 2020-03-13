@@ -307,7 +307,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
 
-    Game_State* gState = (Game_State*)gameMemory->PermanentStorage;
+    Game_State* gState = (Game_State*)gameMemory->permanentStorage;
 
     //Setup globals
     deltaT = platformServices->prevFrameTimeInSecs;
@@ -320,11 +320,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     Fighter* enemy = &stage->enemy;
     Fighter* enemy2 = &stage->enemy2;
 
-    if (NOT gameMemory->Initialized)
+    if (NOT gameMemory->initialized)
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
 
-        gameMemory->Initialized = true;
+        gameMemory->initialized = true;
 
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 

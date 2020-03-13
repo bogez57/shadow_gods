@@ -310,7 +310,7 @@ namespace Win32::Dbg
         GameReplayState.InputRecording = true;
         GameReplayState.TotalInputStructsRecorded = 0;
         GameReplayState.InputCount = 0;
-        memcpy(GameReplayState.OriginalRecordedGameState, gameMemory.PermanentStorage, gameMemory.TotalSize);
+        memcpy(GameReplayState.OriginalRecordedGameState, gameMemory.permanentStorage, gameMemory.totalSize);
     };
 
     local_func auto
@@ -327,7 +327,7 @@ namespace Win32::Dbg
         GameReplayState.InputPlayBack = true;
         GameReplayState.InputCount = 0;
         //Set game state back to when it was first recorded for proper looping playback
-        memcpy(gameMemory.PermanentStorage, GameReplayState.OriginalRecordedGameState, gameMemory.TotalSize);
+        memcpy(gameMemory.permanentStorage, GameReplayState.OriginalRecordedGameState, gameMemory.totalSize);
     }
 
     local_func auto
@@ -354,7 +354,7 @@ namespace Win32::Dbg
         else
         {
             GameReplayState.InputCount = 0;
-            memcpy(gameMemory.PermanentStorage, GameReplayState.OriginalRecordedGameState, gameMemory.TotalSize);
+            memcpy(gameMemory.permanentStorage, GameReplayState.OriginalRecordedGameState, gameMemory.totalSize);
         }
     }
 } // namespace Win32::Dbg
@@ -911,7 +911,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Memory_Partition framePart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
 
             { //Init render command buffer and other render stuff
-                void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.TotalSize + 1);
+                void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.totalSize + 1);
                 renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
                 renderingInfo.cmdBuffer.size = Megabytes(5);
                 renderingInfo.cmdBuffer.entryCount = 0;
@@ -922,7 +922,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             { //Init input recording and replay services
                 GameReplayState.RecordedInputs = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input) * Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-                GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, gameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+                GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, gameMemory.totalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             }
 
             { //Init game services

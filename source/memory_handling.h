@@ -23,28 +23,29 @@ typedef size_t sizet;
 typedef float f32;
 typedef double f64;
 
+struct Application_Memory
+{
+    bool initialized { false };
+    void* permanentStorage { nullptr };
+    void* temporaryStorage { nullptr };
+    i32 sizeOfPermanentStorage {};
+    i64 sizeOfTemporaryStorage {};
+    i64 temporaryStorageUsed {};
+    i64 totalSize {};
+};
+
 struct Memory_Partition
 {
-    void* BaseAddress;
-    void* EndAddress;
-    i64 UsedAmount;
-    i64 Size;
+    void* baseAddress;
+    i64 usedAmount;
+    i64 size;
     i32 tempMemoryCount{};//Number of active temporary memory sub partitions (created w/ BeginTemporaryMemory())
 };
 
-struct Application_Memory
-{
-    bool Initialized { false };
-    void* PermanentStorage { nullptr };
-    void* TemporaryStorage { nullptr };
-    i32 SizeOfPermanentStorage {};
-    i64 SizeOfTemporaryStorage {};
-    i64 TemporaryStorageUsed {};
-    i64 TotalSize {};
-};
-
 void* _AllocSize(Memory_Partition&& memPartition, i64 size);
+void _Release(Memory_Partition&& memPartition);
 #define PushType(memPartition, type, count) (type*)_AllocSize($(memPartition), ((sizeof(type)) * (count)))
+#define Release(memPartition) _Release($(memPartition));
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress);
  Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory&& Memory, i64 size);
@@ -55,11 +56,11 @@ void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 s
 
 void InitApplicationMemory(Application_Memory* appMemory, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress)
 {
-    appMemory->SizeOfPermanentStorage = sizeOfPermanentStore;
-    appMemory->SizeOfTemporaryStorage = sizeOfMemory - (i64)sizeOfPermanentStore;
-    appMemory->TotalSize = sizeOfMemory;
-    appMemory->PermanentStorage = memoryStartAddress;
-    appMemory->TemporaryStorage = ((ui8*)appMemory->PermanentStorage + appMemory->SizeOfPermanentStorage);
+    appMemory->sizeOfPermanentStorage = sizeOfPermanentStore;
+    appMemory->sizeOfTemporaryStorage = sizeOfMemory - (i64)sizeOfPermanentStore;
+    appMemory->totalSize = sizeOfMemory;
+    appMemory->permanentStorage = memoryStartAddress;
+    appMemory->temporaryStorage = ((ui8*)appMemory->permanentStorage + appMemory->sizeOfPermanentStorage);
 };
 
 
@@ -73,41 +74,40 @@ void* _PointerAddition(void* baseAddress, i64 amountToAdvancePointer)
 
  Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, i64 size)
 {
-    ASSERT(size < appMemory.SizeOfTemporaryStorage);
-    ASSERT((size + appMemory.TemporaryStorageUsed) < appMemory.SizeOfTemporaryStorage);
+    ASSERT(size < appMemory.sizeOfTemporaryStorage);
+    ASSERT((size + appMemory.temporaryStorageUsed) < appMemory.sizeOfTemporaryStorage);
 
     Memory_Partition memPartition{};
-    memPartition.BaseAddress = _PointerAddition(appMemory.TemporaryStorage, appMemory.TemporaryStorageUsed);
-    memPartition.EndAddress = _PointerAddition(memPartition.BaseAddress, (size - 1));
-    memPartition.Size = size;
-    memPartition.UsedAmount = 0;
+    memPartition.baseAddress = _PointerAddition(appMemory.temporaryStorage, appMemory.temporaryStorageUsed);
+    memPartition.size = size;
+    memPartition.usedAmount = 0;
 
-    appMemory.TemporaryStorageUsed += size;
+    appMemory.temporaryStorageUsed += size;
 
     return memPartition;
 };
 
 auto _AllocSize(Memory_Partition&& memPartition, i64 size) -> void*
 {
-    ASSERT((memPartition.UsedAmount + size) <= memPartition.Size);
-    void* Result = _PointerAddition(memPartition.BaseAddress, memPartition.UsedAmount);
-    memPartition.UsedAmount += (size);
+    ASSERT((memPartition.usedAmount + size) <= memPartition.size);
+    void* Result = _PointerAddition(memPartition.baseAddress, memPartition.usedAmount);
+    memPartition.usedAmount += (size);
 
     return Result;
 };
 
 auto _FreeSize(Memory_Partition&& memPartition, i64 sizeToFree) -> void
 {
-    ASSERT(sizeToFree < memPartition.Size);
-    ASSERT(sizeToFree < memPartition.UsedAmount);
+    ASSERT(sizeToFree < memPartition.size);
+    ASSERT(sizeToFree < memPartition.usedAmount);
 
-    memPartition.UsedAmount -= sizeToFree;
+    memPartition.usedAmount -= sizeToFree;
 };
 
 struct Temporary_Memory
 {
     Memory_Partition* memPartition{};
-     i64 initialUsedAmountFromMemPartition{};
+     i64 initialusedAmountFromMemPartition{};
 };
 
  Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition)
@@ -115,7 +115,7 @@ struct Temporary_Memory
     Temporary_Memory result;
 
     result.memPartition = &memPartition;
-    result.initialUsedAmountFromMemPartition = memPartition.UsedAmount;
+    result.initialusedAmountFromMemPartition = memPartition.usedAmount;
 
     ++memPartition.tempMemoryCount;
 
@@ -125,9 +125,9 @@ struct Temporary_Memory
 void EndTemporaryMemory(Temporary_Memory TempMem)
 {
 Memory_Partition *memPartition = TempMem.memPartition;
-    ASSERT(memPartition->UsedAmount >= TempMem.initialUsedAmountFromMemPartition);
+    ASSERT(memPartition->usedAmount >= TempMem.initialusedAmountFromMemPartition);
 
-    memPartition->UsedAmount = TempMem.initialUsedAmountFromMemPartition;
+    memPartition->usedAmount = TempMem.initialusedAmountFromMemPartition;
 
     ASSERT(memPartition->tempMemoryCount > 0);
     --memPartition->tempMemoryCount;
@@ -137,5 +137,12 @@ void IsAllTempMemoryCleared(Memory_Partition* memPartition)
 {
     ASSERT(memPartition->tempMemoryCount == 0);
 }
+
+  void _Release(Memory_Partition&& memPartition)
+{
+    memPartition.usedAmount = 0;
+memPartition.size = 0;
+memPartition.tempMemoryCount = 0;
+};
 
 #endif //MEMORY_HANDLING_IMPL
