@@ -910,20 +910,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             Memory_Partition framePart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
 
-            Temporary_Memory frameTemp = BeginTemporaryMemory($(framePart));
-
-            i32* answer = (i32*)_AllocSize($(framePart), sizeof(i32));
-i32* answer2 = (i32*)_AllocSize($(framePart), sizeof(i32));
-
-            Temporary_Memory frameTemp2 = BeginTemporaryMemory($(framePart));
-
-            i32* answer3 = (i32*)_AllocSize($(framePart), sizeof(i32));
-i32* answer4 = (i32*)_AllocSize($(framePart), sizeof(i32));
-
-            EndTemporaryMemory(frameTemp2);
-
-            EndTemporaryMemory(frameTemp);
-
             { //Init render command buffer and other render stuff
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.TotalSize + 1);
                 renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);

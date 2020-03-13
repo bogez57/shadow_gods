@@ -43,6 +43,9 @@ struct Application_Memory
     i64 TotalSize {};
 };
 
+void* _AllocSize(Memory_Partition&& memPartition, i64 size);
+#define PushType(memPartition, type, count) (type*)_AllocSize($(memPartition), ((sizeof(type)) * (count)))
+
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress);
  Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory&& Memory, i64 size);
 

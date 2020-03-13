@@ -1,19 +1,20 @@
 #ifndef LINEAR_ALLOCATOR_H
 #define LINEAR_ALLOCATOR_H
 
+#if 0
 #include "boagz/error_handling.h"
 
 void* _PushSize(i32 memPartitionID, i64 size);
 #define PushType(memPartitionID, type, count) (type*)_PushSize(memPartitionID, ((sizeof(type)) * (count)))
 #define PushSize(memPartitionID, size) _PushSize(memPartitionID, size)
 void Release(i32 memPartitionID);
+#endif
 
 #endif
 
 #ifdef LINEAR_ALLOCATOR_IMPL
 
 #if 0
-
 struct _Linear_Allocator
 {
     void* baseAddress;
