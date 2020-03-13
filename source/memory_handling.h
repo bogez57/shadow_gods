@@ -32,6 +32,7 @@ struct Application_Memory
     i64 sizeOfTemporaryStorage {};
     i64 temporaryStorageUsed {};
     i64 totalSize {};
+    //TODO: Add Memory_Partition partitions[10]; To easily pass to gamecode
 };
 
 struct Memory_Partition
