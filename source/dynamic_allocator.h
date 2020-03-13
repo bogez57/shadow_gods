@@ -32,6 +32,8 @@ void InitDynamAllocator(i32 memRegionIdentifier);
     4.) delete the multiple dynamica allocators part, don't think I need that.
 */
 
+
+#if 0
 struct _Memory_Block
 {
     b IsFree { true };
@@ -345,3 +347,4 @@ void _DeAlloc(i32 memRegionIdentifier, void** MemToFree)
 };
 
 #endif //DYNAMIC_ALLOCATOR_IMPL
+#endif

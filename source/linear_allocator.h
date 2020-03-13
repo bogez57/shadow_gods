@@ -1,5 +1,5 @@
-#ifndef LINEAR_ALLOCATOR_H 
-#define LINEAR_ALLOCATOR_H 
+#ifndef LINEAR_ALLOCATOR_H
+#define LINEAR_ALLOCATOR_H
 
 #include "boagz/error_handling.h"
 
@@ -11,6 +11,8 @@ void Release(i32 memPartitionID);
 #endif
 
 #ifdef LINEAR_ALLOCATOR_IMPL
+
+#if 0
 
 struct _Linear_Allocator
 {
@@ -30,7 +32,7 @@ void InitLinearAllocator(i32 memPartitionID)
     linearAllocators[memPartitionID].usedAmount = 0;
 };
 
-void* _PushSize(i32 memPartitionID, i64 size) 
+void* _PushSize(i32 memPartitionID, i64 size)
 {
     BGZ_ASSERT((linearAllocators[memPartitionID].usedAmount + size) <= linearAllocators[memPartitionID].size, "Not enough space in linear allocator to allocate requested size");
     ASSERT(appMemory->partitions[memPartitionID].allocatorType == LINEAR);
@@ -41,7 +43,7 @@ void* _PushSize(i32 memPartitionID, i64 size)
     return memoryPointer;
 };
 
-void Release(i32 memPartitionID) 
+void Release(i32 memPartitionID)
 {
     ASSERT(appMemory->partitions[memPartitionID].allocatorType == LINEAR);
 
@@ -49,3 +51,4 @@ void Release(i32 memPartitionID)
 };
 
 #endif LINEAR_ALLOCATOR_IMPL
+#endif

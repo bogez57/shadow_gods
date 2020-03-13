@@ -58,7 +58,7 @@
 global_variable ui32 globalWindowWidth { 1280 };
 global_variable ui32 globalWindowHeight { 720 };
 global_variable Win32::Offscreen_Buffer globalBackBuffer;
-global_variable Application_Memory GameMemory;
+global_variable Application_Memory gameMemory;
 global_variable bool GameRunning {};
 
 namespace Win32::Dbg
@@ -310,7 +310,7 @@ namespace Win32::Dbg
         GameReplayState.InputRecording = true;
         GameReplayState.TotalInputStructsRecorded = 0;
         GameReplayState.InputCount = 0;
-        memcpy(GameReplayState.OriginalRecordedGameState, GameMemory.PermanentStorage, GameMemory.TotalSize);
+        memcpy(GameReplayState.OriginalRecordedGameState, gameMemory.PermanentStorage, gameMemory.TotalSize);
     };
 
     local_func auto
@@ -327,7 +327,7 @@ namespace Win32::Dbg
         GameReplayState.InputPlayBack = true;
         GameReplayState.InputCount = 0;
         //Set game state back to when it was first recorded for proper looping playback
-        memcpy(GameMemory.PermanentStorage, GameReplayState.OriginalRecordedGameState, GameMemory.TotalSize);
+        memcpy(gameMemory.PermanentStorage, GameReplayState.OriginalRecordedGameState, gameMemory.TotalSize);
     }
 
     local_func auto
@@ -354,7 +354,7 @@ namespace Win32::Dbg
         else
         {
             GameReplayState.InputCount = 0;
-            memcpy(GameMemory.PermanentStorage, GameReplayState.OriginalRecordedGameState, GameMemory.TotalSize);
+            memcpy(gameMemory.PermanentStorage, GameReplayState.OriginalRecordedGameState, gameMemory.TotalSize);
         }
     }
 } // namespace Win32::Dbg
@@ -906,12 +906,10 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
-                InitApplicationMemory(&GameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
-
-i32 heap = CreatePartitionFromMemoryBlock(&GameMemory, Megabytes(300), DYNAMIC);
+                InitApplicationMemory(&gameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
 
             { //Init render command buffer and other render stuff
-                void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + appMemory->TotalSize + 1);
+                void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.TotalSize + 1);
                 renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
                 renderingInfo.cmdBuffer.size = Megabytes(5);
                 renderingInfo.cmdBuffer.entryCount = 0;
@@ -922,7 +920,7 @@ i32 heap = CreatePartitionFromMemoryBlock(&GameMemory, Megabytes(300), DYNAMIC);
 
             { //Init input recording and replay services
                 GameReplayState.RecordedInputs = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input) * Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-                GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+                GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, gameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             }
 
             { //Init game services
@@ -1093,7 +1091,7 @@ i32 heap = CreatePartitionFromMemoryBlock(&GameMemory, Megabytes(300), DYNAMIC);
                     Win32::Dbg::PlayBackInput($(Input), $(GameReplayState));
                 }
 
-                GameCode.UpdateFunc(&GameMemory, &platformServices, &renderingInfo, &SoundBuffer, &Input);
+                GameCode.UpdateFunc(&gameMemory, &platformServices, &renderingInfo, &SoundBuffer, &Input);
 
                 Input = Input;
                 GameReplayState = GameReplayState;
