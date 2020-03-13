@@ -29,6 +29,7 @@ struct Memory_Partition
     void* EndAddress;
     i64 UsedAmount;
     i64 Size;
+    i32 tempMemoryCount{};//Number of active temporary memory sub partitions (created w/ BeginTemporaryMemory())
 };
 
 struct Application_Memory
@@ -43,7 +44,7 @@ struct Application_Memory
 };
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress);
- Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory* Memory, i64 size);
+ Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory&& Memory, i64 size);
 
 #endif
 
@@ -99,5 +100,39 @@ auto _FreeSize(Memory_Partition&& memPartition, i64 sizeToFree) -> void
 
     memPartition.UsedAmount -= sizeToFree;
 };
+
+struct Temporary_Memory
+{
+    Memory_Partition* memPartition{};
+     i64 initialUsedAmountFromMemPartition{};
+};
+
+ Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition)
+{
+    Temporary_Memory result;
+
+    result.memPartition = &memPartition;
+    result.initialUsedAmountFromMemPartition = memPartition.UsedAmount;
+
+    ++memPartition.tempMemoryCount;
+
+    return(result);
+}
+
+void EndTemporaryMemory(Temporary_Memory TempMem)
+{
+Memory_Partition *memPartition = TempMem.memPartition;
+    ASSERT(memPartition->UsedAmount >= TempMem.initialUsedAmountFromMemPartition);
+
+    memPartition->UsedAmount = TempMem.initialUsedAmountFromMemPartition;
+
+    ASSERT(memPartition->tempMemoryCount > 0);
+    --memPartition->tempMemoryCount;
+}
+
+void IsAllTempMemoryCleared(Memory_Partition* memPartition)
+{
+    ASSERT(memPartition->tempMemoryCount == 0);
+}
 
 #endif //MEMORY_HANDLING_IMPL
