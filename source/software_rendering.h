@@ -86,7 +86,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
     v2f targetQuadXAxis = targetQuad.bottomRight - targetQuadOrigin;
     v2f targetQuadYAxis = targetQuad.topLeft - targetQuadOrigin;
 
-    ui8* currentRow = (ui8*)buffer.data; 
+    ui8* currentRow = (ui8*)buffer.data;
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetQuadXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetQuadYAxis);
 
@@ -95,7 +95,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
         ui32* destPixel = (ui32*)currentRow;
 
         for(i32 screenPixelRow = 0; screenPixelRow < buffer.size.width; ++screenPixelRow)
-        {            
+        {
             v2f screenPixelCoord{(f32)screenPixelRow, (f32)screenPixelColumn};
             v2f d {screenPixelCoord - targetQuadOrigin};
 
@@ -103,7 +103,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
             f32 v = invertedYAxisSqd * DotProduct(d, targetQuadYAxis);
 
             f32 texelPos_x = 1.0f + (u*(f32)(image.size.width));
-            f32 texelPos_y = 1.0f + (v*(f32)(image.size.height)); 
+            f32 texelPos_y = 1.0f + (v*(f32)(image.size.height));
 
             BGZ_ASSERT(texelPos_x <= (f32)image.size.width, "Trying to fill in pixel outside current background image width boundry!");
             BGZ_ASSERT(texelPos_y <= (f32)image.size.height, "Trying to fill in pixel outside current background image height boundry!");
@@ -931,7 +931,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             renderWork->colorBufferPitch = colorBufferPitch;
             renderWork->screenRegionCoords = screenRegionCoords;
 
-#if 1 //Multi-Threaded
+#if 0 //Multi-Threaded
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else //Single Threaded
             Screen_Region_Render_Work* work = &workArray.At(workIndex);

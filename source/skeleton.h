@@ -44,7 +44,11 @@ struct Bone
 {
     Bone() = default;
     Bone(Init, i32 memParitionID_dynamic)
-    {};
+        : childBones { memParitionID_dynamic }
+        , originalCollisionBoxVerts { memParitionID_dynamic }
+    {
+        Reserve($(childBones), 10);
+    };
 
     Transform parentBoneSpace;
     Transform worldSpace;
@@ -72,14 +76,14 @@ struct Skeleton
     Skeleton() = default;
     Skeleton(const char* atlasFilePath, const char* jsonFilepath, Memory_Partition&& memPart);
 
-    Dynam_Array<Bone> bones;
+    Array<Bone, 20> bones;
     Dynam_Array<Slot> slots;
     f32 width {}, height {};
 };
 
 Skeleton CopySkeleton(Skeleton src);
 void ResetBonesToSetupPose(Skeleton&& skeleton);
-Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName);
+Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName);
 
 #endif
 
@@ -93,12 +97,12 @@ Skeleton CopySkeleton(Skeleton src)
     CopyArray(src.bones, $(dest.bones));
     CopyArray(src.slots, $(dest.slots));
 
-    for (i32 boneIndex {}; boneIndex < src.bones.size; ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < src.bones.Size(); ++boneIndex)
     {
         for (i32 childBoneIndex {}; childBoneIndex < src.bones.At(boneIndex).childBones.size; ++childBoneIndex)
         {
             const char* childBoneName = src.bones.At(boneIndex).childBones.At(childBoneIndex)->name;
-            Bone* bone = GetBoneFromSkeleton(dest, (char*)childBoneName);
+            Bone* bone = GetBoneFromSkeleton(&dest, (char*)childBoneName);
             dest.bones.At(boneIndex).childBones.At(childBoneIndex) = bone;
         }
     };
@@ -107,12 +111,10 @@ Skeleton CopySkeleton(Skeleton src)
 };
 
 Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_Partition&& memPart)
-    : bones { heap }
-    , slots { heap }
+    : slots { heap }
 {
     i32 length;
 
-    Reserve($(this->bones), 20);
     Reserve($(this->slots), 21);
 
     const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
@@ -136,9 +138,8 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
             i32 boneIndex {};
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
-                Bone newBone { Init::_, heap };
-                PushBack($(this->bones), newBone);
-                Bone* bone = GetLastElem(this->bones);
+                this->bones.At(boneIndex) = { Init::_, heap };
+                Bone* bone = &this->bones.At(boneIndex);
 
                 bone->name = Json_getString(currentBone_json, "name", 0);
                 if (StringCmp(bone->name, "root"))
@@ -177,7 +178,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
 
                 if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
                 {
-                    bone->parentBone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentBone_json, "parent", 0));
+                    bone->parentBone = GetBoneFromSkeleton(this, (char*)Json_getString(currentBone_json, "parent", 0));
                     PushBack($(bone->parentBone->childBones), bone);
                 };
             };
@@ -200,7 +201,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
                     slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
                     if (StringCmp(slot->name, "left-hand"))
                         int x {};
-                    slot->bone = GetBoneFromSkeleton(*this, (char*)Json_getString(currentSlot_json, "bone", 0));
+                    slot->bone = GetBoneFromSkeleton(this, (char*)Json_getString(currentSlot_json, "bone", 0));
                     slot->regionAttachment = [currentSlot_json, skins_json, atlas]() -> Region_Attachment {
                         Region_Attachment resultRegionAttch {};
 
@@ -261,22 +262,22 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
 
 void ResetBonesToSetupPose(Skeleton&& skel)
 {
-    for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < skel.bones.Size(); ++boneIndex)
     {
         skel.bones.At(boneIndex).parentBoneSpace.rotation = skel.bones.At(boneIndex).initialRotation_parentBoneSpace;
         skel.bones.At(boneIndex).parentBoneSpace.translation = skel.bones.At(boneIndex).initialPos_parentBoneSpace;
     };
 };
 
-Bone* GetBoneFromSkeleton(Skeleton skeleton, char* boneName)
+Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName)
 {
     Bone* bone {};
 
-    for (i32 i = 0; i < skeleton.bones.size; ++i)
+    for (i32 i = 0; i < skeleton->bones.Size(); ++i)
     {
-        if (StringCmp(skeleton.bones.At(i).name, boneName))
+        if (StringCmp(skeleton->bones.At(i).name, boneName))
         {
-            bone = &skeleton.bones.At(i);
+            bone = &skeleton->bones.At(i);
             break;
         };
     };
@@ -356,7 +357,7 @@ void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldP
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 
-    for (i32 i {}; i < fighterSkel.bones.size; ++i)
+    for (i32 i {}; i < fighterSkel.bones.Size(); ++i)
     {
         fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
         fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
@@ -369,16 +370,14 @@ void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldP
     root->parentBoneSpace.translation = fighterWorldPos;
 };
 
-void CleanUpBone(Bone&& bone)
-{
-    
+void CleanUpBone(Bone&& bone) {
+
 };
 
 void CleanUpSkeleton(Skeleton&& skel)
 {
     skel.width = 0;
     skel.height = 0;
-    CleanUp($(skel.bones));
     CleanUp($(skel.slots));
 }
 

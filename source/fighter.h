@@ -43,7 +43,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
         this->skel.height = this->height;
         this->skel.width = aspectRatio * this->height;
         
-        for (i32 boneIndex {}; boneIndex < this->skel.bones.size; ++boneIndex)
+        for (i32 boneIndex {}; boneIndex < this->skel.bones.Size(); ++boneIndex)
         {
             this->skel.bones.At(boneIndex).worldSpace.scale = this->world.scale;
             this->skel.bones.At(boneIndex).parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
@@ -87,7 +87,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
             
             if (anim.name)
             {
-                for (i32 boneIndex {}; boneIndex < this->skel.bones.size; ++boneIndex)
+                for (i32 boneIndex {}; boneIndex < this->skel.bones.Size(); ++boneIndex)
                 {
                     TranslationTimeline* translationTimeline = &anim.boneTranslationTimelines.At(boneIndex);
                     
@@ -107,7 +107,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
     //Flip skeleton bones world positions/rotations
     if (flipX)
     {
-        for (i32 i {}; i < this->skel.bones.size; ++i)
+        for (i32 i {}; i < this->skel.bones.Size(); ++i)
         {
             if (this->skel.bones.At(i).isRoot)
                 this->skel.bones.At(i).parentBoneSpace.scale.x = -1.0f;
@@ -135,7 +135,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
 
 void CleanUpFighter(Fighter&& fighter)
 {
-    CleanUpAnimQueue($(fighter.animQueue));    
+    CleanUpAnimQueue($(fighter.animQueue));
     CleanUpAnimation($(fighter.currentAnim));
     CleanUpSkeleton($(fighter.skel));
     //CleanUpAnimData(fighter.animData); //Need to create this for hashmap class

@@ -244,7 +244,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         skel.width /= pixelsPerMeter;
         skel.height /= pixelsPerMeter;
 
-        for (i32 boneIndex {}; boneIndex < skel.bones.size; ++boneIndex)
+        for (i32 boneIndex {}; boneIndex < skel.bones.Size(); ++boneIndex)
         {
             skel.bones.At(boneIndex).parentBoneSpace.translation.x /= pixelsPerMeter;
             skel.bones.At(boneIndex).parentBoneSpace.translation.y /= pixelsPerMeter;
@@ -431,7 +431,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         {
             player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace = { 0.0f, 0.0f };
 
-            Bone* bone = GetBoneFromSkeleton(player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
+            Bone* bone = GetBoneFromSkeleton(&player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
             UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->worldSpace.translation);
             b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes.At(hitBoxIndex), enemy->hurtBox);
 
@@ -468,7 +468,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         DrawFighter(*enemy);
 
-        for (i32 i {}; i < player->skel.bones.size; ++i)
+        for (i32 i {}; i < player->skel.bones.Size(); ++i)
         {
             Bone bone = player->skel.bones.At(i);
             Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
