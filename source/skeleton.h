@@ -44,11 +44,7 @@ struct Bone
 {
     Bone() = default;
     Bone(Init, i32 memParitionID_dynamic)
-        : childBones { memParitionID_dynamic }
-        , originalCollisionBoxVerts { memParitionID_dynamic }
-    {
-        Reserve($(childBones), 10);
-    };
+    {};
 
     Transform parentBoneSpace;
     Transform worldSpace;
@@ -74,7 +70,7 @@ struct Slot
 struct Skeleton
 {
     Skeleton() = default;
-    Skeleton(const char* atlasFilePath, const char* jsonFilepath, i32 memParitionID);
+    Skeleton(const char* atlasFilePath, const char* jsonFilepath, Memory_Partition&& memPart);
 
     Dynam_Array<Bone> bones;
     Dynam_Array<Slot> slots;
@@ -110,9 +106,9 @@ Skeleton CopySkeleton(Skeleton src)
     return dest;
 };
 
-Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, i32 memParitionID)
-    : bones { memParitionID }
-    , slots { memParitionID }
+Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_Partition&& memPart)
+    : bones { heap }
+    , slots { heap }
 {
     i32 length;
 

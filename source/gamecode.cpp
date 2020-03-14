@@ -332,8 +332,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
         //Read in data
-        Skeleton playerSkel { "data/yellow_god.atlas", "data/yellow_god.json", heap }; //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        Skeleton enemySkel { "data/yellow_god.atlas", "data/yellow_god.json", heap };
+        Skeleton playerSkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) }; //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        Skeleton enemySkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) };
         AnimationData playerAnimData { "data/yellow_god.json", playerSkel };
         AnimationData enemyAnimData { "data/yellow_god.json", enemySkel };
 
