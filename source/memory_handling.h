@@ -23,6 +23,14 @@ typedef size_t sizet;
 typedef float f32;
 typedef double f64;
 
+struct Memory_Partition
+{
+    void* baseAddress;
+    i64 usedAmount;
+    i64 size;
+    i32 tempMemoryCount {}; //Number of active temporary memory sub partitions (created w/ BeginTemporaryMemory())
+};
+
 struct Application_Memory
 {
     bool initialized { false };
@@ -32,15 +40,8 @@ struct Application_Memory
     i64 sizeOfTemporaryStorage {};
     i64 temporaryStorageUsed {};
     i64 totalSize {};
-    //TODO: Add Memory_Partition partitions[10]; To easily pass to gamecode
-};
-
-struct Memory_Partition
-{
-    void* baseAddress;
-    i64 usedAmount;
-    i64 size;
-    i32 tempMemoryCount{};//Number of active temporary memory sub partitions (created w/ BeginTemporaryMemory())
+    Memory_Partition partitions[10];
+    i32 partitionCount {};
 };
 
 void* _AllocSize(Memory_Partition&& memPartition, i64 size);
@@ -49,7 +50,7 @@ void _Release(Memory_Partition&& memPartition);
 #define Release(memPartition) _Release($(memPartition));
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress);
- Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory&& Memory, i64 size);
+Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& Memory, i64 size);
 
 #endif
 
@@ -64,7 +65,6 @@ void InitApplicationMemory(Application_Memory* appMemory, i64 sizeOfMemory, i32 
     appMemory->temporaryStorage = ((ui8*)appMemory->permanentStorage + appMemory->sizeOfPermanentStorage);
 };
 
-
 //TODO: Alignment
 void* _PointerAddition(void* baseAddress, i64 amountToAdvancePointer)
 {
@@ -73,19 +73,25 @@ void* _PointerAddition(void* baseAddress, i64 amountToAdvancePointer)
     return newAddress;
 };
 
- Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, i64 size)
+Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, i64 size)
 {
     ASSERT(size < appMemory.sizeOfTemporaryStorage);
     ASSERT((size + appMemory.temporaryStorageUsed) < appMemory.sizeOfTemporaryStorage);
 
-    Memory_Partition memPartition{};
+    Memory_Partition memPartition {};
     memPartition.baseAddress = _PointerAddition(appMemory.temporaryStorage, appMemory.temporaryStorageUsed);
     memPartition.size = size;
     memPartition.usedAmount = 0;
 
+    appMemory.partitions[appMemory.partitionCount] = memPartition;
     appMemory.temporaryStorageUsed += size;
 
-    return memPartition;
+    return &appMemory.partitions[appMemory.partitionCount++];
+};
+
+Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, i32 memPartitionID)
+{
+    return &appMemory->partitions[memPartitionID];
 };
 
 auto _AllocSize(Memory_Partition&& memPartition, i64 size) -> void*
@@ -107,11 +113,11 @@ auto _FreeSize(Memory_Partition&& memPartition, i64 sizeToFree) -> void
 
 struct Temporary_Memory
 {
-    Memory_Partition* memPartition{};
-     i64 initialusedAmountFromMemPartition{};
+    Memory_Partition* memPartition {};
+    i64 initialusedAmountFromMemPartition {};
 };
 
- Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition)
+Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition)
 {
     Temporary_Memory result;
 
@@ -120,12 +126,12 @@ struct Temporary_Memory
 
     ++memPartition.tempMemoryCount;
 
-    return(result);
+    return (result);
 }
 
 void EndTemporaryMemory(Temporary_Memory TempMem)
 {
-Memory_Partition *memPartition = TempMem.memPartition;
+    Memory_Partition* memPartition = TempMem.memPartition;
     ASSERT(memPartition->usedAmount >= TempMem.initialusedAmountFromMemPartition);
 
     memPartition->usedAmount = TempMem.initialusedAmountFromMemPartition;
@@ -139,11 +145,10 @@ void IsAllTempMemoryCleared(Memory_Partition* memPartition)
     ASSERT(memPartition->tempMemoryCount == 0);
 }
 
-  void _Release(Memory_Partition&& memPartition)
+void _Release(Memory_Partition&& memPartition)
 {
     memPartition.usedAmount = 0;
-memPartition.size = 0;
-memPartition.tempMemoryCount = 0;
+    memPartition.tempMemoryCount = 0;
 };
 
 #endif //MEMORY_HANDLING_IMPL

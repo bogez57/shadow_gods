@@ -320,6 +320,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     Fighter* enemy = &stage->enemy;
     Fighter* enemy2 = &stage->enemy2;
 
+    Memory_Partition* framePart = GetMemoryPartition(gameMemory, 0);
+
     if (NOT gameMemory->initialized)
     {
         BGZ_ERRCTXT1("When Initializing game memory and game state");
@@ -353,8 +355,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
         HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { -2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        *player = {heap, playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, /*flipX*/ false };
-        *enemy = {heap, enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox, /*flipX*/ true };
+        *player = { heap, playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, /*flipX*/ false };
+        *enemy = { heap, enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox, /*flipX*/ true };
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
@@ -491,4 +493,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             };
         }
     };
+
+    i32* myInt1 = PushType(*framePart, i32, 1);
+    i32* myInt2 = PushType(*framePart, i32, 1);
+
+    IsAllTempMemoryCleared(framePart);
+    Release($(*framePart));
 };

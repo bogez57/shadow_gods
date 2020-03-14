@@ -467,8 +467,7 @@ namespace Win32
         {
             switch (Message.message)
             {
-            case WM_QUIT:
-            {
+            case WM_QUIT: {
                 GameRunning = false;
             }
             break;
@@ -476,8 +475,7 @@ namespace Win32
             case WM_SYSKEYDOWN:
             case WM_SYSKEYUP:
             case WM_KEYDOWN:
-            case WM_KEYUP:
-            {
+            case WM_KEYUP: {
                 ui32 VKCode = (ui32)Message.wParam;
 
                 Game_Controller* Keyboard = &Input.Controllers[0];
@@ -570,8 +568,7 @@ namespace Win32
                 }
             }
 
-            default:
-            {
+            default: {
                 TranslateMessage(&Message);
                 DispatchMessageA(&Message);
             }
@@ -590,8 +587,7 @@ namespace Win32
 
         switch (Message)
         {
-        case WM_CREATE:
-        {
+        case WM_CREATE: {
             if (WindowContext)
             {
                 { //Init OpenGL
@@ -673,8 +669,7 @@ namespace Win32
         }
         break;
 
-        case WM_PAINT:
-        {
+        case WM_PAINT: {
             //To understand why you need a display buffer call here as well as game loop, see this post:
             //https://hero.handmade.network/forums/code-discussion/t/825-wm_paint_question_beginner
             PAINTSTRUCT Paint;
@@ -687,25 +682,21 @@ namespace Win32
         }
         break;
 
-        case WM_DESTROY:
-        {
+        case WM_DESTROY: {
             GameRunning = false;
         }
         break;
 
-        case WM_CLOSE:
-        {
+        case WM_CLOSE: {
             GameRunning = false;
         }
         break;
 
-        case WM_ACTIVATEAPP:
-        {
+        case WM_ACTIVATEAPP: {
         }
         break;
 
-        default:
-        {
+        default: {
             Result = DefWindowProc(WindowHandle, Message, wParam, lParam);
         }
         break;
@@ -906,9 +897,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
 
-                InitApplicationMemory(&gameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
+            InitApplicationMemory(&gameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
 
-            Memory_Partition framePart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
+            Memory_Partition* framePart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
 
             { //Init render command buffer and other render stuff
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.totalSize + 1);
@@ -944,28 +935,24 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
 
             switch (MonitorRefreshRate)
             {
-            case 30:
-            {
+            case 30: {
                 GameRefreshRate = MonitorRefreshRate;
                 TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
             }
             break;
 
-            case 40:
-            {
+            case 40: {
                 GameRefreshRate = MonitorRefreshRate;
                 TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
             }
             break;
 
-            case 60:
-            {
+            case 60: {
                 GameRefreshRate = MonitorRefreshRate;
                 TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
             }
             break;
-            case 120:
-            {
+            case 120: {
                 GameRefreshRate = MonitorRefreshRate / 2;
                 TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
             }
