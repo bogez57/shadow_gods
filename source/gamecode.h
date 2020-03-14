@@ -33,4 +33,5 @@ struct Game_State
     f32 lightAngle{};
     f32 lightThreshold{};
     Stage_Data stage;
+    b isLevelOver{false};
 };

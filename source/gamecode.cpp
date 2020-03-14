@@ -321,6 +321,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     Fighter* enemy2 = &stage->enemy2;
 
     Memory_Partition* framePart = GetMemoryPartition(gameMemory, 0);
+    Memory_Partition* levelPart = GetMemoryPartition(gameMemory, 1);
 
     if (NOT gameMemory->initialized)
     {
@@ -494,9 +495,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         }
     };
 
-    i32* myInt1 = PushType(*framePart, i32, 1);
-    i32* myInt2 = PushType(*framePart, i32, 1);
-
     IsAllTempMemoryCleared(framePart);
+    IsAllTempMemoryCleared(levelPart);
     Release($(*framePart));
+
+    if (gState->isLevelOver)
+        Release($(*levelPart));
 };
