@@ -105,12 +105,56 @@ struct Animation
     Array<v2f, 20> boneTranslations;
 };
 
+struct AnimationMap
+{
+    VarArray<Animation> animations{};
+    VarArray<i32> keys{};
+};
+
+void InitializeAnimMap(AnimationMap&& animMap, Memory_Partition* memPart, i32 size)
+{
+    Initialize($(animMap.animations), memPart, size);
+    Initialize($(animMap.keys), memPart, size);
+};
+
+void InsertAnimation(AnimationMap&& animMap, const char* animName, Animation anim)
+{
+    i32 uniqueID{};
+    for (i32 i{}; animName[i] != 0; ++i)
+        uniqueID += animName[i];
+    
+    animMap.keys.Push() = uniqueID;
+    animMap.animations.Push() = anim;
+};
+
+Animation* GetAnimation(AnimationMap animMap, const char* animName)
+{
+    i32 uniqueID{};
+    for (i32 i{}; animName[i] != 0; ++i)
+        uniqueID += animName[i];
+    
+    i32 keyIndex{};
+    for(i32 i{}; i < animMap.keys.length; ++i)
+    {
+        if (uniqueID == animMap.keys[i])
+        {
+            keyIndex = i;
+            break;
+        };
+    };
+    
+    return &animMap.animations[keyIndex];
+};
+
 struct AnimationData
 {
     AnimationData() = default;
     AnimationData(const char* animDataJsonFilePath, Skeleton skel);
+    AnimationData(const char* animDataJsonFilePath, Skeleton skel, Memory_Partition* memPart);
 
     HashMap_Str<Animation> animations;
+
+    AnimationMap animMap{};
 };
 
 struct AnimationQueue
@@ -139,6 +183,173 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 Animation::Animation(Init, i32 memPartitionID_dynamic) {};
 
+AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel, Memory_Partition* memPart)
+{
+    i32 length;
+
+    const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), animJsonFilePath);
+
+    Json* root {};
+    root = Json_create(jsonFile);
+    Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
+    
+    InitializeAnimMap($(this->animMap), memPart, 20);
+    
+    i32 animIndex {};
+    for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
+    {
+        Animation newAnimation { Init::_, heap };
+        InsertAnimation($(this->animMap), currentAnimation_json->name, newAnimation);
+        Animation* anim = GetAnimation(this->animMap, currentAnimation_json->name);
+
+        anim->name = currentAnimation_json->name;
+
+        for (i32 i {}; i < anim->bones.Size(); ++i)
+            anim->bones[i] = &skel.bones[i];
+
+        Json* bonesOfAnimation = Json_getItem(currentAnimation_json, "bones");
+        i32 boneIndex_json {};
+        f32 maxTimeOfAnimation {};
+        for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex_json)
+        {
+            i32 boneIndex {};
+            while (boneIndex < anim->bones.Size())
+            {
+                if (StringCmp(anim->bones.At(boneIndex)->name, currentBone->name))
+                    break;
+                else
+                    ++boneIndex;
+            };
+
+            Json* rotateTimeline_json = Json_getItem(currentBone, "rotate");
+            Json* translateTimeline_json = Json_getItem(currentBone, "translate");
+            Json* scaleTimeline_json = Json_getItem(currentBone, "scale");
+
+            if (rotateTimeline_json)
+            {
+                RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
+                boneRotationTimeline->exists = true;
+                boneRotationTimeline->GetTransformationVal = &GetTransformationVal_RotationTimeline;
+
+                i32 keyFrameIndex {};
+                for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+                {
+                    boneRotationTimeline->times[boneRotationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
+                    boneRotationTimeline->angles[boneRotationTimeline->anglesCount++] = Json_getFloat(jsonKeyFrame, "angle", 0.0f);
+
+                    const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
+                    if (StringCmp(keyFrameCurve, "stepped"))
+                        boneRotationTimeline->curves[boneRotationTimeline->curvesCount++] = CurveType::STEPPED;
+                    else
+                        boneRotationTimeline->curves[boneRotationTimeline->curvesCount++] = CurveType::LINEAR;
+                };
+
+                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->timesCount - 1);
+
+                if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
+                    maxTimeOfAnimation = maxTimeOfRotationTimeline;
+            };
+
+            if (translateTimeline_json)
+            {
+                TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
+                boneTranslationTimeline->exists = true;
+                boneTranslationTimeline->GetTransformationVal = &GetTransformationVal_TranslationTimeline;
+
+                i32 keyFrameIndex {};
+                for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
+                {
+                    boneTranslationTimeline->times[boneTranslationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
+                    boneTranslationTimeline->translations[boneTranslationTimeline->translationCount++] = { 0.0f, 0.0f };
+
+                    boneTranslationTimeline->translations.At(keyFrameIndex).x = Json_getFloat(jsonKeyFrame, "x", 0.0f);
+                    boneTranslationTimeline->translations.At(keyFrameIndex).y = Json_getFloat(jsonKeyFrame, "y", 0.0f);
+
+                    const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
+                    if (StringCmp(keyFrameCurve, "stepped"))
+                        boneTranslationTimeline->curves[boneTranslationTimeline->curvesCount++] = CurveType::STEPPED;
+                    else
+                        boneTranslationTimeline->curves[boneTranslationTimeline->curvesCount++] = CurveType::LINEAR;
+                };
+
+                f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times.At(boneTranslationTimeline->timesCount - 1);
+
+                if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
+                    maxTimeOfAnimation = maxTimeOfTranslationTimeline;
+            };
+
+            if (scaleTimeline_json)
+            {
+                //Implement
+            };
+        };
+
+        { //Setup hit boxes for anim if any
+            Json* collisionBoxesOfAnimation_json = Json_getItem(currentAnimation_json, "slots");
+
+            if (collisionBoxesOfAnimation_json)
+            {
+                i32 hitBoxIndex {};
+                for (Json* currentCollisionBox_json = collisionBoxesOfAnimation_json ? collisionBoxesOfAnimation_json->child : 0; currentCollisionBox_json; currentCollisionBox_json = currentCollisionBox_json->next, ++hitBoxIndex)
+                {
+                    anim->hitBoxes.At(hitBoxIndex).boneName = CallocType(heap, char, 100);
+
+                    { //Get bone name collision box is attached to by cutting out "box-" prefix
+                        char boneName[100] = {};
+                        i32 j { 0 };
+                        for (i32 i = 4; i < strlen(currentCollisionBox_json->name); ++i, ++j)
+                            boneName[j] = currentCollisionBox_json->name[i];
+
+                        memcpy(anim->hitBoxes.At(hitBoxIndex).boneName, boneName, strlen(boneName));
+                    };
+
+                    Json* collisionBoxTimeline_json = Json_getItem(currentCollisionBox_json, "attachment");
+                    Json* keyFrame1_json = collisionBoxTimeline_json->child;
+                    Json* keyFrame2_json = collisionBoxTimeline_json->child->next;
+
+                    f32 time1 = Json_getFloat(keyFrame1_json, "time", 0.0f);
+                    f32 time2 = Json_getFloat(keyFrame2_json, "time", 0.0f);
+
+                    anim->hitBoxes.At(hitBoxIndex).timeUntilHitBoxIsActivated = time1;
+                    anim->hitBoxes.At(hitBoxIndex).duration = time2 - time1;
+
+                    Dynam_Array<v2f> adjustedCollisionBoxVerts { heap }, finalCollsionBoxVertCoords { heap };
+                    defer { CleanUp($(adjustedCollisionBoxVerts)); };
+                    defer { CleanUp($(finalCollsionBoxVertCoords)); };
+
+                    Json* collisionBoxDeformTimeline_json = Json_getItem(currentAnimation_json, "deform");
+                    Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
+                    Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
+
+                    Bone* bone = GetBoneFromSkeleton(&skel, anim->hitBoxes.At(hitBoxIndex).boneName);
+                    i32 numVerts = (i32)bone->originalCollisionBoxVerts.size;
+                    for (i32 i {}; i < numVerts; ++i)
+                    {
+                        //Read in adjusted/deformed vert data from individual animation json info
+                        PushBack($(adjustedCollisionBoxVerts), v2f { deformedVerts_json->valueFloat, deformedVerts_json->next->valueFloat });
+                        deformedVerts_json = deformedVerts_json->next->next;
+
+                        //Transform original verts into new transformed vert positions based on anim deformed verts
+                        v2f finalVertCoord = bone->originalCollisionBoxVerts.At(i) + adjustedCollisionBoxVerts.At(i);
+                        PushBack($(finalCollsionBoxVertCoords), finalVertCoord);
+                    };
+
+                    v2f vector0_1 = finalCollsionBoxVertCoords.At(0) - finalCollsionBoxVertCoords.At(1);
+                    v2f vector1_2 = finalCollsionBoxVertCoords.At(1) - finalCollsionBoxVertCoords.At(2);
+
+                    anim->hitBoxes.At(hitBoxIndex).size.width = Magnitude(vector0_1);
+                    anim->hitBoxes.At(hitBoxIndex).size.height = Magnitude(vector1_2);
+                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset = { (finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
+                        (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f };
+                    ++anim->hitBoxCount;
+                }
+            };
+        }
+
+        anim->totalTime = maxTimeOfAnimation;
+    };
+};
+
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
     : animations { heap }
 {
@@ -149,7 +360,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
     Json* root {};
     root = Json_create(jsonFile);
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
-
+    
     i32 animIndex {};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {

@@ -329,6 +329,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
 
+        Temporary_Memory skelDataMem = BeginTemporaryMemory($(*levelPart));
+
         //Read in data
         Skeleton playerSkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) }; //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         Skeleton enemySkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) };
@@ -356,13 +358,15 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { -2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         *player = { heap, playerSkel, playerAnimData, playerWorldPos, /*player height*/ playerSkel.height, playerDefaultHurtBox, /*flipX*/ false };
         *enemy = { heap, enemySkel, enemyAnimData, enemyWorldPos, /*enemy height*/ enemySkel.height, enemyDefaultHurtBox, /*flipX*/ true };
-
+        
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
         MixAnimations($(player->animData), "right-jab", "idle", .1f);
 
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
         SetIdleAnimation($(enemy->animQueue), enemy->animData, "idle");
+
+        EndTemporaryMemory(skelDataMem);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
