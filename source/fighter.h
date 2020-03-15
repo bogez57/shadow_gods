@@ -28,8 +28,8 @@ struct Fighter
 Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animData, v2f worldPos, f32 fighterHeight, HurtBox defaultHurtBox, b flipX = false)
 : skel { skel }
 , animData { animData }
-, animQueue { Init::_, memParitionID_dynamic}
-, currentAnim { Init::_, memParitionID_dynamic}
+, animQueue { Init::_ }
+, currentAnim { Init::_ }
 , world { worldPos, 0.0f, { 1.0f, 1.0f } }
 , height { fighterHeight }
 , hurtBox { defaultHurtBox }
