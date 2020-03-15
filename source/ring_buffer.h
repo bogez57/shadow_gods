@@ -117,5 +117,5 @@ class Ring_Buffer
     i64 write {};
     i64 read {};
     b full {};
-    Array<Type, size> buffer{};//TODO: Prob need to store on the heap due to possible stack overflow
+    Array<Type, size> buffer{};//TODO: Prob need to store on the heap since it's likely this will be used for larger arrays. Need to avoid stack overflow
 };

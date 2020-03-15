@@ -81,7 +81,7 @@ enum class PlayBackStatus
 struct Animation
 {
     Animation() = default;
-    Animation(Init, i32 memPartitionID_dynamic);
+    Animation(Init);
 
     const char* name { nullptr };
     f32 totalTime {};
@@ -161,9 +161,7 @@ struct AnimationData
 struct AnimationQueue
 {
     AnimationQueue() = default;
-    AnimationQueue(Init, i32 memPartitionID_dynamic)
-        : idleAnim { Init::_, memPartitionID_dynamic }
-    {}
+    AnimationQueue(Init);
 
     b hasIdleAnim { false };
     Animation idleAnim;
@@ -171,7 +169,6 @@ struct AnimationQueue
 };
 
 void MixAnimations(AnimationData&& animData, const char* anim_from, const char* anim_to);
-void CleanUpAnimation(Animation&& anim);
 void CopyAnimation(Animation src, Animation&& dest);
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
 void CreateAnimationsFromJsonFile(AnimationData&& animData, const char* jsonFilePath);
@@ -182,7 +179,8 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 #ifdef ANIMATION_IMPL
 
-Animation::Animation(Init, i32 memPartitionID_dynamic) {};
+Animation::Animation(Init) {};
+AnimationQueue::AnimationQueue(Init) {};
 
 AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel, Memory_Partition&& memPart)
 {
@@ -199,7 +197,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel, Memory
     i32 animIndex {};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {
-        Animation newAnimation { Init::_, heap };
+        Animation newAnimation { Init::_ };
         InsertAnimation($(this->animMap), currentAnimation_json->name, newAnimation);
         Animation* anim = GetAnimation(this->animMap, currentAnimation_json->name);
 
@@ -355,8 +353,7 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
 {
     Animation* anim_from = GetAnimation(animData.animMap, animName_from);
 
-    Animation anim_to { Init::_, heap };
-    defer { CleanUpAnimation($(anim_to)); };
+    Animation anim_to { Init::_ };
 
     CopyAnimation(*GetAnimation(animData.animMap, animName_to), $(anim_to));
 
@@ -392,10 +389,6 @@ void CopyAnimation(Animation src, Animation&& dest)
         CopyArray(src.boneRotationTimelines.At(boneIndex).times, $(dest.boneRotationTimelines.At(boneIndex).times));
         CopyArray(src.boneRotationTimelines.At(boneIndex).angles, $(dest.boneRotationTimelines.At(boneIndex).angles));
     };
-
-    CopyArray(src.bones, $(dest.bones));
-    CopyArray(src.hitBoxes, $(dest.hitBoxes));
-    CopyArray(src.animsToTransitionTo, $(dest.animsToTransitionTo));
 };
 
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName)
@@ -791,19 +784,4 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
     };
 };
 
-void CleanUpAnimation(Animation&& anim)
-{
-    anim.name = { nullptr };
-    anim.totalTime = {};
-    anim.currentTime = {};
-    anim.status = { PlayBackStatus::DEFAULT };
-    anim.repeat = { false };
-    anim.hasEnded = { false };
-};
-
-void CleanUpAnimQueue(AnimationQueue&& animQueue)
-{
-    CleanUpAnimation($(animQueue.idleAnim));
-};
-
-#endif //ANIMATION_IMPL
+#endif

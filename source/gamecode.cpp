@@ -413,8 +413,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
     enemy->currentAnim = UpdateAnimationState($(enemy->animQueue), deltaT);
-    defer { CleanUpAnimation($(player->currentAnim)); };
-    defer { CleanUpAnimation($(enemy->currentAnim)); };
 
     ApplyAnimationToSkeleton($(player->skel), player->currentAnim);
     ApplyAnimationToSkeleton($(enemy->skel), enemy->currentAnim);

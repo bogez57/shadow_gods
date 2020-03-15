@@ -133,11 +133,4 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
     }
 };
 
-void CleanUpFighter(Fighter&& fighter)
-{
-    CleanUpAnimQueue($(fighter.animQueue));
-    CleanUpAnimation($(fighter.currentAnim));
-    //CleanUpAnimData(fighter.animData); //Need to create this for hashmap class
-};
-
 #endif //FIGHTER_IMPL
