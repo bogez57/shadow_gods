@@ -44,10 +44,9 @@ struct Application_Memory
     i32 partitionCount {};
 };
 
-void* _AllocSize(Memory_Partition&& memPartition, i64 size);
-void _Release(Memory_Partition&& memPartition);
-#define PushType(memPartition, type, count) (type*)_AllocSize($(memPartition), ((sizeof(type)) * (count)))
-#define Release(memPartition) _Release($(memPartition));
+void* _AllocSize(Memory_Partition* memPartition, i64 size);
+#define PushType(memPartition, type, count) (type*)_AllocSize(memPartition, ((sizeof(type)) * (count)))
+void Release(Memory_Partition&& memPartition);
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress);
 Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& Memory, i64 size);
@@ -94,11 +93,11 @@ Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, i32 memParti
     return &appMemory->partitions[memPartitionID];
 };
 
-auto _AllocSize(Memory_Partition&& memPartition, i64 size) -> void*
+auto _AllocSize(Memory_Partition* memPartition, i64 size) -> void*
 {
-    ASSERT((memPartition.usedAmount + size) <= memPartition.size);
-    void* Result = _PointerAddition(memPartition.baseAddress, memPartition.usedAmount);
-    memPartition.usedAmount += (size);
+    ASSERT((memPartition->usedAmount + size) <= memPartition->size);
+    void* Result = _PointerAddition(memPartition->baseAddress, memPartition->usedAmount);
+    memPartition->usedAmount += (size);
 
     return Result;
 };
@@ -145,7 +144,7 @@ void IsAllTempMemoryCleared(Memory_Partition* memPartition)
     ASSERT(memPartition->tempMemoryCount == 0);
 }
 
-void _Release(Memory_Partition&& memPartition)
+void Release(Memory_Partition&& memPartition)
 {
     memPartition.usedAmount = 0;
     memPartition.tempMemoryCount = 0;

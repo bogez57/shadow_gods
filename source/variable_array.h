@@ -4,10 +4,12 @@
 template <typename Type>
 class VarArray
 {
+public:
     VarArray() = default;
-    VarArray(i64 capacity, Memory_Partition memPart)
+    VarArray(Memory_Partition* memPart, i64 capacity)
     {
-        elements = PushType(memPart, Type, capacity);
+        this->capacity = capacity;
+        this->elements = PushType(memPart, Type, capacity);
     };
 
     const Type operator[](i64 index) const
@@ -27,6 +29,13 @@ class VarArray
     i64 length {};
     i64 capacity {};
     Type* elements {};
+};
+
+template <typename Type>
+void Initialize(VarArray<Type>&& varArr, Memory_Partition* memPart, i64 capacity)
+{
+    varArr.capacity = capacity;
+    varArr.elements = PushType(memPart, Type, capacity);
 };
 
 #endif //VARIABLE_ARRAY_H
