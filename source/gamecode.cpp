@@ -258,16 +258,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.bones[boneIndex].length /= pixelsPerMeter;
         };
 
-        for (i32 slotI {}; slotI < skel.slots.size; ++slotI)
+        for (i32 slotI {}; slotI < skel.slots.length; ++slotI)
         {
-            StringCmp(skel.slots.At(slotI).name, "left-hand");
-            int x {};
-
-            skel.slots.At(slotI).regionAttachment.height /= pixelsPerMeter;
-            skel.slots.At(slotI).regionAttachment.width /= pixelsPerMeter;
-            skel.slots.At(slotI).regionAttachment.parentBoneSpace.rotation = Radians(skel.slots.At(slotI).regionAttachment.parentBoneSpace.rotation);
-            skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.x /= pixelsPerMeter;
-            skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.y /= pixelsPerMeter;
+            skel.slots[slotI].regionAttachment.height /= pixelsPerMeter;
+            skel.slots[slotI].regionAttachment.width /= pixelsPerMeter;
+            skel.slots[slotI].regionAttachment.parentBoneSpace.rotation = Radians(skel.slots[slotI].regionAttachment.parentBoneSpace.rotation);
+            skel.slots[slotI].regionAttachment.parentBoneSpace.translation.x /= pixelsPerMeter;
+            skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y /= pixelsPerMeter;
         };
 
         for (i32 animIndex {}; animIndex < animData.animations.keyInfos.size; ++animIndex)
@@ -445,7 +442,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
     { //Render
         auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex { 0 }; slotIndex < fighter.skel.slots.size; ++slotIndex)
+            for (i32 slotIndex { 0 }; slotIndex < fighter.skel.slots.length; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
 

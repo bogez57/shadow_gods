@@ -53,12 +53,12 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
             this->skel.bones[boneIndex].length *= (scaleFactorForHeightAdjustment * this->world.scale.x);
         };
         
-        for (i32 slotI {}; slotI < this->skel.slots.size; ++slotI)
+        for (i32 slotI {}; slotI < this->skel.slots.length; ++slotI)
         {
-            this->skel.slots.At(slotI).regionAttachment.height *= (scaleFactorForHeightAdjustment * this->world.scale.y);
-            this->skel.slots.At(slotI).regionAttachment.width *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.slots.At(slotI).regionAttachment.parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.slots[slotI].regionAttachment.height *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.slots[slotI].regionAttachment.width *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.slots[slotI].regionAttachment.parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
         };
         
         for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
@@ -137,7 +137,6 @@ void CleanUpFighter(Fighter&& fighter)
 {
     CleanUpAnimQueue($(fighter.animQueue));
     CleanUpAnimation($(fighter.currentAnim));
-    CleanUpSkeleton($(fighter.skel));
     //CleanUpAnimData(fighter.animData); //Need to create this for hashmap class
 };
 

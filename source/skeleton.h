@@ -77,7 +77,7 @@ struct Skeleton
     Skeleton(const char* atlasFilePath, const char* jsonFilepath, Memory_Partition&& memPart);
 
     VarArray<Bone> bones;
-    Dynam_Array<Slot> slots;
+    VarArray<Slot> slots;
     f32 width {}, height {};
 };
 
@@ -112,11 +112,8 @@ Skeleton CopySkeleton(Skeleton src)
 };
 
 Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_Partition&& memPart)
-    : slots { heap }
 {
     i32 length;
-
-    Reserve($(this->slots), 21);
 
     const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
 
@@ -188,6 +185,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
 
         { //Read in Slot data
             i32 slotIndex {};
+            Initialize($(this->slots), &memPart, jsonBones->size);
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
                 //Ignore creating slots here for collision boxes. Don't think I need it
@@ -197,8 +195,8 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
                 {
                     //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
                     Slot newSlot {};
-                    PushBack($(this->slots), newSlot);
-                    Slot* slot = GetLastElem(this->slots);
+                    this->slots.Push() = newSlot;
+                    Slot* slot = &this->slots[slotIndex];
 
                     slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
                     if (StringCmp(slot->name, "left-hand"))
@@ -371,16 +369,5 @@ void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldP
     root->worldSpace.translation = fighterWorldPos;
     root->parentBoneSpace.translation = fighterWorldPos;
 };
-
-void CleanUpBone(Bone&& bone) {
-
-};
-
-void CleanUpSkeleton(Skeleton&& skel)
-{
-    skel.width = 0;
-    skel.height = 0;
-    CleanUp($(skel.slots));
-}
 
 #endif //SKELETON_IMPL

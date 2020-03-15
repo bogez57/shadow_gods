@@ -931,7 +931,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             renderWork->colorBufferPitch = colorBufferPitch;
             renderWork->screenRegionCoords = screenRegionCoords;
 
-#if 0 //Multi-Threaded
+#if 1 //Multi-Threaded
             platformServices->AddWorkQueueEntry(DrawScreenRegion, renderWork);
 #else //Single Threaded
             Screen_Region_Render_Work* work = &workArray.At(workIndex);
