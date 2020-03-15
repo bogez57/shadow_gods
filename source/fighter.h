@@ -43,14 +43,14 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
         this->skel.height = this->height;
         this->skel.width = aspectRatio * this->height;
         
-        for (i32 boneIndex {}; boneIndex < this->skel.bones.Size(); ++boneIndex)
+        for (i32 boneIndex {}; boneIndex < this->skel.bones.length; ++boneIndex)
         {
-            this->skel.bones.At(boneIndex).worldSpace.scale = this->world.scale;
-            this->skel.bones.At(boneIndex).parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.bones.At(boneIndex).parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
-            this->skel.bones.At(boneIndex).initialPos_parentBoneSpace.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
-            this->skel.bones.At(boneIndex).initialPos_parentBoneSpace.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
-            this->skel.bones.At(boneIndex).length *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.bones[boneIndex].worldSpace.scale = this->world.scale;
+            this->skel.bones[boneIndex].parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.bones[boneIndex].parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.bones[boneIndex].initialPos_parentBoneSpace.x *= (scaleFactorForHeightAdjustment * this->world.scale.x);
+            this->skel.bones[boneIndex].initialPos_parentBoneSpace.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
+            this->skel.bones[boneIndex].length *= (scaleFactorForHeightAdjustment * this->world.scale.x);
         };
         
         for (i32 slotI {}; slotI < this->skel.slots.size; ++slotI)
@@ -87,7 +87,7 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
             
             if (anim.name)
             {
-                for (i32 boneIndex {}; boneIndex < this->skel.bones.Size(); ++boneIndex)
+                for (i32 boneIndex {}; boneIndex < this->skel.bones.length; ++boneIndex)
                 {
                     TranslationTimeline* translationTimeline = &anim.boneTranslationTimelines.At(boneIndex);
                     
@@ -107,12 +107,12 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
     //Flip skeleton bones world positions/rotations
     if (flipX)
     {
-        for (i32 i {}; i < this->skel.bones.Size(); ++i)
+        for (i32 i {}; i < this->skel.bones.length; ++i)
         {
-            if (this->skel.bones.At(i).isRoot)
-                this->skel.bones.At(i).parentBoneSpace.scale.x = -1.0f;
+            if (this->skel.bones[i].isRoot)
+                this->skel.bones[i].parentBoneSpace.scale.x = -1.0f;
             else
-                this->skel.bones.At(i).worldSpace.scale.y = -1.0f;
+                this->skel.bones[i].worldSpace.scale.y = -1.0f;
         };
         
         UpdateSkeletonBoneWorldTransforms($(this->skel), this->world.translation);

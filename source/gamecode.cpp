@@ -245,17 +245,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         skel.width /= pixelsPerMeter;
         skel.height /= pixelsPerMeter;
 
-        for (i32 boneIndex {}; boneIndex < skel.bones.Size(); ++boneIndex)
+        for (i32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
         {
-            skel.bones.At(boneIndex).parentBoneSpace.translation.x /= pixelsPerMeter;
-            skel.bones.At(boneIndex).parentBoneSpace.translation.y /= pixelsPerMeter;
-            skel.bones.At(boneIndex).initialPos_parentBoneSpace.x /= pixelsPerMeter;
-            skel.bones.At(boneIndex).initialPos_parentBoneSpace.y /= pixelsPerMeter;
+            skel.bones[boneIndex].parentBoneSpace.translation.x /= pixelsPerMeter;
+            skel.bones[boneIndex].parentBoneSpace.translation.y /= pixelsPerMeter;
+            skel.bones[boneIndex].initialPos_parentBoneSpace.x /= pixelsPerMeter;
+            skel.bones[boneIndex].initialPos_parentBoneSpace.y /= pixelsPerMeter;
 
-            skel.bones.At(boneIndex).parentBoneSpace.rotation = Radians(skel.bones.At(boneIndex).parentBoneSpace.rotation);
-            skel.bones.At(boneIndex).initialRotation_parentBoneSpace = Radians(skel.bones.At(boneIndex).initialRotation_parentBoneSpace);
+            skel.bones[boneIndex].parentBoneSpace.rotation = Radians(skel.bones[boneIndex].parentBoneSpace.rotation);
+            skel.bones[boneIndex].initialRotation_parentBoneSpace = Radians(skel.bones[boneIndex].initialRotation_parentBoneSpace);
 
-            skel.bones.At(boneIndex).length /= pixelsPerMeter;
+            skel.bones[boneIndex].length /= pixelsPerMeter;
         };
 
         for (i32 slotI {}; slotI < skel.slots.size; ++slotI)
@@ -469,9 +469,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         DrawFighter(*enemy);
 
-        for (i32 i {}; i < player->skel.bones.Size(); ++i)
+        for (i32 i {}; i < player->skel.bones.length; ++i)
         {
-            Bone bone = player->skel.bones.At(i);
+            Bone bone = player->skel.bones[i];
             Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
             PushRect(global_renderingInfo, boneRect, { 1.0f, 0.0f, 0.0f });
         }

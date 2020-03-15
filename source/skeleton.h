@@ -76,7 +76,7 @@ struct Skeleton
     Skeleton() = default;
     Skeleton(const char* atlasFilePath, const char* jsonFilepath, Memory_Partition&& memPart);
 
-    Array<Bone, 20> bones;
+    VarArray<Bone> bones;
     Dynam_Array<Slot> slots;
     f32 width {}, height {};
 };
@@ -93,20 +93,21 @@ Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName);
 Skeleton CopySkeleton(Skeleton src)
 {
     Skeleton dest = src;
+#if 0
 
     CopyArray(src.bones, $(dest.bones));
     CopyArray(src.slots, $(dest.slots));
 
-    for (i32 boneIndex {}; boneIndex < src.bones.Size(); ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < src.bones.length; ++boneIndex)
     {
-        for (i32 childBoneIndex {}; childBoneIndex < src.bones.At(boneIndex).childBones.size; ++childBoneIndex)
+        for (i32 childBoneIndex {}; childBoneIndex < src.bones[boneIndex].childBones.size; ++childBoneIndex)
         {
-            const char* childBoneName = src.bones.At(boneIndex).childBones.At(childBoneIndex)->name;
+            const char* childBoneName = src.bones[boneIndex].childBones.At(childBoneIndex)->name;
             Bone* bone = GetBoneFromSkeleton(&dest, (char*)childBoneName);
-            dest.bones.At(boneIndex).childBones.At(childBoneIndex) = bone;
+            dest.bones[boneIndex].childBones.At(childBoneIndex) = bone;
         }
     };
-
+#endif
     return dest;
 };
 
@@ -136,10 +137,11 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
 
         { //Read in Bone data
             i32 boneIndex {};
+            Initialize($(this->bones), &memPart, jsonBones->size);
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
-                this->bones.At(boneIndex) = { Init::_, heap };
-                Bone* bone = &this->bones.At(boneIndex);
+                this->bones.Push() = Bone{ Init::_, heap };
+                Bone* bone = &this->bones[boneIndex];
 
                 bone->name = Json_getString(currentBone_json, "name", 0);
                 if (StringCmp(bone->name, "root"))
@@ -262,10 +264,10 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
 
 void ResetBonesToSetupPose(Skeleton&& skel)
 {
-    for (i32 boneIndex {}; boneIndex < skel.bones.Size(); ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
     {
-        skel.bones.At(boneIndex).parentBoneSpace.rotation = skel.bones.At(boneIndex).initialRotation_parentBoneSpace;
-        skel.bones.At(boneIndex).parentBoneSpace.translation = skel.bones.At(boneIndex).initialPos_parentBoneSpace;
+        skel.bones[boneIndex].parentBoneSpace.rotation = skel.bones[boneIndex].initialRotation_parentBoneSpace;
+        skel.bones[boneIndex].parentBoneSpace.translation = skel.bones[boneIndex].initialPos_parentBoneSpace;
     };
 };
 
@@ -273,11 +275,11 @@ Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName)
 {
     Bone* bone {};
 
-    for (i32 i = 0; i < skeleton->bones.Size(); ++i)
+    for (i32 i = 0; i < skeleton->bones.length; ++i)
     {
-        if (StringCmp(skeleton->bones.At(i).name, boneName))
+        if (StringCmp(skeleton->bones[i].name, boneName))
         {
-            bone = &skeleton->bones.At(i);
+            bone = &skeleton->bones[i];
             break;
         };
     };
@@ -357,13 +359,13 @@ void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldP
 
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
 
-    for (i32 i {}; i < fighterSkel.bones.Size(); ++i)
+    for (i32 i {}; i < fighterSkel.bones.length; ++i)
     {
-        fighterSkel.bones.At(i).worldSpace.translation += fighterWorldPos;
-        fighterSkel.bones.At(i).worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones.At(i));
+        fighterSkel.bones[i].worldSpace.translation += fighterWorldPos;
+        fighterSkel.bones[i].worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones[i]);
 
         if (root->parentBoneSpace.scale.x == -1.0f)
-            fighterSkel.bones.At(i).worldSpace.rotation = PI - fighterSkel.bones.At(i).worldSpace.rotation;
+            fighterSkel.bones[i].worldSpace.rotation = PI - fighterSkel.bones[i].worldSpace.rotation;
     };
 
     root->worldSpace.translation = fighterWorldPos;

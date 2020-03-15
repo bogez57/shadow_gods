@@ -161,7 +161,7 @@ AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel)
         anim->name = currentAnimation_json->name;
 
         for (i32 i {}; i < anim->bones.Size(); ++i)
-            anim->bones.At(i) = &skel.bones.At(i);
+            anim->bones[i] = &skel.bones[i];
 
         Json* bonesOfAnimation = Json_getItem(currentAnimation_json, "bones");
         i32 boneIndex_json {};
@@ -753,13 +753,13 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
 {
     ResetBonesToSetupPose($(skel));
 
-    for (i32 boneIndex {}; boneIndex < skel.bones.Size(); ++boneIndex)
+    for (i32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
     {
         f32 boneRotationToAdd = anim.boneRotations.At(boneIndex);
-        skel.bones.At(boneIndex).parentBoneSpace.rotation += boneRotationToAdd;
+        skel.bones[boneIndex].parentBoneSpace.rotation += boneRotationToAdd;
 
         v2f boneTranslationToAdd = anim.boneTranslations.At(boneIndex);
-        skel.bones.At(boneIndex).parentBoneSpace.translation += boneTranslationToAdd;
+        skel.bones[boneIndex].parentBoneSpace.translation += boneTranslationToAdd;
     };
 };
 
