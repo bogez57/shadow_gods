@@ -267,9 +267,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y /= pixelsPerMeter;
         };
 
-        for (i32 animIndex {}; animIndex < animData.animations.keyInfos.size; ++animIndex)
+        for (i32 animIndex {}; animIndex < animData.animMap.animations.length; ++animIndex)
         {
-            Animation* anim = (Animation*)&animData.animations.keyInfos.At(animIndex).value;
+            Animation* anim = &animData.animMap.animations[animIndex];
 
             if (anim->name)
             {
@@ -334,8 +334,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Read in data
         Skeleton playerSkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) }; //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         Skeleton enemySkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) };
-        AnimationData playerAnimData { "data/yellow_god.json", playerSkel };
-        AnimationData enemyAnimData { "data/yellow_god.json", enemySkel };
+        AnimationData playerAnimData { "data/yellow_god.json", playerSkel, $(*levelPart) };
+        AnimationData enemyAnimData { "data/yellow_god.json", enemySkel, $(*levelPart) };
 
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));

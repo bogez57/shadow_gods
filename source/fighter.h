@@ -61,13 +61,13 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
             this->skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * this->world.scale.y);
         };
         
-        for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
+        for (i32 animIndex {}; animIndex < this->animData.animMap.animations.length; ++animIndex)
         {
-            Animation* anim = (Animation*)&this->animData.animations.keyInfos.At(animIndex).value;
+            Animation* anim = (Animation*)&this->animData.animMap.animations[animIndex];
             
             if (anim->name)
             {
-                anim = GetVal(this->animData.animations, animIndex, anim->name);
+                anim = GetAnimation(this->animData.animMap, anim->name);
                 for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
                 {
                     anim->hitBoxes.At(hitBoxIndex).size.width *= (scaleFactorForHeightAdjustment * this->world.scale.x);
@@ -81,9 +81,9 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
     
     { //Adjust animations to new height standards
         //TODO: Very stupid, move out or change as I'm currently iterating over ALL keyInfos for which there are a lot in my current hashMap_Str class
-        for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
+        for (i32 animIndex {}; animIndex < this->animData.animMap.animations.length; ++animIndex)
         {
-            Animation anim = (Animation)this->animData.animations.keyInfos.At(animIndex).value;
+            Animation anim = this->animData.animMap.animations[animIndex];
             
             if (anim.name)
             {
@@ -117,13 +117,13 @@ Fighter::Fighter(i32 memParitionID_dynamic, Skeleton skel, AnimationData animDat
         
         UpdateSkeletonBoneWorldTransforms($(this->skel), this->world.translation);
         
-        for (i32 animIndex {}; animIndex < this->animData.animations.keyInfos.size; ++animIndex)
+        for (i32 animIndex {}; animIndex < this->animData.animMap.animations.length; ++animIndex)
         {
-            Animation* anim = (Animation*)&this->animData.animations.keyInfos.At(animIndex).value;
+            Animation* anim = &this->animData.animMap.animations[animIndex];
             
             if (anim->name)
             {
-                anim = GetVal(this->animData.animations, animIndex, anim->name);
+                anim = GetAnimation(this->animData.animMap, anim->name);
                 for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
                 {
                     anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x *= -1.0f;
