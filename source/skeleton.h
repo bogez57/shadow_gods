@@ -43,7 +43,7 @@ struct Region_Attachment
 struct Bone
 {
     Bone() = default;
-    Bone(Init, i32 memParitionID_dynamic)
+    Bone(i32 memParitionID_dynamic)
         : childBones { memParitionID_dynamic }
         , originalCollisionBoxVerts { memParitionID_dynamic }
     {
@@ -74,44 +74,22 @@ struct Slot
 struct Skeleton
 {
     Skeleton() = default;
-    Skeleton(const char* atlasFilePath, const char* jsonFilepath, Memory_Partition&& memPart);
 
     VarArray<Bone> bones;
     VarArray<Slot> slots;
     f32 width {}, height {};
 };
 
-Skeleton CopySkeleton(Skeleton src);
-void ResetBonesToSetupPose(Skeleton&& skeleton);
+void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath);
 Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName);
+void ResetBonesToSetupPose(Skeleton&& skeleton);
+Skeleton CopySkeleton(Skeleton src);
 
 #endif
 
 #ifdef SKELETON_IMPL
 
-//TODO: Not sure if this is working properly yet
-Skeleton CopySkeleton(Skeleton src)
-{
-    Skeleton dest = src;
-#if 0
-
-    CopyArray(src.bones, $(dest.bones));
-    CopyArray(src.slots, $(dest.slots));
-
-    for (i32 boneIndex {}; boneIndex < src.bones.length; ++boneIndex)
-    {
-        for (i32 childBoneIndex {}; childBoneIndex < src.bones[boneIndex].childBones.size; ++childBoneIndex)
-        {
-            const char* childBoneName = src.bones[boneIndex].childBones.At(childBoneIndex)->name;
-            Bone* bone = GetBoneFromSkeleton(&dest, (char*)childBoneName);
-            dest.bones[boneIndex].childBones.At(childBoneIndex) = bone;
-        }
-    };
-#endif
-    return dest;
-};
-
-Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_Partition&& memPart)
+void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath)
 {
     i32 length;
 
@@ -129,16 +107,16 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
         Json* jsonSlots = Json_getItem(root, "slots"); /* clang-format off */BGZ_ASSERT(jsonSlots, "Unable to return valid json object for slots!"); /* clang-format on */
         Json* skins_json = Json_getItem(root, "skins");
 
-        this->width = Json_getFloat(jsonSkeleton, "width", 0.0f);
-        this->height = Json_getFloat(jsonSkeleton, "height", 0.0f);
+        skel.width = Json_getFloat(jsonSkeleton, "width", 0.0f);
+        skel.height = Json_getFloat(jsonSkeleton, "height", 0.0f);
 
         { //Read in Bone data
             i32 boneIndex {};
-            Initialize($(this->bones), &memPart, jsonBones->size);
+            Initialize($(skel.bones), &memPart, jsonBones->size);
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
-                this->bones.Push() = Bone{ Init::_, heap };
-                Bone* bone = &this->bones[boneIndex];
+                skel.bones.Push() = Bone{ heap };
+                Bone* bone = &skel.bones[boneIndex];
 
                 bone->name = Json_getString(currentBone_json, "name", 0);
                 if (StringCmp(bone->name, "root"))
@@ -177,7 +155,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
 
                 if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
                 {
-                    bone->parentBone = GetBoneFromSkeleton(this, (char*)Json_getString(currentBone_json, "parent", 0));
+                    bone->parentBone = GetBoneFromSkeleton(&skel, (char*)Json_getString(currentBone_json, "parent", 0));
                     PushBack($(bone->parentBone->childBones), bone);
                 };
             };
@@ -185,7 +163,7 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
 
         { //Read in Slot data
             i32 slotIndex {};
-            Initialize($(this->slots), &memPart, jsonBones->size);
+            Initialize($(skel.slots), &memPart, jsonBones->size);
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
                 //Ignore creating slots here for collision boxes. Don't think I need it
@@ -195,13 +173,13 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
                 {
                     //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
                     Slot newSlot {};
-                    this->slots.Push() = newSlot;
-                    Slot* slot = &this->slots[slotIndex];
+                    skel.slots.Push() = newSlot;
+                    Slot* slot = &skel.slots[slotIndex];
 
                     slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
                     if (StringCmp(slot->name, "left-hand"))
                         int x {};
-                    slot->bone = GetBoneFromSkeleton(this, (char*)Json_getString(currentSlot_json, "bone", 0));
+                    slot->bone = GetBoneFromSkeleton(&skel, (char*)Json_getString(currentSlot_json, "bone", 0));
                     slot->regionAttachment = [currentSlot_json, skins_json, atlas]() -> Region_Attachment {
                         Region_Attachment resultRegionAttch {};
 
@@ -258,6 +236,28 @@ Skeleton::Skeleton(const char* atlasFilePath, const char* jsonFilePath, Memory_P
     };
 
     globalPlatformServices->Free((void*)skeletonJson);
+};
+
+//TODO: Not sure if this is working properly yet
+Skeleton CopySkeleton(Skeleton src)
+{
+    Skeleton dest = src;
+#if 0
+
+    CopyArray(src.bones, $(dest.bones));
+    CopyArray(src.slots, $(dest.slots));
+
+    for (i32 boneIndex {}; boneIndex < src.bones.length; ++boneIndex)
+    {
+        for (i32 childBoneIndex {}; childBoneIndex < src.bones[boneIndex].childBones.size; ++childBoneIndex)
+        {
+            const char* childBoneName = src.bones[boneIndex].childBones.At(childBoneIndex)->name;
+            Bone* bone = GetBoneFromSkeleton(&dest, (char*)childBoneName);
+            dest.bones[boneIndex].childBones.At(childBoneIndex) = bone;
+        }
+    };
+#endif
+    return dest;
 };
 
 void ResetBonesToSetupPose(Skeleton&& skel)

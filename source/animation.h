@@ -81,7 +81,6 @@ enum class PlayBackStatus
 struct Animation
 {
     Animation() = default;
-    Animation(Init);
 
     const char* name { nullptr };
     f32 totalTime {};
@@ -152,8 +151,6 @@ Animation* GetAnimation(AnimationMap animMap, const char* animName)
 struct AnimationData
 {
     AnimationData() = default;
-    AnimationData(const char* animDataJsonFilePath, Skeleton skel);
-    AnimationData(const char* animDataJsonFilePath, Skeleton skel, Memory_Partition&& memPart);
 
     AnimationMap animMap {};
 };
@@ -161,13 +158,13 @@ struct AnimationData
 struct AnimationQueue
 {
     AnimationQueue() = default;
-    AnimationQueue(Init);
 
     b hasIdleAnim { false };
     Animation idleAnim;
     Ring_Buffer<Animation, 10> queuedAnimations;
 };
 
+void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel);
 void MixAnimations(AnimationData&& animData, const char* anim_from, const char* anim_to);
 void CopyAnimation(Animation src, Animation&& dest);
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
@@ -179,27 +176,24 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 #ifdef ANIMATION_IMPL
 
-Animation::Animation(Init) {};
-AnimationQueue::AnimationQueue(Init) {};
-
-AnimationData::AnimationData(const char* animJsonFilePath, Skeleton skel, Memory_Partition&& memPart)
+void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel)
 {
     i32 length;
 
-    const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), animJsonFilePath);
+    const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), animDataJsonFilePath);
 
     Json* root {};
     root = Json_create(jsonFile);
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
 
-    InitializeAnimMap($(this->animMap), $(memPart), 20);
+    InitializeAnimMap($(animData.animMap), $(memPart), 20);
 
     i32 animIndex {};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {
-        Animation newAnimation { Init::_ };
-        InsertAnimation($(this->animMap), currentAnimation_json->name, newAnimation);
-        Animation* anim = GetAnimation(this->animMap, currentAnimation_json->name);
+        Animation newAnimation {};
+        InsertAnimation($(animData.animMap), currentAnimation_json->name, newAnimation);
+        Animation* anim = GetAnimation(animData.animMap, currentAnimation_json->name);
 
         anim->name = currentAnimation_json->name;
 
@@ -353,7 +347,7 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
 {
     Animation* anim_from = GetAnimation(animData.animMap, animName_from);
 
-    Animation anim_to { Init::_ };
+    Animation anim_to {};
 
     CopyAnimation(*GetAnimation(animData.animMap, animName_to), $(anim_to));
 
