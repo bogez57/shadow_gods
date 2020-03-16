@@ -327,19 +327,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         gameMemory->initialized = true;
 
-        *gState = {}; //Make sure everything gets properly defaulted (constructors are called that need to be)
-
-        Temporary_Memory skelDataMem = BeginTemporaryMemory($(*levelPart));
-
-        //Read in data
-        Skeleton playerSkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) }; //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        Skeleton enemySkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) };
-        AnimationData playerAnimData { "data/yellow_god.json", playerSkel, $(*levelPart) };
-        AnimationData enemyAnimData { "data/yellow_god.json", enemySkel, $(*levelPart) };
-
-        //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
-        TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
-        TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
+        *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
 
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
@@ -351,6 +339,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePointOffset_normalized = { 0.0f, -0.3f };
         stage->camera.lookAt = { stage->size.width / 2.0f, 10.0f };
         stage->camera.zoomFactor = .4f;
+
+        //Read in data
+        Skeleton playerSkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) }; //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        Skeleton enemySkel { "data/yellow_god.atlas", "data/yellow_god.json", $(*levelPart) };
+        AnimationData playerAnimData { "data/yellow_god.json", playerSkel, $(*levelPart) };
+        AnimationData enemyAnimData { "data/yellow_god.json", enemySkel, $(*levelPart) };
+
+        //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
+        TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
+        TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
 
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
@@ -365,8 +363,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
         SetIdleAnimation($(enemy->animQueue), enemy->animData, "idle");
-
-        EndTemporaryMemory(skelDataMem);
     };
 
     if (globalPlatformServices->DLLJustReloaded)
