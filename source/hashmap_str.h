@@ -4,6 +4,7 @@
     Duplicates are overwritten
 */
 
+#if 0
 enum Error
 {
     HASH_DOES_NOT_EXIST = -1
@@ -149,3 +150,4 @@ ValueType* GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
 
     return result;
 };
+#endif
