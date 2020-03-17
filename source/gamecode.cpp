@@ -290,12 +290,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                     }
                 };
 
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
                 {
-                    anim->hitBoxes.At(hitBoxIndex).size.width /= pixelsPerMeter;
-                    anim->hitBoxes.At(hitBoxIndex).size.height /= pixelsPerMeter;
-                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x /= pixelsPerMeter;
-                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.y /= pixelsPerMeter;
+                    anim->hitBoxes[hitBoxIndex].size.width /= pixelsPerMeter;
+                    anim->hitBoxes[hitBoxIndex].size.height /= pixelsPerMeter;
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset.x /= pixelsPerMeter;
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset.y /= pixelsPerMeter;
                 };
             };
         }
@@ -422,17 +422,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-    for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxCount; ++hitBoxIndex)
+    for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.length; ++hitBoxIndex)
     {
-        UpdateHitBoxStatus($(player->currentAnim.hitBoxes.At(hitBoxIndex)), player->currentAnim.currentTime);
+        UpdateHitBoxStatus($(player->currentAnim.hitBoxes[hitBoxIndex]), player->currentAnim.currentTime);
 
-        if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+        if (player->currentAnim.hitBoxes[hitBoxIndex].isActive)
         {
-            player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace = { 0.0f, 0.0f };
+            player->currentAnim.hitBoxes[hitBoxIndex].pos_worldSpace = { 0.0f, 0.0f };
 
-            Bone* bone = GetBoneFromSkeleton(&player->skel, player->currentAnim.hitBoxes.At(hitBoxIndex).boneName);
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes.At(hitBoxIndex)), bone->worldSpace.translation);
-            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes.At(hitBoxIndex), enemy->hurtBox);
+            Bone* bone = GetBoneFromSkeleton(&player->skel, player->currentAnim.hitBoxes[hitBoxIndex].boneName);
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes[hitBoxIndex]), bone->worldSpace.translation);
+            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes[hitBoxIndex], enemy->hurtBox);
 
             if (collisionOccurred)
                 BGZ_CONSOLE("ahhahha");
@@ -484,11 +484,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             PushRect(global_renderingInfo, playerTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
             PushRect(global_renderingInfo, enemyTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
 
-            for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.Size(); ++hitBoxIndex)
+            for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.length; ++hitBoxIndex)
             {
-                Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(player->currentAnim.hitBoxes.At(hitBoxIndex).pos_worldSpace, player->currentAnim.hitBoxes.At(hitBoxIndex).size.width, player->currentAnim.hitBoxes.At(hitBoxIndex).size.height);
+                Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(player->currentAnim.hitBoxes[hitBoxIndex].pos_worldSpace, player->currentAnim.hitBoxes[hitBoxIndex].size.width, player->currentAnim.hitBoxes[hitBoxIndex].size.height);
 
-                if (player->currentAnim.hitBoxes.At(hitBoxIndex).isActive)
+                if (player->currentAnim.hitBoxes[hitBoxIndex].isActive)
                     PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
             };
         }

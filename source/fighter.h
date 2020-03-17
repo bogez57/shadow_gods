@@ -68,12 +68,12 @@ void Init(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterH
             if (anim->name)
             {
                 anim = GetAnimation(fighter.animData.animMap, anim->name);
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
                 {
-                    anim->hitBoxes.At(hitBoxIndex).size.width *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
-                    anim->hitBoxes.At(hitBoxIndex).size.height *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
-                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
-                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.y *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
+                    anim->hitBoxes[hitBoxIndex].size.width *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
+                    anim->hitBoxes[hitBoxIndex].size.height *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset.x *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset.y *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
                 };
             }
         };
@@ -124,9 +124,9 @@ void Init(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterH
             if (anim->name)
             {
                 anim = GetAnimation(fighter.animData.animMap, anim->name);
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxCount; ++hitBoxIndex)
+                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
                 {
-                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset.x *= -1.0f;
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset.x *= -1.0f;
                 };
             }
         }

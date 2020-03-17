@@ -92,8 +92,7 @@ struct Animation
     b repeat { false };
     b hasEnded { false };
     b MixingStarted { false };
-    Array<HitBox, 10> hitBoxes;
-    i32 hitBoxCount {};
+    DbgArray<HitBox, 10> hitBoxes;
     DbgArray<Animation*, 10> animsToTransitionTo;
     Array<Bone*, 20> bones;
     Array<RotationTimeline, 20> boneRotationTimelines;
@@ -284,7 +283,8 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                 i32 hitBoxIndex {};
                 for (Json* currentCollisionBox_json = collisionBoxesOfAnimation_json ? collisionBoxesOfAnimation_json->child : 0; currentCollisionBox_json; currentCollisionBox_json = currentCollisionBox_json->next, ++hitBoxIndex)
                 {
-                    anim->hitBoxes.At(hitBoxIndex).boneName = CallocType(heap, char, 100);
+                    anim->hitBoxes.Push() = HitBox{};
+                    anim->hitBoxes[hitBoxIndex].boneName = CallocType(heap, char, 100);
 
                     { //Get bone name collision box is attached to by cutting out "box-" prefix
                         char boneName[100] = {};
@@ -292,7 +292,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                         for (i32 i = 4; i < strlen(currentCollisionBox_json->name); ++i, ++j)
                             boneName[j] = currentCollisionBox_json->name[i];
 
-                        memcpy(anim->hitBoxes.At(hitBoxIndex).boneName, boneName, strlen(boneName));
+                        memcpy(anim->hitBoxes[hitBoxIndex].boneName, boneName, strlen(boneName));
                     };
 
                     Json* collisionBoxTimeline_json = Json_getItem(currentCollisionBox_json, "attachment");
@@ -302,8 +302,8 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                     f32 time1 = Json_getFloat(keyFrame1_json, "time", 0.0f);
                     f32 time2 = Json_getFloat(keyFrame2_json, "time", 0.0f);
 
-                    anim->hitBoxes.At(hitBoxIndex).timeUntilHitBoxIsActivated = time1;
-                    anim->hitBoxes.At(hitBoxIndex).duration = time2 - time1;
+                    anim->hitBoxes[hitBoxIndex].timeUntilHitBoxIsActivated = time1;
+                    anim->hitBoxes[hitBoxIndex].duration = time2 - time1;
 
                     Dynam_Array<v2f> adjustedCollisionBoxVerts { heap }, finalCollsionBoxVertCoords { heap };
                     defer { CleanUp($(adjustedCollisionBoxVerts)); };
@@ -313,7 +313,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                     Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
                     Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
 
-                    Bone* bone = GetBoneFromSkeleton(&skel, anim->hitBoxes.At(hitBoxIndex).boneName);
+                    Bone* bone = GetBoneFromSkeleton(&skel, anim->hitBoxes[hitBoxIndex].boneName);
                     i32 numVerts = (i32)bone->originalCollisionBoxVerts.size;
                     for (i32 i {}; i < numVerts; ++i)
                     {
@@ -329,11 +329,10 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                     v2f vector0_1 = finalCollsionBoxVertCoords.At(0) - finalCollsionBoxVertCoords.At(1);
                     v2f vector1_2 = finalCollsionBoxVertCoords.At(1) - finalCollsionBoxVertCoords.At(2);
 
-                    anim->hitBoxes.At(hitBoxIndex).size.width = Magnitude(vector0_1);
-                    anim->hitBoxes.At(hitBoxIndex).size.height = Magnitude(vector1_2);
-                    anim->hitBoxes.At(hitBoxIndex).worldPosOffset = { (finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
+                    anim->hitBoxes[hitBoxIndex].size.width = Magnitude(vector0_1);
+                    anim->hitBoxes[hitBoxIndex].size.height = Magnitude(vector1_2);
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset = { (finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
                         (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f };
-                    ++anim->hitBoxCount;
                 }
             };
         }
