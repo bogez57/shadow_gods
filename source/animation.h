@@ -94,8 +94,7 @@ struct Animation
     b MixingStarted { false };
     Array<HitBox, 10> hitBoxes;
     i32 hitBoxCount {};
-    Array<Animation*, 10> animsToTransitionTo;
-    i32 animCount {};
+    DbgArray<Animation*, 10> animsToTransitionTo;
     Array<Bone*, 20> bones;
     Array<RotationTimeline, 20> boneRotationTimelines;
     Array<TranslationTimeline, 20> boneTranslationTimelines;
@@ -355,20 +354,20 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
 
     anim_to.mixTimeDuration = mixDuration;
 
-    if (anim_from->animCount > 0)
+    if (anim_from->animsToTransitionTo.length > 0)
     {
-        for (i32 i {}; i < anim_from->animCount; ++i)
+        for (i32 i {}; i < anim_from->animsToTransitionTo.length; ++i)
         {
-            BGZ_ASSERT(NOT StringCmp(anim_from->animsToTransitionTo.At(i)->name, anim_to.name), "Duplicate mix animation tyring to be set");
+            BGZ_ASSERT(NOT StringCmp(anim_from->animsToTransitionTo[i]->name, anim_to.name), "Duplicate mix animation tyring to be set");
         };
 
-        anim_from->animsToTransitionTo[++anim_from->animCount] = MallocType(heap, Animation, 1);
-        CopyAnimation(anim_to, $(*anim_from->animsToTransitionTo[anim_from->animCount]));
+        anim_from->animsToTransitionTo.Push() = MallocType(heap, Animation, 1);
+        CopyAnimation(anim_to, $(*anim_from->animsToTransitionTo[anim_from->animsToTransitionTo.length - 1]));
     }
     else
     {
-        anim_from->animsToTransitionTo[anim_from->animCount] = MallocType(heap, Animation, 1);
-        CopyAnimation(anim_to, $(*anim_from->animsToTransitionTo[anim_from->animCount++]));
+        anim_from->animsToTransitionTo.Push() = MallocType(heap, Animation, 1);
+        CopyAnimation(anim_to, $(*anim_from->animsToTransitionTo[anim_from->animsToTransitionTo.length - 1]));
     }
 };
 
@@ -650,11 +649,11 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
         if (nextAnimInQueue)
         {
-            for (i32 animIndex {}; animIndex < anim->animCount; ++animIndex)
+            for (i32 animIndex {}; animIndex < anim->animsToTransitionTo.length; ++animIndex)
             {
-                if (StringCmp(anim->animsToTransitionTo.At(animIndex)->name, nextAnimInQueue->name))
+                if (StringCmp(anim->animsToTransitionTo[animIndex]->name, nextAnimInQueue->name))
                 {
-                    if (amountOfTimeLeftInAnim <= anim->animsToTransitionTo.At(animIndex)->mixTimeDuration)
+                    if (amountOfTimeLeftInAnim <= anim->animsToTransitionTo[animIndex]->mixTimeDuration)
                     {
                         InitializeMixingData($(*anim), prevFrameDT, amountOfTimeLeftInAnim);
                     }
@@ -680,7 +679,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         { //Translation Timeline
             if (anim->MixingStarted)
             {
-                BGZ_ASSERT(anim->animCount > 0, "No transition animation for mixing has been set!");
+                BGZ_ASSERT(anim->animsToTransitionTo.length > 0, "No transition animation for mixing has been set!");
 
                 TranslationTimeline nextAnimTranslationTimeline {};
                 if (nextAnimInQueue)
@@ -702,7 +701,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         { //Rotation Timeline
             if (anim->MixingStarted)
             {
-                BGZ_ASSERT(anim->animCount > 0, "No transition animation for mixing has been set!");
+                BGZ_ASSERT(anim->animsToTransitionTo.length > 0, "No transition animation for mixing has been set!");
 
                 RotationTimeline nextAnimRotationTimeline {};
                 if (nextAnimInQueue)
