@@ -314,7 +314,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                     Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
 
                     Bone* bone = GetBoneFromSkeleton(&skel, anim->hitBoxes[hitBoxIndex].boneName);
-                    i32 numVerts = (i32)bone->originalCollisionBoxVerts.size;
+                    i32 numVerts = (i32)bone->originalCollisionBoxVerts.length;
                     for (i32 i {}; i < numVerts; ++i)
                     {
                         //Read in adjusted/deformed vert data from individual animation json info

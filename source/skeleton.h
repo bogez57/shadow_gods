@@ -1,30 +1,3 @@
-/*
- Copyright (c) 2009, Dave Gamble
- Copyright (c) 2013, Esoteric Software
-
- Permission is hereby granted, dispose of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
- */
-
-/*
-    Note: Currently slots and bones have to have the same names in order for parsing to work
-*/
-
 #ifndef SKELETON_INCLUDE
 #define SKELETON_INCLUDE
 
@@ -45,7 +18,6 @@ struct Bone
     Bone() = default;
     Bone(i32 memParitionID_dynamic)
         : childBones { memParitionID_dynamic }
-        , originalCollisionBoxVerts { memParitionID_dynamic }
     {
         Reserve($(childBones), 10);
     };
@@ -58,8 +30,8 @@ struct Bone
     f32 initialRotationForMixing {};
     f32 length {};
     Bone* parentBone { nullptr };
-    Dynam_Array<v2f> originalCollisionBoxVerts;
-    Dynam_Array<Bone*> childBones;
+    VarArray<v2f> originalCollisionBoxVerts;
+    Dynam_Array<Bone*> childBones {heap};
     b isRoot { false };
     const char* name { nullptr };
 };
@@ -81,6 +53,7 @@ struct Skeleton
 };
 
 void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath);
+Bone InitBone(Memory_Partition&& memPart);
 Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName);
 void ResetBonesToSetupPose(Skeleton&& skeleton);
 Skeleton CopySkeleton(Skeleton src);
@@ -88,6 +61,14 @@ Skeleton CopySkeleton(Skeleton src);
 #endif
 
 #ifdef SKELETON_IMPL
+
+Bone InitBone(Memory_Partition&& memPart)
+{
+    Bone bone{};
+    Initialize($(bone.originalCollisionBoxVerts), &memPart, 10);
+    
+    return bone;
+};
 
 void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath)
 {
@@ -115,7 +96,7 @@ void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath
             Initialize($(skel.bones), &memPart, jsonBones->size);
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
-                skel.bones.Push() = Bone{ heap };
+                skel.bones.Push() = InitBone($(memPart));
                 Bone* bone = &skel.bones[boneIndex];
 
                 bone->name = Json_getString(currentBone_json, "name", 0);
@@ -147,7 +128,7 @@ void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath
                         i32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
                         for (i32 i {}; i < numVerts; ++i)
                         {
-                            PushBack($(bone->originalCollisionBoxVerts), v2f { verts_json->valueFloat, verts_json->next->valueFloat });
+                            bone->originalCollisionBoxVerts.Push() = v2f { verts_json->valueFloat, verts_json->next->valueFloat };
                             verts_json = verts_json->next->next;
                         };
                     }
