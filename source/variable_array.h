@@ -34,6 +34,8 @@ public:
 template <typename Type>
 void Initialize(VarArray<Type>&& varArr, Memory_Partition* memPart, i64 capacity)
 {
+    BGZ_ASSERT(varArr.capacity == 0, "Trying to initialize array twice!");
+
     varArr.capacity = capacity;
     varArr.elements = PushType(memPart, Type, capacity);
 };
