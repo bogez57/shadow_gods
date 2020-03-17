@@ -168,7 +168,7 @@ void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath
             {
                 //Ignore creating slots here for collision boxes. Don't think I need it
                 char* slotName = (char*)Json_getString(currentSlot_json, "name", 0);
-                char slotName_firstThreeLetters[3] = { slotName[0], slotName[1], slotName[2] };
+                char slotName_firstThreeLetters[4] = { slotName[0], slotName[1], slotName[2], NULL };
                 if (NOT StringCmp(slotName_firstThreeLetters, "box"))
                 {
                     //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
