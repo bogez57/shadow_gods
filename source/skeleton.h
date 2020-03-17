@@ -16,11 +16,6 @@ struct Region_Attachment
 struct Bone
 {
     Bone() = default;
-    Bone(i32 memParitionID_dynamic)
-        : childBones { memParitionID_dynamic }
-    {
-        Reserve($(childBones), 10);
-    };
 
     Transform parentBoneSpace;
     Transform worldSpace;
@@ -31,7 +26,7 @@ struct Bone
     f32 length {};
     Bone* parentBone { nullptr };
     VarArray<v2f> originalCollisionBoxVerts;
-    Dynam_Array<Bone*> childBones {heap};
+    VarArray<Bone*> childBones;
     b isRoot { false };
     const char* name { nullptr };
 };
@@ -66,6 +61,7 @@ Bone InitBone(Memory_Partition&& memPart)
 {
     Bone bone{};
     Initialize($(bone.originalCollisionBoxVerts), &memPart, 10);
+    Initialize($(bone.childBones), &memPart, 5);
     
     return bone;
 };
@@ -137,7 +133,7 @@ void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath
                 if (Json_getString(currentBone_json, "parent", 0)) //If no parent then skip
                 {
                     bone->parentBone = GetBoneFromSkeleton(&skel, (char*)Json_getString(currentBone_json, "parent", 0));
-                    PushBack($(bone->parentBone->childBones), bone);
+                    bone->parentBone->childBones.Push() = bone;
                 };
             };
         };
@@ -320,9 +316,9 @@ v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
 
 inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
 {
-    if (mainBone.childBones.size > 0)
+    if (mainBone.childBones.length > 0)
     {
-        for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.size; ++childBoneIndex)
+        for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.length; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
             childBone->worldSpace.translation = WorldTransform_Bone(childBone->parentBoneSpace.translation, *childBone->parentBone);
