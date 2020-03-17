@@ -146,7 +146,7 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
         Array<v2f, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
         for (i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
         {
-            v2f testVec = vecs.At(vecIndex);
+            v2f testVec = vecs[vecIndex];
             i32 flooredX = FloorF32ToI32(testVec.x);
             i32 ceiledX = CeilF32ToI32(testVec.x);
             i32 flooredY = FloorF32ToI32(testVec.y);
@@ -237,7 +237,7 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
         Array<v2f, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
         for (i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
         {
-            v2f testVec = vecs.At(vecIndex);
+            v2f testVec = vecs[vecIndex];
             i32 flooredX = FloorF32ToI32(testVec.x);
             i32 ceiledX = CeilF32ToI32(testVec.x);
             i32 flooredY = FloorF32ToI32(testVec.y);
@@ -299,11 +299,11 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
             __m256 screenPixelCoords_x = _mm256_set_ps((f32)(screenX + 7), (f32)(screenX + 6), (f32)(screenX + 5), (f32)(screenX + 4), (f32)(screenX + 3), (f32)(screenX + 2), (f32)(screenX + 1), (f32)(screenX + 0));
             __m256 screenPixelCoords_y = _mm256_set1_ps((f32)screenY);
 
-            __m256 uvRangeForTexture_u = _mm256_set1_ps(image.uvBounds.At(1).u - image.uvBounds.At(0).u);
-            __m256 uvRangeForTexture_v = _mm256_set1_ps(image.uvBounds.At(1).v - image.uvBounds.At(0).v);
+            __m256 uvRangeForTexture_u = _mm256_set1_ps(image.uvBounds[1].u - image.uvBounds[0].u);
+            __m256 uvRangeForTexture_v = _mm256_set1_ps(image.uvBounds[1].v - image.uvBounds[0].v);
 
-            __m256 minUVBounds_u = _mm256_set1_ps(image.uvBounds.At(0).u);
-            __m256 minUVBounds_v = _mm256_set1_ps(image.uvBounds.At(0).v);
+            __m256 minUVBounds_u = _mm256_set1_ps(image.uvBounds[0].u);
+            __m256 minUVBounds_v = _mm256_set1_ps(image.uvBounds[0].v);
 
             //Gather normalized coordinates (uv's) in order to find the correct texel position below
             __m256 dXs = _mm256_sub_ps(screenPixelCoords_x, targetRectOrigin_x);
@@ -589,7 +589,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
         Array<v2f, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
         for (i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
         {
-            v2f testVec = vecs.At(vecIndex);
+            v2f testVec = vecs[vecIndex];
             i32 flooredX = FloorF32ToI32(testVec.x);
             i32 ceiledX = CeilF32ToI32(testVec.x);
             i32 flooredY = FloorF32ToI32(testVec.y);
@@ -631,7 +631,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
         }
     };
 
-    v2f uvRangeForTexture = { image.uvBounds.At(1).u - image.uvBounds.At(0).u, image.uvBounds.At(1).v - image.uvBounds.At(0).v };
+    v2f uvRangeForTexture = { image.uvBounds[1].u - image.uvBounds[0].u, image.uvBounds[1].v - image.uvBounds[0].v };
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
 
@@ -652,8 +652,8 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
             //within the target rect's bounds or not
             if (u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
             {
-                f32 textureU = image.uvBounds.At(0).u + (uvRangeForTexture.u * u);
-                f32 textureV = image.uvBounds.At(0).y + (uvRangeForTexture.v * v);
+                f32 textureU = image.uvBounds[0].u + (uvRangeForTexture.u * u);
+                f32 textureV = image.uvBounds[0].y + (uvRangeForTexture.v * v);
 
                 f32 texelPos_x = (textureU * (f32)(image.size.width));
                 f32 texelPos_y = (textureV * (f32)(image.size.height));
@@ -923,7 +923,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
             v2f screenRegion_max = v2f { screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height };
             Rectf screenRegionCoords { screenRegion_min, screenRegion_max };
 
-            Screen_Region_Render_Work* renderWork = &workArray.At(workIndex);
+            Screen_Region_Render_Work* renderWork = &workArray[workIndex];
 
             renderWork->renderingInfo = renderingInfo;
             renderWork->colorBufferData = colorBufferData;

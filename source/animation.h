@@ -56,17 +56,17 @@ struct ScaleTimeline
 
 f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, i32 keyFrameIndex)
 {
-    return rotationTimeline.angles.At(keyFrameIndex);
+    return rotationTimeline.angles[keyFrameIndex];
 };
 
 v2f GetTransformationVal_TranslationTimeline(TranslationTimeline translationTimeline, i32 keyFrameIndex)
 {
-    return translationTimeline.translations.At(keyFrameIndex);
+    return translationTimeline.translations[keyFrameIndex];
 };
 
 v2f GetTransformationVal_ScaleTimeline(ScaleTimeline scaleTimeline, i32 keyFrameIndex)
 {
-    return scaleTimeline.scales.At(keyFrameIndex);
+    return scaleTimeline.scales[keyFrameIndex];
 };
 
 enum class PlayBackStatus
@@ -108,7 +108,7 @@ struct AnimationMap
     VarArray<i32> keys {};
 };
 
-void InitializeAnimMap(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
+void Init(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
 {
     Initialize($(animMap.animations), &memPart, size);
     Initialize($(animMap.keys), &memPart, size);
@@ -184,7 +184,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
     root = Json_create(jsonFile);
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
 
-    InitializeAnimMap($(animData.animMap), $(memPart), 20);
+    Init($(animData.animMap), $(memPart), 20);
 
     i32 animIndex {};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
@@ -206,7 +206,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
             i32 boneIndex {};
             while (boneIndex < anim->bones.Size())
             {
-                if (StringCmp(anim->bones.At(boneIndex)->name, currentBone->name))
+                if (StringCmp(anim->bones[boneIndex]->name, currentBone->name))
                     break;
                 else
                     ++boneIndex;
@@ -218,7 +218,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
 
             if (rotateTimeline_json)
             {
-                RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
+                RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines[boneIndex];
                 boneRotationTimeline->exists = true;
                 boneRotationTimeline->GetTransformationVal = &GetTransformationVal_RotationTimeline;
 
@@ -235,7 +235,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                         boneRotationTimeline->curves[boneRotationTimeline->curvesCount++] = CurveType::LINEAR;
                 };
 
-                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times.At(boneRotationTimeline->timesCount - 1);
+                f32 maxTimeOfRotationTimeline = boneRotationTimeline->times[boneRotationTimeline->timesCount - 1];
 
                 if (maxTimeOfRotationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfRotationTimeline;
@@ -243,7 +243,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
 
             if (translateTimeline_json)
             {
-                TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
+                TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines[boneIndex];
                 boneTranslationTimeline->exists = true;
                 boneTranslationTimeline->GetTransformationVal = &GetTransformationVal_TranslationTimeline;
 
@@ -253,8 +253,8 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                     boneTranslationTimeline->times[boneTranslationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
                     boneTranslationTimeline->translations[boneTranslationTimeline->translationCount++] = { 0.0f, 0.0f };
 
-                    boneTranslationTimeline->translations.At(keyFrameIndex).x = Json_getFloat(jsonKeyFrame, "x", 0.0f);
-                    boneTranslationTimeline->translations.At(keyFrameIndex).y = Json_getFloat(jsonKeyFrame, "y", 0.0f);
+                    boneTranslationTimeline->translations[keyFrameIndex].x = Json_getFloat(jsonKeyFrame, "x", 0.0f);
+                    boneTranslationTimeline->translations[keyFrameIndex].y = Json_getFloat(jsonKeyFrame, "y", 0.0f);
 
                     const char* keyFrameCurve = Json_getString(jsonKeyFrame, "curve", "");
                     if (StringCmp(keyFrameCurve, "stepped"))
@@ -263,7 +263,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                         boneTranslationTimeline->curves[boneTranslationTimeline->curvesCount++] = CurveType::LINEAR;
                 };
 
-                f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times.At(boneTranslationTimeline->timesCount - 1);
+                f32 maxTimeOfTranslationTimeline = boneTranslationTimeline->times[boneTranslationTimeline->timesCount - 1];
 
                 if (maxTimeOfTranslationTimeline > maxTimeOfAnimation)
                     maxTimeOfAnimation = maxTimeOfTranslationTimeline;
@@ -322,17 +322,17 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
                         deformedVerts_json = deformedVerts_json->next->next;
 
                         //Transform original verts into new transformed vert positions based on anim deformed verts
-                        v2f finalVertCoord = bone->originalCollisionBoxVerts.At(i) + adjustedCollisionBoxVerts.At(i);
+                        v2f finalVertCoord = bone->originalCollisionBoxVerts[i] + adjustedCollisionBoxVerts[i];
                         PushBack($(finalCollsionBoxVertCoords), finalVertCoord);
                     };
 
-                    v2f vector0_1 = finalCollsionBoxVertCoords.At(0) - finalCollsionBoxVertCoords.At(1);
-                    v2f vector1_2 = finalCollsionBoxVertCoords.At(1) - finalCollsionBoxVertCoords.At(2);
+                    v2f vector0_1 = finalCollsionBoxVertCoords[0] - finalCollsionBoxVertCoords[1];
+                    v2f vector1_2 = finalCollsionBoxVertCoords[1] - finalCollsionBoxVertCoords[2];
 
                     anim->hitBoxes[hitBoxIndex].size.width = Magnitude(vector0_1);
                     anim->hitBoxes[hitBoxIndex].size.height = Magnitude(vector1_2);
-                    anim->hitBoxes[hitBoxIndex].worldPosOffset = { (finalCollsionBoxVertCoords.At(0).x + finalCollsionBoxVertCoords.At(2).x) / 2.0f,
-                        (finalCollsionBoxVertCoords.At(0).y + finalCollsionBoxVertCoords.At(2).y) / 2.0f };
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset = { (finalCollsionBoxVertCoords[0].x + finalCollsionBoxVertCoords[2].x) / 2.0f,
+                        (finalCollsionBoxVertCoords[0].y + finalCollsionBoxVertCoords[2].y) / 2.0f };
                 }
             };
         }
@@ -376,10 +376,10 @@ void CopyAnimation(Animation src, Animation&& dest)
 
     for (i32 boneIndex {}; boneIndex < src.bones.Size(); ++boneIndex)
     {
-        CopyArray(src.boneTranslationTimelines.At(boneIndex).times, $(dest.boneTranslationTimelines.At(boneIndex).times));
-        CopyArray(src.boneTranslationTimelines.At(boneIndex).translations, $(dest.boneTranslationTimelines.At(boneIndex).translations));
-        CopyArray(src.boneRotationTimelines.At(boneIndex).times, $(dest.boneRotationTimelines.At(boneIndex).times));
-        CopyArray(src.boneRotationTimelines.At(boneIndex).angles, $(dest.boneRotationTimelines.At(boneIndex).angles));
+        CopyArray(src.boneTranslationTimelines[boneIndex].times, $(dest.boneTranslationTimelines[boneIndex].times));
+        CopyArray(src.boneTranslationTimelines[boneIndex].translations, $(dest.boneTranslationTimelines[boneIndex].translations));
+        CopyArray(src.boneRotationTimelines[boneIndex].times, $(dest.boneRotationTimelines[boneIndex].times));
+        CopyArray(src.boneRotationTimelines[boneIndex].angles, $(dest.boneRotationTimelines[boneIndex].angles));
     };
 };
 
@@ -467,12 +467,12 @@ i32 _CurrentActiveKeyFrame(TransformationTimelineType transformationTimelineOfBo
     i32 keyFrameCount = (i32)transformationTimelineOfBone.timesCount - 1;
 
     f32 keyFrameTime0 {};
-    f32 keyFrameTime1 = transformationTimelineOfBone.times.At(keyFrameCount);
+    f32 keyFrameTime1 = transformationTimelineOfBone.times[keyFrameCount];
 
     while (keyFrameCount)
     {
-        keyFrameTime0 = transformationTimelineOfBone.times.At(keyFrameCount - 1);
-        keyFrameTime1 = transformationTimelineOfBone.times.At(keyFrameCount);
+        keyFrameTime0 = transformationTimelineOfBone.times[keyFrameCount - 1];
+        keyFrameTime1 = transformationTimelineOfBone.times[keyFrameCount];
 
         if (keyFrameTime0 <= currentAnimRuntime && keyFrameTime1 > currentAnimRuntime)
         {
@@ -506,19 +506,19 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
     i32 firstKeyFrame { 0 }, lastKeyFrame { (i32)transformationTimelineOfBone.timesCount - 1 };
     if (transformationTimelineOfBone.timesCount == 1)
     {
-        if (currentAnimRunTime >= transformationTimelineOfBone.times.At(firstKeyFrame))
+        if (currentAnimRunTime >= transformationTimelineOfBone.times[firstKeyFrame])
         {
             result.transformation0 = transformationTimelineOfBone.GetTransformationVal(transformationTimelineOfBone, firstKeyFrame);
             result.transformation1 = result.transformation0;
             result.percentToLerp = 1.0f;
         };
     }
-    else if (currentAnimRunTime >= transformationTimelineOfBone.times.At(firstKeyFrame) && currentAnimRunTime < transformationTimelineOfBone.times.At(lastKeyFrame))
+    else if (currentAnimRunTime >= transformationTimelineOfBone.times[firstKeyFrame] && currentAnimRunTime < transformationTimelineOfBone.times[lastKeyFrame])
     {
         i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(transformationTimelineOfBone, currentAnimRunTime);
         BGZ_ASSERT(activeKeyFrameIndex != lastKeyFrame, "Should never be returning the last keyframe of timeline here!");
 
-        switch (transformationTimelineOfBone.curves.At(activeKeyFrameIndex))
+        switch (transformationTimelineOfBone.curves[activeKeyFrameIndex])
         {
         case CurveType::STEPPED: {
             result.transformation0 = transformationTimelineOfBone.GetTransformationVal(transformationTimelineOfBone, activeKeyFrameIndex);
@@ -532,8 +532,8 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
             result.transformation0 = transformationTimelineOfBone.GetTransformationVal(transformationTimelineOfBone, activeKeyFrameIndex);
             result.transformation1 = transformationTimelineOfBone.GetTransformationVal(transformationTimelineOfBone, activeKeyFrameIndex + 1);
 
-            f32 time0 = transformationTimelineOfBone.times.At(activeKeyFrameIndex);
-            f32 time1 = transformationTimelineOfBone.times.At(activeKeyFrameIndex + 1);
+            f32 time0 = transformationTimelineOfBone.times[activeKeyFrameIndex];
+            f32 time1 = transformationTimelineOfBone.times[activeKeyFrameIndex + 1];
 
             f32 diff0 = time1 - time0;
             f32 diff1 = currentAnimRunTime - time0;
@@ -544,7 +544,7 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
             InvalidDefaultCase;
         }
     }
-    else if (currentAnimRunTime >= transformationTimelineOfBone.times.At(lastKeyFrame))
+    else if (currentAnimRunTime >= transformationTimelineOfBone.times[lastKeyFrame])
     {
         result.transformation0 = transformationTimelineOfBone.GetTransformationVal(transformationTimelineOfBone, lastKeyFrame);
         result.transformation1 = result.transformation0;
@@ -562,7 +562,7 @@ TransformationRangeResult<transformationRangeType> _GetTransformationRangeFromKe
     result.transformation0 = initialTransformForMixing;
     result.transformation1 = transformationRangeType {};
 
-    if ((boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists && boneRotationTimeline_nextAnim.times.At(0) > 0.0f) || (boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists))
+    if ((boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists && boneRotationTimeline_nextAnim.times[0] > 0.0f) || (boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists))
     {
         //Leave transformation1 at default 0 value
     }
@@ -590,8 +590,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
             for (i32 boneIndex {}; boneIndex < anim.bones.Size(); ++boneIndex)
             {
-                anim.bones.At(boneIndex)->initialRotationForMixing = anim.boneRotations.At(boneIndex);
-                anim.bones.At(boneIndex)->initialTranslationForMixing = anim.boneTranslations.At(boneIndex);
+                anim.bones[boneIndex]->initialRotationForMixing = anim.boneRotations[boneIndex];
+                anim.bones[boneIndex]->initialTranslationForMixing = anim.boneTranslations[boneIndex];
             }
         }
 
@@ -664,14 +664,14 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     f32 maxTimeOfAnimation {};
     for (i32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
     {
-        const Bone* bone = anim->bones.At(boneIndex);
+        const Bone* bone = anim->bones[boneIndex];
 
         //Gather transformation timelines
         v2f amountOfTranslation { 0.0f, 0.0f };
         f32 amountOfRotation { 0.0f };
-        TranslationTimeline translationTimelineOfBone = anim->boneTranslationTimelines.At(boneIndex);
-        RotationTimeline rotationTimelineOfBone = anim->boneRotationTimelines.At(boneIndex);
-        ScaleTimeline scaleTimelineOfBone = anim->boneScaleTimelines.At(boneIndex);
+        TranslationTimeline translationTimelineOfBone = anim->boneTranslationTimelines[boneIndex];
+        RotationTimeline rotationTimelineOfBone = anim->boneRotationTimelines[boneIndex];
+        ScaleTimeline scaleTimelineOfBone = anim->boneScaleTimelines[boneIndex];
 
         Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
 
@@ -682,9 +682,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
                 TranslationTimeline nextAnimTranslationTimeline {};
                 if (nextAnimInQueue)
-                    nextAnimTranslationTimeline = nextAnimInQueue->boneTranslationTimelines.At(boneIndex);
+                    nextAnimTranslationTimeline = nextAnimInQueue->boneTranslationTimelines[boneIndex];
 
-                TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialTranslationForMixing);
+                TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, anim->bones[boneIndex]->initialTranslationForMixing);
                 amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
             }
             else
@@ -704,9 +704,9 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
 
                 RotationTimeline nextAnimRotationTimeline {};
                 if (nextAnimInQueue)
-                    nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines.At(boneIndex);
+                    nextAnimRotationTimeline = nextAnimInQueue->boneRotationTimelines[boneIndex];
 
-                TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, anim->bones.At(boneIndex)->initialRotationForMixing);
+                TransformationRangeResult<f32> rotationRange = _GetTransformationRangeFromKeyFrames<f32, RotationTimeline>(anim, rotationTimelineOfBone, nextAnimRotationTimeline, anim->currentTime, anim->bones[boneIndex]->initialRotationForMixing);
                 amountOfRotation = DetermineRotationAmountAndDirection(rotationRange, bone->length);
             }
             else
@@ -726,8 +726,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             //Implement
         }
 
-        anim->boneRotations.At(boneIndex) = amountOfRotation;
-        anim->boneTranslations.At(boneIndex) = amountOfTranslation;
+        anim->boneRotations[boneIndex] = amountOfRotation;
+        anim->boneTranslations[boneIndex] = amountOfTranslation;
     };
 
     Animation result;
@@ -768,10 +768,10 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
 
     for (i32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
     {
-        f32 boneRotationToAdd = anim.boneRotations.At(boneIndex);
+        f32 boneRotationToAdd = anim.boneRotations[boneIndex];
         skel.bones[boneIndex].parentBoneSpace.rotation += boneRotationToAdd;
 
-        v2f boneTranslationToAdd = anim.boneTranslations.At(boneIndex);
+        v2f boneTranslationToAdd = anim.boneTranslations[boneIndex];
         skel.bones[boneIndex].parentBoneSpace.translation += boneTranslationToAdd;
     };
 };

@@ -89,14 +89,14 @@ void Init(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterH
             {
                 for (i32 boneIndex {}; boneIndex < fighter.skel.bones.length; ++boneIndex)
                 {
-                    TranslationTimeline* translationTimeline = &anim.boneTranslationTimelines.At(boneIndex);
+                    TranslationTimeline* translationTimeline = &anim.boneTranslationTimelines[boneIndex];
                     
                     if (translationTimeline->exists)
                     {
                         for (i32 keyFrameIndex {}; keyFrameIndex < translationTimeline->timesCount; ++keyFrameIndex)
                         {
-                            translationTimeline->translations.At(keyFrameIndex).x *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
-                            translationTimeline->translations.At(keyFrameIndex).y *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
+                            translationTimeline->translations[keyFrameIndex].x *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
+                            translationTimeline->translations[keyFrameIndex].y *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
                         };
                     };
                 };

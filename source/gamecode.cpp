@@ -232,7 +232,7 @@ Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
     for (i32 vertIndex {}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
     {
         //This equation rotates first then moves to correct parent position
-        transformedCoords.vertices.At(vertIndex) = parentSpace.origin + (localCoords.vertices.At(vertIndex).x * parentSpace.xBasis) + (localCoords.vertices.At(vertIndex).y * parentSpace.yBasis);
+        transformedCoords.vertices[vertIndex] = parentSpace.origin + (localCoords.vertices[vertIndex].x * parentSpace.xBasis) + (localCoords.vertices[vertIndex].y * parentSpace.yBasis);
     };
 
     return transformedCoords;
@@ -276,17 +276,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             {
                 for (i32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
                 {
-                    TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines.At(boneIndex);
+                    TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines[boneIndex];
                     for (i32 keyFrameIndex {}; keyFrameIndex < boneTranslationTimeline->translations.Size(); ++keyFrameIndex)
                     {
-                        boneTranslationTimeline->translations.At(keyFrameIndex).x /= pixelsPerMeter;
-                        boneTranslationTimeline->translations.At(keyFrameIndex).y /= pixelsPerMeter;
+                        boneTranslationTimeline->translations[keyFrameIndex].x /= pixelsPerMeter;
+                        boneTranslationTimeline->translations[keyFrameIndex].y /= pixelsPerMeter;
                     }
 
-                    RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines.At(boneIndex);
+                    RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines[boneIndex];
                     for (i32 keyFrameIndex {}; keyFrameIndex < boneRotationTimeline->angles.Size(); ++keyFrameIndex)
                     {
-                        boneRotationTimeline->angles.At(keyFrameIndex) = Radians(boneRotationTimeline->angles.At(keyFrameIndex));
+                        boneRotationTimeline->angles[keyFrameIndex] = Radians(boneRotationTimeline->angles[keyFrameIndex]);
                     }
                 };
 
