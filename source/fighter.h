@@ -15,7 +15,6 @@ struct Fighter
     Skeleton skel;
     AnimationQueue animQueue;
     AnimationData animData;
-    Animation currentAnim;
     HitBox hitBox;
     HurtBox hurtBox;
 };

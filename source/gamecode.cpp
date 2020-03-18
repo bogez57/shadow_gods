@@ -410,11 +410,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
 
-    player->currentAnim = UpdateAnimationState($(player->animQueue), deltaT);
-    enemy->currentAnim = UpdateAnimationState($(enemy->animQueue), deltaT);
+    Animation playerCurrentAnim = UpdateAnimationState($(player->animQueue), deltaT);
+    Animation enemyCurrentAnim = UpdateAnimationState($(enemy->animQueue), deltaT);
 
-    ApplyAnimationToSkeleton($(player->skel), player->currentAnim);
-    ApplyAnimationToSkeleton($(enemy->skel), enemy->currentAnim);
+    ApplyAnimationToSkeleton($(player->skel), playerCurrentAnim);
+    ApplyAnimationToSkeleton($(enemy->skel), enemyCurrentAnim);
 
     UpdateSkeletonBoneWorldTransforms($(player->skel), player->world.translation);
     UpdateSkeletonBoneWorldTransforms($(enemy->skel), enemy->world.translation);
@@ -422,17 +422,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
 
-    for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.length; ++hitBoxIndex)
+    for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
     {
-        UpdateHitBoxStatus($(player->currentAnim.hitBoxes[hitBoxIndex]), player->currentAnim.currentTime);
+        UpdateHitBoxStatus($(playerCurrentAnim.hitBoxes[hitBoxIndex]), playerCurrentAnim.currentTime);
 
-        if (player->currentAnim.hitBoxes[hitBoxIndex].isActive)
+        if (playerCurrentAnim.hitBoxes[hitBoxIndex].isActive)
         {
-            player->currentAnim.hitBoxes[hitBoxIndex].pos_worldSpace = { 0.0f, 0.0f };
+            playerCurrentAnim.hitBoxes[hitBoxIndex].pos_worldSpace = { 0.0f, 0.0f };
 
-            Bone* bone = GetBoneFromSkeleton(&player->skel, player->currentAnim.hitBoxes[hitBoxIndex].boneName);
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->currentAnim.hitBoxes[hitBoxIndex]), bone->worldSpace.translation);
-            b collisionOccurred = CheckForFighterCollisions_AxisAligned(player->currentAnim.hitBoxes[hitBoxIndex], enemy->hurtBox);
+            Bone* bone = GetBoneFromSkeleton(&player->skel, playerCurrentAnim.hitBoxes[hitBoxIndex].boneName);
+            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(playerCurrentAnim.hitBoxes[hitBoxIndex]), bone->worldSpace.translation);
+            b collisionOccurred = CheckForFighterCollisions_AxisAligned(playerCurrentAnim.hitBoxes[hitBoxIndex], enemy->hurtBox);
 
             if (collisionOccurred)
                 BGZ_CONSOLE("ahhahha");
@@ -484,11 +484,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             PushRect(global_renderingInfo, playerTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
             PushRect(global_renderingInfo, enemyTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
 
-            for (i32 hitBoxIndex {}; hitBoxIndex < player->currentAnim.hitBoxes.length; ++hitBoxIndex)
+            for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
             {
-                Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(player->currentAnim.hitBoxes[hitBoxIndex].pos_worldSpace, player->currentAnim.hitBoxes[hitBoxIndex].size.width, player->currentAnim.hitBoxes[hitBoxIndex].size.height);
+                Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(playerCurrentAnim.hitBoxes[hitBoxIndex].pos_worldSpace, playerCurrentAnim.hitBoxes[hitBoxIndex].size.width, playerCurrentAnim.hitBoxes[hitBoxIndex].size.height);
 
-                if (player->currentAnim.hitBoxes[hitBoxIndex].isActive)
+                if (playerCurrentAnim.hitBoxes[hitBoxIndex].isActive)
                     PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
             };
         }
