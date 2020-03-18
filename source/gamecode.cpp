@@ -24,7 +24,7 @@
 global_variable i32 heap;
 
 #include "memory_handling.h"
-#include "variable_array.h"
+#include "runtime_array.h"
 #include "debug_array.h"
 #include "array.h"
 #include "dynamic_array.h"

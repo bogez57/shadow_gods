@@ -25,8 +25,8 @@ struct Bone
     f32 initialRotationForMixing {};
     f32 length {};
     Bone* parentBone { nullptr };
-    VarArray<v2f> originalCollisionBoxVerts;
-    VarArray<Bone*> childBones;
+    RunTimeArr<v2f> originalCollisionBoxVerts;
+    RunTimeArr<Bone*> childBones;
     b isRoot { false };
     const char* name { nullptr };
 };
@@ -42,8 +42,8 @@ struct Skeleton
 {
     Skeleton() = default;
 
-    VarArray<Bone> bones;
-    VarArray<Slot> slots;
+    RunTimeArr<Bone> bones;
+    RunTimeArr<Slot> slots;
     f32 width {}, height {};
 };
 
@@ -60,8 +60,8 @@ Skeleton CopySkeleton(Skeleton src);
 Bone InitBone(Memory_Partition&& memPart)
 {
     Bone bone{};
-    Initialize($(bone.originalCollisionBoxVerts), &memPart, 10);
-    Initialize($(bone.childBones), &memPart, 5);
+    InitArr($(bone.originalCollisionBoxVerts), &memPart, 10);
+    InitArr($(bone.childBones), &memPart, 5);
     
     return bone;
 };
@@ -89,7 +89,7 @@ void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath
 
         { //Read in Bone data
             i32 boneIndex {};
-            Initialize($(skel.bones), &memPart, jsonBones->size);
+            InitArr($(skel.bones), &memPart, jsonBones->size);
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
                 skel.bones.Push() = InitBone($(memPart));
@@ -140,7 +140,7 @@ void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath
 
         { //Read in Slot data
             i32 slotIndex {};
-            Initialize($(skel.slots), &memPart, jsonBones->size);
+            InitArr($(skel.slots), &memPart, jsonBones->size);
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
                 //Ignore creating slots here for collision boxes. Don't think I need it

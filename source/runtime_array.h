@@ -2,11 +2,11 @@
 #define VARIABLE_ARRAY_H
 
 template <typename Type>
-class VarArray
+class RunTimeArr
 {
 public:
-    VarArray() = default;
-    VarArray(Memory_Partition* memPart, i64 capacity)
+    RunTimeArr() = default;
+    RunTimeArr(Memory_Partition* memPart, i64 capacity)
     {
         this->capacity = capacity;
         this->elements = PushType(memPart, Type, capacity);
@@ -32,7 +32,7 @@ public:
 };
 
 template <typename Type>
-void Initialize(VarArray<Type>&& varArr, Memory_Partition* memPart, i64 capacity)
+void InitArr(RunTimeArr<Type>&& varArr, Memory_Partition* memPart, i64 capacity)
 {
     BGZ_ASSERT(varArr.capacity == 0, "Trying to initialize array twice!");
 
@@ -41,7 +41,7 @@ void Initialize(VarArray<Type>&& varArr, Memory_Partition* memPart, i64 capacity
 };
 
 template <typename Type>
-void CopyArray(VarArray<Type> sourceArray, VarArray<Type>&& destinationArray)
+void CopyArray(RunTimeArr<Type> sourceArray, RunTimeArr<Type>&& destinationArray)
 {
     BGZ_ASSERT(destinationArray.capacity == sourceArray.capacity, "Variable Array capacities do not match!");
     BGZ_ASSERT(destinationArray.elements == sourceArray.elements, "Both varialbe arrays pointing to same memory address");

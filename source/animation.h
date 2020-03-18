@@ -104,14 +104,14 @@ struct Animation
 
 struct AnimationMap
 {
-    VarArray<Animation> animations {};
-    VarArray<i32> keys {};
+    RunTimeArr<Animation> animations {};
+    RunTimeArr<i32> keys {};
 };
 
 void Init(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
 {
-    Initialize($(animMap.animations), &memPart, size);
-    Initialize($(animMap.keys), &memPart, size);
+    InitArr($(animMap.animations), &memPart, size);
+    InitArr($(animMap.keys), &memPart, size);
 };
 
 void InsertAnimation(AnimationMap&& animMap, const char* animName, Animation anim)
@@ -307,9 +307,9 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
 
                     Temporary_Memory collisionVertsTemp = BeginTemporaryMemory($(memPart));
                     {
-                        VarArray<v2f> adjustedCollisionBoxVerts, finalCollsionBoxVertCoords;
-                        Initialize($(adjustedCollisionBoxVerts), &memPart, 20);
-                        Initialize($(finalCollsionBoxVertCoords), &memPart, 20);
+                        RunTimeArr<v2f> adjustedCollisionBoxVerts, finalCollsionBoxVertCoords;
+                        InitArr($(adjustedCollisionBoxVerts), &memPart, 20);
+                        InitArr($(finalCollsionBoxVertCoords), &memPart, 20);
 
                         Json* collisionBoxDeformTimeline_json = Json_getItem(currentAnimation_json, "deform");
                         Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
