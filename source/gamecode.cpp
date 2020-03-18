@@ -344,10 +344,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Read in data
         Skeleton playerSkel {}, enemySkel {};
         AnimationData playerAnimData {}, enemyAnimData {};
-        Init($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        Init($(enemySkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json");
-        Init($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
-        Init($(enemyAnimData), $(*levelPart), "data/yellow_god.json", enemySkel);
+        InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        InitSkel($(enemySkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json");
+        InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
+        InitAnimData($(enemyAnimData), $(*levelPart), "data/yellow_god.json", enemySkel);
 
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
@@ -357,8 +357,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
         HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { -2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        Init($(*player), playerAnimData, playerSkel, /*player height*/ playerSkel.height, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false );
-        Init($(*enemy), enemyAnimData, enemySkel, /*player height*/ enemySkel.height, enemyDefaultHurtBox, enemyWorldPos, /*flipX*/ false );
+        InitFighter($(*player), playerAnimData, playerSkel, /*player height*/ playerSkel.height, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false );
+        InitFighter($(*enemy), enemyAnimData, enemySkel, /*player height*/ enemySkel.height, enemyDefaultHurtBox, enemyWorldPos, /*flipX*/ false );
 
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);

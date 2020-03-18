@@ -20,13 +20,13 @@ struct Fighter
     HurtBox hurtBox;
 };
 
-void Init(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox,v2f worldPos, b flipX);
+void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox,v2f worldPos, b flipX);
 
 #endif
 
 #ifdef FIGHTER_IMPL
 
-void Init(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox, v2f worldPos, b flipX = false)
+void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox, v2f worldPos, b flipX = false)
 {
     fighter.skel = skel;//Deep copy needed??
     fighter.animData = animData;

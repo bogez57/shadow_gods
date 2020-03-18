@@ -108,7 +108,7 @@ struct AnimationMap
     RunTimeArr<i32> keys {};
 };
 
-void Init(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
+void InitAnimMap(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
 {
     InitArr($(animMap.animations), &memPart, size);
     InitArr($(animMap.keys), &memPart, size);
@@ -162,7 +162,7 @@ struct AnimationQueue
     Ring_Buffer<Animation, 10> queuedAnimations;
 };
 
-void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel);
+void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel);
 void MixAnimations(AnimationData&& animData, const char* anim_from, const char* anim_to);
 void CopyAnimation(Animation src, Animation&& dest);
 void SetIdleAnimation(AnimationQueue&& animQueue, const AnimationData animData, const char* animName);
@@ -174,7 +174,7 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 #ifdef ANIMATION_IMPL
 
-void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel)
+void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel)
 {
     i32 length;
 
@@ -184,7 +184,7 @@ void Init(AnimationData&& animData, Memory_Partition&& memPart, const char* anim
     root = Json_create(jsonFile);
     Json* animations = Json_getItem(root, "animations"); /* clang-format off */BGZ_ASSERT(animations, "Unable to return valid json object!"); /* clang-format on */
 
-    Init($(animData.animMap), $(memPart), 20);
+    InitAnimMap($(animData.animMap), $(memPart), 20);
 
     i32 animIndex {};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)

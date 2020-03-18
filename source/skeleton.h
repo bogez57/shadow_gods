@@ -47,7 +47,7 @@ struct Skeleton
     f32 width {}, height {};
 };
 
-void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath);
+void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath);
 Bone InitBone(Memory_Partition&& memPart);
 Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName);
 void ResetBonesToSetupPose(Skeleton&& skeleton);
@@ -66,7 +66,7 @@ Bone InitBone(Memory_Partition&& memPart)
     return bone;
 };
 
-void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath)
+void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath)
 {
     i32 length;
 
@@ -149,8 +149,7 @@ void Init(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath
                 if (NOT StringCmp(slotName_firstThreeLetters, "box"))
                 {
                     //Insert slot info in reverse order to get correct draw order (since json file has the draw order flipped from spine application)
-                    Slot newSlot {};
-                    skel.slots.Push() = newSlot;
+                    skel.slots.Push() = Slot{};
                     Slot* slot = &skel.slots[slotIndex];
 
                     slot->name = (char*)Json_getString(currentSlot_json, "name", 0);
