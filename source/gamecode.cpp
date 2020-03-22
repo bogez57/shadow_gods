@@ -456,6 +456,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
                 Quadf region_worldSpaceCoords = ParentTransform(region_boneSpaceCoords, currentSlot->bone->worldSpace);
                 
+                region->page->rendererObject.normalMap.rotation = currentSlot->bone->worldSpace.rotation;
+                region->page->rendererObject.normalMap.scale = currentSlot->bone->worldSpace.scale;
+                region->page->rendererObject.normalMap.lightAngle = 1.0f;
+                region->page->rendererObject.normalMap.lightThreshold = 1.0f;
+                
                 PushTexture(global_renderingInfo, region_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
             };
         };

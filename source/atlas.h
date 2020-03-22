@@ -70,10 +70,10 @@ struct AtlasPage
     AtlasFormat format;
     AtlasFilter minFilter, magFilter;
     AtlasWrap uWrap, vWrap;
-
+    
     Image rendererObject;
     i32 width{0}, height{0};
-
+    
     AtlasPage* next{nullptr};
 };
 
@@ -92,9 +92,9 @@ struct AtlasRegion
     b32 flip{false};
     i32* splits{nullptr};
     i32* pads{nullptr};
-
+    
     AtlasPage* page{nullptr};
-
+    
     AtlasRegion* next{nullptr};
 };
 
@@ -105,7 +105,7 @@ struct Atlas
 {
     AtlasPage* pages{nullptr};
     AtlasRegion* regions{nullptr};
-
+    
     void* rendererObject{nullptr};
 };
 
@@ -132,7 +132,11 @@ AtlasRegion* Atlas_findRegion(const Atlas* self, const char* name);
 void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 {
     Image bitmap = LoadBitmap_BGRA(path);
-
+    
+    Image normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
+    
+    bitmap.normalMap.mapData = normalMap.data;
+    
     self->rendererObject = bitmap;
     self->width = bitmap.width_pxls;
     self->height = bitmap.height_pxls;
@@ -142,7 +146,7 @@ void _AtlasPage_disposeTexture(AtlasPage* self)
 {
     BGZ_ERRCTXT1("When disposing of texture in spine's atlaspage");
     BGZ_ASSERT(self->rendererObject.data, "Texture does not exist!");
-
+    
     DeAlloc(heap, self->rendererObject.data);
     self->width = 0;
     self->height = 0;
@@ -189,14 +193,14 @@ static i32 readLine(const char** begin, const char* end, Str* str)
     if (*begin == end)
         return 0;
     str->begin = *begin;
-
+    
     /* Find next delimiter. */
     while (*begin != end && **begin != '\n')
         (*begin)++;
-
+    
     str->end = *begin;
     trim(str);
-
+    
     if (*begin != end)
         (*begin)++;
     return 1;
@@ -237,7 +241,7 @@ static i32 readTuple(const char** begin, const char* end, Str tuple[])
     readLine(begin, end, &str);
     if (!beginPast(&str, ':'))
         return 0;
-
+    
     for (i = 0; i < 3; ++i)
     {
         tuple[i].begin = str.begin;
@@ -267,7 +271,7 @@ static i32 indexOf(const char** array, i32 count, Str* str)
     i32 i;
     for (i = count - 1; i >= 0; i--)
         if (strncmp(array[i], str->begin, length) == 0)
-            return i;
+        return i;
     return 0;
 }
 
@@ -309,21 +313,21 @@ static const char* textureFilterNames[] = { "", "Nearest", "Linear", "MipMap", "
 Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendererObject)
 {
     Atlas* self;
-
+    
     i64 count;
     const char* end = begin + length;
     i64 dirLength = (i64)strlen(dir);
     i64 needsSlash = dirLength > 0 && dir[dirLength - 1] != '/' && dir[dirLength - 1] != '\\';
-
+    
     AtlasPage* page = 0;
     AtlasPage* lastPage = 0;
     AtlasRegion* lastRegion = 0;
     Str str;
     Str tuple[4];
-
+    
     self = CallocType(heap, Atlas, 1);
     self->rendererObject = rendererObject;
-
+    
     while (readLine(&begin, end, &str))
     {
         if (str.end - str.begin == 0)
@@ -338,7 +342,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
             if (needsSlash)
                 path[dirLength] = '/';
             strcpy(path + dirLength + needsSlash, name);
-
+            
             page = AtlasPage_create(self, name);
             DeAlloc(heap, name);
             if (lastPage)
@@ -346,27 +350,27 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
             else
                 self->pages = page;
             lastPage = page;
-
+            
             switch (readTuple(&begin, end, tuple))
             {
-            case 0:
+                case 0:
                 return abortAtlas(self);
-            case 2: /* size is only optional for an atlas packed with an old TexturePacker. */
+                case 2: /* size is only optional for an atlas packed with an old TexturePacker. */
                 page->width = toInt(tuple);
                 page->height = toInt(tuple + 1);
                 if (!readTuple(&begin, end, tuple))
                     return abortAtlas(self);
             }
             page->format = (AtlasFormat)indexOf(formatNames, 8, tuple);
-
+            
             if (!readTuple(&begin, end, tuple))
                 return abortAtlas(self);
             page->minFilter = (AtlasFilter)indexOf(textureFilterNames, 8, tuple);
             page->magFilter = (AtlasFilter)indexOf(textureFilterNames, 8, tuple + 1);
-
+            
             if (!readValue(&begin, end, &str))
                 return abortAtlas(self);
-
+            
             page->uWrap = ATLAS_CLAMPTOEDGE;
             page->vWrap = ATLAS_CLAMPTOEDGE;
             if (!equals(&str, "none"))
@@ -384,7 +388,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                     page->vWrap = ATLAS_REPEAT;
                 }
             }
-
+            
             _AtlasPage_createTexture(page, path);
             DeAlloc(heap, path);
         }
@@ -396,26 +400,26 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
             else
                 self->regions = region;
             lastRegion = region;
-
+            
             region->page = page;
             region->name = mallocString(&str);
-
+            
             if (!readValue(&begin, end, &str))
                 return abortAtlas(self);
             region->rotate = equals(&str, "true");
-
+            
             if (readTuple(&begin, end, tuple) != 2)
                 return abortAtlas(self);
             region->x = toInt(tuple);
             region->y = toInt(tuple + 1);
-
+            
             if (readTuple(&begin, end, tuple) != 2)
                 return abortAtlas(self);
             region->width = toInt(tuple);
             region->height = toInt(tuple + 1);
-
+            
             region->y = (page->height - region->y) - region->height;//Flip y so origin is bottom left instead of topleft
-
+            
             region->u = region->x / (float)page->width;
             region->v = region->y / (float)page->height;
             if (region->rotate)
@@ -428,7 +432,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                 region->u2 = (region->x + region->width) / (float)page->width;
                 region->v2 = (region->y + region->height) / (float)page->height;
             }
-
+            
             count = readTuple(&begin, end, tuple);
             if (!count)
                 return abortAtlas(self);
@@ -439,7 +443,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                 region->splits[1] = toInt(tuple + 1);
                 region->splits[2] = toInt(tuple + 2);
                 region->splits[3] = toInt(tuple + 3);
-
+                
                 count = readTuple(&begin, end, tuple);
                 if (!count)
                     return abortAtlas(self);
@@ -450,25 +454,25 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
                     region->pads[1] = toInt(tuple + 1);
                     region->pads[2] = toInt(tuple + 2);
                     region->pads[3] = toInt(tuple + 3);
-
+                    
                     if (!readTuple(&begin, end, tuple))
                         return abortAtlas(self);
                 }
             }
-
+            
             region->originalWidth = toInt(tuple);
             region->originalHeight = toInt(tuple + 1);
-
+            
             readTuple(&begin, end, tuple);
             region->offsetX = toInt(tuple);
             region->offsetY = toInt(tuple + 1);
-
+            
             if (!readValue(&begin, end, &str))
                 return abortAtlas(self);
             region->index = toInt(&str);
         }
     }
-
+    
     return self;
 };
 
@@ -477,9 +481,9 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
     i32 dirLength;
     char* dir;
     i32 length;
-
+    
     Atlas* atlas = 0;
-
+    
     /* Get directory from atlas path. */
     const char* lastForwardSlash = strrchr(path, '/');
     const char* lastBackwardSlash = strrchr(path, '\\');
@@ -490,17 +494,17 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
     dir = MallocType(heap, char, dirLength + 1);
     memcpy(dir, path, dirLength);
     dir[dirLength] = '\0';
-
+    
     const char* fileData = globalPlatformServices->ReadEntireFile($(length), path);
-
+    
     if (fileData)
         atlas = CreateAtlas(fileData, length, dir, rendererObject);
     else
         InvalidCodePath;
-
+    
     globalPlatformServices->Free((void*)fileData);
     DeAlloc(heap, dir);
-
+    
     return atlas;
 }
 
@@ -514,7 +518,7 @@ void Atlas_dispose(Atlas* self)
         AtlasPage_dispose(page);
         page = nextPage;
     }
-
+    
     region = self->regions;
     while (region)
     {
@@ -522,7 +526,7 @@ void Atlas_dispose(Atlas* self)
         AtlasRegion_dispose(region);
         region = nextRegion;
     }
-
+    
     DeAlloc(heap, self);
 }
 
