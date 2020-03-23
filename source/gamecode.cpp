@@ -357,7 +357,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
         HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         //HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { -2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        InitFighter($(*player), playerAnimData, playerSkel, /*player height*/ playerSkel.height, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false );
+        InitFighter($(*player), playerAnimData, playerSkel, /*player height*/ 20.0f, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false );
         //InitFighter($(*enemy), enemyAnimData, enemySkel, /*player height*/ enemySkel.height, enemyDefaultHurtBox, enemyWorldPos, /*flipX*/ false );
         
         MixAnimations($(player->animData), "idle", "walk", .2f);
@@ -445,7 +445,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     { //Render
         auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex { 0 }; slotIndex < fighter.skel.slots.length; ++slotIndex)
+            for (i32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
                 

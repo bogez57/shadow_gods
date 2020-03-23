@@ -1,7 +1,7 @@
 {
 "skeleton": {
-	"hash": "bA8YL7P3asid0NWJdJX1fRrW9k8",
-	"spine": "3.8.77",
+	"hash": "IDREWn4wLfcX04bYsSR44z1S41E",
+	"spine": "3.8.79",
 	"x": -261.69,
 	"y": -2.81,
 	"width": 503.37,
@@ -674,28 +674,10 @@
 	},
 	"idle": {
 		"bones": {
-			"left-shoulder": {
+			"right-forearm": {
 				"rotate": [
-					{ "curve": "stepped" },
-					{ "time": 1.0667 }
-				],
-				"translate": [
 					{},
-					{ "time": 0.4, "x": 18.58, "y": -2.51 },
-					{ "time": 0.8333, "x": -7.33, "y": 3.99 },
-					{ "time": 1.0667 }
-				]
-			},
-			"right-shoulder": {
-				"rotate": [
-					{ "curve": "stepped" },
-					{ "time": 1.0667 }
-				],
-				"translate": [
-					{},
-					{ "time": 0.4, "x": 18.58, "y": -2.51 },
-					{ "time": 0.8333, "x": -7.33, "y": 3.99 },
-					{ "time": 1.0667 }
+					{ "time": 9, "angle": 177.11 }
 				]
 			}
 		}
