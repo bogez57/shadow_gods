@@ -688,15 +688,16 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                     ui8* normalPtr = ((ui8*)normalMap.mapData) + ((ui32)texelPos_y * texture.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
                     
                     //Grab 4 normals (in a square pattern) to blend
-                    v4ui32 normalSquare = Grab4NearestPixelPtrs_SquarePattern(normalPtr, texture.pitch_pxls);
+                    v4ui32 normalSquare_inRGBSpace = Grab4NearestPixelPtrs_SquarePattern(normalPtr, texture.pitch_pxls);
                     
-                    v4f blendedNormal = BiLinearLerp(normalSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
+                    v4f blendedNormal_inRGBSspace = BiLinearLerp(normalSquare_inRGBSpace, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
                     
                     //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
                     f32 inv255 = 1.0f / 255.0f;
-                    blendedNormal.x = -1.0f + 2.0f * (inv255 * blendedNormal.x);
-                    blendedNormal.y = -1.0f + 2.0f * (inv255 * blendedNormal.y);
-                    blendedNormal.z = -1.0f + 2.0f * (inv255 * blendedNormal.z);
+                    v4f blendedNormal{};
+                    blendedNormal.x = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.r);
+                    blendedNormal.y = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.g);
+                    blendedNormal.z = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.b);
                     
                     { //Rotating and scaling normals (supports non-uniform scaling of normal x and y)
                         v2f normalXBasis = v2f { CosR(normalMap.rotation), SinR(normalMap.rotation) };

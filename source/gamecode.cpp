@@ -466,10 +466,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
         
         //Push background
-#if 0
-        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
+#if 1
+        //Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
-        PushTexture(global_renderingInfo, targetRect_worldCoords, stage->backgroundImg, stage->size.height, uvs, "background");
+        //PushTexture(global_renderingInfo, targetRect_worldCoords, stage->backgroundImg, stage->size.height, uvs, "background");
+        PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
 #endif
         
         //Push Fighters
@@ -483,6 +484,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             PushRect(global_renderingInfo, boneRect, { 1.0f, 0.0f, 0.0f });
         }
         
+#if 0
         { //Draw collision boxes
             Quadf playerTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->hurtBox.size.width, player->hurtBox.size.height);
             //Quadf enemyTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, enemy->hurtBox.size.width, enemy->hurtBox.size.height);
@@ -501,6 +503,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                     PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
             };
         }
+#endif
     };
     
     IsAllTempMemoryCleared(framePart);
