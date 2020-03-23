@@ -675,6 +675,9 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
                 v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
                 
+                if(StringCmp(texture.name, "right-foot"))
+                    int x{};
+                
                 //Linearly Blend with background - Assuming Pre-multiplied alpha
                 v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
@@ -755,7 +758,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                             shadePixel = true;
                     }
                     
-                    if (shadePixel && finalBlendedColor.a > 100.0f)
+                    if (shadePixel && newBlendedTexel.a > 100.0f)
                     {
                         //Shade pixel
                         *destPixel = ((0xFF << 24) | (0 << 16) | (0 << 8) | (0 << 0));
