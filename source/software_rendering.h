@@ -544,6 +544,14 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
     };
 };
 
+b IsBetween(f32 angleToCheck, f32 startAngle, f32 endAngle)
+{
+    endAngle = (endAngle - startAngle) < 0.0f ? (endAngle - startAngle) + (2*PI) : endAngle - startAngle;
+    angleToCheck = (angleToCheck - startAngle) < 0.0f ? (angleToCheck - startAngle) + (2*PI) : angleToCheck - startAngle;
+    
+    return (angleToCheck < endAngle);
+};
+
 //TODO: Will eventually be removed
 local_func void
 DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, RenderEntry_Texture texture, Rectf clipRect)
@@ -675,7 +683,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
                 v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
                 
-                if(StringCmp(texture.name, "right-foot"))
+                if(StringCmp(texture.name, "right-forearm"))
                     int x{};
                 
                 //Linearly Blend with background - Assuming Pre-multiplied alpha
@@ -749,6 +757,25 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                             }
                         };
                         
+                        f32 thresholdAngle1 = normalMap.lightAngle - normalMap.lightThreshold;
+                        f32 thresholdAngle2 = normalMap.lightAngle + normalMap.lightThreshold;
+                        
+                        if(thresholdAngle1 < 0.0f)
+                            ConvertNegativeToPositiveAngle_Radians($(thresholdAngle1));
+                        else if (thresholdAngle1 > 2*PI)
+                            ConvertToCorrectPositiveRadian($(thresholdAngle1));
+                        
+                        if(thresholdAngle2 < 0.0f)
+                            ConvertNegativeToPositiveAngle_Radians($(thresholdAngle2));
+                        else if (thresholdAngle1 > 2*PI)
+                            ConvertToCorrectPositiveRadian($(thresholdAngle2));
+                        
+                        if(IsBetween(normalAngle, thresholdAngle1, thresholdAngle2))
+                            shadePixel = false;
+                        else
+                            shadePixel = true;
+                        
+#if 0
                         f32 maxAngle = Max(normalMap.lightAngle, normalAngle);
                         f32 minAngle = Min(normalMap.lightAngle, normalAngle);
                         f32 shadeThreholdDirection1 = maxAngle - minAngle;
@@ -756,6 +783,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                         
                         if (shadeThreholdDirection1 > normalMap.lightThreshold || shadeThreholdDirection2 < normalMap.lightThreshold)
                             shadePixel = true;
+#endif
                     }
                     
                     if (shadePixel && newBlendedTexel.a > 100.0f)

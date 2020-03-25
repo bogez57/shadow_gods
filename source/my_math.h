@@ -104,7 +104,7 @@ SinD(f32 angleInDegrees)
 {
     f32 angleInRadians = Radians(angleInDegrees);
     f32 result = sinf(angleInRadians);
-
+    
     return result;
 };
 
@@ -113,7 +113,7 @@ InvSinD(f32 angleInDegrees)
 {
     f32 angleInRadians = Radians(angleInDegrees);
     f32 result = asinf(angleInRadians);
-
+    
     return result;
 };
 
@@ -122,7 +122,7 @@ CosD(f32 angleInDegrees)
 {
     f32 angleInRadians = Radians(angleInDegrees);
     f32 result = cosf(angleInRadians);
-
+    
     return result;
 };
 
@@ -131,7 +131,7 @@ InvCosD(f32 angleInDegrees)
 {
     f32 angleInRadians = Radians(angleInDegrees);
     f32 result = acosf(angleInRadians);
-
+    
     return result;
 };
 
@@ -140,7 +140,7 @@ TanD(f32 angleInDegrees)
 {
     f32 angleInRadians = Radians(angleInDegrees);
     f32 result = tanf(angleInRadians);
-
+    
     return result;
 };
 
@@ -149,7 +149,7 @@ InvTanD(f32 angleInDegrees)
 {
     f32 angleInRadians = Radians(angleInDegrees);
     f32 result = atanf(angleInRadians);
-
+    
     return result;
 };
 
@@ -186,11 +186,11 @@ RoundUp(sizet NumToRound, sizet Multiple)
 {
     if (Multiple == 0)
         return NumToRound;
-
+    
     sizet Remainder = NumToRound % Multiple;
     if (Remainder == 0)
         return NumToRound;
-
+    
     return NumToRound + Multiple - Remainder;
 };
 
@@ -199,11 +199,11 @@ RoundDown(sizet NumToRound, sizet Multiple)
 {
     if (Multiple == 0)
         return NumToRound;
-
+    
     sizet Remainder = NumToRound % Multiple;
     if (Remainder == 0)
         return NumToRound;
-
+    
     return NumToRound - Remainder;
 };
 
@@ -235,19 +235,19 @@ PerpendicularOp(v2f A)
     return(Result);
 }
 
-inline f32 
+inline f32
 DotProduct(v2f a, v2f b)
 {
     f32 result = a.x*b.x + a.y*b.y;
-
+    
     return(result);
 }
 
-inline f32 
+inline f32
 DotProduct(v3f a, v3f b)
 {
     f32 result = a.x*b.x + a.y*b.y + a.z*b.z;
-
+    
     return(result);
 }
 
@@ -255,7 +255,7 @@ inline v2f
 Hadamard(v2f a, v2f b)
 {
     v2f result = {a.x*b.x, a.y*b.y};
-
+    
     return(result);
 }
 
@@ -263,7 +263,7 @@ inline v3f
 Hadamard(v3f a, v3f b)
 {
     v3f result = {a.x*b.x, a.y*b.y, a.z*b.z};
-
+    
     return(result);
 }
 
@@ -273,19 +273,19 @@ CrossProduct(v2f a, v2f b)
     return a.x * b.y - a.y * b.x;
 }
 
-inline f32 
+inline f32
 MagnitudeSqd(v2f a)
 {
     f32 result = DotProduct(a,a);
-
+    
     return(result);
 }
 
-inline f32 
+inline f32
 MagnitudeSqd(v3f a)
 {
     f32 result = DotProduct(a,a);
-
+    
     return(result);
 }
 
@@ -307,7 +307,7 @@ inline f32
 Lerp(f32 a, f32 b, f32 t)
 {
     f32 result = (1.0f - t)*a + t*b;
-
+    
     return(result);
 }
 
@@ -315,7 +315,7 @@ inline v4f
 Lerp(v4f a, v4f b, f32 t)
 {
     v4f result = (1.0f - t)*a + t*b;
-
+    
     return(result);
 }
 
@@ -323,7 +323,7 @@ inline v2f
 Lerp(v2f a, v2f b, f32 t)
 {
     v2f result = (1.0f - t)*a + t*b;
-
+    
     return(result);
 }
 

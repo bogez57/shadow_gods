@@ -64,62 +64,62 @@ global_variable bool GameRunning {};
 namespace Win32::Dbg
 {
     local_func auto
-    LogErr(const char* ErrMessage) -> void
+        LogErr(const char* ErrMessage) -> void
     {
         BGZ_CONSOLE("Windows error code: %d\n", GetLastError());
         BGZ_CONSOLE(ErrMessage);
     };
-
+    
     local_func auto
-    Malloc(sizet Size) -> void*
+        Malloc(sizet Size) -> void*
     {
         void* Result {};
-
+        
         Result = malloc(Size);
-
+        
         return Result;
     };
-
+    
     local_func auto
-    Calloc(sizet Count, sizet Size) -> void*
+        Calloc(sizet Count, sizet Size) -> void*
     {
         void* Result {};
-
+        
         Result = calloc(Count, Size);
-
+        
         return Result;
     };
-
+    
     local_func auto
-    Realloc(void* ptr, sizet size) -> void*
+        Realloc(void* ptr, sizet size) -> void*
     {
         void* result {};
-
+        
         result = realloc(ptr, size);
-
+        
         return result;
     };
-
+    
     local_func auto
-    Free(void* PtrToFree) -> void
+        Free(void* PtrToFree) -> void
     {
         free(PtrToFree);
     };
-
+    
     local_func auto
-    FreeFileMemory(void* FileMemory)
+        FreeFileMemory(void* FileMemory)
     {
         if (FileMemory)
         {
             VirtualFree(FileMemory, 0, MEM_RELEASE);
         }
     };
-
+    
     local_func auto
-    WriteEntireFile(const char* FileName, void* memory, ui32 MemorySize) -> bool
+        WriteEntireFile(const char* FileName, void* memory, ui32 MemorySize) -> bool
     {
         b32 Result = false;
-
+        
         HANDLE FileHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
         if (FileHandle != INVALID_HANDLE_VALUE)
         {
@@ -134,7 +134,7 @@ namespace Win32::Dbg
                 Win32::Dbg::LogErr("Unable to write to file!");
                 InvalidCodePath;
             }
-
+            
             CloseHandle(FileHandle);
         }
         else
@@ -142,133 +142,133 @@ namespace Win32::Dbg
             Win32::Dbg::LogErr("Unable to create file handle!");
             InvalidCodePath;
         }
-
+        
         return (Result);
     };
-
+    
     local_func auto
-    ReadEntireFile(i32&& length, const char* FilePath) -> char*
+        ReadEntireFile(i32&& length, const char* FilePath) -> char*
     {
         char* data;
         FILE* file;
         errno_t err;
-
+        
         if ((err = fopen_s(&file, FilePath, "rb")) != 0)
         {
             InvalidCodePath;
         };
-
+        
         fseek(file, 0, SEEK_END);
         length = (i32)ftell(file);
         fseek(file, 0, SEEK_SET);
-
+        
         data = (char*)malloc(length);
         fread(data, 1, length, file);
-
+        
         fclose(file);
-
+        
         return data;
     };
-
+    
     local_func auto
-    LoadBGRAImage(const char* ImagePath, i32&& width, i32&& height) -> ui8*
+        LoadBGRAImage(const char* ImagePath, i32&& width, i32&& height) -> ui8*
     {
         stbi_set_flip_vertically_on_load(true); //So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
-
+        
         i32 numOfLoadedChannels {};
         i32 desiredChannels { 4 }; //Since I still draw assuming 4 byte pixels I need 4 channels
-
+        
         //Returns RGBA
         unsigned char* imageData = stbi_load(ImagePath, &width, &height, &numOfLoadedChannels, desiredChannels);
         BGZ_ASSERT(imageData, "Invalid image data!");
-
+        
         i32 totalPixelCountOfImg = width * height;
         ui32* imagePixel = (ui32*)imageData;
-
+        
         //Swap R and B channels of image
         for (int i = 0; i < totalPixelCountOfImg; ++i)
         {
             auto color = UnPackPixelValues(*imagePixel, RGBA);
-
+            
             //Pre-multiplied alpha
             f32 alphaBlend = color.a / 255.0f;
             color.rgb *= alphaBlend;
-
+            
             ui32 newSwappedPixelColor = (((ui8)color.a << 24) | ((ui8)color.r << 16) | ((ui8)color.g << 8) | ((ui8)color.b << 0));
-
+            
             *imagePixel++ = newSwappedPixelColor;
         }
-
+        
         return (ui8*)imageData;
     }
-
+    
     local_func auto
-    UseConsole() -> void
+        UseConsole() -> void
     {
         //Create a console for this application
         AllocConsole();
-
+        
         // Get STDOUT handle
         HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
         int SystemOutput = _open_osfhandle(intptr_t(ConsoleOutput), _O_TEXT);
         FILE* COutputHandle = _fdopen(SystemOutput, "w");
-
+        
         // Get STDERR handle
         HANDLE ConsoleError = GetStdHandle(STD_ERROR_HANDLE);
         int SystemError = _open_osfhandle(intptr_t(ConsoleError), _O_TEXT);
         FILE* CErrorHandle = _fdopen(SystemError, "w");
-
+        
         // Get STDIN handle
         HANDLE ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
         int SystemInput = _open_osfhandle(intptr_t(ConsoleInput), _O_TEXT);
         FILE* CInputHandle = _fdopen(SystemInput, "r");
-
+        
         // Redirect the CRT standard input, output, and error handles to the console
         freopen_s(&CInputHandle, "CONIN$", "r", stdin);
         freopen_s(&COutputHandle, "CONOUT$", "w", stdout);
         freopen_s(&CErrorHandle, "CONOUT$", "w", stderr);
     };
-
+    
     inline auto
-    GetFileTime(const char* FileName) -> FILETIME
+        GetFileTime(const char* FileName) -> FILETIME
     {
         FILETIME TimeFileWasLastWrittenTo {};
         WIN32_FILE_ATTRIBUTE_DATA FileData {};
-
+        
         if (GetFileAttributesEx(FileName, GetFileExInfoStandard, &FileData))
         {
             TimeFileWasLastWrittenTo = FileData.ftLastWriteTime;
         }
-
+        
         return TimeFileWasLastWrittenTo;
     }
-
+    
     local_func auto
-    LoadGameCodeDLL(const char* GameCodeDLL) -> Game_Code
+        LoadGameCodeDLL(const char* GameCodeDLL) -> Game_Code
     {
         Game_Code GameCode {};
         const char* GameCodeTempDLL = "w:/shadow_gods/build/game_temp.dll";
-
+        
         GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
-
+        
         //Copy app code dll file to a temp file and load that temp file so that original app code dll can be written to while exe
         //is running. This is For live editing purposes. Code is currently being looped because the modified source dll that gets compiled
         //apparently isn't unlocked by Windows in time for it to be copied upon the first few CopyFile() function calls.
         bool CopyFileFuncNotWorking { true };
         ui32 Counter {};
         ui32 MaxAllowedLoops { 5000 };
-
+        
         while (CopyFileFuncNotWorking)
         {
             if (CopyFile(GameCodeDLL, GameCodeTempDLL, FALSE) != 0)
             {
                 GameCode.DLLHandle = LoadLibrary(GameCodeTempDLL);
-
+                
                 if (GameCode.DLLHandle)
                 {
                     GameCode.UpdateFunc = (GameUpdateFuncPtr)GetProcAddress(GameCode.DLLHandle, "GameUpdate");
                     CopyFileFuncNotWorking = false;
-
+                    
                     if (!GameCode.UpdateFunc)
                     {
                         InvalidCodePath;
@@ -279,21 +279,21 @@ namespace Win32::Dbg
                     InvalidCodePath;
                 }
             };
-
+            
             ++Counter;
-
+            
             if (Counter == MaxAllowedLoops)
             {
                 //DLL took too long to be unlocked by windows so breaking exe to avoid possible infinite loop
                 InvalidCodePath;
             }
         };
-
+        
         return GameCode;
     };
-
+    
     local_func auto
-    FreeGameCodeDLL(Game_Code&& GameCode, Platform_Services&& platformServices) -> void
+        FreeGameCodeDLL(Game_Code&& GameCode, Platform_Services&& platformServices) -> void
     {
         if (GameCode.DLLHandle != INVALID_HANDLE_VALUE)
         {
@@ -303,35 +303,35 @@ namespace Win32::Dbg
             platformServices.DLLJustReloaded = true;
         };
     };
-
+    
     local_func auto
-    InitInputRecording(Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
+        InitInputRecording(Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
     {
         GameReplayState.InputRecording = true;
         GameReplayState.TotalInputStructsRecorded = 0;
         GameReplayState.InputCount = 0;
         memcpy(GameReplayState.OriginalRecordedGameState, gameMemory.permanentStorage, gameMemory.totalSize);
     };
-
+    
     local_func auto
-    RecordInput(const Game_Input* Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
+        RecordInput(const Game_Input* Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
     {
         GameReplayState.RecordedInputs[GameReplayState.InputCount] = *Input;
         ++GameReplayState.InputCount;
         ++GameReplayState.TotalInputStructsRecorded;
     };
-
+    
     local_func auto
-    InitInputPlayBack(Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
+        InitInputPlayBack(Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
     {
         GameReplayState.InputPlayBack = true;
         GameReplayState.InputCount = 0;
         //Set game state back to when it was first recorded for proper looping playback
         memcpy(gameMemory.permanentStorage, GameReplayState.OriginalRecordedGameState, gameMemory.totalSize);
     }
-
+    
     local_func auto
-    EndInputPlayBack(Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
+        EndInputPlayBack(Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
     {
         GameReplayState.InputPlayBack = false;
         for (ui32 ControllerIndex { 0 }; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
@@ -342,9 +342,9 @@ namespace Win32::Dbg
             }
         }
     };
-
+    
     local_func auto
-    PlayBackInput(Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
+        PlayBackInput(Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
     {
         if (GameReplayState.InputCount < GameReplayState.TotalInputStructsRecorded)
         {
@@ -362,35 +362,35 @@ namespace Win32::Dbg
 namespace Win32
 {
     local_func Window_Dimension
-    GetWindowDimension(HWND window)
+        GetWindowDimension(HWND window)
     {
         Window_Dimension Result;
-
+        
         RECT ClientRect;
         GetClientRect(window, &ClientRect);
-
+        
         Result.width = ClientRect.right - ClientRect.left;
         Result.height = ClientRect.bottom - ClientRect.top;
-
+        
         return (Result);
     };
-
+    
     local_func void
-    ResizeDIBSection(Win32::Offscreen_Buffer&& buffer, int width, int height)
+        ResizeDIBSection(Win32::Offscreen_Buffer&& buffer, int width, int height)
     {
         // TODO: Bulletproof this.
         // Maybe don't free first, free after, then free first if that fails.
-
+        
         if (buffer.memory)
         {
             VirtualFree(buffer.memory, 0, MEM_RELEASE);
         }
-
+        
         buffer.width = width;
         buffer.height = height;
-
+        
         buffer.bytesPerPixel = 4;
-
+        
         // When the biHeight field is negative, this is the clue to
         // Windows to treat this bitmap as top-down, not bottom-up, meaning that
         // the first three bytes of the image are the color for the top left pixel
@@ -401,19 +401,19 @@ namespace Win32
         buffer.Info.bmiHeader.biPlanes = 1;
         buffer.Info.bmiHeader.biBitCount = 32;
         buffer.Info.bmiHeader.biCompression = BI_RGB;
-
+        
         // Thank you to Chris Hecker of Spy Party fame
         // for clarifying the deal with StretchDIBits and BitBlt!
         // No more DC for us.
         int BitmapMemorySize = (buffer.width * buffer.height) * buffer.bytesPerPixel;
         buffer.memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
         buffer.pitch = width * buffer.bytesPerPixel;
-
+        
         // TODO: Probably clear this to black
     }
-
+    
     local_func void
-    DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
+        DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
         b renderThroughHardware { false };
         if (renderThroughHardware)
@@ -422,35 +422,35 @@ namespace Win32
         else
         {
             RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i { globalBackBuffer.width, globalBackBuffer.height }, globalBackBuffer.pitch, &platformServices);
-
+            
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
             PatBlt(deviceContext, 0, globalBackBuffer.height, windowWidth, windowHeight, BLACKNESS);
             PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
             PatBlt(deviceContext, globalBackBuffer.width, 0, windowWidth, windowHeight, BLACKNESS);
-
+            
             { //Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
                 v2i displayRect_BottomLeftCoords { 0, 0 };
                 v2i displayRect_Dimensions {};
                 displayRect_Dimensions.width = globalBackBuffer.width;
                 displayRect_Dimensions.height = globalBackBuffer.height;
-
+                
                 //Copy game's rendered back buffer to whatever display area size you want
                 StretchDIBits(deviceContext,
-                    displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
-                    0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
-                    globalBackBuffer.memory,
-                    &globalBackBuffer.Info,
-                    DIB_RGB_COLORS, SRCCOPY);
+                              displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
+                              0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
+                              globalBackBuffer.memory,
+                              &globalBackBuffer.Info,
+                              DIB_RGB_COLORS, SRCCOPY);
             };
         };
-
+        
         //Clear out command buffer
         renderingInfo.cmdBuffer.usedAmount = 0;
     };
-
+    
     local_func auto
-    ProcessKeyboardMessage(Button_State&& NewState, b32 IsDown) -> void
+        ProcessKeyboardMessage(Button_State&& NewState, b32 IsDown) -> void
     {
         if (NewState.Pressed != IsDown)
         {
@@ -458,255 +458,255 @@ namespace Win32
             ++NewState.NumTransitionsPerFrame;
         }
     }
-
+    
     local_func auto
-    ProcessPendingMessages(Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
+        ProcessPendingMessages(Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
     {
         MSG Message;
         while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
         {
             switch (Message.message)
             {
-            case WM_QUIT: {
-                GameRunning = false;
-            }
-            break;
-
-            case WM_SYSKEYDOWN:
-            case WM_SYSKEYUP:
-            case WM_KEYDOWN:
-            case WM_KEYUP: {
-                ui32 VKCode = (ui32)Message.wParam;
-
-                Game_Controller* Keyboard = &Input.Controllers[0];
-
-                //Since we are comparing IsDown and WasDown below to filter out key repeats, we need to use == and !=
-                //to convert these bit tests to actual 0 or 1 values.
-                b32 WasDown = ((Message.lParam & (1 << 30)) != 0);
-                b32 IsDown = ((Message.lParam & (1 << 31)) == 0);
-
-                if (WasDown != IsDown) //Filter out key repeats as my current input scheme is already able to react to held down inputs properly
-                {
-                    if (VKCode == 'W')
+                case WM_QUIT: {
+                    GameRunning = false;
+                }
+                break;
+                
+                case WM_SYSKEYDOWN:
+                case WM_SYSKEYUP:
+                case WM_KEYDOWN:
+                case WM_KEYUP: {
+                    ui32 VKCode = (ui32)Message.wParam;
+                    
+                    Game_Controller* Keyboard = &Input.Controllers[0];
+                    
+                    //Since we are comparing IsDown and WasDown below to filter out key repeats, we need to use == and !=
+                    //to convert these bit tests to actual 0 or 1 values.
+                    b32 WasDown = ((Message.lParam & (1 << 30)) != 0);
+                    b32 IsDown = ((Message.lParam & (1 << 31)) == 0);
+                    
+                    if (WasDown != IsDown) //Filter out key repeats as my current input scheme is already able to react to held down inputs properly
                     {
-                        Win32::ProcessKeyboardMessage($(Keyboard->MoveUp), IsDown);
-                    }
-                    else if (VKCode == 'S')
-                    {
-                        Win32::ProcessKeyboardMessage($(Keyboard->MoveDown), IsDown);
-                    }
-                    else if (VKCode == 'A')
-                    {
-                        Win32::ProcessKeyboardMessage($(Keyboard->MoveLeft), IsDown);
-                    }
-                    else if (VKCode == 'D')
-                    {
-                        Win32::ProcessKeyboardMessage($(Keyboard->MoveRight), IsDown);
-                    }
-                    else if (VKCode == 'X')
-                    {
-                        Win32::ProcessKeyboardMessage($(Keyboard->ActionUp), IsDown);
-                    }
-                    else if (VKCode == 'Z')
-                    {
-                        Win32::ProcessKeyboardMessage($(Keyboard->ActionDown), IsDown);
-                    }
-                    else if (VKCode == 'I')
-                    {
-                        Win32::ProcessKeyboardMessage($(Keyboard->ActionRight), IsDown);
-                    }
-                    else if (VKCode == 'U')
-                    {
-                        Win32::ProcessKeyboardMessage($(Keyboard->ActionLeft), IsDown);
-                    }
-                    else if (VKCode == 'R')
-                    {
-                        if (IsDown)
+                        if (VKCode == 'W')
                         {
-                            if (!GameReplayState.InputRecording)
+                            Win32::ProcessKeyboardMessage($(Keyboard->MoveUp), IsDown);
+                        }
+                        else if (VKCode == 'S')
+                        {
+                            Win32::ProcessKeyboardMessage($(Keyboard->MoveDown), IsDown);
+                        }
+                        else if (VKCode == 'A')
+                        {
+                            Win32::ProcessKeyboardMessage($(Keyboard->MoveLeft), IsDown);
+                        }
+                        else if (VKCode == 'D')
+                        {
+                            Win32::ProcessKeyboardMessage($(Keyboard->MoveRight), IsDown);
+                        }
+                        else if (VKCode == 'X')
+                        {
+                            Win32::ProcessKeyboardMessage($(Keyboard->ActionUp), IsDown);
+                        }
+                        else if (VKCode == 'Z')
+                        {
+                            Win32::ProcessKeyboardMessage($(Keyboard->ActionDown), IsDown);
+                        }
+                        else if (VKCode == 'I')
+                        {
+                            Win32::ProcessKeyboardMessage($(Keyboard->ActionRight), IsDown);
+                        }
+                        else if (VKCode == 'U')
+                        {
+                            Win32::ProcessKeyboardMessage($(Keyboard->ActionLeft), IsDown);
+                        }
+                        else if (VKCode == 'R')
+                        {
+                            if (IsDown)
                             {
-                                InitInputRecording($(GameReplayState));
-                            }
-                            else
-                            {
-                                GameReplayState.InputRecording = false;
+                                if (!GameReplayState.InputRecording)
+                                {
+                                    InitInputRecording($(GameReplayState));
+                                }
+                                else
+                                {
+                                    GameReplayState.InputRecording = false;
+                                }
                             }
                         }
-                    }
-                    else if (VKCode == 'L')
-                    {
-                        if (IsDown)
+                        else if (VKCode == 'L')
                         {
-                            if (!GameReplayState.InputPlayBack)
+                            if (IsDown)
                             {
-                                Win32::Dbg::InitInputPlayBack($(GameReplayState));
-                            }
-                            else
-                            {
-                                Win32::Dbg::EndInputPlayBack($(Input), $(GameReplayState));
+                                if (!GameReplayState.InputPlayBack)
+                                {
+                                    Win32::Dbg::InitInputPlayBack($(GameReplayState));
+                                }
+                                else
+                                {
+                                    Win32::Dbg::EndInputPlayBack($(Input), $(GameReplayState));
+                                }
                             }
                         }
-                    }
-                    else if (VKCode == VK_UP)
-                    {
-                    }
-                    else if (VKCode == VK_LEFT)
-                    {
-                    }
-                    else if (VKCode == VK_DOWN)
-                    {
-                    }
-                    else if (VKCode == VK_RIGHT)
-                    {
-                    }
-                    else if (VKCode == VK_ESCAPE)
-                    {
-                    }
-                    else if (VKCode == VK_SPACE)
-                    {
+                        else if (VKCode == VK_UP)
+                        {
+                        }
+                        else if (VKCode == VK_LEFT)
+                        {
+                        }
+                        else if (VKCode == VK_DOWN)
+                        {
+                        }
+                        else if (VKCode == VK_RIGHT)
+                        {
+                        }
+                        else if (VKCode == VK_ESCAPE)
+                        {
+                        }
+                        else if (VKCode == VK_SPACE)
+                        {
+                        }
                     }
                 }
-            }
-
-            default: {
-                TranslateMessage(&Message);
-                DispatchMessageA(&Message);
-            }
-            break;
+                
+                default: {
+                    TranslateMessage(&Message);
+                    DispatchMessageA(&Message);
+                }
+                break;
             }
         }
     };
-
+    
     LRESULT CALLBACK
-    ProgramWindowCallback(HWND WindowHandle, UINT Message, WPARAM wParam, LPARAM lParam)
+        ProgramWindowCallback(HWND WindowHandle, UINT Message, WPARAM wParam, LPARAM lParam)
     {
         LRESULT Result { 0 };
-
+        
         //For hardware rendering
         HDC WindowContext = GetDC(WindowHandle);
-
+        
         switch (Message)
         {
-        case WM_CREATE: {
-            if (WindowContext)
-            {
-                { //Init OpenGL
-                    //Pixel format you would like to have if possible
-                    PIXELFORMATDESCRIPTOR DesiredPixelFormat {};
-                    //Pixel format that windows actually gives you based on your desired pixel format and what the system
-                    //acutally has available (32 bit color capabilites? etc.)
-                    PIXELFORMATDESCRIPTOR SuggestedPixelFormat {};
-
-                    DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
-                    DesiredPixelFormat.nVersion = 1;
-                    DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
-                    DesiredPixelFormat.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
-                    DesiredPixelFormat.cColorBits = 32;
-                    DesiredPixelFormat.cAlphaBits = 8;
-                    DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
-
-                    int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowContext, &DesiredPixelFormat);
-                    DescribePixelFormat(WindowContext, SuggestedPixelFormatIndex, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
-
-                    if (SetPixelFormat(WindowContext, SuggestedPixelFormatIndex, &SuggestedPixelFormat))
-                    {
-                        HGLRC OpenGLRenderingContext = wglCreateContext(WindowContext);
-
-                        if (OpenGLRenderingContext)
+            case WM_CREATE: {
+                if (WindowContext)
+                {
+                    { //Init OpenGL
+                        //Pixel format you would like to have if possible
+                        PIXELFORMATDESCRIPTOR DesiredPixelFormat {};
+                        //Pixel format that windows actually gives you based on your desired pixel format and what the system
+                        //acutally has available (32 bit color capabilites? etc.)
+                        PIXELFORMATDESCRIPTOR SuggestedPixelFormat {};
+                        
+                        DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
+                        DesiredPixelFormat.nVersion = 1;
+                        DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
+                        DesiredPixelFormat.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+                        DesiredPixelFormat.cColorBits = 32;
+                        DesiredPixelFormat.cAlphaBits = 8;
+                        DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
+                        
+                        int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowContext, &DesiredPixelFormat);
+                        DescribePixelFormat(WindowContext, SuggestedPixelFormatIndex, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
+                        
+                        if (SetPixelFormat(WindowContext, SuggestedPixelFormatIndex, &SuggestedPixelFormat))
                         {
-                            if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
+                            HGLRC OpenGLRenderingContext = wglCreateContext(WindowContext);
+                            
+                            if (OpenGLRenderingContext)
                             {
-                                glViewport(0, 0, globalWindowWidth, globalWindowHeight);
-
-                                //Success! We have a current openGL context. Now setup glew
-                                if (glewInit() == GLEW_OK)
+                                if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
                                 {
-                                    if (WGLEW_EXT_swap_control)
+                                    glViewport(0, 0, globalWindowWidth, globalWindowHeight);
+                                    
+                                    //Success! We have a current openGL context. Now setup glew
+                                    if (glewInit() == GLEW_OK)
                                     {
-                                        //Turn Vsync on/off
-                                        wglSwapIntervalEXT(0);
+                                        if (WGLEW_EXT_swap_control)
+                                        {
+                                            //Turn Vsync on/off
+                                            wglSwapIntervalEXT(0);
+                                        }
+                                        else
+                                        {
+                                            Win32::Dbg::LogErr("Failed to find opengl swap interval extention on computer!");
+                                        }
                                     }
                                     else
                                     {
-                                        Win32::Dbg::LogErr("Failed to find opengl swap interval extention on computer!");
+                                        ReleaseDC(WindowHandle, WindowContext);
+                                        InvalidCodePath;
                                     }
                                 }
                                 else
                                 {
                                     ReleaseDC(WindowHandle, WindowContext);
+                                    Win32::Dbg::LogErr("Unable to make opengl context the current context!");
                                     InvalidCodePath;
                                 }
                             }
                             else
                             {
                                 ReleaseDC(WindowHandle, WindowContext);
-                                Win32::Dbg::LogErr("Unable to make opengl context the current context!");
+                                Win32::Dbg::LogErr("Unable to create an opengl rendering context!");
                                 InvalidCodePath;
                             }
                         }
                         else
                         {
                             ReleaseDC(WindowHandle, WindowContext);
-                            Win32::Dbg::LogErr("Unable to create an opengl rendering context!");
+                            Win32::Dbg::LogErr("Unable to set the pixel format for potential opengl window!");
                             InvalidCodePath;
                         }
-                    }
-                    else
-                    {
-                        ReleaseDC(WindowHandle, WindowContext);
-                        Win32::Dbg::LogErr("Unable to set the pixel format for potential opengl window!");
-                        InvalidCodePath;
-                    }
-
-                    glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
-                } //Init OpenGL
+                        
+                        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+                    } //Init OpenGL
+                }
+                else
+                {
+                    Win32::Dbg::LogErr("Unable to get window context from window!");
+                    InvalidCodePath;
+                }
             }
-            else
-            {
-                Win32::Dbg::LogErr("Unable to get window context from window!");
-                InvalidCodePath;
-            }
-        }
-        break;
-
-        case WM_PAINT: {
-            //To understand why you need a display buffer call here as well as game loop, see this post:
-            //https://hero.handmade.network/forums/code-discussion/t/825-wm_paint_question_beginner
-            PAINTSTRUCT Paint;
-            HDC deviceContext = BeginPaint(WindowHandle, &Paint);
+            break;
+            
+            case WM_PAINT: {
+                //To understand why you need a display buffer call here as well as game loop, see this post:
+                //https://hero.handmade.network/forums/code-discussion/t/825-wm_paint_question_beginner
+                PAINTSTRUCT Paint;
+                HDC deviceContext = BeginPaint(WindowHandle, &Paint);
 #if 0
-            Win32::Window_Dimension windowDimension = GetWindowDimension(WindowHandle);
-            Win32::DisplayBufferInWindow(deviceContext, windowDimension.width, windowDimension.height);
+                Win32::Window_Dimension windowDimension = GetWindowDimension(WindowHandle);
+                Win32::DisplayBufferInWindow(deviceContext, windowDimension.width, windowDimension.height);
 #endif
-            EndPaint(WindowHandle, &Paint);
+                EndPaint(WindowHandle, &Paint);
+            }
+            break;
+            
+            case WM_DESTROY: {
+                GameRunning = false;
+            }
+            break;
+            
+            case WM_CLOSE: {
+                GameRunning = false;
+            }
+            break;
+            
+            case WM_ACTIVATEAPP: {
+            }
+            break;
+            
+            default: {
+                Result = DefWindowProc(WindowHandle, Message, wParam, lParam);
+            }
+            break;
         }
-        break;
-
-        case WM_DESTROY: {
-            GameRunning = false;
-        }
-        break;
-
-        case WM_CLOSE: {
-            GameRunning = false;
-        }
-        break;
-
-        case WM_ACTIVATEAPP: {
-        }
-        break;
-
-        default: {
-            Result = DefWindowProc(WindowHandle, Message, wParam, lParam);
-        }
-        break;
-        }
-
+        
         return Result;
     };
-
+    
     local_func auto
-    ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State&& GameButtonState, DWORD XInputButtonBit)
+        ProcessXInputDigitalButton(DWORD XInputButtonState, Button_State&& GameButtonState, DWORD XInputButtonBit)
     {
         if (GameButtonState.Pressed != ((XInputButtonState & XInputButtonBit) == XInputButtonBit))
         {
@@ -714,12 +714,12 @@ namespace Win32
             ++GameButtonState.NumTransitionsPerFrame;
         }
     }
-
+    
     local_func auto
-    NormalizeAnalogStickValue(SHORT Value, SHORT DeadZoneThreshold) -> f32
+        NormalizeAnalogStickValue(SHORT Value, SHORT DeadZoneThreshold) -> f32
     {
         f32 Result = 0;
-
+        
         if (Value < -DeadZoneThreshold)
         {
             Result = (f32)((Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold));
@@ -728,7 +728,7 @@ namespace Win32
         {
             Result = (f32)((Value - DeadZoneThreshold) / (32767.0f - DeadZoneThreshold));
         }
-
+        
         return (Result);
     }
 } // namespace Win32
@@ -760,14 +760,14 @@ void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
 {
     i32 newNextEntryToWrite = (globalWorkQueue.nextEntryToWrite + 1) % ArrayCount(globalWorkQueue.entries);
     Assert(newNextEntryToWrite != globalWorkQueue.nextEntryToRead);
-
+    
     Work_Queue_Entry entry { callback, data };
     globalWorkQueue.entries[globalWorkQueue.nextEntryToWrite] = entry;
     ++globalWorkQueue.entryCompletionGoal;
-
+    
     _WriteBarrier();
     _mm_sfence();
-
+    
     ++globalWorkQueue.nextEntryToWrite = newNextEntryToWrite;
     ReleaseSemaphore(globalWorkQueue.semaphoreHandle, 1, 0);
 };
@@ -779,7 +779,7 @@ void FinishAllWork()
     {
         DoWork();
     };
-
+    
     globalWorkQueue.entryCompletionCount = 0;
     globalWorkQueue.entryCompletionGoal = 0;
 };
@@ -787,28 +787,28 @@ void FinishAllWork()
 b DoWork()
 {
     b isThereStillWork {};
-
+    
     i32 originalNextEntryToRead = globalWorkQueue.nextEntryToRead;
     i32 newNextEntryToRead = (originalNextEntryToRead + 1) % ArrayCount(globalWorkQueue.entries);
     if (originalNextEntryToRead != globalWorkQueue.nextEntryToWrite)
     {
         i32 entryIndex = _InterlockedCompareExchange((LONG volatile*)&globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
         _ReadBarrier();
-
+        
         if (entryIndex == originalNextEntryToRead)
         {
             Work_Queue_Entry entry = globalWorkQueue.entries[entryIndex];
             entry.callback(entry.data);
             _InterlockedIncrement((LONG volatile*)&globalWorkQueue.entryCompletionCount);
         };
-
+        
         isThereStillWork = true;
     }
     else
     {
         isThereStillWork = false;
     }
-
+    
     return isThereStillWork;
 };
 
@@ -816,7 +816,7 @@ DWORD WINAPI
 ThreadProc(LPVOID param)
 {
     Thread_Info* info = (Thread_Info*)param;
-
+    
     while (1)
     {
         if (DoWork())
@@ -828,42 +828,42 @@ ThreadProc(LPVOID param)
             WaitForSingleObjectEx(globalWorkQueue.semaphoreHandle, INFINITE, FALSE);
         }
     };
-
+    
     return 0;
 };
 
 int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowCode)
 {
     Win32::Dbg::UseConsole();
-
+    
     Thread_Info threadInfo[8] = {};
     i32 threadCount = ArrayCount(threadInfo);
-
+    
     i32 initialThreadCount = 0;
     globalWorkQueue.semaphoreHandle = CreateSemaphoreExA(0, initialThreadCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
-
+    
     for (i32 threadIndex {}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
     {
-
+        
         Thread_Info* info = threadInfo + threadIndex;
         info->logicalThreadIndex = threadIndex;
-
+        
         DWORD threadID;
         HANDLE myThread = CreateThread(0, 0, ThreadProc, info, 0, &threadID);
     };
-
+    
     //Set scheduler granularity to help ensure we are able to put thread to sleep by the amount of time specified and no longer
     UINT DesiredSchedulerGranularityMS = 1;
     BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR, "Error when trying to set windows granularity!");
-
+    
     Win32::ResizeDIBSection($(globalBackBuffer), globalWindowWidth, globalWindowHeight);
-
+    
     WNDCLASS WindowProperties {};
     WindowProperties.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
     WindowProperties.lpfnWndProc = Win32::ProgramWindowCallback;
     WindowProperties.hInstance = CurrentProgramInstance;
     WindowProperties.lpszClassName = "MemoWindowClass";
-
+    
     if (RegisterClass(&WindowProperties))
     {
         //Since CreateWindowEx function expects the TOTAL window size (including pixels for title bar, borders etc.)
@@ -874,21 +874,21 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         BOOL success = AdjustWindowRectEx(&rect, windowStyles, false, 0);
         if (NOT success)
             InvalidCodePath;
-
+        
         HWND window = CreateWindowEx(0, WindowProperties.lpszClassName, "Shadow Gods", WS_VISIBLE | WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0, CurrentProgramInstance, 0);
-
+                                     CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0, CurrentProgramInstance, 0);
+        
         HDC WindowContext = GetDC(window);
-
+        
         if (window && WindowContext)
         {
-
+            
 #if DEVELOPMENT_BUILD
             void* baseAddress { (void*)Terabytes(2) };
 #else
             void* baseAddress { (void*)0 };
 #endif
-
+            
             Game_Input Input {};
             Game_Sound_Output_Buffer SoundBuffer {};
             Rendering_Info renderingInfo {};
@@ -896,27 +896,27 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
-
+            
             InitApplicationMemory(&gameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
-
+            
             Memory_Partition* framePart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
             Memory_Partition* levelPart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
-
+            
             { //Init render command buffer and other render stuff
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.totalSize + 1);
                 renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
                 renderingInfo.cmdBuffer.size = Megabytes(5);
                 renderingInfo.cmdBuffer.entryCount = 0;
                 renderingInfo.cmdBuffer.usedAmount = 0;
-
+                
                 renderingInfo._pixelsPerMeter = globalBackBuffer.height * .10f;
             }
-
+            
             { //Init input recording and replay services
                 GameReplayState.RecordedInputs = (Game_Input*)VirtualAlloc(0, (sizeof(Game_Input) * Win32::Dbg::MaxAllowableRecordedInputs), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
                 GameReplayState.OriginalRecordedGameState = VirtualAlloc(0, gameMemory.totalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             }
-
+            
             { //Init game services
                 platformServices.WriteEntireFile = &Win32::Dbg::WriteEntireFile;
                 platformServices.ReadEntireFile = &Win32::Dbg::ReadEntireFile;
@@ -929,102 +929,102 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.AddWorkQueueEntry = &AddToWorkQueue;
                 platformServices.FinishAllWork = &FinishAllWork;
             }
-
+            
             ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();
             int GameRefreshRate {};
             f32 TargetSecondsPerFrame {};
-
+            
             switch (MonitorRefreshRate)
             {
-            case 30: {
-                GameRefreshRate = MonitorRefreshRate;
-                TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
-            }
-            break;
-
-            case 40: {
-                GameRefreshRate = MonitorRefreshRate;
-                TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
-            }
-            break;
-
-            case 60: {
-                GameRefreshRate = MonitorRefreshRate;
-                TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
-            }
-            break;
-            case 120: {
-                GameRefreshRate = MonitorRefreshRate / 2;
-                TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
-            }
-            break;
-            default:
+                case 30: {
+                    GameRefreshRate = MonitorRefreshRate;
+                    TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
+                }
+                break;
+                
+                case 40: {
+                    GameRefreshRate = MonitorRefreshRate;
+                    TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
+                }
+                break;
+                
+                case 60: {
+                    GameRefreshRate = MonitorRefreshRate;
+                    TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
+                }
+                break;
+                case 120: {
+                    GameRefreshRate = MonitorRefreshRate / 2;
+                    TargetSecondsPerFrame = 1.0f / (f32)GameRefreshRate;
+                }
+                break;
+                default:
                 InvalidCodePath; //Unkown monitor refresh rate
             };
-
+            
             GameRunning = true;
-
+            
             platformServices.targetFrameTimeInSecs = TargetSecondsPerFrame;
-
+            
             bgz::Timer FramePerformanceTimer {};
             FramePerformanceTimer.Init();
-
+            
             auto UpdateInput = [](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
                 for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                 {
                     ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                 }
-
+                
                 //Poll Keyboard Input
                 Win32::ProcessPendingMessages($(Input), $(GameReplayState));
-
+                
                 { //Poll GamePad Input(s)
                     for (DWORD ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     {
                         Game_Controller* MyGamePad = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
-
+                        
                         XINPUT_STATE ControllerState;
                         if (XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
                         {
                             if (ControllerIndex == ArrayCount(Input.Controllers)) //Since index 0 is reserved for keyboard
                                 break;
-
+                            
                             //This controller is plugged in
                             XINPUT_GAMEPAD* XGamePad = &ControllerState.Gamepad;
                             MyGamePad->IsConnected = true;
-
+                            
                             MyGamePad->LThumbStick.x = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
                             MyGamePad->LThumbStick.y = Win32::NormalizeAnalogStickValue(XGamePad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-
+                            
                             if ((MyGamePad->LThumbStick.x != 0.0f) || (MyGamePad->LThumbStick.y != 0.0f))
                             {
                                 MyGamePad->IsAnalog = true;
                             }
-
+                            
                             if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_UP)
                             {
                                 MyGamePad->LThumbStick.y = 1.0f;
                                 MyGamePad->IsAnalog = false;
                             }
-
+                            
                             if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)
                             {
                                 MyGamePad->LThumbStick.y = -1.0f;
                                 MyGamePad->IsAnalog = false;
                             }
-
+                            
                             if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)
                             {
                                 MyGamePad->LThumbStick.x = -1.0f;
                                 MyGamePad->IsAnalog = false;
                             }
-
+                            
                             if (XGamePad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)
                             {
                                 MyGamePad->LThumbStick.x = 1.0f;
                                 MyGamePad->IsAnalog = false;
                             }
-
+                            
                             Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveUp), XINPUT_GAMEPAD_DPAD_UP);
                             Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveDown), XINPUT_GAMEPAD_DPAD_DOWN);
                             Win32::ProcessXInputDigitalButton(XGamePad->wButtons, $(MyGamePad->MoveLeft), XINPUT_GAMEPAD_DPAD_LEFT);
@@ -1046,14 +1046,14 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     }
                 };
             };
-
+            
             while (GameRunning)
             {
                 Win32::Window_Dimension windowDimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
                 Win32::ResizeDIBSection($(globalBackBuffer), windowDimension.width, windowDimension.height);
                 renderingInfo._pixelsPerMeter = globalBackBuffer.height * .10f;
-
+                
                 //Hot reloading
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("w:/shadow_gods/build/gamecode.dll");
                 if (CompareFileTime(&NewGameCodeDLLWriteTime, &GameCode.PreviousDLLWriteTime) != 0)
@@ -1061,33 +1061,33 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::FreeGameCodeDLL($(GameCode), $(platformServices));
                     GameCode = Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll");
                 }
-
-#if 0
+                
+#if 1
                 //helps to prevent overly large detlatimes from getting passed when using debugger and breakpoints
                 if (platformServices.prevFrameTimeInSecs > 1.0f / 30.0f)
                     platformServices.prevFrameTimeInSecs = 1.0f / 30.0f;
 #endif
-
+                
                 //TODO: Should we poll more frequently?
                 UpdateInput($(Input), $(GameReplayState));
-
+                
                 if (GameReplayState.InputRecording)
                 {
                     Win32::Dbg::RecordInput(&Input, $(GameReplayState));
                 }
-
+                
                 if (GameReplayState.InputPlayBack)
                 {
                     Win32::Dbg::PlayBackInput($(Input), $(GameReplayState));
                 }
-
+                
                 GameCode.UpdateFunc(&gameMemory, &platformServices, &renderingInfo, &SoundBuffer, &Input);
-
+                
                 Input = Input;
                 GameReplayState = GameReplayState;
-
+                
                 f32 SecondsElapsedForWork = FramePerformanceTimer.SecondsElapsed();
-
+                
                 if (SecondsElapsedForWork < TargetSecondsPerFrame)
                 {
                     DWORD MSToSleep = (DWORD)(1000.0f * (TargetSecondsPerFrame - SecondsElapsedForWork));
@@ -1097,19 +1097,19 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 {
                     //BGZ_CONSOLE("Missed our frame rate!!!\n");
                 }
-
+                
                 Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, windowDimension.width, windowDimension.height, platformServices);
                 ReleaseDC(window, deviceContext);
-
+                
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
                 BGZ_CONSOLE("Frame time: %f\n", frameTimeInMS);
-
+                
                 platformServices.prevFrameTimeInSecs = FramePerformanceTimer.SecondsElapsed();
                 platformServices.realLifeTimeInSecs += platformServices.prevFrameTimeInSecs;
-
+                
                 FramePerformanceTimer.UpdateTimeCount();
             };
-
+            
             //Hardware Rendering shutdown procedure
             wglMakeCurrent(NULL, NULL);
             ReleaseDC(window, WindowContext);
@@ -1125,6 +1125,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         Win32::Dbg::LogErr("Window properties could not be registered!");
         InvalidCodePath;
     }
-
+    
     return 0;
 }

@@ -445,7 +445,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     { //Render
         auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length; ++slotIndex)
+            for (i32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length - 1; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
                 
@@ -453,8 +453,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
                 
                 Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
-                Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
-                Quadf region_worldSpaceCoords = ParentTransform(region_boneSpaceCoords, currentSlot->bone->worldSpace);
+                //Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
+                Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, currentSlot->bone->worldSpace);
                 
                 region->page->rendererObject.normalMap.rotation = currentSlot->bone->worldSpace.rotation;
                 region->page->rendererObject.normalMap.scale = currentSlot->bone->worldSpace.scale;
