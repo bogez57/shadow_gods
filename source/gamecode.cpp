@@ -45,6 +45,7 @@ global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
 global_variable Skeleton playerSkel;
+global_variable f32 currentRotation;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
@@ -359,38 +360,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (KeyHeld(keyboard->MoveRight))
     {
-        player->world.translation.x += .1f;
-        QueueAnimation($(player->animQueue), player->animData, "walk", PlayBackStatus::NEXT);
-    };
-    
-    if (KeyHeld(keyboard->MoveLeft))
-    {
-        player->world.translation.x -= .1f;
-    }
-    
-    if (KeyHeld(keyboard->MoveUp))
-    {
-        stage->camera.zoomFactor += .06f;
-    };
-    
-    if (KeyHeld(keyboard->MoveDown))
-    {
-        stage->camera.zoomFactor -= .02f;
-    };
-    
-    if (KeyPressed(keyboard->ActionLeft))
-    {
-        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::IMMEDIATE);
-    };
-    
-    if (KeyComboHeld(keyboard->ActionLeft, keyboard->MoveRight))
-    {
-        QueueAnimation($(player->animQueue), player->animData, "run", PlayBackStatus::DEFAULT);
-    }
-    
-    if (KeyPressed(keyboard->ActionRight))
-    {
-        QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
+        currentRotation += .01f;
     };
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
@@ -401,7 +371,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             AtlasRegion* region_image = &region->region_image;
             Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
             
-            Transform transform { {10.0f, 5.0f} /*Translation*/, 2.0f /*Rotation*/, {1.0f, 1.0f} /*Scale*/};
+            Transform transform { {30.0f, 15.0f} /*Translation*/, currentRotation, {2.0f, 2.0f} /*Scale*/};
             Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
             Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
             
