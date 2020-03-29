@@ -105,8 +105,6 @@ struct Atlas
 {
     AtlasPage* pages{nullptr};
     AtlasRegion* regions{nullptr};
-    
-    void* rendererObject{nullptr};
 };
 
 /* Image files referenced in the atlas file will be prefixed with the directory containing the atlas file. */
@@ -310,7 +308,7 @@ static const char* formatNames[] = { "", "Alpha", "Intensity", "LuminanceAlpha",
 static const char* textureFilterNames[] = { "", "Nearest", "Linear", "MipMap", "MipMapNearestNearest", "MipMapLinearNearest",
     "MipMapNearestLinear", "MipMapLinearLinear" };
 
-Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendererObject)
+Atlas* CreateAtlas(const char* begin, i64 length, const char* dir)
 {
     Atlas* self;
     
@@ -326,7 +324,6 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
     Str tuple[4];
     
     self = CallocType(heap, Atlas, 1);
-    self->rendererObject = rendererObject;
     
     while (readLine(&begin, end, &str))
     {
@@ -476,7 +473,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendere
     return self;
 };
 
-Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
+Atlas* CreateAtlasFromFile(const char* path)
 {
     i32 dirLength;
     char* dir;
@@ -498,7 +495,7 @@ Atlas* CreateAtlasFromFile(const char* path, void* rendererObject)
     const char* fileData = globalPlatformServices->ReadEntireFile($(length), path);
     
     if (fileData)
-        atlas = CreateAtlas(fileData, length, dir, rendererObject);
+        atlas = CreateAtlas(fileData, length, dir);
     else
         InvalidCodePath;
     

@@ -330,6 +330,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
         
+        //Read in data
+        Skeleton playerSkel {}, enemySkel {};
+        AnimationData playerAnimData {}, enemyAnimData {};
+        InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
+        //InitSkel($(enemySkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json");
+        //InitAnimData($(enemyAnimData), $(*levelPart), "data/yellow_god.json", enemySkel);
+        
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
         stage->size.height = 40.0f;
@@ -340,14 +348,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePointOffset_normalized = { 0.0f, -0.3f };
         stage->camera.lookAt = { stage->size.width / 2.0f, 10.0f };
         stage->camera.zoomFactor = .4f;
-        
-        //Read in data
-        Skeleton playerSkel {}, enemySkel {};
-        AnimationData playerAnimData {}, enemyAnimData {};
-        InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        //InitSkel($(enemySkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json");
-        InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
-        //InitAnimData($(enemyAnimData), $(*levelPart), "data/yellow_god.json", enemySkel);
         
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
