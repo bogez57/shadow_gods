@@ -342,30 +342,24 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = .4f;
         
         //Read in data
-        Skeleton playerSkel {}, enemySkel {};
-        AnimationData playerAnimData {}, enemyAnimData {};
+        Skeleton playerSkel {};
+        AnimationData playerAnimData {};
         InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        //InitSkel($(enemySkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json");
         InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
-        //InitAnimData($(enemyAnimData), $(*levelPart), "data/yellow_god.json", enemySkel);
         
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
-        //TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
         
         //Init fighters
         v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
         HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        //HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { -2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
         InitFighter($(*player), playerAnimData, playerSkel, /*player height*/ 20.0f, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false);
-        //InitFighter($(*enemy), enemyAnimData, enemySkel, /*player height*/ enemySkel.height, enemyDefaultHurtBox, enemyWorldPos, /*flipX*/ false );
         
         MixAnimations($(player->animData), "idle", "walk", .2f);
         MixAnimations($(player->animData), "walk", "run", .2f);
         MixAnimations($(player->animData), "right-jab", "idle", .1f);
         
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
-        //SetIdleAnimation($(enemy->animQueue), enemy->animData, "idle");
     };
     
     if (globalPlatformServices->DLLJustReloaded)
@@ -411,35 +405,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
     
     Animation playerCurrentAnim = UpdateAnimationState($(player->animQueue), deltaT);
-    //Animation enemyCurrentAnim = UpdateAnimationState($(enemy->animQueue), deltaT);
-    
     ApplyAnimationToSkeleton($(player->skel), playerCurrentAnim);
-    //ApplyAnimationToSkeleton($(enemy->skel), enemyCurrentAnim);
-    
     UpdateSkeletonBoneWorldTransforms($(player->skel), player->world.translation);
-    //UpdateSkeletonBoneWorldTransforms($(enemy->skel), enemy->world.translation);
-    
-    UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
-    //UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
-    
-#if 0
-    for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
-    {
-        UpdateHitBoxStatus($(playerCurrentAnim.hitBoxes[hitBoxIndex]), playerCurrentAnim.currentTime);
-        
-        if (playerCurrentAnim.hitBoxes[hitBoxIndex].isActive)
-        {
-            playerCurrentAnim.hitBoxes[hitBoxIndex].pos_worldSpace = { 0.0f, 0.0f };
-            
-            Bone* bone = GetBoneFromSkeleton(&player->skel, playerCurrentAnim.hitBoxes[hitBoxIndex].boneName);
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(playerCurrentAnim.hitBoxes[hitBoxIndex]), bone->worldSpace.translation);
-            b collisionOccurred = CheckForFighterCollisions_AxisAligned(playerCurrentAnim.hitBoxes[hitBoxIndex], enemy->hurtBox);
-            
-            if (collisionOccurred)
-                BGZ_CONSOLE("ahhahha");
-        };
-    };
-#endif
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
@@ -475,7 +442,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         //Push Fighters
         DrawFighter(*player);
-        //DrawFighter(*enemy);
         
         for (i32 i {}; i < player->skel.bones.length; ++i)
         {
@@ -483,27 +449,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
             PushRect(global_renderingInfo, boneRect, { 1.0f, 0.0f, 0.0f });
         }
-        
-#if 0
-        { //Draw collision boxes
-            Quadf playerTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->hurtBox.size.width, player->hurtBox.size.height);
-            //Quadf enemyTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, enemy->hurtBox.size.width, enemy->hurtBox.size.height);
-            
-            Quadf playerTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { player->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
-            //Quadf enemyTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { enemy->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
-            
-            PushRect(global_renderingInfo, playerTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-            //PushRect(global_renderingInfo, enemyTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-            
-            for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
-            {
-                Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(playerCurrentAnim.hitBoxes[hitBoxIndex].pos_worldSpace, playerCurrentAnim.hitBoxes[hitBoxIndex].size.width, playerCurrentAnim.hitBoxes[hitBoxIndex].size.height);
-                
-                if (playerCurrentAnim.hitBoxes[hitBoxIndex].isActive)
-                    PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
-            };
-        }
-#endif
     };
     
     IsAllTempMemoryCleared(framePart);
