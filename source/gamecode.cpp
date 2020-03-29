@@ -44,6 +44,7 @@ global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
+global_variable Skeleton playerSkel;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
@@ -342,24 +343,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = .4f;
         
         //Read in data
-        Skeleton playerSkel {};
         AnimationData playerAnimData {};
         InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
         
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
-        
-        //Init fighters
-        v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
-        HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        InitFighter($(*player), playerAnimData, playerSkel, /*player height*/ 20.0f, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false);
-        
-        MixAnimations($(player->animData), "idle", "walk", .2f);
-        MixAnimations($(player->animData), "walk", "run", .2f);
-        MixAnimations($(player->animData), "right-jab", "idle", .1f);
-        
-        SetIdleAnimation($(player->animQueue), player->animData, "idle");
     };
     
     if (globalPlatformServices->DLLJustReloaded)
@@ -404,51 +393,31 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
     };
     
-    Animation playerCurrentAnim = UpdateAnimationState($(player->animQueue), deltaT);
-    ApplyAnimationToSkeleton($(player->skel), playerCurrentAnim);
-    UpdateSkeletonBoneWorldTransforms($(player->skel), player->world.translation);
-    
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
     { //Render
-        auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length - 1; ++slotIndex)
-            {
-                Slot* currentSlot = &fighter.skel.slots[slotIndex];
-                
-                AtlasRegion* region = &currentSlot->regionAttachment.region_image;
-                Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
-                
-                Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
-                //Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
-                Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, currentSlot->bone->worldSpace);
-                
-                region->page->rendererObject.normalMap.rotation = currentSlot->bone->worldSpace.rotation;
-                region->page->rendererObject.normalMap.scale = currentSlot->bone->worldSpace.scale;
-                region->page->rendererObject.normalMap.lightAngle = 1.0f;
-                region->page->rendererObject.normalMap.lightThreshold = 1.0f;
-                
-                PushTexture(global_renderingInfo, region_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
-            };
+        auto DrawImage  = [](Region_Attachment* region) -> void
+        {
+            AtlasRegion* region_image = &region->region_image;
+            Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
+            
+            Transform transform { {10.0f, 5.0f} /*Translation*/, 2.0f /*Rotation*/, {1.0f, 1.0f} /*Scale*/};
+            Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
+            Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
+            
+            region_image->page->rendererObject.normalMap.rotation = transform.rotation;
+            region_image->page->rendererObject.normalMap.scale = transform.scale;
+            region_image->page->rendererObject.normalMap.lightAngle = 1.0f;
+            region_image->page->rendererObject.normalMap.lightThreshold = 1.0f;
+            
+            PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, v2f { region->width, region->height }, uvs2, region_image->name);
         };
         
         //Push background
-#if 1
-        //Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
-        //PushTexture(global_renderingInfo, targetRect_worldCoords, stage->backgroundImg, stage->size.height, uvs, "background");
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-#endif
         
-        //Push Fighters
-        DrawFighter(*player);
-        
-        for (i32 i {}; i < player->skel.bones.length; ++i)
-        {
-            Bone bone = player->skel.bones[i];
-            Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
-            PushRect(global_renderingInfo, boneRect, { 1.0f, 0.0f, 0.0f });
-        }
+        DrawImage(&playerSkel.slots[17].regionAttachment);
     };
     
     IsAllTempMemoryCleared(framePart);
