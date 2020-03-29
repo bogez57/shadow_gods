@@ -35,8 +35,8 @@
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
-#include "memory_handling.h"
 #include "array.h"
+#include "memory_handling.h"
 
 #include "my_math.h"
 #include "utilities.h"
@@ -899,8 +899,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             
             InitApplicationMemory(&gameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
             
-            Memory_Partition* framePart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
-            Memory_Partition* levelPart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100));
+            CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "frame");
+            CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "level");
             
             { //Init render command buffer and other render stuff
                 void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.totalSize + 1);

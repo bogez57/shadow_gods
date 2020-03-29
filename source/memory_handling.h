@@ -31,6 +31,13 @@ struct Memory_Partition
     i32 tempMemoryCount {}; //Number of active temporary memory sub partitions (created w/ BeginTemporaryMemory())
 };
 
+struct _PartitionMap
+{
+    Memory_Partition partitions[10];
+    i32 keys[10];
+    i32 currentCount{};
+};
+
 struct Application_Memory
 {
     bool initialized { false };
@@ -40,8 +47,7 @@ struct Application_Memory
     i64 sizeOfTemporaryStorage {};
     i64 temporaryStorageUsed {};
     i64 totalSize {};
-    Memory_Partition partitions[10];
-    i32 partitionCount {};
+    _PartitionMap partitionMap{};
 };
 
 void* _AllocSize(Memory_Partition* memPartition, i64 size);
@@ -49,11 +55,43 @@ void* _AllocSize(Memory_Partition* memPartition, i64 size);
 void Release(Memory_Partition&& memPartition);
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress);
-Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& Memory, i64 size);
+Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, i64 size, const char* partName);
 
 #endif
 
 #ifdef MEMORY_HANDLING_IMPL
+
+void _InsertPartition(_PartitionMap&& partMap, const char* partName, Memory_Partition memPartToInsert)
+{
+    i32 uniqueID {};//TODO: Using this method to come up with keys isn't full proof. Could have a name with same letters in different order and it would produce conflicting keys. Prob need to change.
+    for (i32 i {}; partName[i] != 0; ++i)
+        uniqueID += partName[i];
+    
+    partMap.keys[partMap.currentCount] = uniqueID;
+    partMap.partitions[partMap.currentCount++] = memPartToInsert;
+};
+
+Memory_Partition* _GetPartition(_PartitionMap* partMap, const char* partName)
+{
+    i32 uniqueID {};
+    for (i32 i {}; partName[i] != 0; ++i)
+        uniqueID += partName[i];
+    
+    i32 keyIndex { -1 };
+    for (i32 i {}; i < partMap->currentCount; ++i)
+    {
+        if (uniqueID == partMap->keys[i])
+        {
+            keyIndex = i;
+            break;
+        }
+    };
+    
+    if (keyIndex == -1)
+        BGZ_ASSERT(1 < 0, "Partition name is either incorrect or requested partition doesn't exist!");
+    
+    return &partMap->partitions[keyIndex];
+};
 
 void InitApplicationMemory(Application_Memory* appMemory, i64 sizeOfMemory, i32 sizeOfPermanentStore, void* memoryStartAddress)
 {
@@ -72,25 +110,25 @@ void* _PointerAddition(void* baseAddress, i64 amountToAdvancePointer)
     return newAddress;
 };
 
-Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, i64 size)
+Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, i64 size, const char* partName)
 {
     ASSERT(size < appMemory.sizeOfTemporaryStorage);
     ASSERT((size + appMemory.temporaryStorageUsed) < appMemory.sizeOfTemporaryStorage);
-
+    
     Memory_Partition memPartition {};
     memPartition.baseAddress = _PointerAddition(appMemory.temporaryStorage, appMemory.temporaryStorageUsed);
     memPartition.size = size;
     memPartition.usedAmount = 0;
-
-    appMemory.partitions[appMemory.partitionCount] = memPartition;
+    
     appMemory.temporaryStorageUsed += size;
-
-    return &appMemory.partitions[appMemory.partitionCount++];
+    _InsertPartition($(appMemory.partitionMap), partName, memPartition);
+    
+    return _GetPartition(&appMemory.partitionMap, partName);
 };
 
-Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, i32 memPartitionID)
+Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, const char* partName)
 {
-    return &appMemory->partitions[memPartitionID];
+    return _GetPartition(&appMemory->partitionMap, partName);
 };
 
 auto _AllocSize(Memory_Partition* memPartition, i64 size) -> void*
@@ -98,7 +136,7 @@ auto _AllocSize(Memory_Partition* memPartition, i64 size) -> void*
     ASSERT((memPartition->usedAmount + size) <= memPartition->size);
     void* Result = _PointerAddition(memPartition->baseAddress, memPartition->usedAmount);
     memPartition->usedAmount += (size);
-
+    
     return Result;
 };
 
@@ -106,7 +144,7 @@ auto _FreeSize(Memory_Partition&& memPartition, i64 sizeToFree) -> void
 {
     ASSERT(sizeToFree < memPartition.size);
     ASSERT(sizeToFree < memPartition.usedAmount);
-
+    
     memPartition.usedAmount -= sizeToFree;
 };
 
@@ -119,12 +157,12 @@ struct Temporary_Memory
 Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition)
 {
     Temporary_Memory result;
-
+    
     result.memPartition = &memPartition;
     result.initialusedAmountFromMemPartition = memPartition.usedAmount;
-
+    
     ++memPartition.tempMemoryCount;
-
+    
     return (result);
 }
 
@@ -132,9 +170,9 @@ void EndTemporaryMemory(Temporary_Memory TempMem)
 {
     Memory_Partition* memPartition = TempMem.memPartition;
     ASSERT(memPartition->usedAmount >= TempMem.initialusedAmountFromMemPartition);
-
+    
     memPartition->usedAmount = TempMem.initialusedAmountFromMemPartition;
-
+    
     ASSERT(memPartition->tempMemoryCount > 0);
     --memPartition->tempMemoryCount;
 }

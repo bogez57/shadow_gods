@@ -118,7 +118,7 @@ void InitAnimMap(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
 void InsertAnimation(AnimationMap&& animMap, const char* animName, Animation anim)
 {
     i32 uniqueID {};
-    for (i32 i {}; animName[i] != 0; ++i)
+    for (i32 i {}; animName[i] != 0; ++i)//TODO: Using this method to come up with keys isn't full proof. Could have a name with same letters in different order and it would produce conflicting keys. Prob need to change.
         uniqueID += animName[i];
     
     animMap.keys.Push() = uniqueID;
