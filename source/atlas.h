@@ -131,10 +131,6 @@ void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 {
     Image bitmap = LoadBitmap_BGRA(path);
     
-    Image normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
-    
-    bitmap.normalMap.mapData = normalMap.data;
-    
     self->rendererObject = bitmap;
     self->width = bitmap.width_pxls;
     self->height = bitmap.height_pxls;

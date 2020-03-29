@@ -96,7 +96,6 @@ struct NormalMap
 struct Image
 {
     ui8* data { nullptr };
-    NormalMap normalMap {};
     f32 aspectRatio {};
     i32 width_pxls {};
     i32 height_pxls {};
@@ -221,7 +220,7 @@ void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color)
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name)
+void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
     
@@ -229,7 +228,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, 
     textureEntry->name = name;
     textureEntry->targetRect_worldCoords = worldVerts;
     textureEntry->colorData = bitmap.data;
-    textureEntry->normalMap = bitmap.normalMap;
+    textureEntry->normalMap = normalMap;
     textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
@@ -241,7 +240,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, 
 
 //TODO: Consider not having overloaded function here? The reason this is here is to support current
 //skeleton drawing with regions
-void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_meters, Array<v2f, 2> uvs, const char* name)
+void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, f32 objectHeight_meters, Array<v2f, 2> uvs, const char* name)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
     
@@ -252,7 +251,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, 
     textureEntry->name = name;
     textureEntry->targetRect_worldCoords = worldVerts;
     textureEntry->colorData = bitmap.data;
-    textureEntry->normalMap = bitmap.normalMap;
+    textureEntry->normalMap = normalMap;
     textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;

@@ -44,6 +44,7 @@ global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
+global_variable NormalMap normalMap;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
@@ -335,6 +336,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         AnimationData playerAnimData {}, enemyAnimData {};
         InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
+        Image normalMapImage = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
+        normalMap.mapData = normalMapImage.data;
         //InitSkel($(enemySkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json");
         //InitAnimData($(enemyAnimData), $(*levelPart), "data/yellow_god.json", enemySkel);
         
@@ -456,12 +459,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 //Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
                 Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, currentSlot->bone->worldSpace);
                 
-                region->page->rendererObject.normalMap.rotation = currentSlot->bone->worldSpace.rotation;
-                region->page->rendererObject.normalMap.scale = currentSlot->bone->worldSpace.scale;
-                region->page->rendererObject.normalMap.lightAngle = 1.0f;
-                region->page->rendererObject.normalMap.lightThreshold = 1.0f;
+                normalMap.rotation = currentSlot->bone->worldSpace.rotation;
+                normalMap.scale = currentSlot->bone->worldSpace.scale;
+                normalMap.lightAngle = 1.0f;
+                normalMap.lightThreshold = 1.0f;
                 
-                PushTexture(global_renderingInfo, region_worldSpaceCoords, region->page->rendererObject, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
+                PushTexture(global_renderingInfo, region_worldSpaceCoords, region->page->rendererObject, normalMap, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
             };
         };
         
