@@ -46,6 +46,7 @@ global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
 global_variable Skeleton playerSkel;
 global_variable f32 currentRotation;
+global_variable NormalMap normalMap;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
@@ -242,7 +243,7 @@ Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
 
 extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
-    auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel, AnimationData&& animData) {
+    auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel) {
         f32 pixelsPerMeter { global_renderingInfo->_pixelsPerMeter };
         
         skel.width /= pixelsPerMeter;
@@ -270,6 +271,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y /= pixelsPerMeter;
         };
         
+#if 0
         for (i32 animIndex {}; animIndex < animData.animMap.animations.length; ++animIndex)
         {
             Animation* anim = &animData.animMap.animations[animIndex];
@@ -301,6 +303,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 };
             };
         }
+#endif
     };
     
     BGZ_ERRCTXT1("When entering GameUpdate");
@@ -344,12 +347,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = .4f;
         
         //Read in data
-        AnimationData playerAnimData {};
-        InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
+        Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas");
+        InitSkel($(playerSkel), $(*levelPart), atlas, "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        Image normalMapImage = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
+        normalMap.mapData = normalMapImage.data;
         
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
-        TranslateCurrentMeasurementsToGameUnits($(playerSkel), $(playerAnimData));
+        TranslateCurrentMeasurementsToGameUnits($(playerSkel));
     };
     
     if (globalPlatformServices->DLLJustReloaded)
@@ -365,22 +369,24 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
+    normalMap.rotation = currentRotation;
+    
     { //Render
         auto DrawImage  = [](Region_Attachment* region) -> void
         {
             AtlasRegion* region_image = &region->region_image;
             Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
             
-            Transform transform { {30.0f, 15.0f} /*Translation*/, currentRotation, {2.0f, 2.0f} /*Scale*/};
+            Transform transform { {30.0f, 15.0f} /*Translation*/, normalMap.rotation, {2.0f, 2.0f} /*Scale*/};
             Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
             Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
             
-            region_image->page->rendererObject.normalMap.rotation = transform.rotation;
-            region_image->page->rendererObject.normalMap.scale = transform.scale;
-            region_image->page->rendererObject.normalMap.lightAngle = 1.0f;
-            region_image->page->rendererObject.normalMap.lightThreshold = 1.0f;
+            normalMap.rotation = transform.rotation;
+            normalMap.scale = transform.scale;
+            normalMap.lightAngle = 1.0f;
+            normalMap.lightThreshold = 1.0f;
             
-            PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, v2f { region->width, region->height }, uvs2, region_image->name);
+            PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, normalMap, v2f { region->width, region->height }, uvs2, region_image->name);
         };
         
         //Push background
