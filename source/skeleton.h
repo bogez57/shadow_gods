@@ -57,6 +57,17 @@ Skeleton CopySkeleton(Skeleton src);
 
 #ifdef SKELETON_IMPL
 
+Skeleton CopySkeleton(Skeleton* src, Memory_Partition&& memPart)
+{
+    Skeleton newSkeleton{};
+    InitArr($(newSkeleton.bones), &memPart, src->bones.capacity);
+    InitArr($(newSkeleton.slots), &memPart, src->slots.capacity);
+    CopyArray(src->bones, $(newSkeleton.bones));
+    CopyArray(src->slots, $(newSkeleton.slots));
+    
+    return newSkeleton;
+};
+
 Bone InitBone(Memory_Partition&& memPart)
 {
     Bone bone{};

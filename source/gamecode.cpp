@@ -44,7 +44,6 @@ global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
-global_variable Skeleton playerSkel;
 global_variable f32 currentRotation;
 global_variable NormalMap normalMap;
 
@@ -348,12 +347,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         //Read in data
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas");
-        InitSkel($(playerSkel), $(*levelPart), atlas, "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        InitSkel($(player->skel), $(*levelPart), atlas, "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         Image normalMapImage = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
         normalMap.mapData = normalMapImage.data;
         
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
-        TranslateCurrentMeasurementsToGameUnits($(playerSkel));
+        TranslateCurrentMeasurementsToGameUnits($(player->skel));
     };
     
     if (globalPlatformServices->DLLJustReloaded)
@@ -381,7 +380,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
             Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
             
-            normalMap.rotation = transform.rotation;
             normalMap.scale = transform.scale;
             normalMap.lightAngle = 1.0f;
             normalMap.lightThreshold = 1.0f;
@@ -393,7 +391,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
         
-        DrawImage(&playerSkel.slots[17].regionAttachment);
+        DrawImage(&player->skel.slots[17].regionAttachment);
     };
     
     IsAllTempMemoryCleared(framePart);

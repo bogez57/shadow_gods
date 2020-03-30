@@ -96,7 +96,6 @@ struct NormalMap
 struct Image
 {
     ui8* data { nullptr };
-    NormalMap normalMap {};
     f32 aspectRatio {};
     i32 width_pxls {};
     i32 height_pxls {};
