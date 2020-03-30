@@ -29,9 +29,10 @@ struct Game_State
 {
     Image composite;
     Image normalMap;
-    Atlas* atlas;
+    f32 normalMapRotation;
     f32 lightAngle{};
     f32 lightThreshold{};
+    Atlas* atlas;
     Stage_Data stage;
     b isLevelOver{false};
 };

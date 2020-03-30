@@ -348,8 +348,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Read in data
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas");
         InitSkel($(player->skel), $(*levelPart), atlas, "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        Image normalMapImage = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
-        normalMap.mapData = normalMapImage.data;
+        gState->normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
+        gState->lightAngle = 1.0f;
+        gState->lightThreshold = 1.0f;
         
         //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         TranslateCurrentMeasurementsToGameUnits($(player->skel));
@@ -359,11 +360,18 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         BGZ_CONSOLE("Dll reloaded!");
         globalPlatformServices->DLLJustReloaded = false;
+        
+        normalMap.mapData = gState->normalMap.data;
     };
     
     if (KeyHeld(keyboard->MoveRight))
     {
-        currentRotation += .01f;
+        gState->normalMapRotation += .01f;
+    };
+    
+    if (KeyHeld(keyboard->MoveLeft))
+    {
+        gState->normalMapRotation -= .01f;
     };
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
@@ -371,18 +379,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     normalMap.rotation = currentRotation;
     
     { //Render
-        auto DrawImage  = [](Region_Attachment* region) -> void
+        auto DrawImage  = [gState](Region_Attachment* region) -> void
         {
             AtlasRegion* region_image = &region->region_image;
             Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
             
-            Transform transform { {30.0f, 15.0f} /*Translation*/, normalMap.rotation, {2.0f, 2.0f} /*Scale*/};
+            Transform transform { {30.0f, 15.0f} /*Translation*/, gState->normalMapRotation, {2.0f, 2.0f} /*Scale*/};
             Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
             Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
             
+            NormalMap normalMap{};
+            normalMap.mapData = gState->normalMap.data;
+            normalMap.rotation = gState->normalMapRotation;
             normalMap.scale = transform.scale;
-            normalMap.lightAngle = 1.0f;
-            normalMap.lightThreshold = 1.0f;
+            normalMap.lightAngle = gState->lightAngle;
+            normalMap.lightThreshold = gState->lightThreshold;
             
             PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, normalMap, v2f { region->width, region->height }, uvs2, region_image->name);
         };
