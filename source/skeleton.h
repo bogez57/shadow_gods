@@ -77,6 +77,23 @@ Bone InitBone(Memory_Partition&& memPart)
     return bone;
 };
 
+Region_Attachment GetImageRegion(Skeleton skel, const char* regionName)
+{
+    Region_Attachment result;
+    for(i32 slotI{}; slotI < skel.slots.length; ++slotI)
+    {
+        Slot slot = skel.slots[slotI];
+        if(StringCmp(slot.name, regionName))
+            result = slot.regionAttachment;
+    };
+    
+    if(result.region_image.name == nullptr)
+        BGZ_ASSERT(1 == 0, "Did not find image reigon. Did you enter a valid name?");
+    
+    return result;
+};
+
+
 void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, Atlas* atlas, const char* jsonFilePath)
 {
     i32 length;

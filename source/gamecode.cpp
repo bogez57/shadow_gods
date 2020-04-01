@@ -348,12 +348,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Read in data
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas");
         InitSkel($(player->skel), $(*levelPart), atlas, "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
+        TranslateCurrentMeasurementsToGameUnits($(player->skel));//Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
+        
+        gState->currentImageRegion = GetImageRegion(player->skel, "right-forearm");
         gState->normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
         gState->lightAngle = 1.0f;
         gState->lightThreshold = 1.0f;
-        
-        //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
-        TranslateCurrentMeasurementsToGameUnits($(player->skel));
     };
     
     if (globalPlatformServices->DLLJustReloaded)
@@ -402,7 +402,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
         
-        DrawImage(&player->skel.slots[17].regionAttachment);
+        DrawImage(&gState->currentImageRegion);
     };
     
     IsAllTempMemoryCleared(framePart);

@@ -29,6 +29,7 @@ struct Game_State
 {
     Image composite;
     Image normalMap;
+    Region_Attachment currentImageRegion{};
     f32 normalMapRotation;
     f32 lightAngle{};
     f32 lightThreshold{};
