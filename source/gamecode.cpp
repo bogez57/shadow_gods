@@ -336,14 +336,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         //Stage Init
         stage->backgroundImg = LoadBitmap_BGRA("data/4k.jpg");
-        stage->size.height = 40.0f;
-        stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
-        stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
+        stage->size.height = 10.0f;
+        stage->size.width = 17.7777f;
+        stage->centerPoint = { stage->size.width / 2, (f32)stage->size.height / 2 };
         
         //Camera Init
         stage->camera.dilatePointOffset_normalized = { 0.0f, -0.3f };
-        stage->camera.lookAt = { stage->size.width / 2.0f, 15.0f };
-        stage->camera.zoomFactor = 2.0f;
+        stage->camera.lookAt = stage->centerPoint;
+        stage->camera.zoomFactor = 1.0f;
         
         //Read in data
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas");
@@ -390,7 +390,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             AtlasRegion* region_image = &region->region_image;
             Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
             
-            Transform transform { {stage->size.width/2.0f, 13.5f} /*Translation*/, gState->normalMapRotation, {2.0f, 2.0f} /*Scale*/};
+            Transform transform { {stage->size.width/2.0f, 3.5f} /*Translation*/, gState->normalMapRotation, {2.0f, 2.0f} /*Scale*/};
             Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
             Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
             
@@ -407,6 +407,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Push background
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+        
+        BGZ_CONSOLE("mouseY: %i\n", gameInput->mouseY);
+        
+        v2f mousePos_meters{((f32)gameInput->mouseX) / global_renderingInfo->_pixelsPerMeter, ((f32)gameInput->mouseY) / global_renderingInfo->_pixelsPerMeter};
+        
+        Quadf targetRect_mousePos = ProduceQuadFromCenterPoint(mousePos_meters, 1.0f, 1.0f);
+        PushRect(global_renderingInfo, targetRect_mousePos, { 0.0f, 1.0f, 0.0f });
         
         DrawImage(&gState->currentImageRegion);
     };

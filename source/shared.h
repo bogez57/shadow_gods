@@ -16,10 +16,10 @@ struct Game_Controller
 {
     b32 IsConnected;
     b32 IsAnalog;
-
+    
     v2f LThumbStick;
     v2f RThumbStick;
-
+    
     union
     {
         Button_State Buttons[14];
@@ -29,17 +29,17 @@ struct Game_Controller
             Button_State MoveDown;
             Button_State MoveLeft;
             Button_State MoveRight;
-
+            
             Button_State ActionUp;
             Button_State ActionDown;
             Button_State ActionLeft;
             Button_State ActionRight;
-
+            
             Button_State LeftShoulder;
             Button_State RightShoulder;
             Button_State LeftTrigger;
             Button_State RightTrigger;
-
+            
             Button_State Back;
             Button_State Start;
             //All buttons must be added above this line
@@ -57,6 +57,7 @@ auto ClearTransitionCounts(Game_Controller* Controller) -> void
 
 struct Game_Input
 {
+    i32 mouseX, mouseY;
     Game_Controller Controllers[5];
 };
 
@@ -104,9 +105,9 @@ local_func v4f
 UnPackPixelValues(ui32 pixel, ChannelType channelType)
 {
     v4f result {};
-
+    
     ui32* pixelInfo = &pixel;
-
+    
     switch(channelType)
     {
         case RGBA:
@@ -116,7 +117,7 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
             result.b = (f32)*((ui8*)pixelInfo + 2);
             result.a = (f32)*((ui8*)pixelInfo + 3);
         }break;
-
+        
         case BGRA:
         {
             result.b = (f32)*((ui8*)pixelInfo + 0);
@@ -124,9 +125,9 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
             result.r = (f32)*((ui8*)pixelInfo + 2);
             result.a = (f32)*((ui8*)pixelInfo + 3);
         }break;
-
+        
         default : break;
     };
-
+    
     return result;
 };

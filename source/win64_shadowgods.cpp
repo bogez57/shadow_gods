@@ -969,11 +969,24 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             bgz::Timer FramePerformanceTimer {};
             FramePerformanceTimer.Init();
             
-            auto UpdateInput = [](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
+            auto UpdateInput = [window](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
                 for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                 {
                     ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                 }
+                
+                //Update mouse position/button state
+                POINT mousePos;
+                GetCursorPos(&mousePos);
+                ScreenToClient(window, &mousePos);
+                
+                //Since game screen coords are bottom up and not top down (windows seems to assume top down coords for mouse pos) I'm converting to bottom up here
+                i32 mousePosY = mousePos.y;
+                mousePosY -= globalWindowHeight;
+                AbsoluteVal($(mousePosY));
+                
+                Input.mouseX = mousePos.x;
+                Input.mouseY = mousePosY;
                 
                 //Poll Keyboard Input
                 Win32::ProcessPendingMessages($(Input), $(GameReplayState));
@@ -1102,7 +1115,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 ReleaseDC(window, deviceContext);
                 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
-                BGZ_CONSOLE("Frame time: %f\n", frameTimeInMS);
+                //BGZ_CONSOLE("Frame time: %f\n", frameTimeInMS);
                 
                 platformServices.prevFrameTimeInSecs = FramePerformanceTimer.SecondsElapsed();
                 platformServices.realLifeTimeInSecs += platformServices.prevFrameTimeInSecs;
