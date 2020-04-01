@@ -126,6 +126,12 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 #endif
 
 local_func void
+DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, RenderEntry_Line line_screenCoords, v3f lineColor, Rectf clipRect)
+{
+    
+};
+
+local_func void
 DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect)
 {
     v2f origin = targetRect_screenCoords.bottomLeft;
@@ -922,6 +928,22 @@ void DoRenderWork(void* data)
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+            }
+            break;
+            
+            case EntryType_Line:
+            {
+                RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
+                
+                v2f lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
+                v2f lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                
+#if 0
+                Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
+                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
+#endif
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Line);
             }
             break;
             

@@ -177,6 +177,7 @@ void ConvertToCorrectPositiveRadian(f32&& angle);
 //void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
+v2f CameraTransform(v2f worldCoords, Camera2D camera);
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
@@ -356,6 +357,17 @@ _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDil
     return DilatedRect;
 };
 
+v2f _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, v2f vectorToDilate)
+{
+    v2f dilatedVector{};
+    
+    v2f distance = PointOfDilation - vectorToDilate;
+    distance *= ScaleFactor;
+    dilatedVector = PointOfDilation - distance;
+    
+    return dilatedVector;
+};
+
 auto _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate) -> Quadf
 {
     Quadf DilatedQuad {};
@@ -368,6 +380,17 @@ auto _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf Quad
     };
     
     return DilatedQuad;
+};
+
+v2f CameraTransform(v2f worldCoords, Camera2D camera)
+{
+    v2f transformedCoords {};
+    v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+    worldCoords += translationToCameraSpace;
+    
+    transformedCoords = _DilateAboutArbitraryPoint(camera.dilatePoint_inScreenCoords, camera.zoomFactor, worldCoords);
+    
+    return transformedCoords;
 };
 
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
