@@ -477,15 +477,23 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 #endif
         
         //Push Fighters
-        DrawFighter(*player);
+        //DrawFighter(*player);
         //DrawFighter(*enemy);
         
+        
+        v2f line_minPoint = {(stage->size.width / 2.0f) - 9.0f, 3.0f };
+        v2f line_maxPoint = {(stage->size.width / 2.0f) - 9.0f, 9.0f };
+        
+        PushLine(global_renderingInfo, line_minPoint, line_maxPoint, {0.0f, 1.0f, 0.0f});
+        
+#if 0
         for (i32 i {}; i < player->skel.bones.length; ++i)
         {
             Bone bone = player->skel.bones[i];
             Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
             PushRect(global_renderingInfo, boneRect, { 1.0f, 0.0f, 0.0f });
         }
+#endif
         
 #if 0
         { //Draw collision boxes

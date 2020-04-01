@@ -179,6 +179,7 @@ Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
 v2f CameraTransform(v2f worldCoords, Camera2D camera);
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
+v2f ProjectionTransform_Ortho(v2f cameraCoords, f32 pixelsPerMeter);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
@@ -409,12 +410,17 @@ Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
     return transformedCoords;
 };
 
+v2f ProjectionTransform_Ortho(v2f cameraCoords, f32 pixelsPerMeter)
+{
+    cameraCoords *= pixelsPerMeter;
+    
+    return cameraCoords;
+};
+
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter)
 {
     for (i32 vertIndex {}; vertIndex < 4; vertIndex++)
-    {
         cameraCoords.vertices[vertIndex] *= pixelsPerMeter;
-    };
     
     return cameraCoords;
 };

@@ -128,7 +128,23 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 local_func void
 DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, RenderEntry_Line line_screenCoords, v3f lineColor, Rectf clipRect)
 {
+    ui32 pixelColor = { (0xFF << 24) | (RoundFloat32ToUInt32(lineColor.r * 255.0f) << 16) | (RoundFloat32ToUInt32(lineColor.g * 255.0f) << 8) | (RoundFloat32ToUInt32(lineColor.b * 255.0f) << 0) };
     
+    line_screenCoords.maxPoint.x += 3.0f;//Make 3 pixels wide
+    
+    ui8* currentRow = (ui8*)colorBufferData + (i32)line_screenCoords.minPoint.x * 4 + (i32)line_screenCoords.minPoint.y * colorBufferPitch;
+    for (f32 screenY = line_screenCoords.minPoint.y; screenY < line_screenCoords.maxPoint.y; ++screenY)
+    {
+        ui32* destPixel = (ui32*)currentRow;
+        
+        for (f32 screenX = line_screenCoords.minPoint.x; screenX < line_screenCoords.maxPoint.x; ++screenX)
+        {
+            *destPixel = pixelColor;
+            ++destPixel;
+        }
+        
+        currentRow += colorBufferPitch;
+    }
 };
 
 local_func void
@@ -938,10 +954,12 @@ void DoRenderWork(void* data)
                 v2f lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
                 v2f lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
                 
-#if 0
-                Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
-                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
-#endif
+                v2f lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
+                v2f lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
+                lineEntry.minPoint = lineMinPoint_screen;
+                lineEntry.maxPoint = lineMaxPoint_screen;
+                
+                DrawLine((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, lineEntry, lineEntry.color, work->screenRegionCoords);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Line);
             }
