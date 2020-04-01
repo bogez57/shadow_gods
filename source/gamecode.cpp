@@ -342,8 +342,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         //Camera Init
         stage->camera.dilatePointOffset_normalized = { 0.0f, -0.3f };
-        stage->camera.lookAt = { stage->size.width / 2.0f, 10.0f };
-        stage->camera.zoomFactor = .4f;
+        stage->camera.lookAt = { stage->size.width / 2.0f, 15.0f };
+        stage->camera.zoomFactor = 2.0f;
         
         //Read in data
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas");
@@ -374,17 +374,23 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         gState->normalMapRotation -= .01f;
     };
     
+    if(KeyHeld(keyboard->MoveUp))
+        stage->camera.zoomFactor += .02f;
+    
+    if(KeyHeld(keyboard->MoveDown))
+        stage->camera.zoomFactor -= .02f;
+    
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
     normalMap.rotation = currentRotation;
     
     { //Render
-        auto DrawImage  = [gState](Region_Attachment* region) -> void
+        auto DrawImage  = [gState, stage](Region_Attachment* region) -> void
         {
             AtlasRegion* region_image = &region->region_image;
             Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
             
-            Transform transform { {30.0f, 15.0f} /*Translation*/, gState->normalMapRotation, {2.0f, 2.0f} /*Scale*/};
+            Transform transform { {stage->size.width/2.0f, 13.5f} /*Translation*/, gState->normalMapRotation, {2.0f, 2.0f} /*Scale*/};
             Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
             Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
             
