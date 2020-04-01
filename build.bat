@@ -2,17 +2,17 @@
 
 misc\ctime -begin timings_file_for_this_build.ctm
 
-if not defined DevEnvDir ( call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat" )
+if not defined DevEnvDir ( call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat" )
 
 w: REM since above call to vcvars seems to change directories we need to chang back to this project dir
 
-REM %~dp0 represents the full directory path to your batch file 
+REM %~dp0 represents the full directory path to your batch file
 set cwd=%~dp0\
 
 set PreProcessorSwitches=-DDEVELOPMENT_BUILD=1 -DGLEW_STATIC=1
 
-REM Debug/Development build                                     
-set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -arch:AVX2 -std:c++17 -wd4505 -wd4101 -wd4530 -w14700 
+REM Debug/Development build
+set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -arch:AVX2 -std:c++17 -wd4505 -wd4101 -wd4530 -w14700
 set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -opt:ref -debug -ignore:4099 -STACK:2000000
 
 set GameIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" -I %cwd%"third_party/stb/include"
@@ -29,10 +29,10 @@ pushd build
 REM Clear out pdb files so build directory doesn't get too huge and build app DLL
 del *.pdb > NUL 2> NUL
 cl /c ..\source\gamecode.cpp %CommonCompilerFlags% %GameIncludePaths% %PreProcessorSwitches%
-link gamecode.obj -dll -PDB:gamecode_%random%.pdb -export:GameUpdate %CommonLinkerFlags% 
+link gamecode.obj -dll -PDB:gamecode_%random%.pdb -export:GameUpdate %CommonLinkerFlags%
 
 REM Build exe
-cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %PlatformIncludePaths% %PreProcessorSwitches% 
+cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %PlatformIncludePaths% %PreProcessorSwitches%
 link win64_shadowgods.obj -OUT:win64_shadowgods.exe %CommonLinkerFlags% %PlatformLibraryPaths% %PlatformImportLibraries% %PlatformStaticLibraries%
 
 popd
