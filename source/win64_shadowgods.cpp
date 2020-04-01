@@ -970,10 +970,11 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             FramePerformanceTimer.Init();
             
             auto UpdateInput = [window](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
+                
                 for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
-                {
                     ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
-                }
+                
+                ClearTransitionCounts(Input.mouseButtons);
                 
                 {//Update mouse position/button state
                     POINT mousePos;
@@ -1120,7 +1121,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 ReleaseDC(window, deviceContext);
                 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
-                //BGZ_CONSOLE("Frame time: %f\n", frameTimeInMS);
+                BGZ_CONSOLE("Frame time: %f\n", frameTimeInMS);
                 
                 platformServices.prevFrameTimeInSecs = FramePerformanceTimer.SecondsElapsed();
                 platformServices.realLifeTimeInSecs += platformServices.prevFrameTimeInSecs;

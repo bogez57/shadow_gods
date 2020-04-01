@@ -47,13 +47,24 @@ struct Game_Controller
     };
 };
 
-auto ClearTransitionCounts(Game_Controller* Controller) -> void
+void ClearTransitionCounts(Button_State* buttons)
+{
+    for(i32 buttonIndex{}; buttonIndex < ArrayCount(buttons); ++buttonIndex)
+        buttons[buttonIndex].NumTransitionsPerFrame = 0;
+};
+
+void ClearTransitionCounts(Game_Controller* Controller)
 {
     for (int ButtonIndex = 0; ButtonIndex < ArrayCount(Controller->Buttons); ++ButtonIndex)
-    {
         Controller->Buttons[ButtonIndex].NumTransitionsPerFrame = 0;
-    };
 }
+
+enum Mouse
+{
+    LEFT_CLICK,
+    RIGHT_CLICK,
+    WHEEL_CLICK
+};
 
 struct Game_Input
 {

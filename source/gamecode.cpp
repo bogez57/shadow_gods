@@ -348,7 +348,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //Read in data
         Atlas* atlas = CreateAtlasFromFile("data/yellow_god.atlas");
         InitSkel($(player->skel), $(*levelPart), atlas, "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
-        TranslateCurrentMeasurementsToGameUnits($(player->skel));//Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
+        TranslateCurrentMeasurementsToGameUnits($(player->skel)); //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         
         gState->currentImageRegion = GetImageRegion(player->skel, "right-forearm");
         gState->normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
@@ -374,27 +374,31 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         gState->normalMapRotation -= .01f;
     };
     
-    if(KeyHeld(keyboard->MoveUp))
+    if (KeyHeld(keyboard->MoveUp))
         stage->camera.zoomFactor += .02f;
     
-    if(KeyHeld(keyboard->MoveDown))
+    if (KeyHeld(keyboard->MoveDown))
         stage->camera.zoomFactor -= .02f;
+    
+    if(KeyHeld(gameInput->mouseButtons[Mouse::LEFT_CLICK]))
+    {
+        BGZ_CONSOLE("HEllo");
+    };
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
     normalMap.rotation = currentRotation;
     
     { //Render
-        auto DrawImage  = [gState, stage](Region_Attachment* region) -> void
-        {
+        auto DrawImage = [gState, stage](Region_Attachment* region) -> void {
             AtlasRegion* region_image = &region->region_image;
             Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
             
-            Transform transform { {stage->size.width/2.0f, 3.5f} /*Translation*/, gState->normalMapRotation, {2.0f, 2.0f} /*Scale*/};
+            Transform transform { { stage->size.width / 2.0f, 3.5f } /*Translation*/, gState->normalMapRotation, { 2.0f, 2.0f } /*Scale*/ };
             Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
             Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
             
-            NormalMap normalMap{};
+            NormalMap normalMap {};
             normalMap.mapData = gState->normalMap.data;
             normalMap.rotation = gState->normalMapRotation;
             normalMap.scale = transform.scale;
@@ -408,11 +412,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
         
-        BGZ_CONSOLE("mouseY: %i\n", gameInput->mouseY);
+        v2f mousePos_meters { ((f32)gameInput->mouseX) / global_renderingInfo->_pixelsPerMeter, ((f32)gameInput->mouseY) / global_renderingInfo->_pixelsPerMeter };
         
-        v2f mousePos_meters{((f32)gameInput->mouseX) / global_renderingInfo->_pixelsPerMeter, ((f32)gameInput->mouseY) / global_renderingInfo->_pixelsPerMeter};
-        
-        if(gameInput->mouseButtons[2].Pressed)
+        if (gameInput->mouseButtons[Mouse::LEFT_CLICK].Pressed)
         {
             Quadf targetRect_mousePos = ProduceQuadFromCenterPoint(mousePos_meters, 1.0f, 1.0f);
             PushRect(global_renderingInfo, targetRect_mousePos, { 0.0f, 1.0f, 0.0f });
