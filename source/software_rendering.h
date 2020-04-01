@@ -128,6 +128,12 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 local_func void
 DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, RenderEntry_Line line_screenCoords, v3f lineColor, Rectf clipRect)
 {
+    auto CrossProduct_Minus = [](v2f vec1, v2f vec2) -> f32 {
+        
+        f32 result = (vec1.x*vec2.y) - (vec1.y*vec2.x);
+        return result;
+    };
+    
     ui32 pixelColor = { (0xFF << 24) | (RoundFloat32ToUInt32(lineColor.r * 255.0f) << 16) | (RoundFloat32ToUInt32(lineColor.g * 255.0f) << 8) | (RoundFloat32ToUInt32(lineColor.b * 255.0f) << 0) };
     
     line_screenCoords.maxPoint.x += 3.0f;//Make 3 pixels wide
@@ -139,7 +145,25 @@ DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Rende
         
         for (f32 screenX = line_screenCoords.minPoint.x; screenX < line_screenCoords.maxPoint.x; ++screenX)
         {
-            *destPixel = pixelColor;
+            v2f screenPixelCoord { screenX, screenY };
+            
+            v2f s = { (screenX - line_screenCoords.minPoint.x), 0.0f};
+            v2f q = { line_screenCoords.minPoint.x, screenY };
+            v2f p = line_screenCoords.minPoint;
+            v2f r = line_screenCoords.maxPoint - line_screenCoords.minPoint;
+            
+            f32 epsilon = 0.00001f; //TODO: Remove????
+            if(DotProduct(r, s) != 0)
+            {
+                f32 ans = (CrossProduct_Minus((q - p), r)) / (CrossProduct_Minus(r, s));
+                
+                if((ans + epsilon) >= 0.0f && (ans + epsilon) <= 1.0f)
+                {
+                    *destPixel = pixelColor;
+                    break;
+                };
+            }
+            
             ++destPixel;
         }
         
