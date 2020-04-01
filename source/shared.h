@@ -57,8 +57,9 @@ auto ClearTransitionCounts(Game_Controller* Controller) -> void
 
 struct Game_Input
 {
-    i32 mouseX, mouseY;
-    Game_Controller Controllers[5];
+    i32 mouseX, mouseY;//TODO: Support mouse wheel pos
+    Button_State mouseButtons[3];//Left click, right click, and mouse wheel click
+    Game_Controller Controllers[5];//0 index is reserved for keyboard
 };
 
 struct Game_Sound_Output_Buffer

@@ -975,18 +975,23 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                 }
                 
-                //Update mouse position/button state
-                POINT mousePos;
-                GetCursorPos(&mousePos);
-                ScreenToClient(window, &mousePos);
-                
-                //Since game screen coords are bottom up and not top down (windows seems to assume top down coords for mouse pos) I'm converting to bottom up here
-                i32 mousePosY = mousePos.y;
-                mousePosY -= globalWindowHeight;
-                AbsoluteVal($(mousePosY));
-                
-                Input.mouseX = mousePos.x;
-                Input.mouseY = mousePosY;
+                {//Update mouse position/button state
+                    POINT mousePos;
+                    GetCursorPos(&mousePos);
+                    ScreenToClient(window, &mousePos);
+                    
+                    //Since game screen coords are bottom up and not top down (windows seems to assume top down coords for mouse pos) I'm converting to bottom up here
+                    i32 mousePosY = mousePos.y;
+                    mousePosY -= globalWindowHeight;
+                    AbsoluteVal($(mousePosY));
+                    
+                    Input.mouseX = mousePos.x;
+                    Input.mouseY = mousePosY;
+                    
+                    Win32::ProcessKeyboardMessage($(Input.mouseButtons[0]), GetKeyState(VK_LBUTTON) & (1 << 15));
+                    Win32::ProcessKeyboardMessage($(Input.mouseButtons[1]), GetKeyState(VK_RBUTTON) & (1 << 15));
+                    Win32::ProcessKeyboardMessage($(Input.mouseButtons[2]), GetKeyState(VK_MBUTTON) & (1 << 15));
+                };
                 
                 //Poll Keyboard Input
                 Win32::ProcessPendingMessages($(Input), $(GameReplayState));
