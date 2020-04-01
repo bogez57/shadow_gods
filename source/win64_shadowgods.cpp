@@ -1121,7 +1121,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 ReleaseDC(window, deviceContext);
                 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
-                BGZ_CONSOLE("Frame time: %f\n", frameTimeInMS);
+                //BGZ_CONSOLE("Frame time: %f\n", frameTimeInMS);
                 
                 platformServices.prevFrameTimeInSecs = FramePerformanceTimer.SecondsElapsed();
                 platformServices.realLifeTimeInSecs += platformServices.prevFrameTimeInSecs;

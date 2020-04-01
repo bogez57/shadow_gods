@@ -47,6 +47,11 @@ global_variable i32 renderBuffer;
 global_variable f32 currentRotation;
 global_variable NormalMap normalMap;
 
+global_variable b firstTimeThrough{true};
+global_variable v2i currentMousePos{};
+global_variable v2i currentVectorToDraw{};
+global_variable v2i originalMousePos{};
+
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MALLOC(sz) MallocSize(heap, sz)
@@ -382,7 +387,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if(KeyHeld(gameInput->mouseButtons[Mouse::LEFT_CLICK]))
     {
-        BGZ_CONSOLE("HEllo");
+        if(firstTimeThrough)
+        {
+            originalMousePos = {gameInput->mouseX, gameInput->mouseY};
+            firstTimeThrough = false;
+        };
+        
+        currentMousePos = {gameInput->mouseX, gameInput->mouseY};
+        currentVectorToDraw = currentMousePos - originalMousePos;
+        
+        BGZ_CONSOLE("vecX: %i, vecY: %i\n", currentVectorToDraw.x, currentVectorToDraw.y);
+    };
+    
+    if(KeyReleased(gameInput->mouseButtons[Mouse::LEFT_CLICK]))
+    {
+        firstTimeThrough = true;
     };
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
