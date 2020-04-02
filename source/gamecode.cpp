@@ -481,7 +481,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //DrawFighter(*enemy);
         
         v2f line_minPoint = {(stage->size.width / 2.0f) - 9.0f, 3.0f };
-        v2f line_maxPoint = {(stage->size.width / 2.0f) - 3.0f, 9.0f };
+        v2f line_maxPoint = {(stage->size.width / 2.0f) - 8.0f, 9.0f };
         
         PushLine(global_renderingInfo, line_minPoint, line_maxPoint, {0.0f, 1.0f, 0.0f});
         
