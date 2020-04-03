@@ -969,7 +969,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             bgz::Timer FramePerformanceTimer {};
             FramePerformanceTimer.Init();
             
-            auto UpdateInput = [](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
+            auto UpdateInput = [window](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
                 
                 for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
