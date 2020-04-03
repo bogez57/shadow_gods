@@ -125,48 +125,29 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 };
 #endif
 
+
+void DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect);
 local_func void
 DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, RenderEntry_Line line_screenCoords, v3f lineColor, Rectf clipRect)
 {
-    auto DotProduct_Minus = [](v2f vec1, v2f vec2) -> f32 {
-        
-        f32 result = (vec1.x*vec2.y) - (vec1.y*vec2.x);
-        return result;
-    };
+    v2f lineVector = line_screenCoords.maxPoint - line_screenCoords.minPoint;
     
-    ui32 pixelColor = { (0xFF << 24) | (RoundFloat32ToUInt32(lineColor.r * 255.0f) << 16) | (RoundFloat32ToUInt32(lineColor.g * 255.0f) << 8) | (RoundFloat32ToUInt32(lineColor.b * 255.0f) << 0) };
+    Normalize($(lineVector));
+    v2f normalPerpVec = PerpendicularOp(lineVector);
+    normalPerpVec *= 2.0f;
     
-    ui8* currentRow = (ui8*)colorBufferData + (i32)line_screenCoords.minPoint.x * 4 + (i32)line_screenCoords.minPoint.y * colorBufferPitch;
-    for (f32 screenY = line_screenCoords.minPoint.y; screenY < line_screenCoords.maxPoint.y; ++screenY)
-    {
-        ui32* destPixel = (ui32*)currentRow;
-        
-        for (f32 screenX = line_screenCoords.minPoint.x; screenX < line_screenCoords.maxPoint.x; ++screenX)
-        {
-            v2f screenPixelCoord { screenX, screenY };
-            
-            v2f s = { (screenX - line_screenCoords.minPoint.x), 0.0f};
-            v2f q = { line_screenCoords.minPoint.x, screenY };
-            v2f p = line_screenCoords.minPoint;
-            v2f r = line_screenCoords.maxPoint - line_screenCoords.minPoint;
-            
-            f32 epsilon = 0.00001f; //TODO: Remove????
-            if(DotProduct(r, s) != 0)
-            {
-                f32 ans = (DotProduct_Minus((q - p), r)) / (DotProduct_Minus(r, s));
-                
-                if((ans + epsilon) >= 0.0f && (ans + epsilon) <= 1.0f)
-                {
-                    *destPixel = pixelColor;
-                    break;
-                };
-            }
-            
-            ++destPixel;
-        }
-        
-        currentRow += colorBufferPitch;
-    }
+    v2f bottomLeft = line_screenCoords.minPoint + normalPerpVec;
+    v2f bottomRight = line_screenCoords.minPoint - normalPerpVec;
+    v2f topLeft = line_screenCoords.maxPoint + normalPerpVec;
+    v2f topRight = line_screenCoords.maxPoint - normalPerpVec;
+    
+    Quadf targetRect_screenCoords{};
+    targetRect_screenCoords.bottomLeft = bottomLeft;
+    targetRect_screenCoords.bottomRight = bottomRight;
+    targetRect_screenCoords.topLeft = topLeft;
+    targetRect_screenCoords.topRight = topRight;
+    
+    DrawRectangle(colorBufferData, colorBufferSize, colorBufferPitch, targetRect_screenCoords, lineColor, clipRect);
 };
 
 local_func void
