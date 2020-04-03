@@ -46,6 +46,11 @@ global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
 global_variable NormalMap normalMap;
 
+global_variable b firstTimeThrough{true};
+global_variable v2i currentMousePos{};
+global_variable v2i currentVectorToDraw{};
+global_variable v2i originalMousePos{};
+
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MALLOC(sz) MallocSize(heap, sz)
