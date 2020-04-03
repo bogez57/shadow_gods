@@ -970,10 +970,29 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             FramePerformanceTimer.Init();
             
             auto UpdateInput = [](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
+                
                 for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
-                {
                     ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
-                }
+                
+                ClearTransitionCounts(Input.mouseButtons);
+                
+                {//Update mouse position/button state
+                    POINT mousePos;
+                    GetCursorPos(&mousePos);
+                    ScreenToClient(window, &mousePos);
+                    
+                    //Since game screen coords are bottom up and not top down (windows seems to assume top down coords for mouse pos) I'm converting to bottom up here
+                    i32 mousePosY = mousePos.y;
+                    mousePosY -= globalWindowHeight;
+                    AbsoluteVal($(mousePosY));
+                    
+                    Input.mouseX = mousePos.x;
+                    Input.mouseY = mousePosY;
+                    
+                    Win32::ProcessKeyboardMessage($(Input.mouseButtons[0]), GetKeyState(VK_LBUTTON) & (1 << 15));
+                    Win32::ProcessKeyboardMessage($(Input.mouseButtons[1]), GetKeyState(VK_RBUTTON) & (1 << 15));
+                    Win32::ProcessKeyboardMessage($(Input.mouseButtons[2]), GetKeyState(VK_MBUTTON) & (1 << 15));
+                };
                 
                 //Poll Keyboard Input
                 Win32::ProcessPendingMessages($(Input), $(GameReplayState));
