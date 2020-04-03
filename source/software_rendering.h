@@ -125,6 +125,31 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 };
 #endif
 
+
+void DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect);
+local_func void
+DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, v2f minPoint, v2f maxPoint, v3f lineColor, f32 thickness, Rectf clipRect)
+{
+    v2f lineVector = maxPoint - minPoint;
+    
+    Normalize($(lineVector));
+    v2f normalPerpVec = PerpendicularOp(lineVector);
+    normalPerpVec *= thickness;
+    
+    v2f bottomLeft = minPoint + normalPerpVec;
+    v2f bottomRight = minPoint - normalPerpVec;
+    v2f topLeft = maxPoint + normalPerpVec;
+    v2f topRight = maxPoint - normalPerpVec;
+    
+    Quadf targetRect_screenCoords{};
+    targetRect_screenCoords.bottomLeft = bottomLeft;
+    targetRect_screenCoords.bottomRight = bottomRight;
+    targetRect_screenCoords.topLeft = topLeft;
+    targetRect_screenCoords.topRight = topRight;
+    
+    DrawRectangle(colorBufferData, colorBufferSize, colorBufferPitch, targetRect_screenCoords, lineColor, clipRect);
+};
+
 local_func void
 DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect)
 {
@@ -922,6 +947,24 @@ void DoRenderWork(void* data)
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+            }
+            break;
+            
+            case EntryType_Line:
+            {
+                RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
+                
+                v2f lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
+                v2f lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                
+                v2f lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
+                v2f lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
+                lineEntry.minPoint = lineMinPoint_screen;
+                lineEntry.maxPoint = lineMaxPoint_screen;
+                
+                DrawLine((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, lineEntry.minPoint, lineEntry.maxPoint, lineEntry.color, lineEntry.thickness, work->screenRegionCoords);
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Line);
             }
             break;
             

@@ -431,6 +431,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
         
+        v2f lineMinPoint = {3.0f, 3.0f};
+        v2f lineMaxPoint = {5.0f, 7.0f};
+        PushLine(global_renderingInfo, lineMinPoint, lineMaxPoint, {0.0f, 1.0f, 0.0f}, 2.0f);
+        
         v2f mousePos_meters { ((f32)gameInput->mouseX) / global_renderingInfo->_pixelsPerMeter, ((f32)gameInput->mouseY) / global_renderingInfo->_pixelsPerMeter };
         
         if (gameInput->mouseButtons[Mouse::LEFT_CLICK].Pressed)
