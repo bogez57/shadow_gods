@@ -156,6 +156,7 @@ struct RenderEntry_Line
     v2f minPoint;
     v2f maxPoint;
     v3f color;
+    f32 thickness;
 };
 
 //Helpers
@@ -167,7 +168,7 @@ v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2f, 2> uvs, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name);
 void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color);
-void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color);
+void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenCoords, f32 zoomFactor);
 void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
@@ -199,7 +200,7 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color)
+void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color, f32 thickness)
 {
     RenderEntry_Line* lineEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Line);
     
@@ -207,6 +208,7 @@ void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f col
     lineEntry->minPoint = minPoint;
     lineEntry->maxPoint = maxPoint;
     lineEntry->color = color;
+    lineEntry->thickness = thickness;
     
     ++renderingInfo->cmdBuffer.entryCount;
 };

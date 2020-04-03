@@ -128,18 +128,18 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 
 void DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect);
 local_func void
-DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, RenderEntry_Line line_screenCoords, v3f lineColor, Rectf clipRect)
+DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, v2f minPoint, v2f maxPoint, v3f lineColor, f32 thickness, Rectf clipRect)
 {
-    v2f lineVector = line_screenCoords.maxPoint - line_screenCoords.minPoint;
+    v2f lineVector = maxPoint - minPoint;
     
     Normalize($(lineVector));
     v2f normalPerpVec = PerpendicularOp(lineVector);
-    normalPerpVec *= 2.0f;
+    normalPerpVec *= thickness;
     
-    v2f bottomLeft = line_screenCoords.minPoint + normalPerpVec;
-    v2f bottomRight = line_screenCoords.minPoint - normalPerpVec;
-    v2f topLeft = line_screenCoords.maxPoint + normalPerpVec;
-    v2f topRight = line_screenCoords.maxPoint - normalPerpVec;
+    v2f bottomLeft = minPoint + normalPerpVec;
+    v2f bottomRight = minPoint - normalPerpVec;
+    v2f topLeft = maxPoint + normalPerpVec;
+    v2f topRight = maxPoint - normalPerpVec;
     
     Quadf targetRect_screenCoords{};
     targetRect_screenCoords.bottomLeft = bottomLeft;
@@ -962,7 +962,7 @@ void DoRenderWork(void* data)
                 lineEntry.minPoint = lineMinPoint_screen;
                 lineEntry.maxPoint = lineMaxPoint_screen;
                 
-                DrawLine((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, lineEntry, lineEntry.color, work->screenRegionCoords);
+                DrawLine((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, lineEntry.minPoint, lineEntry.maxPoint, lineEntry.color, lineEntry.thickness, work->screenRegionCoords);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Line);
             }
