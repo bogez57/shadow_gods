@@ -156,6 +156,7 @@ struct RenderEntry_Line
     v2f minPoint;
     v2f maxPoint;
     v3f color;
+    f32 thickness;
 };
 
 //Helpers
@@ -164,10 +165,10 @@ f32 BitmapWidth_meters(Image bitmap);
 v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
-void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, f32 objectHeight_inMeters, Array<v2f, 2> uvs, const char* name);
-void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name);
+void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2f, 2> uvs, const char* name);
+void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name);
 void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color);
-void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color);
+void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenCoords, f32 zoomFactor);
 void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
@@ -177,7 +178,9 @@ void ConvertToCorrectPositiveRadian(f32&& angle);
 //void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
+v2f CameraTransform(v2f worldCoords, Camera2D camera);
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
+v2f ProjectionTransform_Ortho(v2f cameraCoords, f32 pixelsPerMeter);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
@@ -197,7 +200,7 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color)
+void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color, f32 thickness)
 {
     RenderEntry_Line* lineEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Line);
     
@@ -205,6 +208,7 @@ void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f col
     lineEntry->minPoint = minPoint;
     lineEntry->maxPoint = maxPoint;
     lineEntry->color = color;
+    lineEntry->thickness = thickness;
     
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -356,6 +360,17 @@ _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Rectf RectToDil
     return DilatedRect;
 };
 
+v2f _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, v2f vectorToDilate)
+{
+    v2f dilatedVector{};
+    
+    v2f distance = PointOfDilation - vectorToDilate;
+    distance *= ScaleFactor;
+    dilatedVector = PointOfDilation - distance;
+    
+    return dilatedVector;
+};
+
 auto _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate) -> Quadf
 {
     Quadf DilatedQuad {};
@@ -368,6 +383,17 @@ auto _DilateAboutArbitraryPoint(v2f PointOfDilation, f32 ScaleFactor, Quadf Quad
     };
     
     return DilatedQuad;
+};
+
+v2f CameraTransform(v2f worldCoords, Camera2D camera)
+{
+    v2f transformedCoords {};
+    v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+    worldCoords += translationToCameraSpace;
+    
+    transformedCoords = _DilateAboutArbitraryPoint(camera.dilatePoint_inScreenCoords, camera.zoomFactor, worldCoords);
+    
+    return transformedCoords;
 };
 
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
@@ -386,12 +412,17 @@ Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
     return transformedCoords;
 };
 
+v2f ProjectionTransform_Ortho(v2f cameraCoords, f32 pixelsPerMeter)
+{
+    cameraCoords *= pixelsPerMeter;
+    
+    return cameraCoords;
+};
+
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter)
 {
     for (i32 vertIndex {}; vertIndex < 4; vertIndex++)
-    {
         cameraCoords.vertices[vertIndex] *= pixelsPerMeter;
-    };
     
     return cameraCoords;
 };
