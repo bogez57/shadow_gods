@@ -16,10 +16,10 @@ struct Game_Controller
 {
     b32 IsConnected;
     b32 IsAnalog;
-
+    
     v2f LThumbStick;
     v2f RThumbStick;
-
+    
     union
     {
         Button_State Buttons[14];
@@ -29,17 +29,17 @@ struct Game_Controller
             Button_State MoveDown;
             Button_State MoveLeft;
             Button_State MoveRight;
-
+            
             Button_State ActionUp;
             Button_State ActionDown;
             Button_State ActionLeft;
             Button_State ActionRight;
-
+            
             Button_State LeftShoulder;
             Button_State RightShoulder;
             Button_State LeftTrigger;
             Button_State RightTrigger;
-
+            
             Button_State Back;
             Button_State Start;
             //All buttons must be added above this line
@@ -47,17 +47,30 @@ struct Game_Controller
     };
 };
 
-auto ClearTransitionCounts(Game_Controller* Controller) -> void
+void ClearTransitionCounts(Button_State* buttons)
+{
+    for(i32 buttonIndex{}; buttonIndex < ArrayCount(buttons); ++buttonIndex)
+        buttons[buttonIndex].NumTransitionsPerFrame = 0;
+};
+
+void ClearTransitionCounts(Game_Controller* Controller)
 {
     for (int ButtonIndex = 0; ButtonIndex < ArrayCount(Controller->Buttons); ++ButtonIndex)
-    {
         Controller->Buttons[ButtonIndex].NumTransitionsPerFrame = 0;
-    };
 }
+
+enum Mouse
+{
+    LEFT_CLICK,
+    RIGHT_CLICK,
+    WHEEL_CLICK
+};
 
 struct Game_Input
 {
-    Game_Controller Controllers[5];
+    i32 mouseX, mouseY;//TODO: Support mouse wheel pos
+    Button_State mouseButtons[3];//Left click, right click, and mouse wheel click
+    Game_Controller Controllers[5];//0 index is reserved for keyboard
 };
 
 struct Game_Sound_Output_Buffer
@@ -104,9 +117,9 @@ local_func v4f
 UnPackPixelValues(ui32 pixel, ChannelType channelType)
 {
     v4f result {};
-
+    
     ui32* pixelInfo = &pixel;
-
+    
     switch(channelType)
     {
         case RGBA:
@@ -116,7 +129,7 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
             result.b = (f32)*((ui8*)pixelInfo + 2);
             result.a = (f32)*((ui8*)pixelInfo + 3);
         }break;
-
+        
         case BGRA:
         {
             result.b = (f32)*((ui8*)pixelInfo + 0);
@@ -124,9 +137,9 @@ UnPackPixelValues(ui32 pixel, ChannelType channelType)
             result.r = (f32)*((ui8*)pixelInfo + 2);
             result.a = (f32)*((ui8*)pixelInfo + 3);
         }break;
-
+        
         default : break;
     };
-
+    
     return result;
 };
