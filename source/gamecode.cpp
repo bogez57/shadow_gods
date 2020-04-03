@@ -48,9 +48,8 @@ global_variable f32 currentRotation;
 global_variable NormalMap normalMap;
 
 global_variable b firstTimeThrough{true};
-global_variable v2i currentMousePos{};
-global_variable v2i currentVectorToDraw{};
-global_variable v2i originalMousePos{};
+global_variable v2f currentMousePos{};
+global_variable v2f originalMousePos{};
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
@@ -385,65 +384,54 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     if (KeyHeld(keyboard->MoveDown))
         stage->camera.zoomFactor -= .02f;
     
+    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
+    
+    normalMap.rotation = currentRotation;
+    
+    auto DrawImage = [gState, stage](Region_Attachment* region) -> void {
+        AtlasRegion* region_image = &region->region_image;
+        Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
+        
+        Transform transform { { stage->size.width / 2.0f, 3.5f } /*Translation*/, gState->normalMapRotation, { 2.0f, 2.0f } /*Scale*/ };
+        Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
+        Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
+        
+        NormalMap normalMap {};
+        normalMap.mapData = gState->normalMap.data;
+        normalMap.rotation = gState->normalMapRotation;
+        normalMap.scale = transform.scale;
+        normalMap.lightAngle = gState->lightAngle;
+        normalMap.lightThreshold = gState->lightThreshold;
+        
+        PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, normalMap, v2f { region->width, region->height }, uvs2, region_image->name);
+    };
+    
+    //Push background
+    Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
+    PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+    
+    DrawImage(&gState->currentImageRegion);
+    
     if(KeyHeld(gameInput->mouseButtons[Mouse::LEFT_CLICK]))
     {
         if(firstTimeThrough)
         {
-            originalMousePos = {gameInput->mouseX, gameInput->mouseY};
+            originalMousePos = {(f32)gameInput->mouseX, (f32)gameInput->mouseY};
+            originalMousePos = originalMousePos / 72.0f;
             firstTimeThrough = false;
         };
         
-        currentMousePos = {gameInput->mouseX, gameInput->mouseY};
-        currentVectorToDraw = currentMousePos - originalMousePos;
+        currentMousePos = {(f32)gameInput->mouseX, (f32)gameInput->mouseY};
+        currentMousePos = currentMousePos / 72.0f;//Conver to meters
         
-        BGZ_CONSOLE("vecX: %i, vecY: %i\n", currentVectorToDraw.x, currentVectorToDraw.y);
+        PushLine(global_renderingInfo, originalMousePos, currentMousePos, {0.0f, 1.0f, 0.0f}, 2.0f);
+        
+        //BGZ_CONSOLE("startMousePos - x: %f y: %f   endMousePos - x: %f y: %f\n", originalMousePos.x, originalMousePos.y, currentMousePos.x, currentMousePos.y);
     };
     
     if(KeyReleased(gameInput->mouseButtons[Mouse::LEFT_CLICK]))
     {
         firstTimeThrough = true;
-    };
-    
-    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
-    
-    normalMap.rotation = currentRotation;
-    
-    { //Render
-        auto DrawImage = [gState, stage](Region_Attachment* region) -> void {
-            AtlasRegion* region_image = &region->region_image;
-            Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
-            
-            Transform transform { { stage->size.width / 2.0f, 3.5f } /*Translation*/, gState->normalMapRotation, { 2.0f, 2.0f } /*Scale*/ };
-            Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
-            Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, transform);
-            
-            NormalMap normalMap {};
-            normalMap.mapData = gState->normalMap.data;
-            normalMap.rotation = gState->normalMapRotation;
-            normalMap.scale = transform.scale;
-            normalMap.lightAngle = gState->lightAngle;
-            normalMap.lightThreshold = gState->lightThreshold;
-            
-            PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, normalMap, v2f { region->width, region->height }, uvs2, region_image->name);
-        };
-        
-        //Push background
-        Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
-        PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-        
-        v2f lineMinPoint = {3.0f, 3.0f};
-        v2f lineMaxPoint = {5.0f, 7.0f};
-        PushLine(global_renderingInfo, lineMinPoint, lineMaxPoint, {0.0f, 1.0f, 0.0f}, 2.0f);
-        
-        v2f mousePos_meters { ((f32)gameInput->mouseX) / global_renderingInfo->_pixelsPerMeter, ((f32)gameInput->mouseY) / global_renderingInfo->_pixelsPerMeter };
-        
-        if (gameInput->mouseButtons[Mouse::LEFT_CLICK].Pressed)
-        {
-            Quadf targetRect_mousePos = ProduceQuadFromCenterPoint(mousePos_meters, 1.0f, 1.0f);
-            PushRect(global_renderingInfo, targetRect_mousePos, { 0.0f, 1.0f, 0.0f });
-        }
-        
-        DrawImage(&gState->currentImageRegion);
     };
     
     IsAllTempMemoryCleared(framePart);
