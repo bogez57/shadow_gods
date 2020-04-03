@@ -485,14 +485,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         PushLine(global_renderingInfo, line_minPoint, line_maxPoint, {0.0f, 1.0f, 0.0f}/*color*/, 5.0f/*thickness*/);
         
-        v2f mousePos_meters { ((f32)gameInput->mouseX) / global_renderingInfo->_pixelsPerMeter, ((f32)gameInput->mouseY) / global_renderingInfo->_pixelsPerMeter };
-        
-        if (gameInput->mouseButtons[Mouse::LEFT_CLICK].Pressed)
-        {
-            Quadf targetRect_mousePos = ProduceQuadFromCenterPoint(mousePos_meters, 1.0f, 1.0f);
-            PushRect(global_renderingInfo, targetRect_mousePos, { 0.0f, 1.0f, 0.0f });
-        }
-        
 #if 0
         for (i32 i {}; i < player->skel.bones.length; ++i)
         {
