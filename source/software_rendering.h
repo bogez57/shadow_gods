@@ -746,6 +746,8 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                         blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
                     };
                     
+                    blendedNormal.xy += normalMap.adjustmentVector;
+                    
                     Normalize($(blendedNormal.xyz));
                     
                     if (blendedNormal.z > 0.0f)

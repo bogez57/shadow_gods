@@ -45,7 +45,6 @@ global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
 global_variable f32 currentRotation;
-global_variable NormalMap normalMap;
 
 global_variable b firstTimeThrough{true};
 global_variable v2f currentMousePos{};
@@ -364,18 +363,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         BGZ_CONSOLE("Dll reloaded!");
         globalPlatformServices->DLLJustReloaded = false;
-        
-        normalMap.mapData = gState->normalMap.data;
     };
     
     if (KeyHeld(keyboard->MoveRight))
     {
-        gState->normalMapRotation += .01f;
+        gState->normalMapAdjustmentVector += .1f;
+        //gState->normalMapRotation += .1f;
     };
     
     if (KeyHeld(keyboard->MoveLeft))
     {
-        gState->normalMapRotation -= .01f;
+        gState->normalMapRotation -= .1f;
     };
     
     if (KeyHeld(keyboard->MoveUp))
@@ -385,8 +383,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor -= .02f;
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
-    
-    normalMap.rotation = currentRotation;
     
     auto DrawImage = [gState, stage](Region_Attachment* region) -> void {
         AtlasRegion* region_image = &region->region_image;
@@ -399,6 +395,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         NormalMap normalMap {};
         normalMap.mapData = gState->normalMap.data;
         normalMap.rotation = gState->normalMapRotation;
+        normalMap.adjustmentVector = gState->normalMapAdjustmentVector;
         normalMap.scale = transform.scale;
         normalMap.lightAngle = gState->lightAngle;
         normalMap.lightThreshold = gState->lightThreshold;

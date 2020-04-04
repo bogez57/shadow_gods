@@ -87,6 +87,7 @@ struct Rendering_Info
 struct NormalMap
 {
     ui8* mapData { nullptr };
+    v2f adjustmentVector{};
     f32 rotation {};
     v2f scale { 1.0f, 1.0f };
     f32 lightAngle {};

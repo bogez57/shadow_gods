@@ -31,6 +31,7 @@ struct Game_State
     Image normalMap;
     Region_Attachment currentImageRegion{};
     f32 normalMapRotation;
+    v2f normalMapAdjustmentVector{};
     f32 lightAngle{};
     f32 lightThreshold{};
     Atlas* atlas;
