@@ -401,7 +401,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         normalMap.lightThreshold = gState->lightThreshold;
         
         Circle areaForVecAdjustments{};
-        areaForVecAdjustments = {originalMousePos};
+        areaForVecAdjustments = {originalMousePos, 40.0f};
         PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, normalMap, v2f { region->width, region->height }, uvs2, region_image->name, areaForVecAdjustments);
     };
     
@@ -431,7 +431,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     if(KeyReleased(gameInput->mouseButtons[Mouse::LEFT_CLICK]))
     {
         firstTimeThrough = true;
-        originalMousePos = {0.0f, 0.0f};
+        //originalMousePos = {0.0f, 0.0f};
     };
     
     IsAllTempMemoryCleared(framePart);
