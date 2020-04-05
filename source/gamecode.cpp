@@ -367,7 +367,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (KeyHeld(keyboard->MoveRight))
     {
-        gState->normalMapAdjustmentVector += .1f;
+        gState->normalMapAdjustmentVector += .5f;
         //gState->normalMapRotation += .1f;
     };
     
@@ -420,6 +420,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             firstTimeThrough = false;
         };
         
+        gState->normalMapAdjustmentVector += .5f;
         currentMousePos = {(f32)gameInput->mouseX, (f32)gameInput->mouseY};
         currentMousePos = currentMousePos / 72.0f;//Conver to meters
         

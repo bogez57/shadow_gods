@@ -738,6 +738,10 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                     blendedNormal.y = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.g);
                     blendedNormal.z = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.b);
                     
+                    {
+                        i32 ans = RoundFloat32ToUInt32((-.215f + 1) * (255/2));
+                    };
+                    
                     { //Rotating and scaling normals (supports non-uniform scaling of normal x and y)
                         v2f normalXBasis = v2f { CosR(normalMap.rotation), SinR(normalMap.rotation) };
                         v2f normalYBasis = normalMap.scale.y * PerpendicularOp(normalXBasis);
@@ -749,7 +753,6 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                         blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
                     };
                     
-                    //TODO: make the math work here
                     v2f currentPos{(u * targetRectXAxis.x), (v * targetRectYAxis.y)};
                     currentPos -= mouseD;
                     f32 radiusSquared = areaOfVectorAdjustments.radius * areaOfVectorAdjustments.radius;
@@ -758,7 +761,25 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                     f32 ans = yPosSquared + xPosSquared;
                     
                     if (ans < radiusSquared)
+                    {
+                        ui32* normal_rgbSpace = (ui32*)(normalPtr);
+                        v4f unPackedNormal_rgbSpace = UnPackPixelValues(*normal_rgbSpace, BGRA);
+                        
+                        f32 normal_x = -1.0f + 2.0f * (inv255 * unPackedNormal_rgbSpace.r);
+                        f32 normal_y = -1.0f + 2.0f * (inv255 * unPackedNormal_rgbSpace.g);
+                        
+                        normal_x += normalMap.adjustmentVector.x;
+                        normal_y += normalMap.adjustmentVector.y;
+                        
+                        //Convert back to 0 - 255 color value
+                        ui32 normal_b = RoundFloat32ToUInt32((normal_x + 1) * (255/2));
+                        ui32 normal_g = RoundFloat32ToUInt32((normal_y + 1) * (255/2));
+                        
+                        //Store back to normalMap data
+                        *normal_rgbSpace = ((0xFF << 24) | ((ui8)unPackedNormal_rgbSpace.b << 0) | ((ui8)normal_g << 8) | ((ui8)normal_b << 16));
+                        
                         blendedNormal.xy += normalMap.adjustmentVector;
+                    }
                     
                     Normalize($(blendedNormal.xyz));
                     
