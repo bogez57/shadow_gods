@@ -69,6 +69,12 @@ struct Quadi
     };
 };
 
+struct Circle
+{
+    v2f centerPos{};
+    f32 radius{};
+};
+
 struct Game_Render_Cmd_Buffer
 {
     ui8* baseAddress { nullptr };
@@ -149,6 +155,7 @@ struct RenderEntry_Texture
     v2f dimensions {};
     Array<v2f, 2> uvBounds;
     Quadf targetRect_worldCoords;
+    Circle areaWhereVectorAdjustmentsShouldBeMade{{0.0f, 0.0f}, 50.0f};
 };
 
 struct RenderEntry_Line
@@ -167,7 +174,7 @@ v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2f, 2> uvs, const char* name);
-void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name);
+void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name, Circle areaForVectorAdjustments);
 void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color);
 void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenCoords, f32 zoomFactor);
@@ -225,7 +232,7 @@ void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color)
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name)
+void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name, Circle areaForVectorAdjustments)
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
     
@@ -237,6 +244,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, 
     textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
+    textureEntry->areaWhereVectorAdjustmentsShouldBeMade = areaForVectorAdjustments;
     
     textureEntry->dimensions = { objectSize_meters.width, objectSize_meters.height };
     
