@@ -667,6 +667,9 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
     
+    if(texture.normalMap.adjustmentVector.x > 0.0f)
+        BGZ_CONSOLE("adjVec_x: %f, adjVec_y: %f\n", texture.normalMap.adjustmentVector.x, texture.normalMap.adjustmentVector.y);
+    
     ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4 + (i32)yMin * colorBufferPitch;
     for (f32 screenY = yMin; screenY < yMax; ++screenY)
     {
@@ -725,23 +728,17 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 if (normalMap.mapData)
                 {
                     ui8* normalPtr = ((ui8*)normalMap.mapData) + ((ui32)texelPos_y * texture.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
-                    
                     //Grab 4 normals (in a square pattern) to blend
                     v4ui32 normalSquare_inRGBSpace = Grab4NearestPixelPtrs_SquarePattern(normalPtr, texture.pitch_pxls);
-                    
-                    v4f blendedNormal_inRGBSspace = BiLinearLerp(normalSquare_inRGBSpace, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
-                    
+                    v4f normal_inRGBSpace = UnPackPixelValues(normalSquare_inRGBSpace.r, BGRA);
                     //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
                     f32 inv255 = 1.0f / 255.0f;
-                    v4f blendedNormal {};
-                    blendedNormal.x = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.r);
-                    blendedNormal.y = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.g);
-                    blendedNormal.z = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.b);
+                    v4f normal_vectorSpace {};
+                    normal_vectorSpace.x = -1.0f + 2.0f * (inv255 * normal_inRGBSpace.r);
+                    normal_vectorSpace.y = -1.0f + 2.0f * (inv255 * normal_inRGBSpace.g);
+                    normal_vectorSpace.z = -1.0f + 2.0f * (inv255 * normal_inRGBSpace.b);
                     
-                    {
-                        i32 ans = RoundFloat32ToUInt32((-.215f + 1) * (255/2));
-                    };
-                    
+#if 0
                     { //Rotating and scaling normals (supports non-uniform scaling of normal x and y)
                         v2f normalXBasis = v2f { CosR(normalMap.rotation), SinR(normalMap.rotation) };
                         v2f normalYBasis = normalMap.scale.y * PerpendicularOp(normalXBasis);
@@ -750,7 +747,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                         normalXBasis *= (Magnitude(normalYBasis) / Magnitude(normalXBasis));
                         normalYBasis *= (Magnitude(normalXBasis) / Magnitude(normalYBasis));
                         
-                        blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
+                        normal_vectorSpace.xy = (normal_vectorSpace.x * normalXBasis) + (normal_vectorSpace.y * normalYBasis);
                     };
                     
                     v2f currentPos{(u * targetRectXAxis.x), (v * targetRectYAxis.y)};
@@ -760,8 +757,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                     f32 xPosSquared = currentPos.x * currentPos.x;
                     f32 ans = yPosSquared + xPosSquared;
                     
-                    if (ans < radiusSquared)
-                    {
+                    {//Store vector change back in normalMap
                         ui32* normal_rgbSpace = (ui32*)(normalPtr);
                         v4f unPackedNormal_rgbSpace = UnPackPixelValues(*normal_rgbSpace, BGRA);
                         
@@ -777,13 +773,14 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                         
                         //Store back to normalMap data
                         *normal_rgbSpace = ((0xFF << 24) | ((ui8)unPackedNormal_rgbSpace.b << 0) | ((ui8)normal_g << 8) | ((ui8)normal_b << 16));
-                        
-                        blendedNormal.xy += normalMap.adjustmentVector;
                     }
+#endif
                     
-                    Normalize($(blendedNormal.xyz));
+                    normal_vectorSpace.xy += normalMap.adjustmentVector;
                     
-                    if (blendedNormal.z > 0.0f)
+                    Normalize($(normal_vectorSpace.xyz));
+                    
+                    if (normal_vectorSpace.z > 0.0f)
                     {
                         *destPixel = ((0xFF << 24) | ((ui8)finalBlendedColor.r << 16) | ((ui8)finalBlendedColor.g << 8) | ((ui8)finalBlendedColor.b << 0));
                     }
@@ -794,25 +791,25 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                         
                         f32 normalAngle {};
                         { //Calculate correct raidan angle from normal
-                            if ((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
+                            if ((normal_vectorSpace.x + epsilon) > 0.0f && normal_vectorSpace.y > 0.0f)
                             {
-                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                                normalAngle = InvTanR(normal_vectorSpace.y / normal_vectorSpace.x);
                             }
-                            else if (blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
+                            else if (normal_vectorSpace.x < 0.0f && normal_vectorSpace.y > 0.0f)
                             {
-                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                                normalAngle = InvTanR(normal_vectorSpace.x / normal_vectorSpace.y);
                                 AbsoluteVal($(normalAngle));
                                 normalAngle += (PI / 2.0f);
                             }
-                            else if (blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
+                            else if (normal_vectorSpace.x < 0.0f && normal_vectorSpace.y < 0.0f)
                             {
-                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
+                                normalAngle = InvTanR(normal_vectorSpace.x / normal_vectorSpace.y);
                                 normalAngle -= ((3.0f * PI) / 2.0f);
                                 AbsoluteVal($(normalAngle));
                             }
-                            else if ((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
+                            else if ((normal_vectorSpace.x + epsilon) > 0.0f && normal_vectorSpace.y < 0.0f)
                             {
-                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
+                                normalAngle = InvTanR(normal_vectorSpace.y / normal_vectorSpace.x);
                                 ConvertNegativeToPositiveAngle_Radians($(normalAngle));
                             }
                         };

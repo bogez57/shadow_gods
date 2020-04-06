@@ -310,7 +310,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     BGZ_ERRCTXT1("When entering GameUpdate");
     
-    const Game_Controller* keyboard = &gameInput->Controllers[0];
+    Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];
     
     Game_State* gState = (Game_State*)gameMemory->permanentStorage;
@@ -357,6 +357,31 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         gState->normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
         gState->lightAngle = 1.0f;
         gState->lightThreshold = 1.0f;
+        
+        gState->normalMapAdjustmentVector = { 0.0f, 0.2f };
+        
+        {
+            i32 totalPixelCountOfImg = gState->normalMap.width_pxls * gState->normalMap.height_pxls;
+            ui32* imagePixel = (ui32*)gState->normalMap.data;
+            
+            //TODO: Just clear out the alpha channel and have it act as a flag for what normal vectors have already been changed in the renderer
+#if 0
+            //Swap R and B channels of image
+            for (int i = 0; i < totalPixelCountOfImg; ++i)
+            {
+                auto color = UnPackPixelValues(*imagePixel, RGBA);
+                
+                //Pre-multiplied alpha
+                f32 alphaBlend = color.a / 255.0f;
+                color.rgb *= alphaBlend;
+                
+                ui32 newSwappedPixelColor = (((ui8)color.a << 24) | ((ui8)color.r << 16) | ((ui8)color.g << 8) | ((ui8)color.b << 0));
+                
+                *imagePixel++ = newSwappedPixelColor;
+            }
+#endif
+        }
+        
     };
     
     if (globalPlatformServices->DLLJustReloaded)
@@ -365,9 +390,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         globalPlatformServices->DLLJustReloaded = false;
     };
     
-    if (KeyHeld(keyboard->MoveRight))
+    if (KeyPressed(keyboard->MoveRight))
     {
-        gState->normalMapAdjustmentVector += .5f;
+        gState->normalMapAdjustmentVector = {0.0f, 0.0f};
         //gState->normalMapRotation += .1f;
     };
     
@@ -420,7 +445,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             firstTimeThrough = false;
         };
         
-        gState->normalMapAdjustmentVector += .5f;
         currentMousePos = {(f32)gameInput->mouseX, (f32)gameInput->mouseY};
         currentMousePos = currentMousePos / 72.0f;//Conver to meters
         
@@ -441,4 +465,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (gState->isLevelOver)
         Release($(*levelPart));
+    
+    keyboard->MoveRight.Pressed = false;
 };
