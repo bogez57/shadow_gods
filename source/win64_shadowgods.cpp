@@ -402,9 +402,6 @@ namespace Win32
         buffer.Info.bmiHeader.biBitCount = 32;
         buffer.Info.bmiHeader.biCompression = BI_RGB;
         
-        // Thank you to Chris Hecker of Spy Party fame
-        // for clarifying the deal with StretchDIBits and BitBlt!
-        // No more DC for us.
         int BitmapMemorySize = (buffer.width * buffer.height) * buffer.bytesPerPixel;
         buffer.memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
         buffer.pitch = width * buffer.bytesPerPixel;
@@ -415,9 +412,11 @@ namespace Win32
     local_func void
         DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
-        b renderThroughHardware { false };
+        b renderThroughHardware { true };
         if (renderThroughHardware)
         {
+            RenderViaHardware(windowWidth, windowHeight);
+            SwapBuffers(deviceContext);
         }
         else
         {
@@ -657,8 +656,6 @@ namespace Win32
                             Win32::Dbg::LogErr("Unable to set the pixel format for potential opengl window!");
                             InvalidCodePath;
                         }
-                        
-                        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
                     } //Init OpenGL
                 }
                 else
