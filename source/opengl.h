@@ -170,14 +170,15 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Rect:
             {
-#if 0
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
                 Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
                 Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
-                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
-#endif
+                v2f minPoint = targetRect_screen.bottomLeft;
+                v2f maxPoint = targetRect_screen.topRight;
+                v4f color = {rectEntry.color.r, rectEntry.color.g, rectEntry.color.b, 1.0f};
+                DrawRect(minPoint, maxPoint, color);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
             }
