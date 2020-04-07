@@ -37,4 +37,5 @@ struct Game_State
     Atlas* atlas;
     Stage_Data stage;
     b isLevelOver{false};
+    Image leftBicep{};
 };

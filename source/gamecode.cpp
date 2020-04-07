@@ -353,33 +353,27 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         InitSkel($(player->skel), $(*levelPart), atlas, "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         TranslateCurrentMeasurementsToGameUnits($(player->skel)); //Translate pixels to meters and degrees to radians (since spine exports everything in pixel/degree units)
         
-        gState->currentImageRegion = GetImageRegion(player->skel, "right-forearm");
-        gState->normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
+        gState->currentImageRegion = GetImageRegion(player->skel, "left-bicep");
+        //gState->normalMap = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
+        gState->leftBicep = LoadBitmap_BGRA("data/left-bicep.png");
         gState->lightAngle = 1.0f;
         gState->lightThreshold = 1.0f;
         
-        gState->normalMapAdjustmentVector = { 0.0f, 0.2f };
-        
-        {
+        {//Clear out alpha values for normal maps
             i32 totalPixelCountOfImg = gState->normalMap.width_pxls * gState->normalMap.height_pxls;
             ui32* imagePixel = (ui32*)gState->normalMap.data;
             
-            //TODO: Just clear out the alpha channel and have it act as a flag for what normal vectors have already been changed in the renderer
-#if 0
             //Swap R and B channels of image
             for (int i = 0; i < totalPixelCountOfImg; ++i)
             {
-                auto color = UnPackPixelValues(*imagePixel, RGBA);
+                auto color = UnPackPixelValues(*imagePixel, BGRA);
                 
-                //Pre-multiplied alpha
-                f32 alphaBlend = color.a / 255.0f;
-                color.rgb *= alphaBlend;
+                color.a = 0x00;
                 
-                ui32 newSwappedPixelColor = (((ui8)color.a << 24) | ((ui8)color.r << 16) | ((ui8)color.g << 8) | ((ui8)color.b << 0));
+                ui32 pixelWithNewAlpha = (((ui8)color.a << 24) | ((ui8)color.r << 16) | ((ui8)color.g << 8) | ((ui8)color.b << 0));
                 
-                *imagePixel++ = newSwappedPixelColor;
+                *imagePixel++ = pixelWithNewAlpha;
             }
-#endif
         }
         
     };
@@ -392,7 +386,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (KeyPressed(keyboard->MoveRight))
     {
-        gState->normalMapAdjustmentVector = {0.0f, 0.0f};
+        gState->normalMapAdjustmentVector = {0.0f, 0.2f};
         //gState->normalMapRotation += .1f;
     };
     
@@ -411,7 +405,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     auto DrawImage = [gState, stage](Region_Attachment* region) -> void {
         AtlasRegion* region_image = &region->region_image;
-        Array<v2f, 2> uvs2 = { v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
+        Array<v2f, 2> uvs2 = { v2f { 1.0f, 1.0f }, v2f { 1.0f, 1.0f } };//{ v2f { region_image->u, region_image->v }, v2f { region_image->u2, region_image->v2 } };
         
         Transform transform { { stage->size.width / 2.0f, 3.5f } /*Translation*/, gState->normalMapRotation, { 2.0f, 2.0f } /*Scale*/ };
         Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, region->width, region->height);
@@ -427,7 +421,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         Circle areaForVecAdjustments{};
         areaForVecAdjustments = {originalMousePos, 40.0f};
-        PushTexture(global_renderingInfo, region_worldSpaceCoords, region_image->page->rendererObject, normalMap, v2f { region->width, region->height }, uvs2, region_image->name, areaForVecAdjustments);
+        PushTexture(global_renderingInfo, region_worldSpaceCoords, gState->leftBicep, normalMap, v2f { region->width, region->height }, uvs2, region_image->name, areaForVecAdjustments);
     };
     
     //Push background

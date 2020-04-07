@@ -727,7 +727,7 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                 NormalMap normalMap = texture.normalMap;
                 if (normalMap.mapData)
                 {
-                    ui8* normalPtr = ((ui8*)normalMap.mapData) + ((ui32)texelPos_y * texture.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
+                    ui8* normalPtr = ((ui8*)normalMap.mapData) + (RoundFloat32ToUInt32(texelPos_y) * texture.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
                     //Grab 4 normals (in a square pattern) to blend
                     v4ui32 normalSquare_inRGBSpace = Grab4NearestPixelPtrs_SquarePattern(normalPtr, texture.pitch_pxls);
                     v4f normal_inRGBSpace = UnPackPixelValues(normalSquare_inRGBSpace.r, BGRA);
@@ -768,8 +768,8 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
                         normal_y += normalMap.adjustmentVector.y;
                         
                         //Convert back to 0 - 255 color value
-                        ui32 normal_b = RoundFloat32ToUInt32((normal_x + 1) * (255/2));
-                        ui32 normal_g = RoundFloat32ToUInt32((normal_y + 1) * (255/2));
+                        ui32 normal_b = RoundFloat32ToUInt32((normal_x + 1) * (255.0f/2.0f));
+                        ui32 normal_g = RoundFloat32ToUInt32((normal_y + 1) * (255.0f/2.0f));
                         
                         //Store back to normalMap data
                         *normal_rgbSpace = ((0xFF << 24) | ((ui8)unPackedNormal_rgbSpace.b << 0) | ((ui8)normal_g << 8) | ((ui8)normal_b << 16));
@@ -777,6 +777,18 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
 #endif
                     
                     normal_vectorSpace.xy += normalMap.adjustmentVector;
+                    
+                    ui32* normal_rgbSpace = (ui32*)normalPtr;
+                    v4f unPackedNormal_rgbSpace = UnPackPixelValues(*normal_rgbSpace, BGRA);
+                    if(unPackedNormal_rgbSpace.a == 0x00)
+                    {
+                        //Convert back to 0 - 255 color value
+                        ui32 normal_b = RoundFloat32ToUInt32((normal_vectorSpace.x + 1) * (255.0f/2.0f));
+                        ui32 normal_g = RoundFloat32ToUInt32((normal_vectorSpace.y + 1) * (255.0f/2.0f));
+                        
+                        //Store back to normalMap data
+                        *(ui32*)normalPtr = ((0x01 << 24) | ((ui8)normal_b << 16) | ((ui8)normal_g << 8) | (0x00 << 0));
+                    }
                     
                     Normalize($(normal_vectorSpace.xyz));
                     
@@ -863,6 +875,47 @@ DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBuf
         }
         
         currentRow += colorBufferPitch;
+    }
+    
+    for (f32 screenY = yMin; screenY < yMax; ++screenY)
+    {
+        ui32* destPixel = (ui32*)currentRow;
+        
+        for (f32 screenX = xMin; screenX < xMax; ++screenX)
+        {
+            v2f screenPixelCoord { screenX, screenY };
+            v2f d { screenPixelCoord - origin };
+            
+            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
+            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
+            
+            v2f mouseD = areaOfVectorAdjustments.centerPos - origin;
+            f32 mouseU = invertedXAxisSqd * DotProduct(mouseD, targetRectXAxis);
+            f32 mouseV = invertedXAxisSqd * DotProduct(mouseD, targetRectYAxis);
+            
+            //Used to decide, given what screen pixel were on, whether or not that screen pixel falls
+            //within the target rect's bounds or not
+            if (u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
+            {
+                f32 textureU = texture.uvBounds[0].u + (uvRangeForTexture.u * u);
+                f32 textureV = texture.uvBounds[0].y + (uvRangeForTexture.v * v);
+                
+                f32 texelPos_x = (textureU * (f32)(texture.size.width));
+                f32 texelPos_y = (textureV * (f32)(texture.size.height));
+                
+                NormalMap normalMap = texture.normalMap;
+                if (normalMap.mapData)
+                {
+                    ui8* normalPtr = ((ui8*)normalMap.mapData) + (RoundFloat32ToUInt32(texelPos_y) * texture.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
+                    
+                    ui32* normal_rgbSpace = (ui32*)normalPtr;
+                    v4f unPackedNormal_rgbSpace = UnPackPixelValues(*normal_rgbSpace, BGRA);
+                    
+                    //Store back to normalMap data
+                    *(ui32*)normalPtr = ((0x00 << 24) | ((ui8)unPackedNormal_rgbSpace.r << 16) | ((ui8)unPackedNormal_rgbSpace.g << 8) | ((ui8)unPackedNormal_rgbSpace.b << 0));
+                }
+            }
+        }
     }
 }
 
