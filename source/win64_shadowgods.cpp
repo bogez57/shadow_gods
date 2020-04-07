@@ -57,7 +57,7 @@
 
 global_variable ui32 globalWindowWidth { 1280 };
 global_variable ui32 globalWindowHeight { 720 };
-global_variable Win32::Offscreen_Buffer globalBackBuffer;
+global_variable Win32::Offscreen_Buffer globalBackBuffer_forSoftwareRendering;
 global_variable Application_Memory gameMemory;
 global_variable bool GameRunning {};
 
@@ -420,26 +420,26 @@ namespace Win32
         }
         else
         {
-            RenderViaSoftware($(renderingInfo), globalBackBuffer.memory, v2i { globalBackBuffer.width, globalBackBuffer.height }, globalBackBuffer.pitch, &platformServices);
+            RenderViaSoftware($(renderingInfo), globalBackBuffer_forSoftwareRendering.memory, v2i { globalBackBuffer_forSoftwareRendering.width, globalBackBuffer_forSoftwareRendering.height }, globalBackBuffer_forSoftwareRendering.pitch, &platformServices);
             
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
-            PatBlt(deviceContext, 0, globalBackBuffer.height, windowWidth, windowHeight, BLACKNESS);
+            PatBlt(deviceContext, 0, globalBackBuffer_forSoftwareRendering.height, windowWidth, windowHeight, BLACKNESS);
             PatBlt(deviceContext, 0, 0, 0, windowHeight, BLACKNESS);
-            PatBlt(deviceContext, globalBackBuffer.width, 0, windowWidth, windowHeight, BLACKNESS);
+            PatBlt(deviceContext, globalBackBuffer_forSoftwareRendering.width, 0, windowWidth, windowHeight, BLACKNESS);
             
             { //Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
                 v2i displayRect_BottomLeftCoords { 0, 0 };
                 v2i displayRect_Dimensions {};
-                displayRect_Dimensions.width = globalBackBuffer.width;
-                displayRect_Dimensions.height = globalBackBuffer.height;
+                displayRect_Dimensions.width = globalBackBuffer_forSoftwareRendering.width;
+                displayRect_Dimensions.height = globalBackBuffer_forSoftwareRendering.height;
                 
                 //Copy game's rendered back buffer to whatever display area size you want
                 StretchDIBits(deviceContext,
                               displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
-                              0, 0, globalBackBuffer.width, globalBackBuffer.height, //Source - The dimensions/coords of the back buffer the game rendered to
-                              globalBackBuffer.memory,
-                              &globalBackBuffer.Info,
+                              0, 0, globalBackBuffer_forSoftwareRendering.width, globalBackBuffer_forSoftwareRendering.height, //Source - The dimensions/coords of the back buffer the game rendered to
+                              globalBackBuffer_forSoftwareRendering.memory,
+                              &globalBackBuffer_forSoftwareRendering.Info,
                               DIB_RGB_COLORS, SRCCOPY);
             };
         };
@@ -851,7 +851,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     UINT DesiredSchedulerGranularityMS = 1;
     BGZ_ASSERT(timeBeginPeriod(DesiredSchedulerGranularityMS) == TIMERR_NOERROR, "Error when trying to set windows granularity!");
     
-    Win32::ResizeDIBSection($(globalBackBuffer), globalWindowWidth, globalWindowHeight);
+    Win32::ResizeDIBSection($(globalBackBuffer_forSoftwareRendering), globalWindowWidth, globalWindowHeight);
     
     WNDCLASS WindowProperties {};
     WindowProperties.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //TODO: Check if OWNDC/HREDRAW/VEDRAW matter
@@ -904,7 +904,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 renderingInfo.cmdBuffer.entryCount = 0;
                 renderingInfo.cmdBuffer.usedAmount = 0;
                 
-                renderingInfo._pixelsPerMeter = globalBackBuffer.height * .10f;
+                renderingInfo._pixelsPerMeter = globalBackBuffer_forSoftwareRendering.height * .10f;
             }
             
             { //Init input recording and replay services
@@ -1065,8 +1065,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             {
                 Win32::Window_Dimension windowDimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
-                Win32::ResizeDIBSection($(globalBackBuffer), windowDimension.width, windowDimension.height);
-                renderingInfo._pixelsPerMeter = globalBackBuffer.height * .10f;
+                Win32::ResizeDIBSection($(globalBackBuffer_forSoftwareRendering), windowDimension.width, windowDimension.height);
+                renderingInfo._pixelsPerMeter = globalBackBuffer_forSoftwareRendering.height * .10f;
                 
                 //Hot reloading
                 FILETIME NewGameCodeDLLWriteTime = Win32::Dbg::GetFileTime("w:/shadow_gods/build/gamecode.dll");
