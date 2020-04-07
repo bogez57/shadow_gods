@@ -9,12 +9,13 @@ GLInit(int windowWidth, int windowHeight) -> void
     //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
     //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
     //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
+    glViewport(0, 0, windowWidth, windowHeight);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0);
+    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0);//Converts from -1 1 to screen coordinates
 }
 
 local_func auto
@@ -113,19 +114,19 @@ DrawTexture(ui32 TextureID, Rectf Destination, v2f* UVs)
 }
 
 local_func void
-DrawLine(v2f minPoint, v2f maxPoint)
+DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
 {
-    glLineWidth(9.0f);
+    glLineWidth(lineThickness);
     glBegin(GL_LINES);
-    glColor3f(0.0f, 0.0f, 1.0f);
+    glColor3f(color.r, color.g, color.b);
     glVertex2f(minPoint.x, minPoint.y);
-    glColor3f(0.0f, 0.0f, 1.0f);
+    glColor3f(color.r, color.g, color.b);
     glVertex2f(maxPoint.x, maxPoint.y);
     glEnd();
     glFlush();
 };
 
-void RenderViaHardware(int windowWidth, int windowHeight)
+void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
 {
     local_persist b glIsInitialized{false};
     if(NOT glIsInitialized)
@@ -135,7 +136,76 @@ void RenderViaHardware(int windowWidth, int windowHeight)
         glIsInitialized = true;
     };
     
+    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
+    Camera2D* camera = &renderingInfo.camera;
+    
+    f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
+    v2i screenSize = {windowWidth, windowHeight};
+    v2f screenSize_meters = CastV2IToV2F(screenSize) / pixelsPerMeter;
+    camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
+    
+    camera->viewCenter = screenSize_meters / 2.0f;
+    
     glClear(GL_COLOR_BUFFER_BIT);
+    
+    for (i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+    {
+        RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
+        switch (entryHeader->type)
+        {
+            case EntryType_Texture:
+            {
+#if 0
+                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+                
+                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
+                
+                DrawTexture_UnOptimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
+#endif
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+            }
+            break;
+            
+            case EntryType_Rect:
+            {
+#if 0
+                RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+                
+                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
+                
+                DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
+#endif
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+            }
+            break;
+            
+            case EntryType_Line:
+            {
+                RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
+                
+                v2f lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
+                v2f lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                
+                v2f lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
+                v2f lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
+                lineEntry.minPoint = lineMinPoint_screen;
+                lineEntry.maxPoint = lineMaxPoint_screen;
+                
+                DrawLine(lineEntry.minPoint, lineEntry.maxPoint, lineEntry.color, lineEntry.thickness);
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Line);
+            }
+            break;
+            
+            InvalidDefaultCase;
+        };
+    }
+    
+    renderingInfo.cmdBuffer.entryCount = 0;
 };
 
 #endif //OPENGL_INCLUDE_H

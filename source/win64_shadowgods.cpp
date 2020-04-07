@@ -415,7 +415,7 @@ namespace Win32
         b renderThroughHardware { true };
         if (renderThroughHardware)
         {
-            RenderViaHardware(windowWidth, windowHeight);
+            RenderViaHardware($(renderingInfo), windowWidth, windowHeight);
             SwapBuffers(deviceContext);
         }
         else
@@ -615,8 +615,6 @@ namespace Win32
                             {
                                 if (wglMakeCurrent(WindowContext, OpenGLRenderingContext))
                                 {
-                                    glViewport(0, 0, globalWindowWidth, globalWindowHeight);
-                                    
                                     //Success! We have a current openGL context. Now setup glew
                                     if (glewInit() == GLEW_OK)
                                     {
