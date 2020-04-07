@@ -11,7 +11,7 @@ GLInit(int windowWidth, int windowHeight) -> void
     //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
     glViewport(0, 0, windowWidth, windowHeight);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glMatrixMode(GL_MODELVIEW);
+    glMatrixMode(GL_MODELVIEW);//For fixed function pipeline modelview matrix is pretty much non-essential "handmade hero ep: 237 26:52". So just load identity matrix for this thing and be done with it (identiy matrix is basically a noop for matrices)
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
