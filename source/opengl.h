@@ -15,7 +15,7 @@ GLInit(int windowWidth, int windowHeight) -> void
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0);//Converts from -1 1 to screen coordinates
+    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0);//Sets the projection matrix in openGL which will take our screen coordinates and tramsform them to openGL's clip space (-1 to 1)
 }
 
 local_func auto
