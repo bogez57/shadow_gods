@@ -102,6 +102,7 @@ struct Image
     i32 pitch_pxls {};
     f32 opacity { 1.0f };
     v2f scale { 1.0f, 1.0f };
+    b isLoadedOnGPU{false};//TODO: Eventually remove
 };
 
 struct Coordinate_Space
@@ -148,6 +149,7 @@ struct RenderEntry_Texture
     v2f dimensions {};
     Array<v2f, 2> uvBounds;
     Quadf targetRect_worldCoords;
+    b isLoadedOnGPU{false};//TODO: Eventually remove
 };
 
 struct RenderEntry_Line
@@ -159,9 +161,11 @@ struct RenderEntry_Line
     f32 thickness;
 };
 
-//Helpers
 Image LoadBitmap_BGRA(const char* fileName);
-f32 BitmapWidth_meters(Image bitmap);
+
+//Helpers
+f32 BitmapWidth_Meters(Image bitmap);
+f32 BitmapHeight_Meters(Rendering_Info info, Image bitmap);
 v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
@@ -224,7 +228,7 @@ void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color)
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name)
+void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name, NormalMap normalMap = {})
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
     
@@ -236,6 +240,8 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, 
     textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
+    textureEntry->isLoadedOnGPU = bitmap.isLoadedOnGPU;//TODO: Remove
+    bitmap.isLoadedOnGPU = true;//TODO: Remove
     
     textureEntry->dimensions = { objectSize_meters.width, objectSize_meters.height };
     
@@ -244,7 +250,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, 
 
 //TODO: Consider not having overloaded function here? The reason this is here is to support current
 //skeleton drawing with regions
-void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, NormalMap normalMap, f32 objectHeight_meters, Array<v2f, 2> uvs, const char* name)
+void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap, f32 objectHeight_meters, Array<v2f, 2> uvs, const char* name, NormalMap normalMap = {})
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
     
@@ -259,6 +265,8 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image bitmap, 
     textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
+    textureEntry->isLoadedOnGPU = bitmap.isLoadedOnGPU;//TODO: Remove
+    bitmap.isLoadedOnGPU = true;//TODO: Remove
     
     textureEntry->dimensions = { desiredWidth, desiredHeight };
     
@@ -337,6 +345,11 @@ Quadf ProduceQuadFromCenterPoint(v2f originPoint, f32 width, f32 height)
     result.topLeft = { originPoint.x - (width / 2.0f), originPoint.y + (height / 2.0f) };
     
     return result;
+};
+
+f32 BitmapHeight_Meters(Rendering_Info renderingInfo, Image bitmap)
+{
+    return bitmap.height_pxls / renderingInfo._pixelsPerMeter;
 };
 
 #endif //GAME_RENDERER_STUFF_IMPL

@@ -34,4 +34,5 @@ struct Game_State
     f32 lightThreshold{};
     Stage_Data stage;
     b isLevelOver{false};
+    Image openGLRenderTest{};
 };

@@ -44,7 +44,6 @@ global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
 global_variable i32 renderBuffer;
-global_variable NormalMap normalMap;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
@@ -336,8 +335,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         AnimationData playerAnimData {}, enemyAnimData {};
         InitSkel($(playerSkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json"); //TODO: In order to reduce the amount of time reading from json file think about how to implement one common skeleton/animdata file(s)
         InitAnimData($(playerAnimData), $(*levelPart), "data/yellow_god.json", playerSkel);
-        Image normalMapImage = LoadBitmap_BGRA("data/yellow_god_normal_map.png");
-        normalMap.mapData = normalMapImage.data;
         //InitSkel($(enemySkel), $(*levelPart), "data/yellow_god.atlas", "data/yellow_god.json");
         //InitAnimData($(enemyAnimData), $(*levelPart), "data/yellow_god.json", enemySkel);
         
@@ -363,54 +360,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         InitFighter($(*player), playerAnimData, playerSkel, /*player height*/ 20.0f, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false);
         //InitFighter($(*enemy), enemyAnimData, enemySkel, /*player height*/ enemySkel.height, enemyDefaultHurtBox, enemyWorldPos, /*flipX*/ false );
         
-        MixAnimations($(player->animData), "idle", "walk", .2f);
-        MixAnimations($(player->animData), "walk", "run", .2f);
-        MixAnimations($(player->animData), "right-jab", "idle", .1f);
-        
         SetIdleAnimation($(player->animQueue), player->animData, "idle");
         //SetIdleAnimation($(enemy->animQueue), enemy->animData, "idle");
-    };
-    
-    if (globalPlatformServices->DLLJustReloaded)
-    {
-        BGZ_CONSOLE("Dll reloaded!");
-        globalPlatformServices->DLLJustReloaded = false;
-    };
-    
-    if (KeyHeld(keyboard->MoveRight))
-    {
-        player->world.translation.x += .1f;
-        QueueAnimation($(player->animQueue), player->animData, "walk", PlayBackStatus::NEXT);
-    };
-    
-    if (KeyHeld(keyboard->MoveLeft))
-    {
-        player->world.translation.x -= .1f;
-    }
-    
-    if (KeyHeld(keyboard->MoveUp))
-    {
-        stage->camera.zoomFactor += .06f;
-    };
-    
-    if (KeyHeld(keyboard->MoveDown))
-    {
-        stage->camera.zoomFactor -= .02f;
-    };
-    
-    if (KeyPressed(keyboard->ActionLeft))
-    {
-        QueueAnimation($(player->animQueue), player->animData, "left-jab", PlayBackStatus::IMMEDIATE);
-    };
-    
-    if (KeyComboHeld(keyboard->ActionLeft, keyboard->MoveRight))
-    {
-        QueueAnimation($(player->animQueue), player->animData, "run", PlayBackStatus::DEFAULT);
-    }
-    
-    if (KeyPressed(keyboard->ActionRight))
-    {
-        QueueAnimation($(player->animQueue), player->animData, "right-cross", PlayBackStatus::IMMEDIATE);
+        
+        gState->openGLRenderTest = LoadBitmap_BGRA("data/left-bicep.png");
     };
     
     Animation playerCurrentAnim = UpdateAnimationState($(player->animQueue), deltaT);
@@ -447,6 +400,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
     { //Render
+#if 0
         auto DrawFighter = [](Fighter fighter) -> void {
             for (i32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length - 1; ++slotIndex)
             {
@@ -456,28 +410,23 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
                 
                 Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
-                //Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
+                Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
                 Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, currentSlot->bone->worldSpace);
                 
-                normalMap.rotation = currentSlot->bone->worldSpace.rotation;
-                normalMap.scale = currentSlot->bone->worldSpace.scale;
-                normalMap.lightAngle = 1.0f;
-                normalMap.lightThreshold = 1.0f;
-                
-                PushTexture(global_renderingInfo, region_worldSpaceCoords, region->page->rendererObject, normalMap, v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
+                PushTexture(global_renderingInfo, region_worldSpaceCoords, $(region->page->rendererObject), v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
             };
         };
         
         //Push background
 #if 1
-        //Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
-        Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, 4.0f, 2.0f);
-        //PushTexture(global_renderingInfo, targetRect_worldCoords, stage->backgroundImg, stage->size.height, uvs, "background");
+        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
+        Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
+        //PushTexture(global_renderingInfo, targetRect_worldCoords, $(stage->backgroundImg), stage->size.height, uvs, "background");
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
 #endif
         
         //Push Fighters
-        //DrawFighter(*player);
+        DrawFighter(*player);
         //DrawFighter(*enemy);
         
         v2f line_minPoint = {(stage->size.width / 2.0f) - 9.0f, 3.0f };
@@ -514,6 +463,16 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             };
         }
 #endif
+#endif
+        
+        
+        //Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, 2.0f, 3.0f);
+        //PushTexture(global_renderingInfo, targetRect_worldCoords, $(stage->backgroundImg), stage->size.height, uvs, "background");
+        //PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+        
+        Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, gState->openGLRenderTest.aspectRatio * BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest));
+        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
+        PushTexture(global_renderingInfo, targetRect_worldCoords, $(gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), uvs, "left-bicep-image");
     };
     
     IsAllTempMemoryCleared(framePart);
