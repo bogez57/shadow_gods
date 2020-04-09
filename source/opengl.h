@@ -201,6 +201,19 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             }
             break;
             
+            case EntryType_Test:
+            {
+                Quadf targetRect_screenCoords { v2f{100.0f, 100.0f}, v2f{200.0f, 100.0f}, v2f{200.0f, 150.0f}, v2f{100.0f, 150.0f} };
+                
+                v4f color = { 1.0f, 0.0f, 0.0f, 1.0f };
+                
+                glDisable(GL_TEXTURE_2D);
+                DrawQuad(targetRect_screenCoords, color);
+                glEnable(GL_TEXTURE_2D);
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Test);
+            }break;
+            
             InvalidDefaultCase;
         };
     }

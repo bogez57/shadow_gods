@@ -429,11 +429,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         //DrawFighter(*enemy);
         
-        v2f line_minPoint = {(stage->size.width / 2.0f) - 9.0f, 3.0f };
-        v2f line_maxPoint = {(stage->size.width / 2.0f) - 3.0f, 10.0f };
-        
-        PushLine(global_renderingInfo, line_minPoint, line_maxPoint, {0.0f, 1.0f, 0.0f}/*color*/, 5.0f/*thickness*/);
-        
 #if 0
         for (i32 i {}; i < player->skel.bones.length; ++i)
         {
@@ -465,15 +460,21 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 #endif
 #endif
         
+#if 0
         Quadf targetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, 2.0f, 3.0f);
         Transform rectTransform { {stage->centerPoint}, 2.0f, {1.0f, 1.0f} };
         Quadf targetRect_worldCoords = ParentTransform(targetRect_localCoords, rectTransform);
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+#endif
         
+#if 0
         Quadf textureTargetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, gState->openGLRenderTest.aspectRatio * BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest));
         Quadf textureTargetRect_worldCoords = ParentTransform(textureTargetRect_localCoords, rectTransform);
         Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
         PushTexture(global_renderingInfo, textureTargetRect_worldCoords, $(gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), uvs, "left-bicep-image");
+#endif
+        
+        PushTest($(*global_renderingInfo));
     };
     
     IsAllTempMemoryCleared(framePart);
