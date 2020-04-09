@@ -41,28 +41,48 @@ LoadTexture(ui8* textureData, v2i textureSize)
 }
 
 local_func void
-DrawTexture(ui32 TextureID, Rectf textureCoords, v2f MinUV, v2f MaxUV)
+DrawTexture(ui32 TextureID, Quadf textureCoords, v2f MinUV, v2f MaxUV)
 {
     glBindTexture(GL_TEXTURE_2D, TextureID);
     
     glBegin(GL_QUADS);
     glTexCoord2f(MinUV.x, MinUV.y);
-    glVertex2f(textureCoords.min.x, textureCoords.min.y);
+    glVertex2f(textureCoords.bottomLeft.x, textureCoords.bottomLeft.y);
     
     glTexCoord2f(MaxUV.x, MinUV.y);
-    glVertex2f(textureCoords.max.x, textureCoords.min.y);
+    glVertex2f(textureCoords.bottomRight.x, textureCoords.bottomRight.y);
     
     glTexCoord2f(MaxUV.x, MaxUV.y);
-    glVertex2f(textureCoords.max.x, textureCoords.max.y);
+    glVertex2f(textureCoords.topRight.x, textureCoords.topRight.y);
     
     glTexCoord2f(MinUV.x, MaxUV.y);
-    glVertex2f(textureCoords.min.x, textureCoords.max.y);
+    glVertex2f(textureCoords.topLeft.x, textureCoords.topLeft.y);
     
     glEnd();
     glFlush();
     
     glBindTexture(GL_TEXTURE_2D, 0);
 }
+
+local_func void
+DrawQuad(Quadf quad, v4f color)
+{
+    glBegin(GL_QUADS);
+    
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex2f(quad.bottomLeft.x, quad.bottomLeft.y);
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex2f(quad.bottomRight.x, quad.bottomRight.y);
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex2f(quad.topRight.x, quad.topRight.y);
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex2f(quad.topLeft.x, quad.topLeft.y);
+    
+    glEnd();
+    glFlush();
+    
+    glColor3f(1.0f, 1.0f, 1.0f);
+};
 
 local_func void
 DrawRect(v2f MinPoint, v2f MaxPoint, v4f color)
@@ -140,9 +160,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
                 Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
-                Rectf imageTargetRect_screenCoords { imageTargetRect_screen.bottomLeft, imageTargetRect_screen.topRight};
-                
-                DrawTexture(textureID, imageTargetRect_screenCoords, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
+                DrawTexture(textureID, imageTargetRect_screen, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }
@@ -154,12 +172,10 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
                 Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
-                v2f minPoint = targetRect_screen.bottomLeft;
-                v2f maxPoint = targetRect_screen.topRight;
                 v4f color = { rectEntry.color.r, rectEntry.color.g, rectEntry.color.b, 1.0f };
                 
                 glDisable(GL_TEXTURE_2D);
-                DrawRect(minPoint, maxPoint, color);
+                DrawQuad(targetRect_screen, color);
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
