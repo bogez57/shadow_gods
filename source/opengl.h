@@ -3,6 +3,21 @@
 
 #include "renderer_stuff.h"
 
+struct Quadv3f
+{
+    union
+    {
+        Array<v3f, 4> vertices;
+        struct
+        {
+            v3f bottomLeft;
+            v3f bottomRight;
+            v3f topRight;
+            v3f topLeft;
+        };
+    };
+};
+
 local_func void
 GLInit(int windowWidth, int windowHeight)
 {
@@ -16,6 +31,7 @@ GLInit(int windowWidth, int windowHeight)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0); //Sets the projection matrix in openGL which will take our screen coordinates and tramsform them to openGL's clip space (-1 to 1)
+    glEnable(GL_DEPTH_TEST);
 }
 
 local_func ui32
@@ -85,6 +101,26 @@ DrawQuad(Quadf quad, v4f color)
 };
 
 local_func void
+DrawQuad(Quadv3f quad, v4f color)
+{
+    glBegin(GL_QUADS);
+    
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex3f(quad.bottomLeft.x, quad.bottomLeft.y, quad.bottomLeft.z);
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex3f(quad.bottomRight.x, quad.bottomRight.y, quad.bottomRight.z);
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex3f(quad.topRight.x, quad.topRight.y, quad.topRight.z);
+    glColor4f(color.r, color.g, color.b, color.a);
+    glVertex3f(quad.topLeft.x, quad.topLeft.y, quad.topLeft.z);
+    
+    glEnd();
+    glFlush();
+    
+    glColor3f(1.0f, 1.0f, 1.0f);
+};
+
+local_func void
 DrawRect(v2f MinPoint, v2f MaxPoint, v4f color)
 {
     glBegin(GL_QUADS);
@@ -123,7 +159,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     if (NOT glIsInitialized)
     {
         GLInit(windowWidth, windowHeight);
-        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+        glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
         glIsInitialized = true;
     };
     
@@ -137,7 +173,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     
     camera->viewCenter = screenSize_meters / 2.0f;
     
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glEnable(GL_TEXTURE_2D);
     
@@ -203,12 +239,17 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
-                Quadf targetRect_screenCoords { v2f{100.0f, 100.0f}, v2f{200.0f, 100.0f}, v2f{200.0f, 150.0f}, v2f{100.0f, 150.0f} };
+                f32 target1_z = .4f;
+                f32 target2_z = -.4f;
+                Quadv3f targetRect1_screenCoords { v3f{100.0f, 100.0f, target1_z}, v3f{200.0f, 100.0f, target1_z}, v3f{200.0f, 150.0f, target1_z}, v3f{100.0f, 150.0f, target1_z} };
+                Quadv3f targetRect2_screenCoords { v3f{120.0f, 110.0f, target2_z}, v3f{220.0f, 110.0f, target2_z}, v3f{220.0f, 160.0f, target2_z}, v3f{120.0f, 160.0f, target2_z} };
                 
-                v4f color = { 1.0f, 0.0f, 0.0f, 1.0f };
+                v4f color1stRect = { 1.0f, 0.0f, 0.0f, 1.0f };
+                v4f color2ndRect = { 0.0f, 1.0f, 0.0f, 1.0f };
                 
                 glDisable(GL_TEXTURE_2D);
-                DrawQuad(targetRect_screenCoords, color);
+                DrawQuad(targetRect1_screenCoords, color1stRect);
+                DrawQuad(targetRect2_screenCoords, color2ndRect);
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
