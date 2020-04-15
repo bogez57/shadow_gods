@@ -3,6 +3,28 @@
 
 #include "renderer_stuff.h"
 
+const char* vertexShaderCode =
+"#version 430 \r\n"
+"in layout(location=0) vec2 position;\n"
+"in layout(location=1) vec3 color;\n"
+"out vec3 fragColor;\n"
+"\n"
+"void main()\n"
+"{\n"
+"    gl_Position = vec4(position, 0.0, 1.0f); \n"
+"    fragColor = color;\n"
+"}\n";
+
+const char* fragmentShaderCode =
+"#version 430 \r\n"
+"out vec4 color;\n"
+"in vec3 fragColor;\n"
+"\n"
+"void main()\n"
+"{\n"
+"    color = vec4(fragColor, 1.0f);\n"
+"}\n";
+
 struct Quadv3f
 {
     union
@@ -18,20 +40,125 @@ struct Quadv3f
     };
 };
 
+struct Camera3D
+{
+    //What goes in here;
+    f32 distanceFromMonitor_meters{};//Focal length
+    f32 cameraDistanceFromTarget_meters{};//Camera distance above target
+};
+
+global_variable Camera3D globalCamera;
+
+mat4x4 OrthographicProjection(f32 aspectRatio)
+{
+    f32 a = 1.0f;
+    f32 b = aspectRatio;
+    
+    mat4x4 r
+    {
+        {
+            {a, 0, 0, 0},
+            {0, b, 0, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}
+        }
+    };
+    
+    return r;
+};
+
+#if 0
+Quadv3f CameraTransform(Quadv3f worldCoords, Camera3D camera)
+{
+    Quadv3f transformedCoords {};
+    
+    v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+    
+    for (i32 vertIndex {}; vertIndex < 4; vertIndex++)
+    {
+        worldCoords.vertices[vertIndex] += translationToCameraSpace;
+    };
+    
+    transformedCoords = _DilateAboutArbitraryPoint(camera.dilatePoint_inScreenCoords, camera.zoomFactor, worldCoords);
+    
+    return transformedCoords;
+};
+#endif
+
+void CheckCompileStatus(GLuint shaderID)
+{
+    GLint compileStatus;
+    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &compileStatus);
+    
+    if(compileStatus != GL_TRUE)
+    {
+        GLint infoLogLength;
+        glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
+        
+        GLchar buffer[512] = {};
+        GLsizei bufferSize;
+        glGetShaderInfoLog(shaderID, infoLogLength, &bufferSize, buffer);
+        
+        BGZ_CONSOLE("%s", buffer);
+        InvalidCodePath;
+    };
+};
+
+void CheckLinkStatus(GLuint programID)
+{
+    GLint linkStatus;
+    glGetProgramiv(programID, GL_LINK_STATUS, &linkStatus);
+    
+    if(linkStatus != GL_TRUE)
+    {
+        GLint infoLogLength;
+        glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &infoLogLength);
+        
+        GLchar buffer[512] = {};
+        GLsizei bufferSize;
+        glGetProgramInfoLog(programID, infoLogLength, &bufferSize, buffer);
+        
+        BGZ_CONSOLE("%s", buffer);
+        InvalidCodePath;
+    };
+};
+
+local_func void InstallShaders()
+{
+    GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    const char* adapter[1];
+    adapter[0] = vertexShaderCode;
+    glShaderSource(vertexShaderID, 1, adapter, 0);
+    adapter[0] = fragmentShaderCode;
+    glShaderSource(fragmentShaderID, 1, adapter, 0);
+    
+    glCompileShader(vertexShaderID);
+    glCompileShader(fragmentShaderID);
+    
+    CheckCompileStatus(vertexShaderID);
+    CheckCompileStatus(fragmentShaderID);
+    
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexShaderID);
+    glAttachShader(programID, fragmentShaderID);
+    glLinkProgram(programID);
+    
+    CheckLinkStatus(programID);
+    
+    glUseProgram(programID);
+};
+
 local_func void
-GLInit(int windowWidth, int windowHeight)
+GLInit()
 {
     //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
     //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
     //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
-    glViewport(0, 0, windowWidth, windowHeight);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glMatrixMode(GL_MODELVIEW); //For fixed function pipeline modelview matrix is pretty much non-essential "handmade hero ep: 237 26:52". So just load identity matrix for this thing and be done with it (identiy matrix is basically a noop for matrices)
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0); //Sets the projection matrix in openGL which will take our screen coordinates and tramsform them to openGL's clip space (-1 to 1)
     glEnable(GL_DEPTH_TEST);
+    InstallShaders();
 }
 
 local_func ui32
@@ -158,10 +285,12 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     local_persist b glIsInitialized { false };
     if (NOT glIsInitialized)
     {
-        GLInit(windowWidth, windowHeight);
+        GLInit();
         glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
         glIsInitialized = true;
     };
+    
+    glViewport(0, 0, windowWidth, windowHeight);
     
     ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &renderingInfo.camera;
@@ -239,17 +368,67 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
+#if 0
+                globalCamera.distanceFromMonitor_meters = .3f;//Focal length
+                globalCamera.cameraDistanceFromTarget_meters = 7.0f;//
+                
+                Quadv3f targetRect_worldCoords_meters { v3f{4.0f, 4.0f, 3.0f}, v3f{7.0f, 4.0f, 3.0f}, v3f{7.0f, 7.0f, 1.0f}, v3f{4.0f, 7.0f, 1.0f} };
+                Quadf targetRect_screenCoords{};
+                for(i32 i{}; i < targetRect_worldCoords_meters.vertices.Size(); ++i)
+                {
+                    f32 distanceToPz = globalCamera.cameraDistanceFromTarget_meters - targetRect_worldCoords_meters.vertices[i].z;
+                    targetRect_screenCoords.vertices[i] = globalCamera.distanceFromMonitor_meters * targetRect_worldCoords_meters.vertices[i].xy;
+                    targetRect_screenCoords.vertices[i] *= (1.0f / distanceToPz);
+                    targetRect_screenCoords.vertices[i] *= 72.0f;
+                };
+#endif
+                
+#if 0
                 f32 target1_z = .4f;
                 f32 target2_z = -.4f;
-                Quadv3f targetRect1_screenCoords { v3f{100.0f, 100.0f, target1_z}, v3f{200.0f, 100.0f, target1_z}, v3f{200.0f, 150.0f, target1_z}, v3f{100.0f, 150.0f, target1_z} };
-                Quadv3f targetRect2_screenCoords { v3f{120.0f, 110.0f, target2_z}, v3f{220.0f, 110.0f, target2_z}, v3f{220.0f, 160.0f, target2_z}, v3f{120.0f, 160.0f, target2_z} };
+                Quadv3f targetRect1_screenCoords { v3f{0.0f, 0.0f, target1_z}, v3f{0.4f, 0.0f, target1_z}, v3f{0.4f, 0.4f, target1_z}, v3f{0.0f, 0.4f, target1_z} };
+                //Quadv3f targetRect2_screenCoords { v3f{120.0f, 110.0f, target2_z}, v3f{220.0f, 110.0f, target2_z}, v3f{220.0f, 160.0f, target2_z}, v3f{120.0f, 160.0f, target2_z} };
+#endif
+                GLfloat verts[] =
+                {
+                    -1.0f, +1.0f, //0
+                    1.0f, 0.0f, 0.0f,
+                    
+                    +1.0f, +1.0f, //1
+                    1.0f, 0.0f, 0.0f,
+                    
+                    +0.0f, +0.0f, //2
+                    1.0f, 0.0f, 0.0f,
+                    
+                    +1.0f, -1.0f, //3
+                    1.0f, 0.0f, 0.0f,
+                    
+                    -1.0f, -1.0f,  //4
+                    1.0f, 0.0f, 0.0f
+                };
                 
-                v4f color1stRect = { 1.0f, 0.0f, 0.0f, 1.0f };
-                v4f color2ndRect = { 0.0f, 1.0f, 0.0f, 1.0f };
+                GLuint bufferID;
+                glGenBuffers(1, &bufferID);
+                glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
+                glEnableVertexAttribArray(1);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (char*)(sizeof(GLfloat)*2));
+                
+                GLushort indicies[] =
+                {
+                    0, 1, 2,  2, 3, 4
+                };
+                
+                GLuint indexBufferID;
+                glGenBuffers(1, &indexBufferID);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
                 
                 glDisable(GL_TEXTURE_2D);
-                DrawQuad(targetRect1_screenCoords, color1stRect);
-                DrawQuad(targetRect2_screenCoords, color2ndRect);
+                //glDrawArrays(GL_TRIANGLES, 0, 3);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);

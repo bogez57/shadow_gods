@@ -75,6 +75,12 @@ struct v3f
         {
             f32 r, g, b;
         };
+        
+        struct
+        {
+            v2f xy;
+            f32 _Ignored0;
+        };
     };
 };
 
@@ -206,13 +212,20 @@ struct v4ui32
     };
 };
 
-struct m2x2
+struct mat4x4
 {
-    f32 Elem[2][2];
+    //These are stored ROW MAJOR - elem[ROW][COLUMN]!!!
+    f32 elem[4][4];
 };
 
-local_func
-v2f CastV2IToV2F(v2i vecToCast);
+struct mat2x2
+{
+    //These are stored ROW MAJOR - elem[ROW][COLUMN]!!!
+    f32 elem[2][2];
+};
+
+inline mat4x4 IdentityMatrix();
+local_func v2f CastV2IToV2F(v2i vecToCast);
 
 #endif
 
@@ -638,5 +651,18 @@ v4i::v4i(i32 x, i32 y, i32 z, i32 w)
 , z(z)
 , w(w)
 {}
+
+inline mat4x4 IdentityMatrix()
+{
+    mat4x4 R =
+    {
+        {{1, 0, 0, 0},
+            {0, 1, 0, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}},
+    };
+    
+    return(R);
+}
 
 #endif // ATOMIC_TYPES_IMPL
