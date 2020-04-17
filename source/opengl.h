@@ -368,42 +368,45 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
-#if 0
-                globalCamera.distanceFromMonitor_meters = .3f;//Focal length
-                globalCamera.cameraDistanceFromTarget_meters = 7.0f;//
-                
-                Quadv3f targetRect_worldCoords_meters { v3f{4.0f, 4.0f, 3.0f}, v3f{7.0f, 4.0f, 3.0f}, v3f{7.0f, 7.0f, 1.0f}, v3f{4.0f, 7.0f, 1.0f} };
-                Quadf targetRect_screenCoords{};
-                for(i32 i{}; i < targetRect_worldCoords_meters.vertices.Size(); ++i)
+                Array<v4f, 4> squareVerts_screenCoords =
                 {
-                    f32 distanceToPz = globalCamera.cameraDistanceFromTarget_meters - targetRect_worldCoords_meters.vertices[i].z;
-                    targetRect_screenCoords.vertices[i] = globalCamera.distanceFromMonitor_meters * targetRect_worldCoords_meters.vertices[i].xy;
-                    targetRect_screenCoords.vertices[i] *= (1.0f / distanceToPz);
-                    targetRect_screenCoords.vertices[i] *= 72.0f;
+                    v4f{400.0f, 400.0f, 100.0f, 1.0f},
+                    v4f{600.0f, 400.0f, 100.0f, 1.0f},
+                    v4f{600.0f, 500.0f, 100.0f, 1.0f},
+                    v4f{400.0f, 500.0f, 100.0f, 1.0f}
                 };
-#endif
                 
-#if 0
-                f32 target1_z = .4f;
-                f32 target2_z = -.4f;
-                Quadv3f targetRect1_screenCoords { v3f{0.0f, 0.0f, target1_z}, v3f{0.4f, 0.0f, target1_z}, v3f{0.4f, 0.4f, target1_z}, v3f{0.0f, 0.4f, target1_z} };
-                //Quadv3f targetRect2_screenCoords { v3f{120.0f, 110.0f, target2_z}, v3f{220.0f, 110.0f, target2_z}, v3f{220.0f, 160.0f, target2_z}, v3f{120.0f, 160.0f, target2_z} };
-#endif
+                Array<v4f, 4> squareVerts_openGLClipSpace;
+                {//Do transform on verts
+                    f32 a = 2.0f/(f32)windowWidth;
+                    f32 b = 2.0f/(f32)windowHeight;
+                    
+                    mat4x4 clipSpaceTransformMatrix =
+                    {
+                        a, 0.0f, 0.0f, -1.0f,
+                        0.0f, b, 0.0f, -1.0f,
+                        0.0f, 0.0f, 1.0f, 0.0f,
+                        0.0f, 0.0f, 0.0f, 1.0f
+                    };
+                    
+                    squareVerts_openGLClipSpace[0] = clipSpaceTransformMatrix * squareVerts_screenCoords[0];
+                    squareVerts_openGLClipSpace[1] = clipSpaceTransformMatrix * squareVerts_screenCoords[1];
+                    squareVerts_openGLClipSpace[2] = clipSpaceTransformMatrix * squareVerts_screenCoords[2];
+                    squareVerts_openGLClipSpace[3] = clipSpaceTransformMatrix * squareVerts_screenCoords[3];
+                };
+                
                 GLfloat verts[] =
                 {
-                    -1.0f, +1.0f, //0
+                    squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z,
                     1.0f, 0.0f, 0.0f,
                     
-                    +1.0f, +1.0f, //1
+                    squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z,
                     1.0f, 0.0f, 0.0f,
                     
-                    +0.0f, +0.0f, //2
+                    squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z,
                     1.0f, 0.0f, 0.0f,
                     
-                    +1.0f, -1.0f, //3
-                    1.0f, 0.0f, 0.0f,
-                    
-                    -1.0f, -1.0f,  //4
+                    squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z,
                     1.0f, 0.0f, 0.0f
                 };
                 
@@ -412,13 +415,13 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 glBindBuffer(GL_ARRAY_BUFFER, bufferID);
                 glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
                 glEnableVertexAttribArray(0);
-                glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
                 glEnableVertexAttribArray(1);
-                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (char*)(sizeof(GLfloat)*2));
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
                 
                 GLushort indicies[] =
                 {
-                    0, 1, 2,  2, 3, 4
+                    0, 1, 2,  0, 2, 3
                 };
                 
                 GLuint indexBufferID;

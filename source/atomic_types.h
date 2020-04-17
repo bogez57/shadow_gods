@@ -665,4 +665,40 @@ inline mat4x4 IdentityMatrix()
     return(R);
 }
 
+local_func v4f
+TransformVec(mat4x4 A, v4f P)
+{
+    v4f R;
+    
+    R.x = P.x*A.elem[0][0] + P.y*A.elem[0][1] + P.z*A.elem[0][2] + P.w*A.elem[0][3];
+    R.y = P.x*A.elem[1][0] + P.y*A.elem[1][1] + P.z*A.elem[1][2] + P.w*A.elem[1][3];
+    R.z = P.x*A.elem[2][0] + P.y*A.elem[2][1] + P.z*A.elem[2][2] + P.w*A.elem[2][3];
+    R.w = P.x*A.elem[3][0] + P.y*A.elem[3][1] + P.z*A.elem[3][2] + P.w*A.elem[3][3];
+    
+    return(R);
+};
+
+inline mat4x4
+Transpose(mat4x4 A)
+{
+    mat4x4 R;
+    
+    for(int j = 0; j <= 3; ++j)
+    {
+        for(int i = 0; i <= 3; ++i)
+        {
+            R.elem[j][i] = A.elem[i][j];
+        }
+    }
+    
+    return(R);
+}
+
+inline v4f
+operator*(mat4x4 A, v4f P)
+{
+    v4f R = TransformVec(A, P);
+    return(R);
+};
+
 #endif // ATOMIC_TYPES_IMPL
