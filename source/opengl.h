@@ -280,6 +280,56 @@ DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
     glFlush();
 };
 
+#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp> // glm::mat4
+#include <glm/ext/matrix_clip_space.hpp> // glm::perspective
+
+Array<glm::vec4, 6> TransformFromClipSpaceToScreenSpace(Array<glm::vec4, 6> clipSpaceVerts, f32 windowWidth, f32 windowHeight)
+{
+    Array<glm::vec4, 6> screenSpaceCoords{};
+    for(i32 vertI{}; vertI < 6; ++vertI)
+    {
+        screenSpaceCoords[vertI].x = (clipSpaceVerts[vertI].x + 1) * (windowWidth/2);
+        screenSpaceCoords[vertI].y = (clipSpaceVerts[vertI].y + 1) * (windowHeight/2);
+    };
+    
+    return screenSpaceCoords;
+};
+
+Array<glm::vec4, 24> testSquare =
+{
+    glm::vec4{-1.0f, +1.0f, +1.0f, 1.0f}, //0
+    glm::vec4{+1.0f, +1.0f, +1.0f, 1.0f}, //1
+    glm::vec4{+1.0f, +1.0f, -1.0f, 1.0f}, //2
+    glm::vec4{-1.0f, +1.0f, -1.0f, 1.0f}, //3
+    
+    glm::vec4{-1.0f, +1.0f, -1.0f, 1.0f}, //4
+    glm::vec4{+1.0f, +1.0f, -1.0f, 1.0f}, //5
+    glm::vec4{+1.0f, -1.0f, -1.0f, 1.0f}, //6
+    glm::vec4{-1.0f, -1.0f, -1.0f, 1.0f}, //7
+    
+    glm::vec4{+1.0f, +1.0f, -1.0f, 1.0f}, //8
+    glm::vec4{+1.0f, +1.0f, +1.0f, 1.0f}, //9
+    glm::vec4{+1.0f, -1.0f, +1.0f, 1.0f}, //10
+    glm::vec4{+1.0f, -1.0f, -1.0f, 1.0f}, //11
+    
+    glm::vec4{-1.0f, +1.0f, +1.0f, 1.0f}, //12
+    glm::vec4{-1.0f, +1.0f, -1.0f, 1.0f}, //13
+    glm::vec4{-1.0f, -1.0f, -1.0f, 1.0f}, //14
+    glm::vec4{-1.0f, -1.0f, +1.0f, 1.0f}, //15
+    
+    glm::vec4{+1.0f, +1.0f, +1.0f, 1.0f}, //16
+    glm::vec4{-1.0f, +1.0f, +1.0f, 1.0f}, //17
+    glm::vec4{-1.0f, -1.0f, +1.0f, 1.0f}, //18
+    glm::vec4{+1.0f, -1.0f, +1.0f, 1.0f}, //19
+    
+    glm::vec4{+1.0f, -1.0f, -1.0f, 1.0f}, //20
+    glm::vec4{-1.0f, -1.0f, -1.0f, 1.0f}, //21
+    glm::vec4{-1.0f, -1.0f, +1.0f, 1.0f}, //22
+    glm::vec4{+1.0f, -1.0f, +1.0f, 1.0f}, //23
+};
+
+
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
 {
     local_persist b glIsInitialized { false };
@@ -368,45 +418,77 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
-                Array<v4f, 4> squareVerts_screenCoords =
+                Array<glm::vec4, 6> squareVerts_screenCoords =
                 {
-                    v4f{400.0f, 400.0f, 100.0f, 1.0f},
-                    v4f{600.0f, 400.0f, 100.0f, 1.0f},
-                    v4f{600.0f, 500.0f, 100.0f, 1.0f},
-                    v4f{400.0f, 500.0f, 100.0f, 1.0f}
+                    glm::vec4{200.0f, 600.0f, 400.0f, 1.0f},
+                    glm::vec4{300.0f, 600.0f, 300.0f, 1.0f},
+                    glm::vec4{400.0f, 600.0f, 400.0f, 1.0f},
+                    
+                    glm::vec4{200.0f, 400.0f, 400.0f, 1.0f},
+                    glm::vec4{300.0f, 400.0f, 300.0f, 1.0f},
+                    glm::vec4{400.0f, 400.0f, 400.0f, 1.0f}
                 };
+#if 1
                 
-                Array<v4f, 4> squareVerts_openGLClipSpace;
-                {//Do transform on verts
+                {//Projection transform - my version
+                    f32 camDistanceFromMonitor_z = 800.0f;
+                    
+                    for(i32 vertI{}; vertI < 6; ++vertI)
+                    {
+                        f32 pointDistanceFromCamera_z = camDistanceFromMonitor_z + squareVerts_screenCoords[vertI].z;
+                        
+                        f32 numerator = squareVerts_screenCoords[vertI].x * camDistanceFromMonitor_z;
+                        squareVerts_screenCoords[vertI].x = numerator / pointDistanceFromCamera_z;
+                        
+                        numerator = squareVerts_screenCoords[vertI].y * camDistanceFromMonitor_z;
+                        squareVerts_screenCoords[vertI].y = numerator / pointDistanceFromCamera_z;
+                    };
+                };
+#endif
+                
+#if 0
+                {//Projection transform - glm version
+                    glm::mat4 projMatrix = glm::perspective(.76f, 16.0f/9.0f, .1f, 100.0f);
+                    
+                    for(i32 vertI{}; vertI < 4; ++vertI)
+                        squareVerts_screenCoords[vertI] = projMatrix * squareVerts_screenCoords[vertI];
+                };
+#endif
+                
+                Array<glm::vec4, 6> squareVerts_openGLClipSpace;
+                {//Do openGL clip space transform on verts
                     f32 a = 2.0f/(f32)windowWidth;
                     f32 b = 2.0f/(f32)windowHeight;
                     
-                    mat4x4 clipSpaceTransformMatrix =
+                    glm::mat4 clipSpaceTransformMatrix =
                     {
-                        a, 0.0f, 0.0f, -1.0f,
-                        0.0f, b, 0.0f, -1.0f,
+                        a, 0.0f, 0.0f, 0.0f,
+                        0.0f, b, 0.0f, 0.0f,
                         0.0f, 0.0f, 1.0f, 0.0f,
-                        0.0f, 0.0f, 0.0f, 1.0f
+                        -1.0f, -1.0f, 0.0f, 1.0f
                     };
                     
                     squareVerts_openGLClipSpace[0] = clipSpaceTransformMatrix * squareVerts_screenCoords[0];
                     squareVerts_openGLClipSpace[1] = clipSpaceTransformMatrix * squareVerts_screenCoords[1];
                     squareVerts_openGLClipSpace[2] = clipSpaceTransformMatrix * squareVerts_screenCoords[2];
                     squareVerts_openGLClipSpace[3] = clipSpaceTransformMatrix * squareVerts_screenCoords[3];
+                    squareVerts_openGLClipSpace[4] = clipSpaceTransformMatrix * squareVerts_screenCoords[4];
+                    squareVerts_openGLClipSpace[5] = clipSpaceTransformMatrix * squareVerts_screenCoords[5];
                 };
                 
                 GLfloat verts[] =
                 {
                     squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z,
                     1.0f, 0.0f, 0.0f,
-                    
                     squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z,
-                    1.0f, 0.0f, 0.0f,
-                    
+                    0.0f, 1.0f, 0.0f,
                     squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z,
                     1.0f, 0.0f, 0.0f,
-                    
                     squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z,
+                    1.0f, 0.0f, 0.0f,
+                    squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z,
+                    0.0f, 1.0f, 0.0f,
+                    squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z,
                     1.0f, 0.0f, 0.0f
                 };
                 
@@ -421,7 +503,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 GLushort indicies[] =
                 {
-                    0, 1, 2,  0, 2, 3
+                    0, 1, 3,  3, 1, 4,  1, 2, 4,  2, 5, 4
                 };
                 
                 GLuint indexBufferID;
@@ -431,7 +513,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 glDisable(GL_TEXTURE_2D);
                 //glDrawArrays(GL_TRIANGLES, 0, 3);
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+                glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
