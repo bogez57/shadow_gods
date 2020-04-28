@@ -5,13 +5,13 @@
 
 const char* vertexShaderCode =
 "#version 430 \r\n"
-"in layout(location=0) vec2 position;\n"
+"in layout(location=0) vec4 position;\n"
 "in layout(location=1) vec3 color;\n"
 "out vec3 fragColor;\n"
 "\n"
 "void main()\n"
 "{\n"
-"    gl_Position = vec4(position, 0.0, 1.0f); \n"
+"    gl_Position = position; \n"
 "    fragColor = color;\n"
 "}\n";
 
@@ -331,6 +331,45 @@ Array<glm::vec4, 24> testSquare_clipSpace =
 
 f32 epsilon = 0.00001f; //TODO: Remove????
 
+void CaseyMatrixTest(f32 windowWidth, f32 windowHeight)
+{
+    Array<v4f, 6> squareVerts_screenCoords =
+    {
+        v4f{200.0f, 600.0f, 400.0f, 1.0f},
+        v4f{300.0f, 600.0f, 300.0f, 1.0f},
+        v4f{400.0f, 600.0f, 400.0f, 1.0f},
+        
+        v4f{200.0f, 400.0f, 400.0f, 1.0f},
+        v4f{300.0f, 400.0f, 300.0f, 1.0f},
+        v4f{400.0f, 400.0f, 400.0f, 1.0f}
+    };
+    
+    Array<v4f, 6> squareVerts_openGLClipSpace {};
+    mat4x4 projMat = PerspectiveProjection(1.7777777f, 800.0f);
+    {//Projection
+        for (i32 vertI {}; vertI < 6; vertI++)
+        {
+            squareVerts_openGLClipSpace[vertI] = projMat * squareVerts_screenCoords[vertI];
+        };
+    };
+    
+    GLfloat verts[] =
+    {
+        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z,
+        1.0f, 0.0f, 0.0f,
+        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z,
+        0.0f, 1.0f, 0.0f,
+        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z,
+        1.0f, 0.0f, 0.0f,
+        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z,
+        1.0f, 0.0f, 0.0f,
+        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z,
+        0.0f, 1.0f, 0.0f,
+        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z,
+        1.0f, 0.0f, 0.0f
+    };
+};
+
 void PixelUnitProjectionTest(f32 windowWidth, f32 windowHeight)
 {
     Array<glm::vec4, 6> squareVerts_screenCoords =
@@ -344,40 +383,32 @@ void PixelUnitProjectionTest(f32 windowWidth, f32 windowHeight)
         glm::vec4{400.0f, 400.0f, 400.0f, 1.0f}
     };
     
-    {//Projection transform - my version
+    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
+    {//-1 to 1 clip space
+        for(i32 vertI{}; vertI < 6; ++vertI)
+        {
+            squareVerts_openGLClipSpace[vertI].x = (squareVerts_screenCoords[vertI].x / (windowWidth / 2.0f)) - 1.0f;
+            squareVerts_openGLClipSpace[vertI].y = (squareVerts_screenCoords[vertI].y / (windowHeight / 2.0f)) - 1.0f;
+        };
+    };
+    
+    {//Calculate correct z's to send down
         f32 camDistanceFromMonitor_z = 800.0f;
         
         for(i32 vertI{}; vertI < 6; ++vertI)
         {
             f32 pointDistanceFromCamera_z = camDistanceFromMonitor_z + squareVerts_screenCoords[vertI].z;
             
-            f32 numerator = squareVerts_screenCoords[vertI].x * camDistanceFromMonitor_z;
-            squareVerts_screenCoords[vertI].x = Round(numerator / pointDistanceFromCamera_z);
+            f32 numeratorX = squareVerts_screenCoords[vertI].x * camDistanceFromMonitor_z;
+            f32 numeratorY = squareVerts_screenCoords[vertI].y * camDistanceFromMonitor_z;
+            f32 projectedX = Round(numeratorX / pointDistanceFromCamera_z);
+            f32 projectedY = Round(numeratorY / pointDistanceFromCamera_z);
             
-            numerator = squareVerts_screenCoords[vertI].y * camDistanceFromMonitor_z;
-            squareVerts_screenCoords[vertI].y = Round(numerator / pointDistanceFromCamera_z);
+#if 0
+            f32 projectedNormX = (projectedNormX / (windowWidth / 2.0f)) - 1.0f;
+            f32 projectedNormY = (projectedNormY / (windowHeight / 2.0f)) - 1.0f;
+#endif
         };
-    };
-    
-    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
-    {//Do openGL clip space transform on verts
-        f32 a = 2.0f/windowWidth;
-        f32 b = 2.0f/windowHeight;
-        
-        glm::mat4 clipSpaceTransformMatrix =
-        {
-            a, 0.0f, 0.0f, 0.0f,
-            0.0f, b, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            -1.0f, -1.0f, 0.0f, 1.0f
-        };
-        
-        squareVerts_openGLClipSpace[0] = clipSpaceTransformMatrix * squareVerts_screenCoords[0];
-        squareVerts_openGLClipSpace[1] = clipSpaceTransformMatrix * squareVerts_screenCoords[1];
-        squareVerts_openGLClipSpace[2] = clipSpaceTransformMatrix * squareVerts_screenCoords[2];
-        squareVerts_openGLClipSpace[3] = clipSpaceTransformMatrix * squareVerts_screenCoords[3];
-        squareVerts_openGLClipSpace[4] = clipSpaceTransformMatrix * squareVerts_screenCoords[4];
-        squareVerts_openGLClipSpace[5] = clipSpaceTransformMatrix * squareVerts_screenCoords[5];
     };
     
     GLfloat verts[] =
@@ -425,52 +456,36 @@ void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
 {
     Array<glm::vec4, 6> squareVerts_meters =
     {
-        glm::vec4{2.777f, 3.555f, 5.555f, 1.0f},
-        glm::vec4{4.166f, 3.555f, 4.166f, 1.0f},
-        glm::vec4{5.555f, 3.555f, 5.555f, 1.0f},
+        glm::vec4{2.0f, 1.0f, 5.0f, 1.0f},
+        glm::vec4{2.4f, 1.0f, 4.0f, 1.0f},
+        glm::vec4{4.0f, 1.0f, 5.0f, 1.0f},
         
-        glm::vec4{2.777f, 1.555f, 5.555f, 1.0f},
-        glm::vec4{4.166f, 1.555f, 4.166f, 1.0f},
-        glm::vec4{5.555f, 1.555f, 5.555f, 1.0f}
-    };
-    
-    {//Projection transform - my version
-        f32 camDistanceFromMonitor_z = 11.111f;
-        
-        for(i32 vertI{}; vertI < 6; ++vertI)
-        {
-            f32 pointDistanceFromCamera_z = camDistanceFromMonitor_z + squareVerts_meters[vertI].z;
-            
-            f32 numerator = squareVerts_meters[vertI].x * camDistanceFromMonitor_z;
-            squareVerts_meters[vertI].x = numerator / pointDistanceFromCamera_z;
-            
-            numerator = squareVerts_meters[vertI].y * camDistanceFromMonitor_z;
-            squareVerts_meters[vertI].y = numerator / pointDistanceFromCamera_z;
-        };
-    };
-    
-    Array<glm::vec4, 6> squareVerts_screenCoords{};
-    {//Convert to pixels
-        for(i32 vertI{}; vertI < 6; ++vertI)
-        {
-            squareVerts_screenCoords[vertI].x =  Round(squareVerts_meters[vertI].x * 72);
-            squareVerts_screenCoords[vertI].y =  Round(squareVerts_meters[vertI].y * 72);
-            squareVerts_screenCoords[vertI].z =  Round(squareVerts_meters[vertI].z * 72);
-            squareVerts_screenCoords[vertI].w = 1.0f;
-        };
+        glm::vec4{2.0f, -0.5f, 5.0f, 1.0f},
+        glm::vec4{2.4f, -0.5f, 4.0f, 1.0f},
+        glm::vec4{4.0f, -0.5f, 5.0f, 1.0f}
     };
     
     Array<glm::vec4, 6> squareVerts_openGLClipSpace;
-    {//Do openGL clip space transform on verts
-        f32 b = (f32)(2.0f*windowWidth)/(f32)windowHeight;
+    {//Projection transform
+        f32 fov = glm::radians(80.0f);
+        f32 aspectRatio = 16.0f/9.0f;
+        f32 tanFov = TanR(fov / 2.0f);
+        f32 coEff = 1.0f / tanFov;
+        f32 xScale = coEff;
+        f32 yScale = coEff * aspectRatio;
         
-        glm::mat4 clipSpaceTransformMatrix =
+        for(i32 vertI{}; vertI < 6; ++vertI)
         {
-            2.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, b, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            -1.0f, 0.0f, 0.0f, 1.0f
+            squareVerts_openGLClipSpace[vertI].x = squareVerts_meters[vertI].x * xScale;
+            squareVerts_openGLClipSpace[vertI].y = squareVerts_meters[vertI].y * yScale;
+            squareVerts_openGLClipSpace[vertI].z = 1.0f;
+            squareVerts_openGLClipSpace[vertI].w = squareVerts_meters[vertI].z;
         };
+    };
+    
+#if 0
+    {//Do openGL clip space transform on verts
+        
         
         squareVerts_openGLClipSpace[0] = clipSpaceTransformMatrix * squareVerts_screenCoords[0];
         squareVerts_openGLClipSpace[1] = clipSpaceTransformMatrix * squareVerts_screenCoords[1];
@@ -479,20 +494,21 @@ void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
         squareVerts_openGLClipSpace[4] = clipSpaceTransformMatrix * squareVerts_screenCoords[4];
         squareVerts_openGLClipSpace[5] = clipSpaceTransformMatrix * squareVerts_screenCoords[5];
     };
+#endif
     
     GLfloat verts[] =
     {
-        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z,
+        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z, squareVerts_openGLClipSpace[0].w,
         1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z,
+        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z, squareVerts_openGLClipSpace[1].w,
         0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z,
+        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z, squareVerts_openGLClipSpace[2].w,
         1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z,
+        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z, squareVerts_openGLClipSpace[3].w,
         1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z,
+        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z, squareVerts_openGLClipSpace[4].w,
         0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z,
+        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z, squareVerts_openGLClipSpace[5].w,
         1.0f, 0.0f, 0.0f
     };
     
@@ -501,9 +517,9 @@ void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
     glBindBuffer(GL_ARRAY_BUFFER, bufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
     
     GLushort indicies[] =
     {
@@ -671,6 +687,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 //PixelUnitProjectionTest((f32)windowWidth, (f32)windowHeight);
                 MetersToPixelsProjectionTest((f32)windowWidth, (f32)windowHeight);
+                //CaseyMatrixTest((f32)windowWidth, (f32)windowHeight);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
             }break;

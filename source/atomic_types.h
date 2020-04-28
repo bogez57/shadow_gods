@@ -701,4 +701,24 @@ operator*(mat4x4 A, v4f P)
     return(R);
 };
 
+inline mat4x4
+PerspectiveProjection(f32 aspectRatio, f32 focalLength)
+{
+    f32 a = 1.0f;
+    f32 b = aspectRatio;
+    f32 c = focalLength;
+    
+    mat4x4 r =
+    {
+        {
+            {a*c, 0, 0, 0},
+            {0, b*c, 0, 0},
+            {0,   0, 1, 0},
+            {0,   0,-1, 0}
+        }
+    };
+    
+    return r;
+};
+
 #endif // ATOMIC_TYPES_IMPL
