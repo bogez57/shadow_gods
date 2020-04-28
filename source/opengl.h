@@ -456,23 +456,24 @@ void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
 {
     Array<glm::vec4, 6> squareVerts_meters =
     {
-        glm::vec4{2.0f, 1.0f, 5.0f, 1.0f},
-        glm::vec4{2.4f, 1.0f, 4.0f, 1.0f},
-        glm::vec4{4.0f, 1.0f, 5.0f, 1.0f},
+        glm::vec4{2.0f, 1.0f, 3.0f, 1.0f},
+        glm::vec4{2.4f, 1.0f, 2.0f, 1.0f},
+        glm::vec4{4.0f, 1.0f, 3.0f, 1.0f},
         
-        glm::vec4{2.0f, -0.5f, 5.0f, 1.0f},
-        glm::vec4{2.4f, -0.5f, 4.0f, 1.0f},
-        glm::vec4{4.0f, -0.5f, 5.0f, 1.0f}
+        glm::vec4{2.0f, -0.5f, 3.0f, 1.0f},
+        glm::vec4{2.4f, -0.5f, 2.0f, 1.0f},
+        glm::vec4{4.0f, -0.5f, 3.0f, 1.0f}
     };
     
     Array<glm::vec4, 6> squareVerts_openGLClipSpace;
+    
+#if 1
     {//Projection transform
         f32 fov = glm::radians(80.0f);
         f32 aspectRatio = 16.0f/9.0f;
-        f32 tanFov = TanR(fov / 2.0f);
-        f32 coEff = 1.0f / tanFov;
-        f32 xScale = coEff;
-        f32 yScale = coEff * aspectRatio;
+        f32 tanHalfFov = TanR(fov / 2.0f);
+        f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
+        f32 yScale = 1.0f / tanHalfFov;
         
         for(i32 vertI{}; vertI < 6; ++vertI)
         {
@@ -483,16 +484,16 @@ void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
         };
     };
     
-#if 0
+#else
     {//Do openGL clip space transform on verts
+        glm::mat4 proj = glm::perspective(glm::radians(80.0f), 16.0f/9.0f, .1f, 100.0f);
         
-        
-        squareVerts_openGLClipSpace[0] = clipSpaceTransformMatrix * squareVerts_screenCoords[0];
-        squareVerts_openGLClipSpace[1] = clipSpaceTransformMatrix * squareVerts_screenCoords[1];
-        squareVerts_openGLClipSpace[2] = clipSpaceTransformMatrix * squareVerts_screenCoords[2];
-        squareVerts_openGLClipSpace[3] = clipSpaceTransformMatrix * squareVerts_screenCoords[3];
-        squareVerts_openGLClipSpace[4] = clipSpaceTransformMatrix * squareVerts_screenCoords[4];
-        squareVerts_openGLClipSpace[5] = clipSpaceTransformMatrix * squareVerts_screenCoords[5];
+        for(i32 vertI{}; vertI < 6; ++vertI)
+        {
+            squareVerts_openGLClipSpace[vertI] = proj * squareVerts_meters[vertI];
+            squareVerts_openGLClipSpace[vertI].z = 1.0f;
+            squareVerts_openGLClipSpace[vertI].w *= -1.0f;
+        };
     };
 #endif
     
