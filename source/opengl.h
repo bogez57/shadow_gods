@@ -452,7 +452,77 @@ void PixelUnitProjectionTest(f32 windowWidth, f32 windowHeight)
     glEnable(GL_TEXTURE_2D);
 };
 
-void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
+void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
+{
+    //Going to say 1 meter equals 100 pixels
+    Array<glm::vec4, 6> squareVerts_meters =
+    {
+        glm::vec4{2.0f, 1.0f, 3.0f, 1.0f},
+        glm::vec4{2.4f, 1.0f, 2.0f, 1.0f},
+        glm::vec4{4.0f, 1.0f, 3.0f, 1.0f},
+        
+        glm::vec4{2.0f, -0.5f, 3.0f, 1.0f},
+        glm::vec4{2.4f, -0.5f, 2.0f, 1.0f},
+        glm::vec4{4.0f, -0.5f, 3.0f, 1.0f}
+    };
+    
+    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
+    
+    {//Projection transform
+        f32 focalLength = 2.8f;
+        f32 windowWidth_meters = windowWidth / 100.0f;
+        f32 windowHeight_meters = windowHeight / 100.0f;
+        
+        for(i32 vertI{}; vertI < 6; ++vertI)
+        {
+            squareVerts_openGLClipSpace[vertI].x = (squareVerts_meters[vertI].x * focalLength) / (windowWidth_meters / 2.0f);
+            squareVerts_openGLClipSpace[vertI].y = (squareVerts_meters[vertI].y * focalLength) / (windowHeight_meters / 2.0f);
+            squareVerts_openGLClipSpace[vertI].z = 1.0f;
+            squareVerts_openGLClipSpace[vertI].w = squareVerts_meters[vertI].z;
+        };
+    };
+    
+    GLfloat verts[] =
+    {
+        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z, squareVerts_openGLClipSpace[0].w,
+        1.0f, 0.0f, 0.0f,
+        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z, squareVerts_openGLClipSpace[1].w,
+        0.0f, 1.0f, 0.0f,
+        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z, squareVerts_openGLClipSpace[2].w,
+        1.0f, 0.0f, 0.0f,
+        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z, squareVerts_openGLClipSpace[3].w,
+        1.0f, 0.0f, 0.0f,
+        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z, squareVerts_openGLClipSpace[4].w,
+        0.0f, 1.0f, 0.0f,
+        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z, squareVerts_openGLClipSpace[5].w,
+        1.0f, 0.0f, 0.0f
+    };
+    
+    GLuint bufferID;
+    glGenBuffers(1, &bufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
+    
+    GLushort indicies[] =
+    {
+        0, 1, 3,  3, 1, 4,  1, 2, 4,  2, 5, 4
+    };
+    
+    GLuint indexBufferID;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
+    
+    glDisable(GL_TEXTURE_2D);
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
+    glEnable(GL_TEXTURE_2D);
+};
+
+void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
 {
     Array<glm::vec4, 6> squareVerts_meters =
     {
@@ -469,7 +539,7 @@ void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
     
 #if 1
     {//Projection transform
-        f32 fov = glm::radians(80.0f);
+        f32 fov = glm::radians(90.0f);
         f32 aspectRatio = 16.0f/9.0f;
         f32 tanHalfFov = TanR(fov / 2.0f);
         f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
@@ -533,7 +603,6 @@ void MetersToPixelsProjectionTest(f32 windowWidth, f32 windowHeight)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
     
     glDisable(GL_TEXTURE_2D);
-    //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
 };
@@ -687,7 +756,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
 #endif
                 
                 //PixelUnitProjectionTest((f32)windowWidth, (f32)windowHeight);
-                MetersToPixelsProjectionTest((f32)windowWidth, (f32)windowHeight);
+                ProjectionTestUsingFOV_InMeters((f32)windowWidth, (f32)windowHeight);
+                //ProjectionTestUsingFocalLength_InMeters((f32)windowWidth, (f32)windowHeight);
                 //CaseyMatrixTest((f32)windowWidth, (f32)windowHeight);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
