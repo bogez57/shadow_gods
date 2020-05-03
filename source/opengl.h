@@ -545,11 +545,17 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
         f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
         f32 yScale = 1.0f / tanHalfFov;
         
+        f32 farClip = 100.0f;
+        f32 nearClip = 1.0f;
+        
+        f32 a = (-farClip - nearClip) / (nearClip - farClip);
+        f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
+        
         for(i32 vertI{}; vertI < 6; ++vertI)
         {
             squareVerts_openGLClipSpace[vertI].x = squareVerts_meters[vertI].x * xScale;
             squareVerts_openGLClipSpace[vertI].y = squareVerts_meters[vertI].y * yScale;
-            squareVerts_openGLClipSpace[vertI].z = 1.0f;
+            squareVerts_openGLClipSpace[vertI].z = squareVerts_meters[vertI].z * a + b;
             squareVerts_openGLClipSpace[vertI].w = squareVerts_meters[vertI].z;
         };
     };
