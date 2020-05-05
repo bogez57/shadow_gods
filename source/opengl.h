@@ -296,162 +296,6 @@ Array<glm::vec4, 24> TransformFromClipSpaceToScreenSpace(Array<glm::vec4, 24> cl
     return screenSpaceCoords;
 };
 
-Array<glm::vec4, 24> testSquare_clipSpace =
-{
-    glm::vec4{-0.5f, +0.5f, +1.0f, 1.0f}, //0
-    glm::vec4{+0.5f, +0.5f, +1.0f, 1.0f}, //1
-    glm::vec4{+0.5f, +0.5f, -1.0f, 1.0f}, //2
-    glm::vec4{-0.5f, +0.5f, -1.0f, 1.0f}, //3
-    
-    glm::vec4{-0.5f, +0.5f, -1.0f, 1.0f}, //4
-    glm::vec4{+0.5f, +0.5f, -1.0f, 1.0f}, //5
-    glm::vec4{+0.5f, -0.5f, -1.0f, 1.0f}, //6
-    glm::vec4{-0.5f, -0.5f, -1.0f, 1.0f}, //7
-    
-    glm::vec4{+0.5f, +0.5f, -1.0f, 1.0f}, //8
-    glm::vec4{+0.5f, +0.5f, +1.0f, 1.0f}, //9
-    glm::vec4{+0.5f, -0.5f, +1.0f, 1.0f}, //10
-    glm::vec4{+0.5f, -0.5f, -1.0f, 1.0f}, //11
-    
-    glm::vec4{-0.5f, +0.5f, +1.0f, 1.0f}, //12
-    glm::vec4{-0.5f, +0.5f, -1.0f, 1.0f}, //13
-    glm::vec4{-0.5f, -0.5f, -1.0f, 1.0f}, //14
-    glm::vec4{-0.5f, -0.5f, +1.0f, 1.0f}, //15
-    
-    glm::vec4{+0.5f, +0.5f, +1.0f, 1.0f}, //16
-    glm::vec4{-0.5f, +0.5f, +1.0f, 1.0f}, //17
-    glm::vec4{-0.5f, -0.5f, +1.0f, 1.0f}, //18
-    glm::vec4{+0.5f, -0.5f, +1.0f, 1.0f}, //19
-    
-    glm::vec4{+0.5f, -0.5f, -1.0f, 1.0f}, //20
-    glm::vec4{-0.5f, -0.5f, -1.0f, 1.0f}, //21
-    glm::vec4{-0.5f, -0.5f, +1.0f, 1.0f}, //22
-    glm::vec4{+0.5f, -0.5f, +1.0f, 1.0f}, //23
-};
-
-f32 epsilon = 0.00001f; //TODO: Remove????
-
-void CaseyMatrixTest(f32 windowWidth, f32 windowHeight)
-{
-    Array<v4f, 6> squareVerts_screenCoords =
-    {
-        v4f{200.0f, 600.0f, 400.0f, 1.0f},
-        v4f{300.0f, 600.0f, 300.0f, 1.0f},
-        v4f{400.0f, 600.0f, 400.0f, 1.0f},
-        
-        v4f{200.0f, 400.0f, 400.0f, 1.0f},
-        v4f{300.0f, 400.0f, 300.0f, 1.0f},
-        v4f{400.0f, 400.0f, 400.0f, 1.0f}
-    };
-    
-    Array<v4f, 6> squareVerts_openGLClipSpace {};
-    mat4x4 projMat = PerspectiveProjection(1.7777777f, 800.0f);
-    {//Projection
-        for (i32 vertI {}; vertI < 6; vertI++)
-        {
-            squareVerts_openGLClipSpace[vertI] = projMat * squareVerts_screenCoords[vertI];
-        };
-    };
-    
-    GLfloat verts[] =
-    {
-        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z,
-        1.0f, 0.0f, 0.0f
-    };
-};
-
-void PixelUnitProjectionTest(f32 windowWidth, f32 windowHeight)
-{
-    Array<glm::vec4, 6> squareVerts_screenCoords =
-    {
-        glm::vec4{200.0f, 600.0f, 400.0f, 1.0f},
-        glm::vec4{300.0f, 600.0f, 300.0f, 1.0f},
-        glm::vec4{400.0f, 600.0f, 400.0f, 1.0f},
-        
-        glm::vec4{200.0f, 400.0f, 400.0f, 1.0f},
-        glm::vec4{300.0f, 400.0f, 300.0f, 1.0f},
-        glm::vec4{400.0f, 400.0f, 400.0f, 1.0f}
-    };
-    
-    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
-    {//-1 to 1 clip space
-        for(i32 vertI{}; vertI < 6; ++vertI)
-        {
-            squareVerts_openGLClipSpace[vertI].x = (squareVerts_screenCoords[vertI].x / (windowWidth / 2.0f)) - 1.0f;
-            squareVerts_openGLClipSpace[vertI].y = (squareVerts_screenCoords[vertI].y / (windowHeight / 2.0f)) - 1.0f;
-        };
-    };
-    
-    {//Calculate correct z's to send down
-        f32 camDistanceFromMonitor_z = 800.0f;
-        
-        for(i32 vertI{}; vertI < 6; ++vertI)
-        {
-            f32 pointDistanceFromCamera_z = camDistanceFromMonitor_z + squareVerts_screenCoords[vertI].z;
-            
-            f32 numeratorX = squareVerts_screenCoords[vertI].x * camDistanceFromMonitor_z;
-            f32 numeratorY = squareVerts_screenCoords[vertI].y * camDistanceFromMonitor_z;
-            f32 projectedX = Round(numeratorX / pointDistanceFromCamera_z);
-            f32 projectedY = Round(numeratorY / pointDistanceFromCamera_z);
-            
-#if 0
-            f32 projectedNormX = (projectedNormX / (windowWidth / 2.0f)) - 1.0f;
-            f32 projectedNormY = (projectedNormY / (windowHeight / 2.0f)) - 1.0f;
-#endif
-        };
-    };
-    
-    GLfloat verts[] =
-    {
-        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z,
-        1.0f, 0.0f, 0.0f
-    };
-    
-    GLuint bufferID;
-    glGenBuffers(1, &bufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
-    
-    GLushort indicies[] =
-    {
-        0, 1, 3,  3, 1, 4,  1, 2, 4,  2, 5, 4
-    };
-    
-    GLuint indexBufferID;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
-    
-    glDisable(GL_TEXTURE_2D);
-    //glDrawArrays(GL_TRIANGLES, 0, 3);
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
-    glEnable(GL_TEXTURE_2D);
-};
-
 void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
 {
     //Going to say 1 meter equals 100 pixels
@@ -526,18 +370,18 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
 {
     Array<glm::vec4, 6> squareVerts_meters =
     {
-        glm::vec4{2.0f, 1.0f, 3.0f, 1.0f},
-        glm::vec4{2.4f, 1.0f, 2.0f, 1.0f},
-        glm::vec4{4.0f, 1.0f, 3.0f, 1.0f},
+        glm::vec4{2.0f, 1.0f, 7.0f, 1.0f},
+        glm::vec4{2.4f, 1.0f, 6.0f, 1.0f},
+        glm::vec4{4.0f, 1.0f, 7.0f, 1.0f},
         
-        glm::vec4{2.0f, -0.5f, 3.0f, 1.0f},
-        glm::vec4{2.4f, -0.5f, 2.0f, 1.0f},
-        glm::vec4{4.0f, -0.5f, 3.0f, 1.0f}
+        glm::vec4{2.0f, -0.5f, 7.0f, 1.0f},
+        glm::vec4{2.4f, -0.5f, 6.0f, 1.0f},
+        glm::vec4{4.0f, -0.5f, 7.0f, 1.0f}
     };
     
     Array<glm::vec4, 6> squareVerts_openGLClipSpace;
     
-#if 1
+#if 0
     {//Projection transform
         f32 fov = glm::radians(90.0f);
         f32 aspectRatio = 16.0f/9.0f;
@@ -613,6 +457,144 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
     glEnable(GL_TEXTURE_2D);
 };
 
+Array<v4f, 24> squareVerts_meters =
+{
+    v4f{-0.5f, +0.5f, 2.8f, 1.0f}, //0
+    v4f{+0.5f, +0.5f, 2.8f, 1.0f}, //1
+    v4f{+0.5f, +0.5f, 1.8f, 1.0f}, //2
+    v4f{-0.5f, +0.5f, 1.8f, 1.0f}, //3
+    
+    v4f{-0.5f, +0.5f, 1.8f, 1.0f}, //4
+    v4f{+0.5f, +0.5f, 1.8f, 1.0f}, //5
+    v4f{+0.5f, -0.5f, 1.8f, 1.0f}, //6
+    v4f{-0.5f, -0.5f, 1.8f, 1.0f}, //7
+    
+    v4f{+0.5f, +0.5f, 1.8f, 1.0f}, //8
+    v4f{+0.5f, +0.5f, 2.8f, 1.0f}, //9
+    v4f{+0.5f, -0.5f, 2.8f, 1.0f}, //10
+    v4f{+0.5f, -0.5f, 1.8f, 1.0f}, //11
+    
+    v4f{-0.5f, +0.5f, 2.8f, 1.0f}, //12
+    v4f{-0.5f, +0.5f, 1.8f, 1.0f}, //13
+    v4f{-0.5f, -0.5f, 1.8f, 1.0f}, //14
+    v4f{-0.5f, -0.5f, 2.8f, 1.0f}, //15
+    
+    v4f{+0.5f, +0.5f, 2.8f, 1.0f}, //16
+    v4f{-0.5f, +0.5f, 2.8f, 1.0f}, //17
+    v4f{-0.5f, -0.5f, 2.8f, 1.0f}, //18
+    v4f{+0.5f, -0.5f, 2.8f, 1.0f}, //19
+    
+    v4f{+0.5f, -0.5f, 1.8f, 1.0f}, //20
+    v4f{-0.5f, -0.5f, 1.8f, 1.0f}, //21
+    v4f{-0.5f, -0.5f, 2.8f, 1.0f}, //22
+    v4f{+0.5f, -0.5f, 2.8f, 1.0f}, //23
+};
+
+f32 epsilon = 0.00001f; //TODO: Remove????
+
+
+void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
+{
+    Array<v4f, 24> squareVerts_openGLClipSpace;
+    
+#if 1
+    {//Rotation
+        f32 rotationAngle = .01f;
+        v2f xBasis_rotated = { CosR(rotationAngle), SinR(rotationAngle) };
+        v2f yBasis_rotated = { -SinR(rotationAngle), CosR(rotationAngle) };
+        
+        for(i32 vertI{}; vertI < 24; ++vertI)
+        {
+            v2f origin{};
+            v2f newXBasis = (squareVerts_meters[vertI].x * xBasis_rotated);
+            v2f newYBasis = (squareVerts_meters[vertI].y * yBasis_rotated);
+            squareVerts_meters[vertI].xy = origin + newXBasis + newYBasis;
+        };
+    };
+    
+    {//Projection transform
+        f32 fov = glm::radians(90.0f);
+        f32 aspectRatio = 16.0f/9.0f;
+        f32 tanHalfFov = TanR(fov / 2.0f);
+        f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
+        f32 yScale = 1.0f / tanHalfFov;
+        
+        f32 farClip = 100.0f;
+        f32 nearClip = 1.0f;
+        
+        f32 a = (-farClip - nearClip) / (nearClip - farClip);
+        f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
+        
+        for(i32 vertI{}; vertI < 24; ++vertI)
+        {
+            squareVerts_openGLClipSpace[vertI].x = squareVerts_meters[vertI].x * xScale;
+            squareVerts_openGLClipSpace[vertI].y = squareVerts_meters[vertI].y * yScale;
+            squareVerts_openGLClipSpace[vertI].z = squareVerts_meters[vertI].z * a + b;
+            squareVerts_openGLClipSpace[vertI].w = squareVerts_meters[vertI].z;
+            
+            f32 test = squareVerts_openGLClipSpace[vertI].z/squareVerts_openGLClipSpace[vertI].w;
+        };
+    };
+    
+#else
+    {//Do openGL clip space transform on verts
+        glm::mat4 proj = glm::perspective(glm::radians(80.0f), 16.0f/9.0f, 1.0f, 100.0f);
+        
+        for(i32 vertI{}; vertI < 24; ++vertI)
+        {
+            squareVerts_openGLClipSpace[vertI] = proj * squareVerts_meters[vertI];
+            squareVerts_openGLClipSpace[vertI].z = 1.0f;
+            squareVerts_openGLClipSpace[vertI].w *= -1.0f;
+        };
+    };
+#endif
+    
+    GLfloat verts[168] = {};
+    i32 i{};
+    f32 colorR{}, colorG{.3f}, colorB{.6f};
+    for(i32 j{}; j < 24; ++j)
+    {
+        verts[i++] = squareVerts_openGLClipSpace[j].x;
+        verts[i++] = squareVerts_openGLClipSpace[j].y;
+        verts[i++] = squareVerts_openGLClipSpace[j].z;
+        verts[i++] = squareVerts_openGLClipSpace[j].w;
+        verts[i++] = colorR;
+        verts[i++] = colorG;
+        verts[i++] = colorB;
+        
+        colorR += .01f;
+        colorG += .24f;
+        colorB += .17f;
+    };
+    
+    GLuint bufferID;
+    glGenBuffers(1, &bufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
+    
+    GLushort indicies[] =
+    {
+        0, 1, 2, 0, 2, 3,
+        4, 5, 6, 4, 6, 7,
+        8, 9, 10, 8, 10, 11,
+        12, 13, 14, 12, 14, 15,
+        16, 17, 18, 16, 18, 19,
+        20, 22, 21, 20, 23, 22
+    };
+    
+    GLuint indexBufferID;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
+    
+    glDisable(GL_TEXTURE_2D);
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
+    glEnable(GL_TEXTURE_2D);
+};
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
 {
@@ -761,10 +743,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 };
 #endif
                 
-                //PixelUnitProjectionTest((f32)windowWidth, (f32)windowHeight);
-                ProjectionTestUsingFOV_InMeters((f32)windowWidth, (f32)windowHeight);
-                //ProjectionTestUsingFocalLength_InMeters((f32)windowWidth, (f32)windowHeight);
-                //CaseyMatrixTest((f32)windowWidth, (f32)windowHeight);
+                ProjectionTestUsingFullSquare((f32)windowWidth, (f32)windowHeight);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
             }break;
