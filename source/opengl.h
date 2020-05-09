@@ -12,7 +12,11 @@ const char* vertexShaderCode =
 "void main()\n"
 "{\n"
 "    gl_Position = position; \n"
-"    fragColor = color;\n"
+"    vec3 changedColors;\n"
+"    changedColors.r += color.r + .01;\n"
+"    changedColors.g += color.g + .04;\n"
+"    changedColors.b += color.b + .02;\n"
+"    fragColor = changedColors;\n"
 "}\n";
 
 const char* fragmentShaderCode =
@@ -284,45 +288,107 @@ DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
 #include <glm/mat4x4.hpp> // glm::mat4
 #include <glm/ext/matrix_clip_space.hpp> // glm::perspective
 
-Array<glm::vec4, 24> TransformFromClipSpaceToScreenSpace(Array<glm::vec4, 24> clipSpaceVerts, f32 windowWidth, f32 windowHeight)
+v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
-    Array<glm::vec4, 24> screenSpaceCoords{};
-    for(i32 vertI{}; vertI < 24; ++vertI)
-    {
-        screenSpaceCoords[vertI].x = (clipSpaceVerts[vertI].x + 1) * (windowWidth/2);
-        screenSpaceCoords[vertI].y = (clipSpaceVerts[vertI].y + 1) * (windowHeight/2);
-    };
+    ConvertToCorrectPositiveRadian($(parentTransform.rotation));
     
-    return screenSpaceCoords;
+    Coordinate_Space parentSpace {};
+    parentSpace.origin = parentTransform.translation;
+    parentSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
+    parentSpace.yBasis = parentTransform.scale.y * PerpendicularOp(parentSpace.xBasis);
+    parentSpace.xBasis *= parentTransform.scale.x;
+    
+    v2f transformedCoords {};
+    
+    //This equation rotates first then moves to correct world position
+    transformedCoords = parentSpace.origin + (localCoords.x * parentSpace.xBasis) + (localCoords.y * parentSpace.yBasis);
+    
+    return transformedCoords;
+};
+
+struct Transform_v4
+{
+    v4f translation{};
+    f32 rotation{};
+};
+
+v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
+{
+    ConvertToCorrectPositiveRadian($(parentTransform.rotation));
+    
+    v4f origin_inParentSpace = parentTransform.translation;
+    v4f zBasis_inParentSpace = v4f{ parentTransform.translation.x, -SinR(parentTransform.rotation), CosR(parentTransform.rotation), parentTransform.translation.w };
+    v4f yBasis_inParentSpace = v4f{ parentTransform.translation.x, CosR(parentTransform.rotation), SinR(parentTransform.rotation), parentTransform.translation.w };
+    
+    v4f transformedCoords{};
+    transformedCoords = origin_inParentSpace + (localCoords.z * zBasis_inParentSpace) + (localCoords.y * yBasis_inParentSpace);
+    transformedCoords.x = localCoords.x;
+    transformedCoords.w = 1.0f;
+    
+    return transformedCoords;
 };
 
 void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
 {
-    //Going to say 1 meter equals 100 pixels
-    Array<glm::vec4, 6> squareVerts_meters =
+#if 0
+    Array<v4f, 6> squareVerts_camera =
     {
-        glm::vec4{2.0f, 1.0f, 3.0f, 1.0f},
-        glm::vec4{2.4f, 1.0f, 2.0f, 1.0f},
-        glm::vec4{4.0f, 1.0f, 3.0f, 1.0f},
+        v4f{1.6f, 1.4f, 4.0f, 1.0f},
+        v4f{2.6f, 1.4f, 3.0f, 1.0f},
+        v4f{4.6f, 1.4f, 4.0f, 1.0f},
         
-        glm::vec4{2.0f, -0.5f, 3.0f, 1.0f},
-        glm::vec4{2.4f, -0.5f, 2.0f, 1.0f},
-        glm::vec4{4.0f, -0.5f, 3.0f, 1.0f}
+        v4f{1.6f, -0.6f, 4.0f, 1.0f},
+        v4f{2.6f, -0.6f, 3.0f, 1.0f},
+        v4f{4.6f, -0.6f, 4.0f, 1.0f}
+    };
+#endif
+    
+    Array<v4f, 6> squareVerts_object =
+    {
+        v4f{8.0f, -1.0f, -0.5f, 1.0f},
+        v4f{9.0f, -1.0f, 0.5f, 1.0f},
+        v4f{11.0f, -1.0f, -0.5f, 1.0f},
+        
+        v4f{8.0f, 1.0f, -0.5f, 1.0f},
+        v4f{9.0f, 1.0f, 0.5f, 1.0f},
+        v4f{11.0f, 1.0f, -0.5f, 1.0f}
     };
     
-    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
+    local_persist f32 rotation = 0.0f;
+    rotation += .01f;
+    Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
     
+    Array<v4f, 6> squareVerts_world{};
+    {//World Transform
+        for(i32 i{}; i < 6; ++i)
+        {
+            squareVerts_world[i] = ParentTransform_1Vec(squareVerts_object[i], world);
+        };
+    };
+    
+    Array<v4f, 6> squareVerts_camera{};
+    {//Camera Transform
+        for(i32 i{}; i < 6; ++i)
+        {
+            squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
+            squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
+            squareVerts_camera[i].z = squareVerts_world[i].z;
+            squareVerts_camera[i].w = squareVerts_world[i].w;
+        };
+    };
+    
+    Array<v4f, 6> squareVerts_openGLClipSpace;
     {//Projection transform
-        f32 focalLength = 2.8f;
-        f32 windowWidth_meters = windowWidth / 100.0f;
-        f32 windowHeight_meters = windowHeight / 100.0f;
+        f32 focalLength = 1.8f;
+        f32 windowWidth_meters = windowWidth;
+        f32 windowHeight_meters = windowHeight;
         
         for(i32 vertI{}; vertI < 6; ++vertI)
         {
-            squareVerts_openGLClipSpace[vertI].x = (squareVerts_meters[vertI].x * focalLength) / (windowWidth_meters / 2.0f);
-            squareVerts_openGLClipSpace[vertI].y = (squareVerts_meters[vertI].y * focalLength) / (windowHeight_meters / 2.0f);
+            squareVerts_openGLClipSpace[vertI].x = (squareVerts_camera[vertI].x * focalLength) / (windowWidth_meters / 2.0f);
+            squareVerts_openGLClipSpace[vertI].y = (squareVerts_camera[vertI].y * focalLength) / (windowHeight_meters / 2.0f);
             squareVerts_openGLClipSpace[vertI].z = 1.0f;
-            squareVerts_openGLClipSpace[vertI].w = squareVerts_meters[vertI].z;
+            squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
         };
     };
     
@@ -353,7 +419,7 @@ void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
     
     GLushort indicies[] =
     {
-        0, 1, 3,  3, 1, 4,  1, 2, 4,  2, 5, 4
+        0, 1, 3,  3, 4, 1,  1, 4, 2,  2, 5, 4
     };
     
     GLuint indexBufferID;
@@ -368,22 +434,59 @@ void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
 
 void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
 {
-    Array<glm::vec4, 6> squareVerts_meters =
+#if 0
+    Array<v4f, 6> squareVerts_camera =
     {
-        glm::vec4{2.0f, 1.0f, 7.0f, 1.0f},
-        glm::vec4{2.4f, 1.0f, 6.0f, 1.0f},
-        glm::vec4{4.0f, 1.0f, 7.0f, 1.0f},
+        v4f{1.6f, 1.4f, 4.0f, 1.0f},
+        v4f{2.6f, 1.4f, 3.0f, 1.0f},
+        v4f{4.6f, 1.4f, 4.0f, 1.0f},
         
-        glm::vec4{2.0f, -0.5f, 7.0f, 1.0f},
-        glm::vec4{2.4f, -0.5f, 6.0f, 1.0f},
-        glm::vec4{4.0f, -0.5f, 7.0f, 1.0f}
+        v4f{1.6f, -0.6f, 4.0f, 1.0f},
+        v4f{2.6f, -0.6f, 3.0f, 1.0f},
+        v4f{4.6f, -0.6f, 4.0f, 1.0f}
+    };
+#endif
+    
+    Array<v4f, 6> squareVerts_object =
+    {
+        v4f{8.0f, 2.0f, 1.0f, 1.0f},
+        v4f{9.0f, 2.0f, 0.0f, 1.0f},
+        v4f{11.0f, 2.0f, 1.0f, 1.0f},
+        
+        v4f{8.0f, 0.0f, 1.0f, 1.0f},
+        v4f{9.0f, 0.0f, 0.0f, 1.0f},
+        v4f{11.0f, 0.0f, 1.0f, 1.0f}
     };
     
-    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
+    local_persist f32 rotation = 0.0f;
+    rotation += .01f;
+    Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
     
-#if 0
+    Array<v4f, 6> squareVerts_world{};
+    {//World Transform
+        for(i32 i{}; i < 6; ++i)
+        {
+            squareVerts_world[i] = ParentTransform_1Vec(squareVerts_object[i], world);
+        };
+    };
+    
+    Array<v4f, 6> squareVerts_camera{};
+    {//Camera Transform
+        for(i32 i{}; i < 6; ++i)
+        {
+            squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
+            squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
+            squareVerts_camera[i].z = squareVerts_world[i].z;
+            squareVerts_camera[i].w = squareVerts_world[i].w;
+        };
+    };
+    
+    BGZ_CONSOLE("z: %f\n", squareVerts_camera[0].z);
+    
+    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
+#if 1
     {//Projection transform
-        f32 fov = glm::radians(90.0f);
+        f32 fov = glm::radians(140.0f);
         f32 aspectRatio = 16.0f/9.0f;
         f32 tanHalfFov = TanR(fov / 2.0f);
         f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
@@ -397,10 +500,10 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
         
         for(i32 vertI{}; vertI < 6; ++vertI)
         {
-            squareVerts_openGLClipSpace[vertI].x = squareVerts_meters[vertI].x * xScale;
-            squareVerts_openGLClipSpace[vertI].y = squareVerts_meters[vertI].y * yScale;
-            squareVerts_openGLClipSpace[vertI].z = squareVerts_meters[vertI].z * a + b;
-            squareVerts_openGLClipSpace[vertI].w = squareVerts_meters[vertI].z;
+            squareVerts_openGLClipSpace[vertI].x = squareVerts_camera[vertI].x * xScale;
+            squareVerts_openGLClipSpace[vertI].y = squareVerts_camera[vertI].y * yScale;
+            squareVerts_openGLClipSpace[vertI].z = squareVerts_camera[vertI].z * a + b;
+            squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
         };
     };
     
@@ -410,7 +513,7 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
         
         for(i32 vertI{}; vertI < 6; ++vertI)
         {
-            squareVerts_openGLClipSpace[vertI] = proj * squareVerts_meters[vertI];
+            squareVerts_openGLClipSpace[vertI] = proj * squareVerts_camera[vertI];
             squareVerts_openGLClipSpace[vertI].z = 1.0f;
             squareVerts_openGLClipSpace[vertI].w *= -1.0f;
         };
@@ -457,63 +560,63 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
     glEnable(GL_TEXTURE_2D);
 };
 
-Array<v4f, 24> squareVerts_meters =
+#define NUM_VERTS 8
+Array<v4f, NUM_VERTS> squareVerts_object =
 {
-    v4f{-0.5f, +0.5f, 2.8f, 1.0f}, //0
-    v4f{+0.5f, +0.5f, 2.8f, 1.0f}, //1
-    v4f{+0.5f, +0.5f, 1.8f, 1.0f}, //2
-    v4f{-0.5f, +0.5f, 1.8f, 1.0f}, //3
+    v4f{-0.5f, 0.5f, -0.5f, 1.0f}, //0
+    v4f{+0.5f, 0.5f, -0.5f, 1.0f}, //1
+    v4f{-0.5f, -0.5f, -0.5f, 1.0f},//2
+    v4f{+0.5f, -0.5f, -0.5f, 1.0f},//3
+    v4f{+0.5f, -0.5f, +0.5f, 1.0f},//4
+    v4f{+0.5f, +0.5f, +0.5f, 1.0f},//5
+    v4f{-0.5f, +0.5f, +0.5f, 1.0f},//6
+    v4f{-0.5f, -0.5f, +0.5f, 1.0f},//7
     
-    v4f{-0.5f, +0.5f, 1.8f, 1.0f}, //4
-    v4f{+0.5f, +0.5f, 1.8f, 1.0f}, //5
-    v4f{+0.5f, -0.5f, 1.8f, 1.0f}, //6
-    v4f{-0.5f, -0.5f, 1.8f, 1.0f}, //7
-    
-    v4f{+0.5f, +0.5f, 1.8f, 1.0f}, //8
-    v4f{+0.5f, +0.5f, 2.8f, 1.0f}, //9
-    v4f{+0.5f, -0.5f, 2.8f, 1.0f}, //10
-    v4f{+0.5f, -0.5f, 1.8f, 1.0f}, //11
-    
-    v4f{-0.5f, +0.5f, 2.8f, 1.0f}, //12
-    v4f{-0.5f, +0.5f, 1.8f, 1.0f}, //13
-    v4f{-0.5f, -0.5f, 1.8f, 1.0f}, //14
-    v4f{-0.5f, -0.5f, 2.8f, 1.0f}, //15
-    
-    v4f{+0.5f, +0.5f, 2.8f, 1.0f}, //16
-    v4f{-0.5f, +0.5f, 2.8f, 1.0f}, //17
-    v4f{-0.5f, -0.5f, 2.8f, 1.0f}, //18
-    v4f{+0.5f, -0.5f, 2.8f, 1.0f}, //19
-    
-    v4f{+0.5f, -0.5f, 1.8f, 1.0f}, //20
-    v4f{-0.5f, -0.5f, 1.8f, 1.0f}, //21
-    v4f{-0.5f, -0.5f, 2.8f, 1.0f}, //22
-    v4f{+0.5f, -0.5f, 2.8f, 1.0f}, //23
+};
+
+GLushort indicies[] =
+{
+    1, 0, 2,  1, 2, 3,//Front
+    4, 1, 3,  5, 1, 4, //Right side
+    4, 5, 7,  7, 5, 6, //Back side
+    6, 7, 0,  0, 7, 2 //Left side
 };
 
 f32 epsilon = 0.00001f; //TODO: Remove????
 
 
+//TODO: Occlusion? CCW or CW? Why is square in wrong place? Maybe actually think through and construct your own square
 void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
 {
-    Array<v4f, 24> squareVerts_openGLClipSpace;
+    local_persist f32 rotation = 0.0f;
+    rotation += 0.001f;
+    Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
     
-#if 1
-    {//Rotation
-        f32 rotationAngle = .01f;
-        v2f xBasis_rotated = { CosR(rotationAngle), SinR(rotationAngle) };
-        v2f yBasis_rotated = { -SinR(rotationAngle), CosR(rotationAngle) };
-        
-        for(i32 vertI{}; vertI < 24; ++vertI)
+    Array<v4f, NUM_VERTS> squareVerts_world{};
+    {//World Transform
+        for(i32 i{}; i < NUM_VERTS; ++i)
         {
-            v2f origin{};
-            v2f newXBasis = (squareVerts_meters[vertI].x * xBasis_rotated);
-            v2f newYBasis = (squareVerts_meters[vertI].y * yBasis_rotated);
-            squareVerts_meters[vertI].xy = origin + newXBasis + newYBasis;
+            squareVerts_world[i] = ParentTransform_1Vec(squareVerts_object[i], world);
         };
     };
     
+    Array<v4f, NUM_VERTS> squareVerts_camera{};
+    {//Camera Transform
+        for(i32 i{}; i < NUM_VERTS; ++i)
+        {
+            squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
+            squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
+            squareVerts_camera[i].z = squareVerts_world[i].z;
+            squareVerts_camera[i].w = squareVerts_world[i].w;
+        };
+    };
+    
+    BGZ_CONSOLE("z: %f\n", squareVerts_camera[0].z);
+    
+    Array<glm::vec4, NUM_VERTS> squareVerts_openGLClipSpace;
+#if 1
     {//Projection transform
-        f32 fov = glm::radians(90.0f);
+        f32 fov = glm::radians(80.0f);
         f32 aspectRatio = 16.0f/9.0f;
         f32 tanHalfFov = TanR(fov / 2.0f);
         f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
@@ -525,12 +628,12 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
         f32 a = (-farClip - nearClip) / (nearClip - farClip);
         f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
         
-        for(i32 vertI{}; vertI < 24; ++vertI)
+        for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
         {
-            squareVerts_openGLClipSpace[vertI].x = squareVerts_meters[vertI].x * xScale;
-            squareVerts_openGLClipSpace[vertI].y = squareVerts_meters[vertI].y * yScale;
-            squareVerts_openGLClipSpace[vertI].z = squareVerts_meters[vertI].z * a + b;
-            squareVerts_openGLClipSpace[vertI].w = squareVerts_meters[vertI].z;
+            squareVerts_openGLClipSpace[vertI].x = squareVerts_camera[vertI].x * xScale;
+            squareVerts_openGLClipSpace[vertI].y = squareVerts_camera[vertI].y * yScale;
+            squareVerts_openGLClipSpace[vertI].z = squareVerts_camera[vertI].z * a + b;
+            squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
             
             f32 test = squareVerts_openGLClipSpace[vertI].z/squareVerts_openGLClipSpace[vertI].w;
         };
@@ -538,9 +641,9 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
     
 #else
     {//Do openGL clip space transform on verts
-        glm::mat4 proj = glm::perspective(glm::radians(80.0f), 16.0f/9.0f, 1.0f, 100.0f);
+        glm::mat4 proj = glm::perspective(glm::radians(120.0f), 16.0f/9.0f, 1.0f, 100.0f);
         
-        for(i32 vertI{}; vertI < 24; ++vertI)
+        for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
         {
             squareVerts_openGLClipSpace[vertI] = proj * squareVerts_meters[vertI];
             squareVerts_openGLClipSpace[vertI].z = 1.0f;
@@ -549,10 +652,10 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
     };
 #endif
     
-    GLfloat verts[168] = {};
+    GLfloat verts[NUM_VERTS * 7] = {};
     i32 i{};
-    f32 colorR{}, colorG{.3f}, colorB{.6f};
-    for(i32 j{}; j < 24; ++j)
+    f32 colorR{}, colorG{}, colorB{};
+    for(i32 j{}; j < NUM_VERTS; ++j)
     {
         verts[i++] = squareVerts_openGLClipSpace[j].x;
         verts[i++] = squareVerts_openGLClipSpace[j].y;
@@ -562,9 +665,24 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
         verts[i++] = colorG;
         verts[i++] = colorB;
         
+        if(colorR > 1.0f)
+        {
+            colorR = 0.0f;
+        };
+        
+        if(colorG > 1.0f)
+        {
+            colorG = 0.0f;
+        };
+        
+        if(colorB > 1.0f)
+        {
+            colorB = 0.0f;
+        };
+        
         colorR += .01f;
-        colorG += .24f;
-        colorB += .17f;
+        colorG += .54f;
+        colorB += .27f;
     };
     
     GLuint bufferID;
@@ -576,23 +694,13 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
     
-    GLushort indicies[] =
-    {
-        0, 1, 2, 0, 2, 3,
-        4, 5, 6, 4, 6, 7,
-        8, 9, 10, 8, 10, 11,
-        12, 13, 14, 12, 14, 15,
-        16, 17, 18, 16, 18, 19,
-        20, 22, 21, 20, 23, 22
-    };
-    
     GLuint indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
     
     glDisable(GL_TEXTURE_2D);
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
 };
 
@@ -744,6 +852,10 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
 #endif
                 
                 ProjectionTestUsingFullSquare((f32)windowWidth, (f32)windowHeight);
+                f32 windowWidth_meters = windowWidth / 100.0f;
+                f32 windowHeight_meters = windowHeight / 100.0f;
+                //ProjectionTestUsingFocalLength_InMeters((f32)windowWidth_meters, (f32)windowHeight_meters);
+                //ProjectionTestUsingFOV_InMeters((f32)windowWidth_meters, (f32)windowHeight_meters);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
             }break;

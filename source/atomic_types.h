@@ -126,6 +126,13 @@ struct v4f
             f32 _Ignored0;
             f32 _Ignored1;
         };
+        
+        struct
+        {
+            f32 _Ignored0;
+            v2f yz;
+            f32 _Ignored1;
+        };
     };
 };
 
@@ -461,6 +468,18 @@ operator+(v3f A, v3f B)
     result.z = A.z + B.z;
     
     return(result);
+}
+
+inline v3f
+operator+(v3f a, f32 B)
+{
+    v3f result;
+    
+    result.x = a.x + B;
+    result.y = a.y + B;
+    result.z = a.z + B;
+    
+    return (result);
 }
 
 inline v3f &
