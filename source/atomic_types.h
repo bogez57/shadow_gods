@@ -81,6 +81,11 @@ struct v3f
             v2f xy;
             f32 _Ignored0;
         };
+        struct
+        {
+            f32 _Ignored0;
+            v2f yz;
+        };
     };
 };
 

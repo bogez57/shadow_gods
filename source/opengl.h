@@ -309,24 +309,10 @@ v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 struct Transform_v4
 {
     v4f translation{};
-    f32 rotation{};
+    v3f rotation{};
 };
 
-v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
-{
-    ConvertToCorrectPositiveRadian($(parentTransform.rotation));
-    
-    v4f origin_inParentSpace = parentTransform.translation;
-    v4f zBasis_inParentSpace = v4f{ parentTransform.translation.x, -SinR(parentTransform.rotation), CosR(parentTransform.rotation), parentTransform.translation.w };
-    v4f yBasis_inParentSpace = v4f{ parentTransform.translation.x, CosR(parentTransform.rotation), SinR(parentTransform.rotation), parentTransform.translation.w };
-    
-    v4f transformedCoords{};
-    transformedCoords = origin_inParentSpace + (localCoords.z * zBasis_inParentSpace) + (localCoords.y * yBasis_inParentSpace);
-    transformedCoords.x = localCoords.x;
-    transformedCoords.w = 1.0f;
-    
-    return transformedCoords;
-};
+v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform);
 
 void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
 {
@@ -354,8 +340,7 @@ void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
         v4f{11.0f, 1.0f, -0.5f, 1.0f}
     };
     
-    local_persist f32 rotation = 0.0f;
-    rotation += .01f;
+    local_persist v3f rotation { 0.0f, 0.0f, 0.0f };
     Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
     
     Array<v4f, 6> squareVerts_world{};
@@ -458,8 +443,7 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
         v4f{11.0f, 0.0f, 1.0f, 1.0f}
     };
     
-    local_persist f32 rotation = 0.0f;
-    rotation += .01f;
+    local_persist v3f rotation = { 0.0f, 0.0f, 0.0f };
     Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
     
     Array<v4f, 6> squareVerts_world{};
@@ -560,6 +544,40 @@ void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
     glEnable(GL_TEXTURE_2D);
 };
 
+v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
+{
+    BGZ_ASSERT(parentTransform.translation.w == 1.0f, "Function expects w to be 1.0");
+    
+    ConvertToCorrectPositiveRadian($(parentTransform.rotation.x));
+    ConvertToCorrectPositiveRadian($(parentTransform.rotation.y));
+    ConvertToCorrectPositiveRadian($(parentTransform.rotation.z));
+    
+    v4f origin_inParentSpace = parentTransform.translation;
+    v3f newRotatedPoint{};
+    
+    //X axis rotation
+    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(parentTransform.rotation.x), CosR(parentTransform.rotation.x) };
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(parentTransform.rotation.x), -SinR(parentTransform.rotation.x) };
+    newRotatedPoint.yz = (localCoords.z * zBasis_xAxisRotation.yz) + (localCoords.y * yBasis_xAxisRotation.yz);
+    
+    //Z axis rotation
+    v3f xBasis_zAxisRotation = v3f { CosR(parentTransform.rotation.z), SinR(parentTransform.rotation.z), 0.0f };
+    v3f yBasis_zAxisRotation = v3f{ -SinR(parentTransform.rotation.z), CosR(parentTransform.rotation.z), 0.0f };
+    newRotatedPoint.xy = (localCoords.x * xBasis_zAxisRotation.xy) + (newRotatedPoint.y * yBasis_zAxisRotation.xy);
+    
+    //Y axis rotation
+    f32 rotatedY = newRotatedPoint.y;
+    v3f xBasis_yAxisRotation = v3f { CosR(parentTransform.rotation.y), 0.0f, SinR(parentTransform.rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { -SinR(parentTransform.rotation.y), 0.0f, CosR(parentTransform.rotation.y) };
+    newRotatedPoint = (newRotatedPoint.x * xBasis_yAxisRotation) + (newRotatedPoint.z * zBasis_yAxisRotation);
+    newRotatedPoint.y = rotatedY;
+    
+    v4f transformedCoord { newRotatedPoint.x, newRotatedPoint.y, newRotatedPoint.z, 0.0f };
+    transformedCoord = origin_inParentSpace + transformedCoord;
+    
+    return transformedCoord;
+};
+
 #define NUM_VERTS 8
 Array<v4f, NUM_VERTS> squareVerts_object =
 {
@@ -584,13 +602,10 @@ GLushort indicies[] =
 
 f32 epsilon = 0.00001f; //TODO: Remove????
 
-
-//TODO: Occlusion? CCW or CW? Why is square in wrong place? Maybe actually think through and construct your own square
 void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
 {
-    local_persist f32 rotation = 0.0f;
-    rotation += 0.001f;
-    Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
+    local_persist v3f rotation = { 0.0f, 0.0f, 0.0f } ;
+    Transform_v4 world { v4f{ 6.4f, 3.0f, 6.0f, 1.0f}, rotation};
     
     Array<v4f, NUM_VERTS> squareVerts_world{};
     {//World Transform
