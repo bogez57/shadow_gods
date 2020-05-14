@@ -348,16 +348,16 @@ v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
 };
 
 #define NUM_VERTS 8
-Array<v4f, NUM_VERTS> squareVerts_object =
+Array<v3f, NUM_VERTS> squareVerts_object =
 {
-    v4f{-0.5f, 0.5f, -0.5f, 1.0f}, //0
-    v4f{+0.5f, 0.5f, -0.5f, 1.0f}, //1
-    v4f{-0.5f, -0.5f, -0.5f, 1.0f},//2
-    v4f{+0.5f, -0.5f, -0.5f, 1.0f},//3
-    v4f{+0.5f, -0.5f, +0.5f, 1.0f},//4
-    v4f{+0.5f, +0.5f, +0.5f, 1.0f},//5
-    v4f{-0.5f, +0.5f, +0.5f, 1.0f},//6
-    v4f{-0.5f, -0.5f, +0.5f, 1.0f},//7
+    v3f{-0.5f, 0.5f, -0.5f }, //0
+    v3f{+0.5f, 0.5f, -0.5f }, //1
+    v3f{-0.5f, -0.5f, -0.5f },//2
+    v3f{+0.5f, -0.5f, -0.5f },//3
+    v3f{+0.5f, -0.5f, +0.5f },//4
+    v3f{+0.5f, +0.5f, +0.5f },//5
+    v3f{-0.5f, +0.5f, +0.5f },//6
+    v3f{-0.5f, -0.5f, +0.5f },//7
     
 };
 
@@ -371,7 +371,7 @@ GLushort indicies[] =
 
 f32 epsilon = 0.00001f; //TODO: Remove????
 
-Array<v4f, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v4f, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
+Array<v4f, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3f, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
 {
     Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace{};
     
@@ -390,7 +390,7 @@ Array<v4f, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v4f, NUM_VERTS>
     return squareVerts_openGLClipSpace;
 };
 
-Array<v4f, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v4f, NUM_VERTS> squareVerts_camera)
+Array<v4f, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v3f, NUM_VERTS> squareVerts_camera)
 {
     Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace{};
     
@@ -412,8 +412,6 @@ Array<v4f, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v4f, NUM_VERTS> squareV
         squareVerts_openGLClipSpace[vertI].y = squareVerts_camera[vertI].y * yScale;
         squareVerts_openGLClipSpace[vertI].z = squareVerts_camera[vertI].z * a + b;
         squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
-        
-        f32 test = squareVerts_openGLClipSpace[vertI].z/squareVerts_openGLClipSpace[vertI].w;
     };
     
     return squareVerts_openGLClipSpace;
@@ -425,7 +423,7 @@ struct Basis
     v3f xAxis{};
     v3f yAxis{};
     v3f zAxis{};
-    v4f translation{};
+    v3f translation{};
 };
 
 v3f RotateVector(v3f vecToRotate, v3f rotation)
@@ -452,7 +450,7 @@ v3f RotateVector(v3f vecToRotate, v3f rotation)
     return newRotatedVector;
 };
 
-Basis ProduceWorldBasis(v4f translation, v3f rotation, v3f scale)
+Basis ProduceWorldBasis(v3f translation, v3f rotation, v3f scale)
 {
     Basis resultBasis{};
     
@@ -481,7 +479,7 @@ Basis ProduceCameraBasis(v4f translation, v3f rotation, v3f scale)
 
 v3f TransformVector(v3f localCoords, Basis worldBasis)
 {
-    v3f origin_inParentSpace = worldBasis.translation.xyz;
+    v3f origin_inParentSpace = worldBasis.translation;
     
     v3f transformedCoord = origin_inParentSpace + (localCoords.x * worldBasis.xAxis) + (localCoords.y * worldBasis.yAxis) + (localCoords.z * worldBasis.zAxis);
     
@@ -490,26 +488,26 @@ v3f TransformVector(v3f localCoords, Basis worldBasis)
 
 void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
 {
-    local_persist v3f rotation = { 0.4f, 0.4f, 0.4f } ;
-    Transform_v4 world { v4f{ 6.4f, 3.0f, 6.0f, 1.0f}, rotation, v3f{2.0f, 2.0f, 2.0f}};
+    local_persist v3f worldRotation = {0.4f, 0.4f, 0.4f} ;
+    local_persist v3f worldTranslation = {6.4f, 3.0f, 6.0f};
+    local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
     
-    Basis worldBasis = ProduceWorldBasis(world.translation, world.rotation, world.scale);
+    Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
     
     //World Transform
-    Array<v4f, NUM_VERTS> squareVerts_world{};
+    Array<v3f, NUM_VERTS> squareVerts_world{};
     for(i32 i{}; i < NUM_VERTS; ++i)
     {
-        squareVerts_world[i].xyz = TransformVector(squareVerts_object[i].xyz, worldBasis);
+        squareVerts_world[i] = TransformVector(squareVerts_object[i], worldBasis);
     };
     
     //Camera Transform
-    Array<v4f, NUM_VERTS> squareVerts_camera{};
+    Array<v3f, NUM_VERTS> squareVerts_camera{};
     for(i32 i{}; i < NUM_VERTS; ++i)
     {
         squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
         squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
         squareVerts_camera[i].z = squareVerts_world[i].z;
-        squareVerts_camera[i].w = squareVerts_world[i].w;
     };
     
     //ProjectionTransform
