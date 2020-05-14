@@ -310,6 +310,7 @@ struct Transform_v4
 {
     v4f translation{};
     v3f rotation{};
+    v3f scale{};
 };
 
 v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform);
@@ -602,16 +603,104 @@ GLushort indicies[] =
 
 f32 epsilon = 0.00001f; //TODO: Remove????
 
+struct Basis
+{
+    v3f origin{};//Universal space
+    v3f xAxis{};
+    v3f yAxis{};
+    v3f zAxis{};
+    v4f translation{};
+};
+
+v3f RotateVector(v3f vecToRotate, v3f rotation)
+{
+    v3f newRotatedVector{};
+    
+    //X axis rotation
+    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
+    newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
+    
+    //Z axis rotation
+    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
+    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
+    newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
+    
+    //Y axis rotation
+    f32 rotatedY = newRotatedVector.y;
+    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
+    newRotatedVector.y = rotatedY;
+    
+    return newRotatedVector;
+};
+
+Basis ProduceWorldBasis(v4f translation, v3f rotation, v3f scale)
+{
+    Basis resultBasis{};
+    
+    ConvertToCorrectPositiveRadian($(rotation.x));
+    ConvertToCorrectPositiveRadian($(rotation.y));
+    ConvertToCorrectPositiveRadian($(rotation.z));
+    
+    resultBasis.origin = {0.0f, 0.0f, 0.0f};
+    resultBasis.translation = translation;
+    resultBasis.xAxis = {1.0f, 0.0f, 0.0f};
+    resultBasis.yAxis = {0.0f, 1.0f, 0.0f};
+    resultBasis.zAxis = {0.0f, 0.0f, 1.0f};
+    
+    v3f newRotatedBasis_xAxis{};
+    v3f newRotatedBasis_yAxis{};
+    v3f newRotatedBasis_zAxis{};
+    
+    resultBasis.xAxis = RotateVector(resultBasis.xAxis, rotation);
+    resultBasis.yAxis = RotateVector(resultBasis.yAxis, rotation);
+    resultBasis.zAxis = RotateVector(resultBasis.zAxis, rotation);
+    
+#if 0
+    //X axis rotation
+    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
+    newRotatedBasis_zAxis.yz = (resultBasis.zAxis.z * zBasis_xAxisRotation.yz) + (resultBasis.zAxis.y * yBasis_xAxisRotation.yz);
+    
+    //Z axis rotation
+    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
+    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
+    newRotatedBasis_zAxis.xy = (resultBasis.zAxis.x * xBasis_zAxisRotation.xy) + (newRotatedBasis_zAxis.y * yBasis_zAxisRotation.xy);
+    
+    //Y axis rotation
+    f32 rotatedY = newRotatedBasis_zAxis.y;
+    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    newRotatedBasis_zAxis = (newRotatedBasis_zAxis.x * xBasis_yAxisRotation) + (newRotatedBasis_zAxis.z * zBasis_yAxisRotation);
+    newRotatedBasis_zAxis.y = rotatedY;
+#endif
+    
+    return resultBasis;
+};
+
+v3f TransformVector(v3f localCoords, Basis worldBasis)
+{
+    v3f origin_inParentSpace = worldBasis.translation.xyz;
+    
+    v3f transformedCoord = origin_inParentSpace + (localCoords.x * worldBasis.xAxis) + (localCoords.y * worldBasis.yAxis) + (localCoords.z * worldBasis.zAxis);
+    
+    return transformedCoord;
+};
+
 void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
 {
-    local_persist v3f rotation = { 0.0f, 0.0f, 0.0f } ;
-    Transform_v4 world { v4f{ 6.4f, 3.0f, 6.0f, 1.0f}, rotation};
+    local_persist v3f rotation = { 0.4f, 0.4f, 0.4f } ;
+    Transform_v4 world { v4f{ 6.4f, 3.0f, 6.0f, 1.0f}, rotation, v3f{1.0f, 1.0f, 1.0f}};
+    
+    Basis worldBasis = ProduceWorldBasis(world.translation, world.rotation, world.scale);
     
     Array<v4f, NUM_VERTS> squareVerts_world{};
     {//World Transform
         for(i32 i{}; i < NUM_VERTS; ++i)
         {
-            squareVerts_world[i] = ParentTransform_1Vec(squareVerts_object[i], world);
+            squareVerts_world[i].xyz = TransformVector(squareVerts_object[i].xyz, worldBasis);
         };
     };
     
