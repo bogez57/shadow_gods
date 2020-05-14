@@ -313,238 +313,6 @@ struct Transform_v4
     v3f scale{};
 };
 
-v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform);
-
-void ProjectionTestUsingFocalLength_InMeters(f32 windowWidth, f32 windowHeight)
-{
-#if 0
-    Array<v4f, 6> squareVerts_camera =
-    {
-        v4f{1.6f, 1.4f, 4.0f, 1.0f},
-        v4f{2.6f, 1.4f, 3.0f, 1.0f},
-        v4f{4.6f, 1.4f, 4.0f, 1.0f},
-        
-        v4f{1.6f, -0.6f, 4.0f, 1.0f},
-        v4f{2.6f, -0.6f, 3.0f, 1.0f},
-        v4f{4.6f, -0.6f, 4.0f, 1.0f}
-    };
-#endif
-    
-    Array<v4f, 6> squareVerts_object =
-    {
-        v4f{8.0f, -1.0f, -0.5f, 1.0f},
-        v4f{9.0f, -1.0f, 0.5f, 1.0f},
-        v4f{11.0f, -1.0f, -0.5f, 1.0f},
-        
-        v4f{8.0f, 1.0f, -0.5f, 1.0f},
-        v4f{9.0f, 1.0f, 0.5f, 1.0f},
-        v4f{11.0f, 1.0f, -0.5f, 1.0f}
-    };
-    
-    local_persist v3f rotation { 0.0f, 0.0f, 0.0f };
-    Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
-    
-    Array<v4f, 6> squareVerts_world{};
-    {//World Transform
-        for(i32 i{}; i < 6; ++i)
-        {
-            squareVerts_world[i] = ParentTransform_1Vec(squareVerts_object[i], world);
-        };
-    };
-    
-    Array<v4f, 6> squareVerts_camera{};
-    {//Camera Transform
-        for(i32 i{}; i < 6; ++i)
-        {
-            squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
-            squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
-            squareVerts_camera[i].z = squareVerts_world[i].z;
-            squareVerts_camera[i].w = squareVerts_world[i].w;
-        };
-    };
-    
-    Array<v4f, 6> squareVerts_openGLClipSpace;
-    {//Projection transform
-        f32 focalLength = 1.8f;
-        f32 windowWidth_meters = windowWidth;
-        f32 windowHeight_meters = windowHeight;
-        
-        for(i32 vertI{}; vertI < 6; ++vertI)
-        {
-            squareVerts_openGLClipSpace[vertI].x = (squareVerts_camera[vertI].x * focalLength) / (windowWidth_meters / 2.0f);
-            squareVerts_openGLClipSpace[vertI].y = (squareVerts_camera[vertI].y * focalLength) / (windowHeight_meters / 2.0f);
-            squareVerts_openGLClipSpace[vertI].z = 1.0f;
-            squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
-        };
-    };
-    
-    GLfloat verts[] =
-    {
-        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z, squareVerts_openGLClipSpace[0].w,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z, squareVerts_openGLClipSpace[1].w,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z, squareVerts_openGLClipSpace[2].w,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z, squareVerts_openGLClipSpace[3].w,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z, squareVerts_openGLClipSpace[4].w,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z, squareVerts_openGLClipSpace[5].w,
-        1.0f, 0.0f, 0.0f
-    };
-    
-    GLuint bufferID;
-    glGenBuffers(1, &bufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
-    
-    GLushort indicies[] =
-    {
-        0, 1, 3,  3, 4, 1,  1, 4, 2,  2, 5, 4
-    };
-    
-    GLuint indexBufferID;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
-    
-    glDisable(GL_TEXTURE_2D);
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
-    glEnable(GL_TEXTURE_2D);
-};
-
-void ProjectionTestUsingFOV_InMeters(f32 windowWidth, f32 windowHeight)
-{
-#if 0
-    Array<v4f, 6> squareVerts_camera =
-    {
-        v4f{1.6f, 1.4f, 4.0f, 1.0f},
-        v4f{2.6f, 1.4f, 3.0f, 1.0f},
-        v4f{4.6f, 1.4f, 4.0f, 1.0f},
-        
-        v4f{1.6f, -0.6f, 4.0f, 1.0f},
-        v4f{2.6f, -0.6f, 3.0f, 1.0f},
-        v4f{4.6f, -0.6f, 4.0f, 1.0f}
-    };
-#endif
-    
-    Array<v4f, 6> squareVerts_object =
-    {
-        v4f{8.0f, 2.0f, 1.0f, 1.0f},
-        v4f{9.0f, 2.0f, 0.0f, 1.0f},
-        v4f{11.0f, 2.0f, 1.0f, 1.0f},
-        
-        v4f{8.0f, 0.0f, 1.0f, 1.0f},
-        v4f{9.0f, 0.0f, 0.0f, 1.0f},
-        v4f{11.0f, 0.0f, 1.0f, 1.0f}
-    };
-    
-    local_persist v3f rotation = { 0.0f, 0.0f, 0.0f };
-    Transform_v4 world { v4f{ 0.0f, 3.0f, 6.0f, 1.0f}, rotation};
-    
-    Array<v4f, 6> squareVerts_world{};
-    {//World Transform
-        for(i32 i{}; i < 6; ++i)
-        {
-            squareVerts_world[i] = ParentTransform_1Vec(squareVerts_object[i], world);
-        };
-    };
-    
-    Array<v4f, 6> squareVerts_camera{};
-    {//Camera Transform
-        for(i32 i{}; i < 6; ++i)
-        {
-            squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
-            squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
-            squareVerts_camera[i].z = squareVerts_world[i].z;
-            squareVerts_camera[i].w = squareVerts_world[i].w;
-        };
-    };
-    
-    BGZ_CONSOLE("z: %f\n", squareVerts_camera[0].z);
-    
-    Array<glm::vec4, 6> squareVerts_openGLClipSpace;
-#if 1
-    {//Projection transform
-        f32 fov = glm::radians(140.0f);
-        f32 aspectRatio = 16.0f/9.0f;
-        f32 tanHalfFov = TanR(fov / 2.0f);
-        f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
-        f32 yScale = 1.0f / tanHalfFov;
-        
-        f32 farClip = 100.0f;
-        f32 nearClip = 1.0f;
-        
-        f32 a = (-farClip - nearClip) / (nearClip - farClip);
-        f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
-        
-        for(i32 vertI{}; vertI < 6; ++vertI)
-        {
-            squareVerts_openGLClipSpace[vertI].x = squareVerts_camera[vertI].x * xScale;
-            squareVerts_openGLClipSpace[vertI].y = squareVerts_camera[vertI].y * yScale;
-            squareVerts_openGLClipSpace[vertI].z = squareVerts_camera[vertI].z * a + b;
-            squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
-        };
-    };
-    
-#else
-    {//Do openGL clip space transform on verts
-        glm::mat4 proj = glm::perspective(glm::radians(80.0f), 16.0f/9.0f, .1f, 100.0f);
-        
-        for(i32 vertI{}; vertI < 6; ++vertI)
-        {
-            squareVerts_openGLClipSpace[vertI] = proj * squareVerts_camera[vertI];
-            squareVerts_openGLClipSpace[vertI].z = 1.0f;
-            squareVerts_openGLClipSpace[vertI].w *= -1.0f;
-        };
-    };
-#endif
-    
-    GLfloat verts[] =
-    {
-        squareVerts_openGLClipSpace[0].x, squareVerts_openGLClipSpace[0].y, squareVerts_openGLClipSpace[0].z, squareVerts_openGLClipSpace[0].w,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[1].x, squareVerts_openGLClipSpace[1].y, squareVerts_openGLClipSpace[1].z, squareVerts_openGLClipSpace[1].w,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[2].x, squareVerts_openGLClipSpace[2].y, squareVerts_openGLClipSpace[2].z, squareVerts_openGLClipSpace[2].w,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[3].x, squareVerts_openGLClipSpace[3].y, squareVerts_openGLClipSpace[3].z, squareVerts_openGLClipSpace[3].w,
-        1.0f, 0.0f, 0.0f,
-        squareVerts_openGLClipSpace[4].x, squareVerts_openGLClipSpace[4].y, squareVerts_openGLClipSpace[4].z, squareVerts_openGLClipSpace[4].w,
-        0.0f, 1.0f, 0.0f,
-        squareVerts_openGLClipSpace[5].x, squareVerts_openGLClipSpace[5].y, squareVerts_openGLClipSpace[5].z, squareVerts_openGLClipSpace[5].w,
-        1.0f, 0.0f, 0.0f
-    };
-    
-    GLuint bufferID;
-    glGenBuffers(1, &bufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
-    
-    GLushort indicies[] =
-    {
-        0, 1, 3,  3, 1, 4,  1, 2, 4,  2, 5, 4
-    };
-    
-    GLuint indexBufferID;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
-    
-    glDisable(GL_TEXTURE_2D);
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, 0);
-    glEnable(GL_TEXTURE_2D);
-};
-
 v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
 {
     BGZ_ASSERT(parentTransform.translation.w == 1.0f, "Function expects w to be 1.0");
@@ -603,6 +371,54 @@ GLushort indicies[] =
 
 f32 epsilon = 0.00001f; //TODO: Remove????
 
+Array<v4f, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v4f, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
+{
+    Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace{};
+    
+    f32 focalLength = 1.8f;
+    f32 windowWidth_meters = windowWidth_pxls / 100.0f;
+    f32 windowHeight_meters = windowHeight_pxls / 100.0f;
+    
+    for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
+    {
+        squareVerts_openGLClipSpace[vertI].x = (squareVerts_camera[vertI].x * focalLength) / (windowWidth_meters / 2.0f);
+        squareVerts_openGLClipSpace[vertI].y = (squareVerts_camera[vertI].y * focalLength) / (windowHeight_meters / 2.0f);
+        squareVerts_openGLClipSpace[vertI].z = 1.0f;
+        squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
+    };
+    
+    return squareVerts_openGLClipSpace;
+};
+
+Array<v4f, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v4f, NUM_VERTS> squareVerts_camera)
+{
+    Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace{};
+    
+    f32 fov = glm::radians(80.0f);
+    f32 aspectRatio = 16.0f/9.0f;
+    f32 tanHalfFov = TanR(fov / 2.0f);
+    f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
+    f32 yScale = 1.0f / tanHalfFov;
+    
+    f32 farClip = 100.0f;
+    f32 nearClip = 1.0f;
+    
+    f32 a = (-farClip - nearClip) / (nearClip - farClip);
+    f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
+    
+    for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
+    {
+        squareVerts_openGLClipSpace[vertI].x = squareVerts_camera[vertI].x * xScale;
+        squareVerts_openGLClipSpace[vertI].y = squareVerts_camera[vertI].y * yScale;
+        squareVerts_openGLClipSpace[vertI].z = squareVerts_camera[vertI].z * a + b;
+        squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
+        
+        f32 test = squareVerts_openGLClipSpace[vertI].z/squareVerts_openGLClipSpace[vertI].w;
+    };
+    
+    return squareVerts_openGLClipSpace;
+};
+
 struct Basis
 {
     v3f origin{};//Universal space
@@ -650,34 +466,17 @@ Basis ProduceWorldBasis(v4f translation, v3f rotation, v3f scale)
     resultBasis.yAxis = {0.0f, 1.0f, 0.0f};
     resultBasis.zAxis = {0.0f, 0.0f, 1.0f};
     
-    v3f newRotatedBasis_xAxis{};
-    v3f newRotatedBasis_yAxis{};
-    v3f newRotatedBasis_zAxis{};
-    
-    resultBasis.xAxis = RotateVector(resultBasis.xAxis, rotation);
-    resultBasis.yAxis = RotateVector(resultBasis.yAxis, rotation);
-    resultBasis.zAxis = RotateVector(resultBasis.zAxis, rotation);
-    
-#if 0
-    //X axis rotation
-    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
-    newRotatedBasis_zAxis.yz = (resultBasis.zAxis.z * zBasis_xAxisRotation.yz) + (resultBasis.zAxis.y * yBasis_xAxisRotation.yz);
-    
-    //Z axis rotation
-    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
-    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
-    newRotatedBasis_zAxis.xy = (resultBasis.zAxis.x * xBasis_zAxisRotation.xy) + (newRotatedBasis_zAxis.y * yBasis_zAxisRotation.xy);
-    
-    //Y axis rotation
-    f32 rotatedY = newRotatedBasis_zAxis.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
-    newRotatedBasis_zAxis = (newRotatedBasis_zAxis.x * xBasis_yAxisRotation) + (newRotatedBasis_zAxis.z * zBasis_yAxisRotation);
-    newRotatedBasis_zAxis.y = rotatedY;
-#endif
+    resultBasis.xAxis = scale.x * RotateVector(resultBasis.xAxis, rotation);
+    resultBasis.yAxis = scale.y * RotateVector(resultBasis.yAxis, rotation);
+    resultBasis.zAxis = scale.z * RotateVector(resultBasis.zAxis, rotation);
     
     return resultBasis;
+};
+
+Basis ProduceCameraBasis(v4f translation, v3f rotation, v3f scale)
+{
+    
+    return Basis{};
 };
 
 v3f TransformVector(v3f localCoords, Basis worldBasis)
@@ -692,69 +491,30 @@ v3f TransformVector(v3f localCoords, Basis worldBasis)
 void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
 {
     local_persist v3f rotation = { 0.4f, 0.4f, 0.4f } ;
-    Transform_v4 world { v4f{ 6.4f, 3.0f, 6.0f, 1.0f}, rotation, v3f{1.0f, 1.0f, 1.0f}};
+    Transform_v4 world { v4f{ 6.4f, 3.0f, 6.0f, 1.0f}, rotation, v3f{2.0f, 2.0f, 2.0f}};
     
     Basis worldBasis = ProduceWorldBasis(world.translation, world.rotation, world.scale);
     
+    //World Transform
     Array<v4f, NUM_VERTS> squareVerts_world{};
-    {//World Transform
-        for(i32 i{}; i < NUM_VERTS; ++i)
-        {
-            squareVerts_world[i].xyz = TransformVector(squareVerts_object[i].xyz, worldBasis);
-        };
+    for(i32 i{}; i < NUM_VERTS; ++i)
+    {
+        squareVerts_world[i].xyz = TransformVector(squareVerts_object[i].xyz, worldBasis);
     };
     
+    //Camera Transform
     Array<v4f, NUM_VERTS> squareVerts_camera{};
-    {//Camera Transform
-        for(i32 i{}; i < NUM_VERTS; ++i)
-        {
-            squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
-            squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
-            squareVerts_camera[i].z = squareVerts_world[i].z;
-            squareVerts_camera[i].w = squareVerts_world[i].w;
-        };
+    for(i32 i{}; i < NUM_VERTS; ++i)
+    {
+        squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
+        squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
+        squareVerts_camera[i].z = squareVerts_world[i].z;
+        squareVerts_camera[i].w = squareVerts_world[i].w;
     };
     
-    BGZ_CONSOLE("z: %f\n", squareVerts_camera[0].z);
-    
-    Array<glm::vec4, NUM_VERTS> squareVerts_openGLClipSpace;
-#if 1
-    {//Projection transform
-        f32 fov = glm::radians(80.0f);
-        f32 aspectRatio = 16.0f/9.0f;
-        f32 tanHalfFov = TanR(fov / 2.0f);
-        f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
-        f32 yScale = 1.0f / tanHalfFov;
-        
-        f32 farClip = 100.0f;
-        f32 nearClip = 1.0f;
-        
-        f32 a = (-farClip - nearClip) / (nearClip - farClip);
-        f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
-        
-        for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
-        {
-            squareVerts_openGLClipSpace[vertI].x = squareVerts_camera[vertI].x * xScale;
-            squareVerts_openGLClipSpace[vertI].y = squareVerts_camera[vertI].y * yScale;
-            squareVerts_openGLClipSpace[vertI].z = squareVerts_camera[vertI].z * a + b;
-            squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
-            
-            f32 test = squareVerts_openGLClipSpace[vertI].z/squareVerts_openGLClipSpace[vertI].w;
-        };
-    };
-    
-#else
-    {//Do openGL clip space transform on verts
-        glm::mat4 proj = glm::perspective(glm::radians(120.0f), 16.0f/9.0f, 1.0f, 100.0f);
-        
-        for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
-        {
-            squareVerts_openGLClipSpace[vertI] = proj * squareVerts_meters[vertI];
-            squareVerts_openGLClipSpace[vertI].z = 1.0f;
-            squareVerts_openGLClipSpace[vertI].w *= -1.0f;
-        };
-    };
-#endif
+    //ProjectionTransform
+    Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFOV(squareVerts_camera);
+    //Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFocalLength(squareVerts_camera, windowWidth, windowHeight);
     
     GLfloat verts[NUM_VERTS * 7] = {};
     i32 i{};
@@ -896,70 +656,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
-#if 0
-                GLfloat verts[] =
-                {
-                    result[0].x, result[0].y, result[0].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[1].x, result[1].y, result[1].z,
-                    0.0f, 1.0f, 0.0f,
-                    result[2].x, result[2].y, result[2].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[3].x, result[3].y, result[3].z,
-                    1.0f, 0.0f, 0.0f,
-                    
-                    result[4].x, result[4].y, result[4].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[5].x, result[5].y, result[5].z,
-                    0.0f, 1.0f, 0.0f,
-                    result[6].x, result[6].y, result[6].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[7].x, result[7].y, result[7].z,
-                    1.0f, 0.0f, 0.0f,
-                    
-                    result[8].x, result[8].y, result[8].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[9].x, result[9].y, result[9].z,
-                    0.0f, 1.0f, 0.0f,
-                    result[10].x, result[10].y, result[10].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[11].x, result[11].y, result[11].z,
-                    1.0f, 0.0f, 0.0f,
-                    
-                    result[12].x, result[12].y, result[12].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[13].x, result[13].y, result[13].z,
-                    0.0f, 1.0f, 0.0f,
-                    result[14].x, result[14].y, result[14].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[15].x, result[15].y, result[15].z,
-                    1.0f, 0.0f, 0.0f,
-                    
-                    result[16].x, result[16].y, result[16].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[17].x, result[17].y, result[17].z,
-                    0.0f, 1.0f, 0.0f,
-                    result[18].x, result[18].y, result[18].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[19].x, result[19].y, result[18].z,
-                    1.0f, 0.0f, 0.0f,
-                    
-                    result[20].x, result[20].y, result[20].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[21].x, result[21].y, result[21].z,
-                    0.0f, 1.0f, 0.0f,
-                    result[22].x, result[22].y, result[22].z,
-                    1.0f, 0.0f, 0.0f,
-                    result[23].x, result[23].y, result[23].z,
-                    1.0f, 0.0f, 0.0f,
-                };
-#endif
                 
                 ProjectionTestUsingFullSquare((f32)windowWidth, (f32)windowHeight);
-                f32 windowWidth_meters = windowWidth / 100.0f;
-                f32 windowHeight_meters = windowHeight / 100.0f;
-                //ProjectionTestUsingFocalLength_InMeters((f32)windowWidth_meters, (f32)windowHeight_meters);
-                //ProjectionTestUsingFOV_InMeters((f32)windowWidth_meters, (f32)windowHeight_meters);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
             }break;
