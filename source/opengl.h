@@ -361,6 +361,10 @@ Array<v3f, NUM_VERTS> squareVerts_object =
     
 };
 
+f32 cubeWidth = 1.0f;
+f32 cubeHeight = 1.0f;
+f32 cubeDepth = 1.0f;
+
 GLushort indicies[] =
 {
     1, 0, 2,  1, 2, 3,//Front
@@ -488,8 +492,8 @@ v3f TransformVector(v3f localCoords, Basis worldBasis)
 
 void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
 {
-    local_persist v3f worldRotation = {0.4f, 0.4f, 0.4f} ;
-    local_persist v3f worldTranslation = {6.4f, 3.0f, 6.0f};
+    local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
+    local_persist v3f worldTranslation = {12.8f, 3.0f, 4.0f};
     local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
     
     Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
@@ -503,11 +507,20 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
     
     //Camera Transform
     Array<v3f, NUM_VERTS> squareVerts_camera{};
+    local_persist v3f theoreticalCameraPlacement_inWorld{12.8f, 4.0f, 1.0f};//Theoretical because it's not actually the camera that moves, but the world
+    v3f cameraCenter_world = v3f{0.0f, 0.0f, 0.0f};//This is actually where the camera is located in the world/universal space and this doesn't change
     for(i32 i{}; i < NUM_VERTS; ++i)
     {
-        squareVerts_camera[i].x = squareVerts_world[i].x - 6.4f;
-        squareVerts_camera[i].y = squareVerts_world[i].y - 3.6f;
-        squareVerts_camera[i].z = squareVerts_world[i].z;
+        //rotation
+        //v3f rotation_camera{0.0f, 0.0f, -1.0f};
+        //squareVerts_world[i] = RotateVector(squareVerts_world[i], rotation_camera);
+        
+        //translation
+        v3f translationToCameraSpace = cameraCenter_world - theoreticalCameraPlacement_inWorld;
+        
+        squareVerts_camera[i].x = squareVerts_world[i].x + translationToCameraSpace.x;
+        squareVerts_camera[i].y = squareVerts_world[i].y + translationToCameraSpace.y;
+        squareVerts_camera[i].z = squareVerts_world[i].z + translationToCameraSpace.z;
     };
     
     //ProjectionTransform
