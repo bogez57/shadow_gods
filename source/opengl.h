@@ -492,7 +492,7 @@ v3f TransformVector(v3f localCoords, Basis worldBasis)
 
 void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
 {
-    local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
+    local_persist v3f worldRotation = {0.0f, 0.0f, 0.5f} ;
     local_persist v3f worldTranslation = {12.8f, 3.0f, 4.0f};
     local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
     
@@ -509,11 +509,26 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
     Array<v3f, NUM_VERTS> squareVerts_camera{};
     local_persist v3f theoreticalCameraPlacement_inWorld{12.8f, 4.0f, 1.0f};//Theoretical because it's not actually the camera that moves, but the world
     v3f cameraCenter_world = v3f{0.0f, 0.0f, 0.0f};//This is actually where the camera is located in the world/universal space and this doesn't change
+    
+    //Find center of cube in order to rotate in camera space next
+    f32 sumXs{}, sumYs{}, sumZs{};
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        sumXs += squareVerts_world[i].x;
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        sumYs += squareVerts_world[i].y;
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        sumZs += squareVerts_world[i].z;
+    v3f centerOfCube = v3f { sumXs/8.0f, sumYs/8.0f, sumZs/8.0f };
+    
     for(i32 i{}; i < NUM_VERTS; ++i)
     {
+        v3f squareVert_cameraOriginCoord = squareVerts_world[i] - centerOfCube;
+        
         //rotation
-        //v3f rotation_camera{0.0f, 0.0f, -1.0f};
-        //squareVerts_world[i] = RotateVector(squareVerts_world[i], rotation_camera);
+        local_persist v3f rotation_camera{0.0f, 0.0f, 0.0f};
+        rotation_camera.y -= .001f;
+        squareVert_cameraOriginCoord = RotateVector(squareVert_cameraOriginCoord, rotation_camera);
+        squareVerts_world[i] = squareVert_cameraOriginCoord + centerOfCube;
         
         //translation
         v3f translationToCameraSpace = cameraCenter_world - theoreticalCameraPlacement_inWorld;
