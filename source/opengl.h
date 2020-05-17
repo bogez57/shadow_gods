@@ -348,22 +348,11 @@ v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
 };
 
 #define NUM_VERTS 8
-Array<v3f, NUM_VERTS> squareVerts_object =
+struct Cube
 {
-    v3f{-0.5f, 0.5f, -0.5f }, //0
-    v3f{+0.5f, 0.5f, -0.5f }, //1
-    v3f{-0.5f, -0.5f, -0.5f },//2
-    v3f{+0.5f, -0.5f, -0.5f },//3
-    v3f{+0.5f, -0.5f, +0.5f },//4
-    v3f{+0.5f, +0.5f, +0.5f },//5
-    v3f{-0.5f, +0.5f, +0.5f },//6
-    v3f{-0.5f, -0.5f, +0.5f },//7
-    
+    Array<v3f, NUM_VERTS> verts{};
+    v3f centerPoint{};
 };
-
-f32 cubeWidth = 1.0f;
-f32 cubeHeight = 1.0f;
-f32 cubeDepth = 1.0f;
 
 GLushort indicies[] =
 {
@@ -374,6 +363,21 @@ GLushort indicies[] =
 };
 
 f32 epsilon = 0.00001f; //TODO: Remove????
+
+v3f CenterOfCube(Array<v3f, NUM_VERTS> cubeVerts)//Find center of cube in order to rotate in camera space next
+{
+    f32 sumXs{}, sumYs{}, sumZs{};
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        sumXs += cubeVerts[i].x;
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        sumYs += cubeVerts[i].y;
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        sumZs += cubeVerts[i].z;
+    v3f centerOfCube = v3f { sumXs/8.0f, sumYs/8.0f, sumZs/8.0f };
+    
+    return centerOfCube;
+}
+
 
 Array<v4f, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3f, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
 {
@@ -474,7 +478,7 @@ Basis ProduceWorldBasis(v3f translation, v3f rotation, v3f scale)
     return resultBasis;
 };
 
-Basis ProduceCameraBasis(v3f theoreticalCameraPlacement_inWorld, v3f rotation, v3f scale)
+Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f theoreticalCameraPlacement_inWorld, v3f rotation, v3f scale)
 {
     Basis resultBasis{};
     
@@ -482,11 +486,9 @@ Basis ProduceCameraBasis(v3f theoreticalCameraPlacement_inWorld, v3f rotation, v
     ConvertToCorrectPositiveRadian($(rotation.y));
     ConvertToCorrectPositiveRadian($(rotation.z));
     
-    v3f cameraCenter_world = v3f{0.0f, 0.0f, 0.0f};//This is actually where the camera center is located in the world/universal space and this doesn't change
+    v3f cubeCenter_world = CenterOfCube(cubeVerts_world);
     
-    //translation
-    v3f translationToCameraSpace = cameraCenter_world - theoreticalCameraPlacement_inWorld;
-    resultBasis.translation = translationToCameraSpace;
+    resultBasis.translation = cubeCenter_world - theoreticalCameraPlacement_inWorld;
     
     resultBasis.xAxis = {1.0f, 0.0f, 0.0f};
     resultBasis.yAxis = {0.0f, 1.0f, 0.0f};
@@ -499,36 +501,22 @@ Basis ProduceCameraBasis(v3f theoreticalCameraPlacement_inWorld, v3f rotation, v
     return resultBasis;
 };
 
-v3f TransformVector(v3f localCoords, Basis worldBasis)
+Array<v3f, NUM_VERTS> TransformVerts(Array<v3f, NUM_VERTS> cubeVerts_childSpace, Basis parentBasis)
 {
-    v3f origin_inParentSpace = worldBasis.translation;
+    Array<v3f, NUM_VERTS> cubeVerts_parentSpace{};
     
-    v3f transformedCoord = origin_inParentSpace + (localCoords.x * worldBasis.xAxis) + (localCoords.y * worldBasis.yAxis) + (localCoords.z * worldBasis.zAxis);
+    v3f centerOfCube = CenterOfCube(cubeVerts_childSpace);
     
-    return transformedCoord;
+    for(i32 i{}; i < NUM_VERTS; ++i)
+    {
+        v3f cubeVert_parentOriginSpace = cubeVerts_childSpace[i] - centerOfCube;
+        cubeVerts_parentSpace[i] = parentBasis.translation + (cubeVert_parentOriginSpace.x * parentBasis.xAxis) + (cubeVert_parentOriginSpace.y * parentBasis.yAxis) + (cubeVert_parentOriginSpace.z * parentBasis.zAxis);
+    }
+    
+    return cubeVerts_parentSpace;
 };
 
-v3f TransformVector_ToCamera(v3f squareVert_world, Basis cameraBasis, v3f center)
-{
-    v3f squareVert_camera{};
-    
-    v3f squareVert_cameraOriginCoord = squareVert_world - center;
-    
-    //rotation
-    squareVert_cameraOriginCoord = (squareVert_cameraOriginCoord.x * cameraBasis.xAxis) + (squareVert_cameraOriginCoord.y * cameraBasis.yAxis) + (squareVert_cameraOriginCoord.z * cameraBasis.zAxis);
-    squareVert_world = squareVert_cameraOriginCoord + center;
-    
-    //translation
-    v3f translationToCameraSpace = cameraBasis.translation;
-    
-    squareVert_camera.x = squareVert_world.x + translationToCameraSpace.x;
-    squareVert_camera.y = squareVert_world.y + translationToCameraSpace.y;
-    squareVert_camera.z = squareVert_world.z + translationToCameraSpace.z;
-    
-    return squareVert_camera;
-};
-
-void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
+void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
 {
     local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
     local_persist v3f worldTranslation = {12.8f, 3.0f, 4.0f};
@@ -537,32 +525,19 @@ void ProjectionTestUsingFullSquare(f32 windowWidth, f32 windowHeight)
     Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
     
     //World Transform
-    Array<v3f, NUM_VERTS> squareVerts_world{};
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        squareVerts_world[i] = TransformVector(squareVerts_object[i], worldBasis);
+    Array<v3f, NUM_VERTS> squareVerts_world = TransformVerts(cube.verts, worldBasis);
     
     Array<v3f, NUM_VERTS> squareVerts_camera{};
     {//Camera Transform
-        local_persist v3f theoreticalCameraPlacement_inWorld{12.8f, 4.0f, 1.0f};//Theoretical because it's not actually the camera that moves, but the world
-        
+        local_persist v3f theoreticalCameraPlacement_inWorld{11.8f, 3.0f, 0.0f};//Theoretical because it's not actually the camera that moves, but the world
         local_persist v3f rotation_camera{0.0f, 0.0f, 0.5f};
+        theoreticalCameraPlacement_inWorld.x -= .01f;
+        rotation_camera.z -= .01f;
         rotation_camera.y -= .01f;
-        Basis cameraBasis = ProduceCameraBasis(theoreticalCameraPlacement_inWorld, rotation_camera, v3f{1.0f, 1.0f, 1.0f});
         
-        //Find center of cube in order to rotate in camera space next
-        f32 sumXs{}, sumYs{}, sumZs{};
-        for(i32 i{}; i < NUM_VERTS; ++i)
-            sumXs += squareVerts_world[i].x;
-        for(i32 i{}; i < NUM_VERTS; ++i)
-            sumYs += squareVerts_world[i].y;
-        for(i32 i{}; i < NUM_VERTS; ++i)
-            sumZs += squareVerts_world[i].z;
-        v3f centerOfCube = v3f { sumXs/8.0f, sumYs/8.0f, sumZs/8.0f };
+        Basis cameraBasis = ProduceCameraBasis(squareVerts_world, theoreticalCameraPlacement_inWorld, rotation_camera, v3f{1.0f, 1.0f, 1.0f});
         
-        for(i32 i{}; i < NUM_VERTS; ++i)
-        {
-            squareVerts_camera[i] = TransformVector_ToCamera(squareVerts_world[i], cameraBasis, centerOfCube);
-        };
+        squareVerts_camera = TransformVerts(squareVerts_world, cameraBasis);
     }
     
     //ProjectionTransform
@@ -709,8 +684,19 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
+                Cube cube{};
+                cube.verts = {
+                    v3f{-0.5f, 0.5f, -0.5f }, //0
+                    v3f{+0.5f, 0.5f, -0.5f }, //1
+                    v3f{-0.5f, -0.5f, -0.5f },//2
+                    v3f{+0.5f, -0.5f, -0.5f },//3
+                    v3f{+0.5f, -0.5f, +0.5f },//4
+                    v3f{+0.5f, +0.5f, +0.5f },//5
+                    v3f{-0.5f, +0.5f, +0.5f },//6
+                    v3f{-0.5f, -0.5f, +0.5f },//7
+                };
                 
-                ProjectionTestUsingFullSquare((f32)windowWidth, (f32)windowHeight);
+                ProjectionTestUsingFullSquare(cube, (f32)windowWidth, (f32)windowHeight);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
             }break;
