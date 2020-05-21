@@ -284,9 +284,12 @@ DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
     glFlush();
 };
 
+#define GLM_FORCE_LEFT_HANDED
+
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp> // glm::mat4
 #include <glm/ext/matrix_clip_space.hpp> // glm::perspective
+#include <glm/gtc/matrix_transform.hpp> // glm::translate, rotate, etc.
 
 v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 {
@@ -347,10 +350,16 @@ v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
     return transformedCoord;
 };
 
+#define USE_GLM_PATH
+
 #define NUM_VERTS 8
 struct Cube
 {
+#ifndef USE_GLM_PATH
     Array<v3f, NUM_VERTS> verts{};
+#else
+    Array<glm::vec4, NUM_VERTS> verts{};
+#endif
     v3f centerPoint{};
 };
 
@@ -478,29 +487,6 @@ Basis ProduceWorldBasis(v3f translation, v3f rotation, v3f scale)
     return resultBasis;
 };
 
-Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f theoreticalCameraPlacement_inWorld, v3f rotation, v3f scale)
-{
-    Basis resultBasis{};
-    
-    ConvertToCorrectPositiveRadian($(rotation.x));
-    ConvertToCorrectPositiveRadian($(rotation.y));
-    ConvertToCorrectPositiveRadian($(rotation.z));
-    
-    v3f cubeCenter_world = CenterOfCube(cubeVerts_world);
-    
-    resultBasis.translation = cubeCenter_world - theoreticalCameraPlacement_inWorld;
-    
-    resultBasis.xAxis = {1.0f, 0.0f, 0.0f};
-    resultBasis.yAxis = {0.0f, 1.0f, 0.0f};
-    resultBasis.zAxis = {0.0f, 0.0f, 1.0f};
-    
-    resultBasis.xAxis = scale.x * RotateVector(resultBasis.xAxis, rotation);
-    resultBasis.yAxis = scale.y * RotateVector(resultBasis.yAxis, rotation);
-    resultBasis.zAxis = scale.z * RotateVector(resultBasis.zAxis, rotation);
-    
-    return resultBasis;
-};
-
 Array<v3f, NUM_VERTS> TransformVerts(Array<v3f, NUM_VERTS> cubeVerts_childSpace, Basis parentBasis)
 {
     Array<v3f, NUM_VERTS> cubeVerts_parentSpace{};
@@ -516,10 +502,82 @@ Array<v3f, NUM_VERTS> TransformVerts(Array<v3f, NUM_VERTS> cubeVerts_childSpace,
     return cubeVerts_parentSpace;
 };
 
+Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostion_world, v3f rotation, v3f scale)
+{
+    Basis resultBasis{};
+    
+    ConvertToCorrectPositiveRadian($(rotation.x));
+    ConvertToCorrectPositiveRadian($(rotation.y));
+    ConvertToCorrectPositiveRadian($(rotation.z));
+    
+    v3f cubeCenter_world = CenterOfCube(cubeVerts_world);
+    
+    resultBasis.translation = cubeCenter_world - cameraPostion_world;
+    
+    resultBasis.xAxis = {1.0f, 0.0f, 0.0f};
+    resultBasis.yAxis = {0.0f, 1.0f, 0.0f};
+    resultBasis.zAxis = {0.0f, 0.0f, 1.0f};
+    
+    resultBasis.xAxis = scale.x * RotateVector(resultBasis.xAxis, rotation);
+    resultBasis.yAxis = scale.y * RotateVector(resultBasis.yAxis, rotation);
+    resultBasis.zAxis = scale.z * RotateVector(resultBasis.zAxis, rotation);
+    
+    return resultBasis;
+};
+
+Array<v3f, NUM_VERTS> CameraTransform(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostion_world, v3f cameraLookAt, v3f rotation, v3f scale)
+{
+    Array<v3f, NUM_VERTS> cubeVerts_camera{};
+    
+    ConvertToCorrectPositiveRadian($(rotation.x));
+    ConvertToCorrectPositiveRadian($(rotation.y));
+    ConvertToCorrectPositiveRadian($(rotation.z));
+    
+    Basis cameraBasis{};
+    cameraBasis.xAxis = {1.0f, 0.0f, 0.0f};
+    cameraBasis.yAxis = {0.0f, 1.0f, 0.0f};
+    cameraBasis.zAxis = {0.0f, 0.0f, 1.0f};
+    
+    v3f diff = cameraLookAt - cameraPostion_world;
+    v3f diffX = v3f{ diff.x, 0.0f, diff.z};
+    v3f diffY = v3f{0.0f, diff.y, diff.z};
+    
+    f32 theta_yRot{};
+    if(cameraPostion_world.x != 0.0f)
+    {
+        f32 dotProduct = DotProduct(cameraBasis.zAxis, diffX);
+        f32 combinedMagnitudes = (Magnitude(cameraBasis.zAxis) * Magnitude(diffX));
+        theta_yRot = InvCosR(dotProduct / combinedMagnitudes);
+    };
+    
+    f32 theta_xRot{};
+    if(cameraPostion_world.y != 0.0f)
+    {
+        theta_xRot = InvCosR(DotProduct(cameraBasis.zAxis, diffY) / (Magnitude(cameraBasis.zAxis) * Magnitude(diffY)));
+    }
+    
+    rotation = {theta_xRot, theta_yRot, 0.0f};
+    cameraBasis.xAxis = RotateVector(cameraBasis.xAxis, rotation);
+    cameraBasis.yAxis = RotateVector(cameraBasis.yAxis, rotation);
+    cameraBasis.zAxis = RotateVector(cameraBasis.zAxis, rotation);
+    
+    for(i32 i{}; i < NUM_VERTS; ++i)
+    {
+        cubeVerts_world[i] = cubeVerts_world[i] + -cameraPostion_world;
+        
+        cubeVerts_camera[i].x = DotProduct(cubeVerts_world[i], cameraBasis.xAxis);
+        cubeVerts_camera[i].y = DotProduct(cubeVerts_world[i], cameraBasis.yAxis);
+        cubeVerts_camera[i].z = DotProduct(cubeVerts_world[i], cameraBasis.zAxis);
+    };
+    
+    return cubeVerts_camera;
+};
+
+#ifndef USE_GLM_PATH
 void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
 {
     local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
-    local_persist v3f worldTranslation = {12.8f, 3.0f, 4.0f};
+    local_persist v3f worldTranslation = {0.0f, 0.0f, 0.0f};
     local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
     
     Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
@@ -529,15 +587,11 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
     
     Array<v3f, NUM_VERTS> squareVerts_camera{};
     {//Camera Transform
-        local_persist v3f theoreticalCameraPlacement_inWorld{11.8f, 3.0f, 0.0f};//Theoretical because it's not actually the camera that moves, but the world
-        local_persist v3f rotation_camera{0.0f, 0.0f, 0.5f};
-        theoreticalCameraPlacement_inWorld.x -= .01f;
-        rotation_camera.z -= .01f;
-        rotation_camera.y -= .01f;
+        local_persist v3f cameraPostion_world{3.0f, -7.0f, -3.0f};
+        local_persist v3f rotation_camera{0.0f, 0.0f, 0.0f};
+        local_persist v3f cameraLookAt{0.0f, 0.0f, 0.0f};
         
-        Basis cameraBasis = ProduceCameraBasis(squareVerts_world, theoreticalCameraPlacement_inWorld, rotation_camera, v3f{1.0f, 1.0f, 1.0f});
-        
-        squareVerts_camera = TransformVerts(squareVerts_world, cameraBasis);
+        squareVerts_camera = CameraTransform(squareVerts_world, cameraPostion_world, cameraLookAt, rotation_camera, v3f{1.0f, 1.0f, 1.0f});
     }
     
     //ProjectionTransform
@@ -595,6 +649,76 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
     glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
 };
+
+#else
+void ProjectionTestUsingFullSquare_GLM(Cube cube, f32 windowWidth, f32 windowHeight)
+{
+    local_persist f32 rotation = 0.0f;
+    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{0.0f, 0.0f, 2.0f});
+    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotation, glm::vec3{1.0f, 0.0f, 0.0f});
+    
+    glm::mat4 worldTransformMatrix = translationMatrix * rotationMatrix;
+    Array<glm::vec4, NUM_VERTS> cubeVerts_world{};
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        cubeVerts_world[i] = worldTransformMatrix * cube.verts[i];
+    
+    glm::mat4 projectionTransform = glm::perspective(70.0f, windowWidth/windowHeight, 0.1f, 100.0f);
+    Array<glm::vec4, NUM_VERTS> cubeVerts_openGLClipSpace{};
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        cubeVerts_openGLClipSpace[i] = projectionTransform * cubeVerts_world[i];
+    
+    GLfloat verts[NUM_VERTS * 7] = {};
+    i32 i{};
+    f32 colorR{}, colorG{}, colorB{};
+    for(i32 j{}; j < NUM_VERTS; ++j)
+    {
+        verts[i++] = cubeVerts_openGLClipSpace[j].x;
+        verts[i++] = cubeVerts_openGLClipSpace[j].y;
+        verts[i++] = cubeVerts_openGLClipSpace[j].z;
+        verts[i++] = cubeVerts_openGLClipSpace[j].w;
+        verts[i++] = colorR;
+        verts[i++] = colorG;
+        verts[i++] = colorB;
+        
+        if(colorR > 1.0f)
+        {
+            colorR = 0.0f;
+        };
+        
+        if(colorG > 1.0f)
+        {
+            colorG = 0.0f;
+        };
+        
+        if(colorB > 1.0f)
+        {
+            colorB = 0.0f;
+        };
+        
+        colorR += .01f;
+        colorG += .54f;
+        colorB += .27f;
+    };
+    
+    GLuint bufferID;
+    glGenBuffers(1, &bufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
+    
+    GLuint indexBufferID;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
+    
+    glDisable(GL_TEXTURE_2D);
+    glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
+    glEnable(GL_TEXTURE_2D);
+};
+#endif
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
 {
@@ -685,6 +809,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Test:
             {
                 Cube cube{};
+                
+#ifndef USE_GLM_PATH
                 cube.verts = {
                     v3f{-0.5f, 0.5f, -0.5f }, //0
                     v3f{+0.5f, 0.5f, -0.5f }, //1
@@ -697,6 +823,20 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 };
                 
                 ProjectionTestUsingFullSquare(cube, (f32)windowWidth, (f32)windowHeight);
+#else
+                cube.verts = {
+                    glm::vec4{-0.5f, 0.5f, -0.5f, 1.0f }, //0
+                    glm::vec4{+0.5f, 0.5f, -0.5f, 1.0f }, //1
+                    glm::vec4{-0.5f, -0.5f, -0.5f, 1.0f },//2
+                    glm::vec4{+0.5f, -0.5f, -0.5f, 1.0f },//3
+                    glm::vec4{+0.5f, -0.5f, +0.5f, 1.0f },//4
+                    glm::vec4{+0.5f, +0.5f, +0.5f, 1.0f },//5
+                    glm::vec4{-0.5f, +0.5f, +0.5f, 1.0f },//6
+                    glm::vec4{-0.5f, -0.5f, +0.5f, 1.0f },//7
+                };
+                
+                ProjectionTestUsingFullSquare_GLM(cube, (f32)windowWidth, (f32)windowHeight);
+#endif
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);
             }break;
