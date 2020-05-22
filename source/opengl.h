@@ -350,7 +350,7 @@ v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
     return transformedCoord;
 };
 
-#define USE_GLM_PATH
+//#define USE_GLM_PATH
 
 #define NUM_VERTS 8
 struct Cube
@@ -418,7 +418,7 @@ Array<v4f, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v3f, NUM_VERTS> squareV
     f32 yScale = 1.0f / tanHalfFov;
     
     f32 farClip = 100.0f;
-    f32 nearClip = 1.0f;
+    f32 nearClip = 0.1f;
     
     f32 a = (-farClip - nearClip) / (nearClip - farClip);
     f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
@@ -465,6 +465,32 @@ v3f RotateVector(v3f vecToRotate, v3f rotation)
     newRotatedVector.y = rotatedY;
     
     return newRotatedVector;
+};
+
+glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
+{
+    v3f newRotatedVector{};
+    
+    //X axis rotation
+    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
+    newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
+    
+    //Z axis rotation
+    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
+    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
+    newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
+    
+    //Y axis rotation
+    f32 rotatedY = newRotatedVector.y;
+    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
+    newRotatedVector.y = rotatedY;
+    
+    glm::vec3 result = {newRotatedVector.x, newRotatedVector.y, newRotatedVector.z};
+    
+    return result;
 };
 
 Basis ProduceWorldBasis(v3f translation, v3f rotation, v3f scale)
@@ -573,11 +599,13 @@ Array<v3f, NUM_VERTS> CameraTransform(Array<v3f, NUM_VERTS> cubeVerts_world, v3f
     return cubeVerts_camera;
 };
 
+//TODO: Three things to try: 1.) Try and see if you can transpose world transform in glm version (according to Casey's vid). 2.) Try and
+//mimic view direction in glm version. 3.) See if finding perpendicular angles in RotateVector makes any difference
 #ifndef USE_GLM_PATH
 void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
 {
     local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
-    local_persist v3f worldTranslation = {0.0f, 0.0f, 0.0f};
+    local_persist v3f worldTranslation = {0.0f, 0.0f, 1.0f};
     local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
     
     Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
@@ -587,9 +615,10 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
     
     Array<v3f, NUM_VERTS> squareVerts_camera{};
     {//Camera Transform
-        local_persist v3f cameraPostion_world{3.0f, -7.0f, -3.0f};
+        local_persist v3f cameraPostion_world{0.0f, 0.0f, -2.0f};
         local_persist v3f rotation_camera{0.0f, 0.0f, 0.0f};
         local_persist v3f cameraLookAt{0.0f, 0.0f, 0.0f};
+        cameraPostion_world.x += .004f;
         
         squareVerts_camera = CameraTransform(squareVerts_world, cameraPostion_world, cameraLookAt, rotation_camera, v3f{1.0f, 1.0f, 1.0f});
     }
@@ -654,18 +683,57 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
 void ProjectionTestUsingFullSquare_GLM(Cube cube, f32 windowWidth, f32 windowHeight)
 {
     local_persist f32 rotation = 0.0f;
-    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{0.0f, 0.0f, 2.0f});
+    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{0.0f, 0.0f, 1.0f});
     glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotation, glm::vec3{1.0f, 0.0f, 0.0f});
     
+    //World transform
     glm::mat4 worldTransformMatrix = translationMatrix * rotationMatrix;
     Array<glm::vec4, NUM_VERTS> cubeVerts_world{};
     for(i32 i{}; i < NUM_VERTS; ++i)
         cubeVerts_world[i] = worldTransformMatrix * cube.verts[i];
     
-    glm::mat4 projectionTransform = glm::perspective(70.0f, windowWidth/windowHeight, 0.1f, 100.0f);
+    Array<glm::vec4, NUM_VERTS> cubeVerts_camera{};
+    {//Camera transform
+        local_persist glm::vec3 camPos = {0.0f, 0.0f, -2.0f}, upVec{0.0f, 1.0f, 0.0f};
+        camPos.x += .01f;
+        camPos.y -= .01f;
+        
+        glm::vec3 viewDirection{0.0f, 0.0f, 1.0f};
+        glm::vec3 cameraLookAt{0.0f, 0.0f, 0.0f};
+        
+        {
+            glm::vec3 diff = cameraLookAt - camPos;
+            glm::vec3 diffX = glm::vec3{ diff.x, 0.0f, diff.z};
+            glm::vec3 diffY = glm::vec3{0.0f, diff.y, diff.z};
+            
+            f32 theta_yRot{};
+            if(camPos.x != 0.0f)
+            {
+                f32 dotProduct = glm::dot(viewDirection, diffX);
+                f32 combinedMagnitudes = (glm::length(viewDirection) * glm::length(diffX));
+                theta_yRot = InvCosR(dotProduct / combinedMagnitudes);
+            };
+            
+            f32 theta_xRot{};
+            if(camPos.y != 0.0f)
+            {
+                theta_xRot = InvCosR(glm::dot(viewDirection, diffY) / (glm::length(viewDirection) * glm::length(diffY)));
+            }
+            
+            glm::vec3 rotation = {theta_xRot, theta_yRot, 0.0f};
+            viewDirection = RotateVector(viewDirection, rotation);
+        };
+        
+        glm::mat4 cameraTransformMatrix = glm::lookAtLH(camPos, camPos + viewDirection, upVec);
+        for(i32 i{}; i < NUM_VERTS; ++i)
+            cubeVerts_camera[i] = cameraTransformMatrix * cubeVerts_world[i];
+    }
+    
+    //Projection transform
+    glm::mat4 projectionTransform = glm::perspective(glm::radians(80.0f), windowWidth/windowHeight, 0.1f, 100.0f);
     Array<glm::vec4, NUM_VERTS> cubeVerts_openGLClipSpace{};
     for(i32 i{}; i < NUM_VERTS; ++i)
-        cubeVerts_openGLClipSpace[i] = projectionTransform * cubeVerts_world[i];
+        cubeVerts_openGLClipSpace[i] = projectionTransform * cubeVerts_camera[i];
     
     GLfloat verts[NUM_VERTS * 7] = {};
     i32 i{};
