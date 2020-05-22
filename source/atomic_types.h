@@ -572,6 +572,32 @@ operator+=(v4f &a, v4f B)
     return(a);
 }
 
+inline v4f
+operator-(v4f a, v4f b)
+{
+    v4f result;
+    
+    result.x = a.x - b.x;
+    result.y = a.y - b.y;
+    result.z = a.z - b.z;
+    result.w = a.w - b.w;
+    
+    return (result);
+}
+
+inline v4f
+operator-(v4f a)
+{
+    v4f result;
+    
+    result.x = -a.x;
+    result.y = -a.y;
+    result.z = -a.z;
+    result.w = -a.w;
+    
+    return (result);
+}
+
 v2i::v2i(i32 x, i32 y)
 : x(x)
 , y(y)
@@ -743,6 +769,60 @@ PerspectiveProjection(f32 aspectRatio, f32 focalLength)
     };
     
     return r;
+};
+
+local_func mat4x4
+ColumnPicture3x3(v3f xAxis, v3f yAxis, v3f zAxis)
+{
+    mat4x4 result =
+    {
+        {
+            {xAxis.x, yAxis.x, zAxis.x, 0.0f},
+            {xAxis.y, yAxis.y, zAxis.y, 0.0f},
+            {xAxis.z, yAxis.z, zAxis.z, 0.0f},
+            {   0.0f,    0.0f,    0.0f, 1.0f}
+        }
+    };
+    
+    return result;
+};
+
+local_func mat4x4
+RowPicture3x3(v3f xAxis, v3f yAxis, v3f zAxis)
+{
+    mat4x4 result =
+    {
+        {
+            {xAxis.x, xAxis.y, xAxis.z, 0.0f},
+            {yAxis.x, yAxis.y, yAxis.z, 0.0f},
+            {zAxis.x, zAxis.y, zAxis.z, 0.0f},
+            {   0.0f,    0.0f,    0.0f, 1.0f}
+        }
+    };
+    
+    return result;
+};
+
+local_func mat4x4
+Translate(mat4x4 A, v4f T)
+{
+    mat4x4 result = A;
+    
+    result.elem[0][3] += T.x;
+    result.elem[1][3] += T.y;
+    result.elem[2][3] += T.z;
+    
+    return result;
+};
+
+local_func mat4x4
+CamTransform(v3f xAxis, v3f yAxis, v3f zAxis, v3f vecToTransform)
+{
+    mat4x4 result = RowPicture3x3(xAxis, yAxis, zAxis);
+    v4f vecToTransform_4d {vecToTransform.x, vecToTransform.y, vecToTransform.z, 1.0f};
+    result = Translate(result, -(result*vecToTransform_4d));
+    
+    return result;
 };
 
 #endif // ATOMIC_TYPES_IMPL
