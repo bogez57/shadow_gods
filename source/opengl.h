@@ -477,8 +477,8 @@ glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
     newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
-    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
-    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
+    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), -SinR(rotation.z), 0.0f };
+    v3f yBasis_zAxisRotation = v3f{ SinR(rotation.z), CosR(rotation.z), 0.0f };
     newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
     
     //Y axis rotation
@@ -616,7 +616,7 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
         
         Basis camera{};
         local_persist v3f camRotation{0.0f, 0.0f, 0.0f};
-        camRotation.z += 0.0004f;
+        camRotation.x += 0.0004f;
         camera.zAxis = RotateVector(camera.zAxis, camRotation);
         camera.yAxis = RotateVector(camera.yAxis, camRotation);
         camera.xAxis = RotateVector(camera.xAxis, camRotation);
@@ -702,8 +702,14 @@ void ProjectionTestUsingFullSquare_GLM(Cube cube, f32 windowWidth, f32 windowHei
     Array<glm::vec4, NUM_VERTS> cubeVerts_camera{};
     local_persist glm::vec3 camPos = {0.0f, 0.0f, -2.0f}, upVec{0.0f, 1.0f, 0.0f};
     glm::vec3 viewDirection{0.0f, 0.0f, 1.0f};
-    glm::vec3 cameraRotation = {0.0f, 0.0f, 0.0f};
-    viewDirection = RotateVector(viewDirection, cameraRotation);
+    local_persist f32 cameraRotation = 0.0f;
+    cameraRotation += .0004f;
+    //viewDirection = RotateVector(viewDirection, cameraRotation);
+    glm::mat4 rotationMatrix_cam = glm::rotate(glm::mat4(1.0f), cameraRotation, glm::vec3{0.0f, 0.0f, 1.0f});
+    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation, glm::vec3{0.0f, 1.0f, 0.0f});
+    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation, glm::vec3{1.0f, 0.0f, 0.0f});
+    glm::vec4 viewDirection_4d = rotationMatrix_cam * glm::vec4{viewDirection, 1.0f};
+    viewDirection = glm::vec3{viewDirection_4d};
     glm::mat4 cameraTransformMatrix = glm::lookAtLH(camPos, camPos + viewDirection, upVec);
     for(i32 i{}; i < NUM_VERTS; ++i)
         cubeVerts_camera[i] = cameraTransformMatrix * cubeVerts_world[i];
