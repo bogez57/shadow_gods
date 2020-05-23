@@ -443,13 +443,16 @@ struct Basis
     v3f translation{};
 };
 
+//TODO: Step through each version and see if the correct axes coords are getting computed and if so, why the rotation is coming out opposite
+#ifndef USE_GLM_PATH
 v3f RotateVector(v3f vecToRotate, v3f rotation)
 {
+#if 1
     v3f newRotatedVector{};
     
     //X axis rotation
-    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), SinR(rotation.x) };
+    v3f zBasis_xAxisRotation = v3f { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
     newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
@@ -459,21 +462,19 @@ v3f RotateVector(v3f vecToRotate, v3f rotation)
     
     //Y axis rotation
     f32 rotatedY = newRotatedVector.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { SinR(rotation.y), 0.0f, CosR(rotation.y) };
     newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
     newRotatedVector.y = rotatedY;
     
     return newRotatedVector;
-};
-
-glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
-{
+#else
+    
     v3f newRotatedVector{};
     
     //X axis rotation
-    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), SinR(rotation.x) };
+    v3f zBasis_xAxisRotation = v3f { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
     newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
@@ -483,8 +484,35 @@ glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
     
     //Y axis rotation
     f32 rotatedY = newRotatedVector.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
+    newRotatedVector.y = rotatedY;
+    
+#endif
+    
+    return newRotatedVector;
+};
+
+#else
+glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
+{
+    v3f newRotatedVector{};
+    
+    //X axis rotation
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), SinR(rotation.x) };
+    v3f zBasis_xAxisRotation = v3f { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
+    newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
+    
+    //Z axis rotation
+    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), -SinR(rotation.z), 0.0f };
+    v3f yBasis_zAxisRotation = v3f{ SinR(rotation.z), CosR(rotation.z), 0.0f };
+    newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
+    
+    //Y axis rotation
+    f32 rotatedY = newRotatedVector.y;
+    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { SinR(rotation.y), 0.0f, CosR(rotation.y) };
     newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
     newRotatedVector.y = rotatedY;
     
@@ -492,6 +520,7 @@ glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
     
     return result;
 };
+#endif
 
 Basis ProduceWorldBasis(v3f translation, v3f rotation, v3f scale)
 {
@@ -599,9 +628,10 @@ Array<v3f, NUM_VERTS> CameraTransform(Array<v3f, NUM_VERTS> cubeVerts_world, v3f
 #ifndef USE_GLM_PATH
 void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
 {
-    local_persist v3f worldRotation = {0.4f, 0.0f, 0.0f} ;
+    local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
     local_persist v3f worldTranslation = {0.0f, 0.0f, 1.0f};
     local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
+    worldRotation.z += .01f;
     
     Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
     
@@ -612,11 +642,9 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
     {//Camera Transform
         local_persist v3f cameraPostion_world{0.0f, 0.0f, -2.0f};
         local_persist v3f rotation_camera{0.0f, 0.0f, 0.0f};
-        local_persist v3f cameraLookAt{0.0f, 0.0f, 0.0f};
         
         Basis camera{};
         local_persist v3f camRotation{0.0f, 0.0f, 0.0f};
-        camRotation.x += 0.0004f;
         camera.zAxis = RotateVector(camera.zAxis, camRotation);
         camera.yAxis = RotateVector(camera.yAxis, camRotation);
         camera.xAxis = RotateVector(camera.xAxis, camRotation);
