@@ -443,10 +443,10 @@ struct Basis
     v3f translation{};
 };
 
-//TODO: Step through each version and see if the correct axes coords are getting computed and if so, why the rotation is coming out opposite
 #ifndef USE_GLM_PATH
 v3f RotateVector(v3f vecToRotate, v3f rotation)
 {
+    //Left-handed rotation equations
 #if 1
     v3f newRotatedVector{};
     
@@ -470,28 +470,28 @@ v3f RotateVector(v3f vecToRotate, v3f rotation)
     return newRotatedVector;
 #else
     
+    //Right-handed rotation equations
     v3f newRotatedVector{};
     
     //X axis rotation
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), SinR(rotation.x) };
-    v3f zBasis_xAxisRotation = v3f { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
+    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
+    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
     newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
-    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), -SinR(rotation.z), 0.0f };
-    v3f yBasis_zAxisRotation = v3f{ SinR(rotation.z), CosR(rotation.z), 0.0f };
+    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
+    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
     newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
     
     //Y axis rotation
     f32 rotatedY = newRotatedVector.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
+    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
     newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
     newRotatedVector.y = rotatedY;
     
-#endif
-    
     return newRotatedVector;
+#endif
 };
 
 #else
@@ -631,7 +631,7 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
     local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
     local_persist v3f worldTranslation = {0.0f, 0.0f, 1.0f};
     local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
-    worldRotation.z += .01f;
+    worldRotation.y += .01f;
     
     Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
     
