@@ -443,7 +443,62 @@ struct Basis
     v3f translation{};
 };
 
-#ifndef USE_GLM_PATH
+mat4x4 XRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    mat4x4 R =
+    {
+        {
+            {1, 0, 0, 0},
+            {0, c,-s, 0},
+            {0, s, c, 0},
+            {0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
+inline mat4x4
+YRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    mat4x4 R =
+    {
+        {
+            { c, 0, s, 0},
+            { 0, 1, 0, 0},
+            {-s, 0, c, 0},
+            { 0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
+inline mat4x4
+ZRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    mat4x4 R =
+    {
+        {
+            {c,-s, 0, 0},
+            {s, c, 0, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
 v3f RotateVector(v3f vecToRotate, v3f rotation)
 {
     //Left-handed rotation equations
@@ -494,7 +549,6 @@ v3f RotateVector(v3f vecToRotate, v3f rotation)
 #endif
 };
 
-#else
 glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
 {
     v3f newRotatedVector{};
@@ -520,26 +574,23 @@ glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
     
     return result;
 };
-#endif
 
-Basis ProduceWorldBasis(v3f translation, v3f rotation, v3f scale)
+mat4x4 ProduceWorldTransform(v3f translation, v3f rotation, v3f scale)
 {
-    Basis resultBasis{};
+    mat4x4 result{};
     
     ConvertToCorrectPositiveRadian($(rotation.x));
     ConvertToCorrectPositiveRadian($(rotation.y));
     ConvertToCorrectPositiveRadian($(rotation.z));
     
-    resultBasis.translation = translation;
-    resultBasis.xAxis = {1.0f, 0.0f, 0.0f};
-    resultBasis.yAxis = {0.0f, 1.0f, 0.0f};
-    resultBasis.zAxis = {0.0f, 0.0f, 1.0f};
+    mat4x4 xRotMatrix = XRotation(rotation.x);
+    mat4x4 yRotMatrix = YRotation(rotation.y);
+    mat4x4 zRotMatrix = ZRotation(rotation.z);
+    mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
     
-    resultBasis.xAxis = scale.x * RotateVector(resultBasis.xAxis, rotation);
-    resultBasis.yAxis = scale.y * RotateVector(resultBasis.yAxis, rotation);
-    resultBasis.zAxis = scale.z * RotateVector(resultBasis.zAxis, rotation);
+    result = Translate(fullRotMatrix, v4f{translation.x, translation.y, translation.z, 1.0f});
     
-    return resultBasis;
+    return result;
 };
 
 Array<v3f, NUM_VERTS> TransformVerts(Array<v3f, NUM_VERTS> cubeVerts_childSpace, Basis parentBasis)
@@ -569,74 +620,36 @@ Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostio
     
     resultBasis.translation = cubeCenter_world - cameraPostion_world;
     
-    resultBasis.xAxis = {1.0f, 0.0f, 0.0f};
-    resultBasis.yAxis = {0.0f, 1.0f, 0.0f};
-    resultBasis.zAxis = {0.0f, 0.0f, 1.0f};
+    mat4x4 xRotMatrix = XRotation(rotation.x);
+    mat4x4 yRotMatrix = YRotation(rotation.y);
+    mat4x4 zRotMatrix = ZRotation(rotation.z);
+    mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
     
-    resultBasis.xAxis = scale.x * RotateVector(resultBasis.xAxis, rotation);
-    resultBasis.yAxis = scale.y * RotateVector(resultBasis.yAxis, rotation);
-    resultBasis.zAxis = scale.z * RotateVector(resultBasis.zAxis, rotation);
+    v4f xAxis_4d = v4f{resultBasis.xAxis.x, resultBasis.xAxis.y, resultBasis.xAxis.z, 1.0f };
+    v4f yAxis_4d = v4f{resultBasis.yAxis.x, resultBasis.yAxis.y, resultBasis.yAxis.z, 1.0f };
+    v4f zAxis_4d = v4f{resultBasis.zAxis.x, resultBasis.zAxis.y, resultBasis.zAxis.z, 1.0f };
+    
+    resultBasis.xAxis = (fullRotMatrix * xAxis_4d).xyz;
+    resultBasis.yAxis = (fullRotMatrix * yAxis_4d).xyz;
+    resultBasis.zAxis = (fullRotMatrix * zAxis_4d).xyz;
     
     return resultBasis;
-};
-
-Array<v3f, NUM_VERTS> CameraTransform(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostion_world, v3f cameraLookAt, v3f rotation, v3f scale)
-{
-    Array<v3f, NUM_VERTS> cubeVerts_camera{};
-    
-    ConvertToCorrectPositiveRadian($(rotation.x));
-    ConvertToCorrectPositiveRadian($(rotation.y));
-    ConvertToCorrectPositiveRadian($(rotation.z));
-    
-    Basis cameraBasis{};
-    
-    v3f diff = cameraLookAt - cameraPostion_world;
-    v3f diffX = v3f{ diff.x, 0.0f, diff.z};
-    v3f diffY = v3f{0.0f, diff.y, diff.z};
-    
-    f32 theta_yRot{};
-    if(cameraPostion_world.x != 0.0f)
-    {
-        f32 dotProduct = DotProduct(cameraBasis.zAxis, diffX);
-        f32 combinedMagnitudes = (Magnitude(cameraBasis.zAxis) * Magnitude(diffX));
-        theta_yRot = InvCosR(dotProduct / combinedMagnitudes);
-    };
-    
-    f32 theta_xRot{};
-    if(cameraPostion_world.y != 0.0f)
-    {
-        theta_xRot = InvCosR(DotProduct(cameraBasis.zAxis, diffY) / (Magnitude(cameraBasis.zAxis) * Magnitude(diffY)));
-    }
-    
-    rotation = {theta_xRot, theta_yRot, 0.0f};
-    cameraBasis.xAxis = RotateVector(cameraBasis.xAxis, rotation);
-    cameraBasis.yAxis = RotateVector(cameraBasis.yAxis, rotation);
-    cameraBasis.zAxis = RotateVector(cameraBasis.zAxis, rotation);
-    
-    for(i32 i{}; i < NUM_VERTS; ++i)
-    {
-        cubeVerts_world[i] = cubeVerts_world[i] + -cameraPostion_world;
-        
-        cubeVerts_camera[i].x = DotProduct(cubeVerts_world[i], cameraBasis.xAxis);
-        cubeVerts_camera[i].y = DotProduct(cubeVerts_world[i], cameraBasis.yAxis);
-        cubeVerts_camera[i].z = DotProduct(cubeVerts_world[i], cameraBasis.zAxis);
-    };
-    
-    return cubeVerts_camera;
 };
 
 #ifndef USE_GLM_PATH
 void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
 {
     local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
-    local_persist v3f worldTranslation = {0.0f, 0.0f, 1.0f};
+    local_persist v3f worldTranslation = {1.0f, 0.0f, 1.0f};
     local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
-    worldRotation.y += .01f;
+    worldRotation.y += 0.004f;
     
-    Basis worldBasis = ProduceWorldBasis(worldTranslation, worldRotation, worldScale);
+    mat4x4 worldTransform = ProduceWorldTransform(worldTranslation, worldRotation, worldScale);
     
     //World Transform
-    Array<v3f, NUM_VERTS> squareVerts_world = TransformVerts(cube.verts, worldBasis);
+    Array<v4f, NUM_VERTS> squareVerts_world{};
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        squareVerts_world[i] = worldTransform * v4f{cube.verts[i].x, cube.verts[i].y, cube.verts[i].z, 1.0f};
     
     Array<v3f, NUM_VERTS> squareVerts_camera{};
     {//Camera Transform
@@ -730,12 +743,12 @@ void ProjectionTestUsingFullSquare_GLM(Cube cube, f32 windowWidth, f32 windowHei
     Array<glm::vec4, NUM_VERTS> cubeVerts_camera{};
     local_persist glm::vec3 camPos = {0.0f, 0.0f, -2.0f}, upVec{0.0f, 1.0f, 0.0f};
     glm::vec3 viewDirection{0.0f, 0.0f, 1.0f};
-    local_persist f32 cameraRotation = 0.0f;
-    cameraRotation += .0004f;
+    local_persist glm::vec3 cameraRotation{};
+    cameraRotation.x += .0004f;
     //viewDirection = RotateVector(viewDirection, cameraRotation);
-    glm::mat4 rotationMatrix_cam = glm::rotate(glm::mat4(1.0f), cameraRotation, glm::vec3{0.0f, 0.0f, 1.0f});
-    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation, glm::vec3{0.0f, 1.0f, 0.0f});
-    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation, glm::vec3{1.0f, 0.0f, 0.0f});
+    glm::mat4 rotationMatrix_cam = glm::rotate(glm::mat4(1.0f), cameraRotation.x, glm::vec3{1.0f, 0.0f, 0.0f});
+    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation.y, glm::vec3{0.0f, 1.0f, 0.0f});
+    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation.z, glm::vec3{0.0f, 0.0f, 1.0f});
     glm::vec4 viewDirection_4d = rotationMatrix_cam * glm::vec4{viewDirection, 1.0f};
     viewDirection = glm::vec3{viewDirection_4d};
     glm::mat4 cameraTransformMatrix = glm::lookAtLH(camPos, camPos + viewDirection, upVec);

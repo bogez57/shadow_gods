@@ -751,6 +751,27 @@ operator*(mat4x4 A, v4f P)
     return(R);
 };
 
+local_func mat4x4
+operator*(mat4x4 A, mat4x4 B)
+{
+    // NOTE(casey): This is written to be instructive, not optimal!
+    
+    mat4x4 R = {};
+    
+    for(int r = 0; r <= 3; ++r) // NOTE(casey): Rows (of A)
+    {
+        for(int c = 0; c <= 3; ++c) // NOTE(casey): Column (of B)
+        {
+            for(int i = 0; i <= 3; ++i) // NOTE(casey): Columns of A, rows of B!
+            {
+                R.elem[r][c] += A.elem[r][i]*B.elem[i][c];
+            }
+        }
+    }
+    
+    return(R);
+}
+
 inline mat4x4
 PerspectiveProjection(f32 aspectRatio, f32 focalLength)
 {
