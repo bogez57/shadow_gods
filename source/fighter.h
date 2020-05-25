@@ -19,20 +19,20 @@ struct Fighter
     HurtBox hurtBox;
 };
 
-void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox,v2f worldPos, b flipX);
+void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox,v2 worldPos, b flipX);
 
 #endif
 
 #ifdef FIGHTER_IMPL
 
-void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox, v2f worldPos, b flipX = false)
+void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox, v2 worldPos, b flipX = false)
 {
     fighter.skel = skel;//Deep copy needed??
     fighter.animData = animData;
     fighter.world = { worldPos, 0.0f, {1.0f, 1.0f} };
     fighter.height = fighterHeight;
     fighter.hurtBox = defaultHurtBox;
-
+    
     f32 scaleFactorForHeightAdjustment {};
     { //Change fighter height
         f32 aspectRatio = fighter.skel.height / fighter.skel.width;

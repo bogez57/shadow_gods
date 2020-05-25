@@ -29,17 +29,17 @@ const char* fragmentShaderCode =
 "    color = vec4(fragColor, 1.0f);\n"
 "}\n";
 
-struct Quadv3f
+struct Quadv3
 {
     union
     {
-        Array<v3f, 4> vertices;
+        Array<v3, 4> vertices;
         struct
         {
-            v3f bottomLeft;
-            v3f bottomRight;
-            v3f topRight;
-            v3f topLeft;
+            v3 bottomLeft;
+            v3 bottomRight;
+            v3 topRight;
+            v3 topLeft;
         };
     };
 };
@@ -72,11 +72,11 @@ mat4x4 OrthographicProjection(f32 aspectRatio)
 };
 
 #if 0
-Quadv3f CameraTransform(Quadv3f worldCoords, Camera3D camera)
+Quadv3 CameraTransform(Quadv3 worldCoords, Camera3D camera)
 {
-    Quadv3f transformedCoords {};
+    Quadv3 transformedCoords {};
     
-    v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+    v2 translationToCameraSpace = camera.viewCenter - camera.lookAt;
     
     for (i32 vertIndex {}; vertIndex < 4; vertIndex++)
     {
@@ -188,7 +188,7 @@ LoadTexture(ui8* textureData, v2i textureSize)
 }
 
 local_func void
-DrawTexture(ui32 TextureID, Quadf textureCoords, v2f MinUV, v2f MaxUV)
+DrawTexture(ui32 TextureID, Quadf textureCoords, v2 MinUV, v2 MaxUV)
 {
     glBindTexture(GL_TEXTURE_2D, TextureID);
     
@@ -212,7 +212,7 @@ DrawTexture(ui32 TextureID, Quadf textureCoords, v2f MinUV, v2f MaxUV)
 }
 
 local_func void
-DrawQuad(Quadf quad, v4f color)
+DrawQuad(Quadf quad, v4 color)
 {
     glBegin(GL_QUADS);
     
@@ -232,7 +232,7 @@ DrawQuad(Quadf quad, v4f color)
 };
 
 local_func void
-DrawQuad(Quadv3f quad, v4f color)
+DrawQuad(Quadv3 quad, v4 color)
 {
     glBegin(GL_QUADS);
     
@@ -252,7 +252,7 @@ DrawQuad(Quadv3f quad, v4f color)
 };
 
 local_func void
-DrawRect(v2f MinPoint, v2f MaxPoint, v4f color)
+DrawRect(v2 MinPoint, v2 MaxPoint, v4 color)
 {
     glBegin(GL_QUADS);
     
@@ -272,7 +272,7 @@ DrawRect(v2f MinPoint, v2f MaxPoint, v4f color)
 }
 
 local_func void
-DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
+DrawLine(v2 minPoint, v2 maxPoint, v3 color, f32 lineThickness)
 {
     glLineWidth(lineThickness);
     glBegin(GL_LINES);
@@ -291,17 +291,17 @@ DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
 #include <glm/ext/matrix_clip_space.hpp> // glm::perspective
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, rotate, etc.
 
-v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
+v2 ParentTransform_1Vector(v2 localCoords, Transform parentTransform)
 {
     ConvertToCorrectPositiveRadian($(parentTransform.rotation));
     
     Coordinate_Space parentSpace {};
     parentSpace.origin = parentTransform.translation;
-    parentSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
+    parentSpace.xBasis = v2 { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
     parentSpace.yBasis = parentTransform.scale.y * PerpendicularOp(parentSpace.xBasis);
     parentSpace.xBasis *= parentTransform.scale.x;
     
-    v2f transformedCoords {};
+    v2 transformedCoords {};
     
     //This equation rotates first then moves to correct world position
     transformedCoords = parentSpace.origin + (localCoords.x * parentSpace.xBasis) + (localCoords.y * parentSpace.yBasis);
@@ -311,12 +311,12 @@ v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
 
 struct Transform_v4
 {
-    v4f translation{};
-    v3f rotation{};
-    v3f scale{};
+    v4 translation{};
+    v3 rotation{};
+    v3 scale{};
 };
 
-v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
+v4 ParentTransform_1Vec(v4 localCoords, Transform_v4 parentTransform)
 {
     BGZ_ASSERT(parentTransform.translation.w == 1.0f, "Function expects w to be 1.0");
     
@@ -324,27 +324,27 @@ v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
     ConvertToCorrectPositiveRadian($(parentTransform.rotation.y));
     ConvertToCorrectPositiveRadian($(parentTransform.rotation.z));
     
-    v4f origin_inParentSpace = parentTransform.translation;
-    v3f newRotatedPoint{};
+    v4 origin_inParentSpace = parentTransform.translation;
+    v3 newRotatedPoint{};
     
     //X axis rotation
-    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(parentTransform.rotation.x), CosR(parentTransform.rotation.x) };
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(parentTransform.rotation.x), -SinR(parentTransform.rotation.x) };
+    v3 zBasis_xAxisRotation = v3 { 0.0f, SinR(parentTransform.rotation.x), CosR(parentTransform.rotation.x) };
+    v3 yBasis_xAxisRotation = v3 { 0.0f, CosR(parentTransform.rotation.x), -SinR(parentTransform.rotation.x) };
     newRotatedPoint.yz = (localCoords.z * zBasis_xAxisRotation.yz) + (localCoords.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
-    v3f xBasis_zAxisRotation = v3f { CosR(parentTransform.rotation.z), SinR(parentTransform.rotation.z), 0.0f };
-    v3f yBasis_zAxisRotation = v3f{ -SinR(parentTransform.rotation.z), CosR(parentTransform.rotation.z), 0.0f };
+    v3 xBasis_zAxisRotation = v3 { CosR(parentTransform.rotation.z), SinR(parentTransform.rotation.z), 0.0f };
+    v3 yBasis_zAxisRotation = v3{ -SinR(parentTransform.rotation.z), CosR(parentTransform.rotation.z), 0.0f };
     newRotatedPoint.xy = (localCoords.x * xBasis_zAxisRotation.xy) + (newRotatedPoint.y * yBasis_zAxisRotation.xy);
     
     //Y axis rotation
     f32 rotatedY = newRotatedPoint.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(parentTransform.rotation.y), 0.0f, SinR(parentTransform.rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { -SinR(parentTransform.rotation.y), 0.0f, CosR(parentTransform.rotation.y) };
+    v3 xBasis_yAxisRotation = v3 { CosR(parentTransform.rotation.y), 0.0f, SinR(parentTransform.rotation.y) };
+    v3 zBasis_yAxisRotation = v3 { -SinR(parentTransform.rotation.y), 0.0f, CosR(parentTransform.rotation.y) };
     newRotatedPoint = (newRotatedPoint.x * xBasis_yAxisRotation) + (newRotatedPoint.z * zBasis_yAxisRotation);
     newRotatedPoint.y = rotatedY;
     
-    v4f transformedCoord { newRotatedPoint.x, newRotatedPoint.y, newRotatedPoint.z, 0.0f };
+    v4 transformedCoord { newRotatedPoint, 0.0f };
     transformedCoord = origin_inParentSpace + transformedCoord;
     
     return transformedCoord;
@@ -356,11 +356,11 @@ v4f ParentTransform_1Vec(v4f localCoords, Transform_v4 parentTransform)
 struct Cube
 {
 #ifndef USE_GLM_PATH
-    Array<v3f, NUM_VERTS> verts{};
+    Array<v3, NUM_VERTS> verts{};
 #else
     Array<glm::vec4, NUM_VERTS> verts{};
 #endif
-    v3f centerPoint{};
+    v3 centerPoint{};
 };
 
 GLushort indicies[] =
@@ -373,7 +373,7 @@ GLushort indicies[] =
 
 f32 epsilon = 0.00001f; //TODO: Remove????
 
-v3f CenterOfCube(Array<v3f, NUM_VERTS> cubeVerts)//Find center of cube in order to rotate in camera space next
+v3 CenterOfCube(Array<v3, NUM_VERTS> cubeVerts)//Find center of cube in order to rotate in camera space next
 {
     f32 sumXs{}, sumYs{}, sumZs{};
     for(i32 i{}; i < NUM_VERTS; ++i)
@@ -382,15 +382,15 @@ v3f CenterOfCube(Array<v3f, NUM_VERTS> cubeVerts)//Find center of cube in order 
         sumYs += cubeVerts[i].y;
     for(i32 i{}; i < NUM_VERTS; ++i)
         sumZs += cubeVerts[i].z;
-    v3f centerOfCube = v3f { sumXs/8.0f, sumYs/8.0f, sumZs/8.0f };
+    v3 centerOfCube = v3 { sumXs/8.0f, sumYs/8.0f, sumZs/8.0f };
     
     return centerOfCube;
 }
 
 
-Array<v4f, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3f, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
+Array<v4, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
 {
-    Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace{};
+    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace{};
     
     f32 focalLength = 1.8f;
     f32 windowWidth_meters = windowWidth_pxls / 100.0f;
@@ -407,9 +407,9 @@ Array<v4f, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3f, NUM_VERTS>
     return squareVerts_openGLClipSpace;
 };
 
-Array<v4f, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v3f, NUM_VERTS> squareVerts_camera)
+Array<v4, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v3, NUM_VERTS> squareVerts_camera)
 {
-    Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace{};
+    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace{};
     
     f32 fov = glm::radians(80.0f);
     f32 aspectRatio = 16.0f/9.0f;
@@ -436,11 +436,11 @@ Array<v4f, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v3f, NUM_VERTS> squareV
 
 struct Basis
 {
-    v3f origin{};//Universal space
-    v3f xAxis{1.0f, 0.0f, 0.0f};
-    v3f yAxis{0.0f, 1.0f, 0.0f};
-    v3f zAxis{0.0f, 0.0f, 1.0f};
-    v3f translation{};
+    v3 origin{};//Universal space
+    v3 xAxis{1.0f, 0.0f, 0.0f};
+    v3 yAxis{0.0f, 1.0f, 0.0f};
+    v3 zAxis{0.0f, 0.0f, 1.0f};
+    v3 translation{};
 };
 
 mat4x4 XRotation(f32 Angle)
@@ -499,26 +499,26 @@ ZRotation(f32 Angle)
     return(R);
 }
 
-v3f RotateVector(v3f vecToRotate, v3f rotation)
+v3 RotateVector(v3 vecToRotate, v3 rotation)
 {
     //Left-handed rotation equations
 #if 1
-    v3f newRotatedVector{};
+    v3 newRotatedVector{};
     
     //X axis rotation
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), SinR(rotation.x) };
-    v3f zBasis_xAxisRotation = v3f { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
+    v3 yBasis_xAxisRotation = v3 { 0.0f, CosR(rotation.x), SinR(rotation.x) };
+    v3 zBasis_xAxisRotation = v3 { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
     newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
-    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
-    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
+    v3 xBasis_zAxisRotation = v3 { CosR(rotation.z), SinR(rotation.z), 0.0f };
+    v3 yBasis_zAxisRotation = v3{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
     newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
     
     //Y axis rotation
     f32 rotatedY = newRotatedVector.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    v3 xBasis_yAxisRotation = v3 { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
+    v3 zBasis_yAxisRotation = v3 { SinR(rotation.y), 0.0f, CosR(rotation.y) };
     newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
     newRotatedVector.y = rotatedY;
     
@@ -526,22 +526,22 @@ v3f RotateVector(v3f vecToRotate, v3f rotation)
 #else
     
     //Right-handed rotation equations
-    v3f newRotatedVector{};
+    v3 newRotatedVector{};
     
     //X axis rotation
-    v3f zBasis_xAxisRotation = v3f { 0.0f, SinR(rotation.x), CosR(rotation.x) };
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
+    v3 zBasis_xAxisRotation = v3 { 0.0f, SinR(rotation.x), CosR(rotation.x) };
+    v3 yBasis_xAxisRotation = v3 { 0.0f, CosR(rotation.x), -SinR(rotation.x) };
     newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
-    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), SinR(rotation.z), 0.0f };
-    v3f yBasis_zAxisRotation = v3f{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
+    v3 xBasis_zAxisRotation = v3 { CosR(rotation.z), SinR(rotation.z), 0.0f };
+    v3 yBasis_zAxisRotation = v3{ -SinR(rotation.z), CosR(rotation.z), 0.0f };
     newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
     
     //Y axis rotation
     f32 rotatedY = newRotatedVector.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, SinR(rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    v3 xBasis_yAxisRotation = v3 { CosR(rotation.y), 0.0f, SinR(rotation.y) };
+    v3 zBasis_yAxisRotation = v3 { -SinR(rotation.y), 0.0f, CosR(rotation.y) };
     newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
     newRotatedVector.y = rotatedY;
     
@@ -551,22 +551,22 @@ v3f RotateVector(v3f vecToRotate, v3f rotation)
 
 glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
 {
-    v3f newRotatedVector{};
+    v3 newRotatedVector{};
     
     //X axis rotation
-    v3f yBasis_xAxisRotation = v3f { 0.0f, CosR(rotation.x), SinR(rotation.x) };
-    v3f zBasis_xAxisRotation = v3f { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
+    v3 yBasis_xAxisRotation = v3 { 0.0f, CosR(rotation.x), SinR(rotation.x) };
+    v3 zBasis_xAxisRotation = v3 { 0.0f, -SinR(rotation.x), CosR(rotation.x) };
     newRotatedVector.yz = (vecToRotate.z * zBasis_xAxisRotation.yz) + (vecToRotate.y * yBasis_xAxisRotation.yz);
     
     //Z axis rotation
-    v3f xBasis_zAxisRotation = v3f { CosR(rotation.z), -SinR(rotation.z), 0.0f };
-    v3f yBasis_zAxisRotation = v3f{ SinR(rotation.z), CosR(rotation.z), 0.0f };
+    v3 xBasis_zAxisRotation = v3 { CosR(rotation.z), -SinR(rotation.z), 0.0f };
+    v3 yBasis_zAxisRotation = v3{ SinR(rotation.z), CosR(rotation.z), 0.0f };
     newRotatedVector.xy = (vecToRotate.x * xBasis_zAxisRotation.xy) + (newRotatedVector.y * yBasis_zAxisRotation.xy);
     
     //Y axis rotation
     f32 rotatedY = newRotatedVector.y;
-    v3f xBasis_yAxisRotation = v3f { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
-    v3f zBasis_yAxisRotation = v3f { SinR(rotation.y), 0.0f, CosR(rotation.y) };
+    v3 xBasis_yAxisRotation = v3 { CosR(rotation.y), 0.0f, -SinR(rotation.y) };
+    v3 zBasis_yAxisRotation = v3 { SinR(rotation.y), 0.0f, CosR(rotation.y) };
     newRotatedVector = (newRotatedVector.x * xBasis_yAxisRotation) + (newRotatedVector.z * zBasis_yAxisRotation);
     newRotatedVector.y = rotatedY;
     
@@ -575,7 +575,7 @@ glm::vec3 RotateVector(glm::vec3 vecToRotate, glm::vec3 rotation)
     return result;
 };
 
-mat4x4 ProduceWorldTransform(v3f translation, v3f rotation, v3f scale)
+mat4x4 ProduceWorldTransform(v3 translation, v3 rotation, v3 scale)
 {
     mat4x4 result{};
     
@@ -588,27 +588,27 @@ mat4x4 ProduceWorldTransform(v3f translation, v3f rotation, v3f scale)
     mat4x4 zRotMatrix = ZRotation(rotation.z);
     mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
     
-    result = Translate(fullRotMatrix, v4f{translation.x, translation.y, translation.z, 1.0f});
+    result = Translate(fullRotMatrix, v4{translation, 1.0f});
     
     return result;
 };
 
-Array<v3f, NUM_VERTS> TransformVerts(Array<v3f, NUM_VERTS> cubeVerts_childSpace, Basis parentBasis)
+Array<v3, NUM_VERTS> TransformVerts(Array<v3, NUM_VERTS> cubeVerts_childSpace, Basis parentBasis)
 {
-    Array<v3f, NUM_VERTS> cubeVerts_parentSpace{};
+    Array<v3, NUM_VERTS> cubeVerts_parentSpace{};
     
-    v3f centerOfCube = CenterOfCube(cubeVerts_childSpace);
+    v3 centerOfCube = CenterOfCube(cubeVerts_childSpace);
     
     for(i32 i{}; i < NUM_VERTS; ++i)
     {
-        v3f cubeVert_parentOriginSpace = cubeVerts_childSpace[i] - centerOfCube;
+        v3 cubeVert_parentOriginSpace = cubeVerts_childSpace[i] - centerOfCube;
         cubeVerts_parentSpace[i] = parentBasis.translation + (cubeVert_parentOriginSpace.x * parentBasis.xAxis) + (cubeVert_parentOriginSpace.y * parentBasis.yAxis) + (cubeVert_parentOriginSpace.z * parentBasis.zAxis);
     }
     
     return cubeVerts_parentSpace;
 };
 
-Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostion_world, v3f rotation, v3f scale)
+Basis ProduceCameraBasis(Array<v3, NUM_VERTS> cubeVerts_world, v3 cameraPostion_world, v3 rotation, v3 scale)
 {
     Basis resultBasis{};
     
@@ -616,7 +616,7 @@ Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostio
     ConvertToCorrectPositiveRadian($(rotation.y));
     ConvertToCorrectPositiveRadian($(rotation.z));
     
-    v3f cubeCenter_world = CenterOfCube(cubeVerts_world);
+    v3 cubeCenter_world = CenterOfCube(cubeVerts_world);
     
     resultBasis.translation = cubeCenter_world - cameraPostion_world;
     
@@ -625,9 +625,9 @@ Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostio
     mat4x4 zRotMatrix = ZRotation(rotation.z);
     mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
     
-    v4f xAxis_4d = v4f{resultBasis.xAxis.x, resultBasis.xAxis.y, resultBasis.xAxis.z, 1.0f };
-    v4f yAxis_4d = v4f{resultBasis.yAxis.x, resultBasis.yAxis.y, resultBasis.yAxis.z, 1.0f };
-    v4f zAxis_4d = v4f{resultBasis.zAxis.x, resultBasis.zAxis.y, resultBasis.zAxis.z, 1.0f };
+    v4 xAxis_4d = v4{resultBasis.xAxis, 1.0f };
+    v4 yAxis_4d = v4{resultBasis.yAxis, 1.0f };
+    v4 zAxis_4d = v4{resultBasis.zAxis, 1.0f };
     
     resultBasis.xAxis = (fullRotMatrix * xAxis_4d).xyz;
     resultBasis.yAxis = (fullRotMatrix * yAxis_4d).xyz;
@@ -639,25 +639,25 @@ Basis ProduceCameraBasis(Array<v3f, NUM_VERTS> cubeVerts_world, v3f cameraPostio
 #ifndef USE_GLM_PATH
 void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
 {
-    local_persist v3f worldRotation = {0.0f, 0.0f, 0.0f} ;
-    local_persist v3f worldTranslation = {1.0f, 0.0f, 1.0f};
-    local_persist v3f worldScale = {1.0f, 1.0f, 1.0f};
+    local_persist v3 worldRotation = {0.0f, 0.0f, 0.0f} ;
+    local_persist v3 worldTranslation = {1.0f, 0.0f, 1.0f};
+    local_persist v3 worldScale = {1.0f, 1.0f, 1.0f};
     worldRotation.y += 0.004f;
     
     mat4x4 worldTransform = ProduceWorldTransform(worldTranslation, worldRotation, worldScale);
     
     //World Transform
-    Array<v4f, NUM_VERTS> squareVerts_world{};
+    Array<v3, NUM_VERTS> cubeVerts_world{};
     for(i32 i{}; i < NUM_VERTS; ++i)
-        squareVerts_world[i] = worldTransform * v4f{cube.verts[i].x, cube.verts[i].y, cube.verts[i].z, 1.0f};
+        cubeVerts_world[i] = (worldTransform * v4{cube.verts[i], 1.0f}).xyz;
     
-    Array<v3f, NUM_VERTS> squareVerts_camera{};
+    Array<v3, NUM_VERTS> cubeVerts_camera{};
     {//Camera Transform
-        local_persist v3f cameraPostion_world{0.0f, 0.0f, -2.0f};
-        local_persist v3f rotation_camera{0.0f, 0.0f, 0.0f};
+        local_persist v3 cameraPostion_world{0.0f, 0.0f, -2.0f};
+        local_persist v3 rotation_camera{0.0f, 0.0f, 0.0f};
         
         Basis camera{};
-        local_persist v3f camRotation{0.0f, 0.0f, 0.0f};
+        local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
         camera.zAxis = RotateVector(camera.zAxis, camRotation);
         camera.yAxis = RotateVector(camera.yAxis, camRotation);
         camera.xAxis = RotateVector(camera.xAxis, camRotation);
@@ -665,14 +665,13 @@ void ProjectionTestUsingFullSquare(Cube cube, f32 windowWidth, f32 windowHeight)
         
         for(i32 i{}; i < NUM_VERTS; ++i)
         {
-            v4f squareVert_world4d = v4f {squareVerts_world[i].x, squareVerts_world[i].y, squareVerts_world[i].z, 1.0f};
-            squareVerts_camera[i] = (camTransform * squareVert_world4d).xyz;
+            cubeVerts_camera[i] = (camTransform * v4{cubeVerts_world[i], 1.0f}).xyz;
         }
     }
     
     //ProjectionTransform
-    Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFOV(squareVerts_camera);
-    //Array<v4f, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFocalLength(squareVerts_camera, windowWidth, windowHeight);
+    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFOV(cubeVerts_camera);
+    //Array<v4, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFocalLength(cubeVerts_camera, windowWidth, windowHeight);
     
     GLfloat verts[NUM_VERTS * 7] = {};
     i32 i{};
@@ -831,7 +830,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     
     f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
     v2i screenSize = { windowWidth, windowHeight };
-    v2f screenSize_meters = CastV2IToV2F(screenSize) / pixelsPerMeter;
+    v2 screenSize_meters = CastV2IToV2F(screenSize) / pixelsPerMeter;
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
     camera->viewCenter = screenSize_meters / 2.0f;
@@ -871,7 +870,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
                 Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
-                v4f color = { rectEntry.color.r, rectEntry.color.g, rectEntry.color.b, 1.0f };
+                v4 color = { rectEntry.color, 1.0f };
                 
                 glDisable(GL_TEXTURE_2D);
                 DrawQuad(targetRect_screen, color);
@@ -884,11 +883,11 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Line: {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
                 
-                v2f lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
-                v2f lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
+                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
                 
-                v2f lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
-                v2f lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
+                v2 lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
+                v2 lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
                 lineEntry.minPoint = lineMinPoint_screen;
                 lineEntry.maxPoint = lineMaxPoint_screen;
                 
@@ -902,23 +901,35 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
-                Cube cube{};
+                Cube cube0{};
+                Cube cube1{};
                 
 #ifndef USE_GLM_PATH
-                cube.verts = {
-                    v3f{-0.5f, 0.5f, -0.5f }, //0
-                    v3f{+0.5f, 0.5f, -0.5f }, //1
-                    v3f{-0.5f, -0.5f, -0.5f },//2
-                    v3f{+0.5f, -0.5f, -0.5f },//3
-                    v3f{+0.5f, -0.5f, +0.5f },//4
-                    v3f{+0.5f, +0.5f, +0.5f },//5
-                    v3f{-0.5f, +0.5f, +0.5f },//6
-                    v3f{-0.5f, -0.5f, +0.5f },//7
+                cube0.verts = {
+                    v3{-0.5f, 0.5f, -0.5f }, //0
+                    v3{+0.5f, 0.5f, -0.5f }, //1
+                    v3{-0.5f, -0.5f, -0.5f },//2
+                    v3{+0.5f, -0.5f, -0.5f },//3
+                    v3{+0.5f, -0.5f, +0.5f },//4
+                    v3{+0.5f, +0.5f, +0.5f },//5
+                    v3{-0.5f, +0.5f, +0.5f },//6
+                    v3{-0.5f, -0.5f, +0.5f },//7
                 };
                 
-                ProjectionTestUsingFullSquare(cube, (f32)windowWidth, (f32)windowHeight);
+                cube1.verts = {
+                    v3{-0.5f, 0.5f, -0.5f }, //0
+                    v3{+0.5f, 0.5f, -0.5f }, //1
+                    v3{-0.5f, -0.5f, -0.5f },//2
+                    v3{+0.5f, -0.5f, -0.5f },//3
+                    v3{+0.5f, -0.5f, +0.5f },//4
+                    v3{+0.5f, +0.5f, +0.5f },//5
+                    v3{-0.5f, +0.5f, +0.5f },//6
+                    v3{-0.5f, -0.5f, +0.5f },//7
+                };
+                
+                ProjectionTestUsingFullSquare(cube0, (f32)windowWidth, (f32)windowHeight);
 #else
-                cube.verts = {
+                cube0.verts = {
                     glm::vec4{-0.5f, 0.5f, -0.5f, 1.0f }, //0
                     glm::vec4{+0.5f, 0.5f, -0.5f, 1.0f }, //1
                     glm::vec4{-0.5f, -0.5f, -0.5f, 1.0f },//2
@@ -929,7 +940,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                     glm::vec4{-0.5f, -0.5f, +0.5f, 1.0f },//7
                 };
                 
-                ProjectionTestUsingFullSquare_GLM(cube, (f32)windowWidth, (f32)windowHeight);
+                ProjectionTestUsingFullSquare_GLM(cube0, (f32)windowWidth, (f32)windowHeight);
 #endif
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Test);

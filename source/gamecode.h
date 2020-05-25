@@ -8,17 +8,17 @@
 
 struct Game_Camera
 {
-    v2f lookAt{};
-    v2f dilatePoint_inScreenCoords{};
-    v2f dilatePointOffset_normalized{};
+    v2 lookAt{};
+    v2 dilatePoint_inScreenCoords{};
+    v2 dilatePointOffset_normalized{};
     f32 zoomFactor{};
 };
 
 struct Stage_Data
 {
     Image backgroundImg;
-    v2f size{};
-    v2f centerPoint{};
+    v2 size{};
+    v2 centerPoint{};
     Fighter player;
     Fighter enemy;
     Fighter enemy2;
