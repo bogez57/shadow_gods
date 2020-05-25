@@ -4,30 +4,40 @@
 #include "renderer_stuff.h"
 
 const char* vertexShaderCode =
-"#version 430 \r\n"
-"in layout(location=0) vec4 position;\n"
-"in layout(location=1) vec3 color;\n"
-"out vec3 fragColor;\n"
-"\n"
-"void main()\n"
-"{\n"
-"    gl_Position = position; \n"
-"    vec3 changedColors;\n"
-"    changedColors.r += color.r + .01;\n"
-"    changedColors.g += color.g + .04;\n"
-"    changedColors.b += color.b + .02;\n"
-"    fragColor = changedColors;\n"
-"}\n";
+R"HereDoc(
+
+#version 430
+
+in layout(location=0) vec4 position;
+in layout(location=1) vec3 color;
+out vec3 fragColor;
+
+void main()
+{
+    gl_Position = position;
+    vec3 changedColors;
+    changedColors.r += color.r + .41;
+    changedColors.g += color.g + .04;
+    changedColors.b += color.b + .02;
+    fragColor = changedColors;
+};
+
+)HereDoc";
 
 const char* fragmentShaderCode =
-"#version 430 \r\n"
-"out vec4 color;\n"
-"in vec3 fragColor;\n"
-"\n"
-"void main()\n"
-"{\n"
-"    color = vec4(fragColor, 1.0f);\n"
-"}\n";
+R"HereDoc(
+
+#version 430
+
+out vec4 color;
+in vec3 fragColor;
+
+void main()
+{
+    color = vec4(fragColor, 1.0f);
+};
+
+)HereDoc";
 
 struct Quadv3
 {
