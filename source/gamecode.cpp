@@ -253,8 +253,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.bones[boneIndex].initialPos_parentBoneSpace.x /= pixelsPerMeter;
             skel.bones[boneIndex].initialPos_parentBoneSpace.y /= pixelsPerMeter;
             
-            skel.bones[boneIndex].parentBoneSpace.rotation = Radians(skel.bones[boneIndex].parentBoneSpace.rotation);
-            skel.bones[boneIndex].initialRotation_parentBoneSpace = Radians(skel.bones[boneIndex].initialRotation_parentBoneSpace);
+            skel.bones[boneIndex].parentBoneSpace.rotation = ToRadians(skel.bones[boneIndex].parentBoneSpace.rotation);
+            skel.bones[boneIndex].initialRotation_parentBoneSpace = ToRadians(skel.bones[boneIndex].initialRotation_parentBoneSpace);
             
             skel.bones[boneIndex].length /= pixelsPerMeter;
         };
@@ -263,7 +263,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         {
             skel.slots[slotI].regionAttachment.height /= pixelsPerMeter;
             skel.slots[slotI].regionAttachment.width /= pixelsPerMeter;
-            skel.slots[slotI].regionAttachment.parentBoneSpace.rotation = Radians(skel.slots[slotI].regionAttachment.parentBoneSpace.rotation);
+            skel.slots[slotI].regionAttachment.parentBoneSpace.rotation = ToRadians(skel.slots[slotI].regionAttachment.parentBoneSpace.rotation);
             skel.slots[slotI].regionAttachment.parentBoneSpace.translation.x /= pixelsPerMeter;
             skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y /= pixelsPerMeter;
         };
@@ -286,7 +286,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                     RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines[boneIndex];
                     for (i32 keyFrameIndex {}; keyFrameIndex < boneRotationTimeline->angles.Size(); ++keyFrameIndex)
                     {
-                        boneRotationTimeline->angles[keyFrameIndex] = Radians(boneRotationTimeline->angles[keyFrameIndex]);
+                        boneRotationTimeline->angles[keyFrameIndex] = ToRadians(boneRotationTimeline->angles[keyFrameIndex]);
                     }
                 };
                 

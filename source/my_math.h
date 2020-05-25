@@ -44,14 +44,14 @@ AbsoluteVal(v2&& Value)
 }
 
 inline f32
-Radians(f32 angleInDegrees)
+ToRadians(f32 angleInDegrees)
 {
     f32 angleInRadians = angleInDegrees * (PI / 180.0f);
     return angleInRadians;
 };
 
 inline f32
-Degrees(f32 angleInRadians)
+ToDegrees(f32 angleInRadians)
 {
     f32 angleInDegrees = (180.0f / PI) * angleInRadians;
     return angleInDegrees;
@@ -102,7 +102,7 @@ InvTanR(f32 value)
 inline f32
 SinD(f32 angleInDegrees)
 {
-    f32 angleInRadians = Radians(angleInDegrees);
+    f32 angleInRadians = ToRadians(angleInDegrees);
     f32 result = sinf(angleInRadians);
     
     return result;
@@ -111,7 +111,7 @@ SinD(f32 angleInDegrees)
 inline f32
 InvSinD(f32 angleInDegrees)
 {
-    f32 angleInRadians = Radians(angleInDegrees);
+    f32 angleInRadians = ToRadians(angleInDegrees);
     f32 result = asinf(angleInRadians);
     
     return result;
@@ -120,7 +120,7 @@ InvSinD(f32 angleInDegrees)
 inline f32
 CosD(f32 angleInDegrees)
 {
-    f32 angleInRadians = Radians(angleInDegrees);
+    f32 angleInRadians = ToRadians(angleInDegrees);
     f32 result = cosf(angleInRadians);
     
     return result;
@@ -129,7 +129,7 @@ CosD(f32 angleInDegrees)
 inline f32
 InvCosD(f32 angleInDegrees)
 {
-    f32 angleInRadians = Radians(angleInDegrees);
+    f32 angleInRadians = ToRadians(angleInDegrees);
     f32 result = acosf(angleInRadians);
     
     return result;
@@ -138,7 +138,7 @@ InvCosD(f32 angleInDegrees)
 inline f32
 TanD(f32 angleInDegrees)
 {
-    f32 angleInRadians = Radians(angleInDegrees);
+    f32 angleInRadians = ToRadians(angleInDegrees);
     f32 result = tanf(angleInRadians);
     
     return result;
@@ -147,7 +147,7 @@ TanD(f32 angleInDegrees)
 inline f32
 InvTanD(f32 angleInDegrees)
 {
-    f32 angleInRadians = Radians(angleInDegrees);
+    f32 angleInRadians = ToRadians(angleInDegrees);
     f32 result = atanf(angleInRadians);
     
     return result;
