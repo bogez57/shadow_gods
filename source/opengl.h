@@ -284,13 +284,6 @@ DrawLine(v2 minPoint, v2 maxPoint, v3 color, f32 lineThickness)
     glFlush();
 };
 
-#define GLM_FORCE_LEFT_HANDED
-
-#include <glm/vec3.hpp>
-#include <glm/mat4x4.hpp> // glm::mat4
-#include <glm/ext/matrix_clip_space.hpp> // glm::perspective
-#include <glm/gtc/matrix_transform.hpp> // glm::translate, rotate, etc.
-
 struct Transform_v3
 {
     v3 translation{};
@@ -298,16 +291,10 @@ struct Transform_v3
     v3 scale{};
 };
 
-//#define USE_GLM_PATH
-
 #define NUM_VERTS 8
 struct Cube
 {
-#ifndef USE_GLM_PATH
     Array<v3, NUM_VERTS> verts{};
-#else
-    Array<glm::vec4, NUM_VERTS> verts{};
-#endif
     v3 centerPoint{};
 };
 
@@ -359,7 +346,7 @@ Array<v4, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v3, NUM_VERTS> squareVer
 {
     Array<v4, NUM_VERTS> squareVerts_openGLClipSpace{};
     
-    f32 fov = glm::radians(80.0f);
+    f32 fov = Radians(80.0f);
     f32 aspectRatio = 16.0f/9.0f;
     f32 tanHalfFov = TanR(fov / 2.0f);
     f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
@@ -465,7 +452,6 @@ mat4x4 ProduceWorldTransform(v3 translation, v3 rotation, v3 scale)
     return result;
 };
 
-#ifndef USE_GLM_PATH
 void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
 {
     mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
@@ -552,94 +538,6 @@ void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 w
     glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
 };
-
-#else
-void ProjectionTestUsingFullSquare_GLM(Cube cube, f32 windowWidth, f32 windowHeight)
-{
-    local_persist f32 rotation = 0.0f;
-    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{0.0f, 0.0f, 1.0f});
-    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotation, glm::vec3{1.0f, 0.0f, 0.0f});
-    
-    //World transform
-    glm::mat4 worldTransformMatrix = translationMatrix * rotationMatrix;
-    Array<glm::vec4, NUM_VERTS> cubeVerts_world{};
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        cubeVerts_world[i] = worldTransformMatrix * cube.verts[i];
-    
-    //Camera transform
-    Array<glm::vec4, NUM_VERTS> cubeVerts_camera{};
-    local_persist glm::vec3 camPos = {0.0f, 0.0f, -2.0f}, upVec{0.0f, 1.0f, 0.0f};
-    glm::vec3 viewDirection{0.0f, 0.0f, 1.0f};
-    local_persist glm::vec3 cameraRotation{};
-    cameraRotation.x += .0004f;
-    //viewDirection = RotateVector(viewDirection, cameraRotation);
-    glm::mat4 rotationMatrix_cam = glm::rotate(glm::mat4(1.0f), cameraRotation.x, glm::vec3{1.0f, 0.0f, 0.0f});
-    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation.y, glm::vec3{0.0f, 1.0f, 0.0f});
-    rotationMatrix_cam = glm::rotate(rotationMatrix_cam, cameraRotation.z, glm::vec3{0.0f, 0.0f, 1.0f});
-    glm::vec4 viewDirection_4d = rotationMatrix_cam * glm::vec4{viewDirection, 1.0f};
-    viewDirection = glm::vec3{viewDirection_4d};
-    glm::mat4 cameraTransformMatrix = glm::lookAtLH(camPos, camPos + viewDirection, upVec);
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        cubeVerts_camera[i] = cameraTransformMatrix * cubeVerts_world[i];
-    
-    //Projection transform
-    glm::mat4 projectionTransform = glm::perspective(glm::radians(80.0f), windowWidth/windowHeight, 0.1f, 100.0f);
-    Array<glm::vec4, NUM_VERTS> cubeVerts_openGLClipSpace{};
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        cubeVerts_openGLClipSpace[i] = projectionTransform * cubeVerts_camera[i];
-    
-    GLfloat verts[NUM_VERTS * 7] = {};
-    i32 i{};
-    f32 colorR{}, colorG{}, colorB{};
-    for(i32 j{}; j < NUM_VERTS; ++j)
-    {
-        verts[i++] = cubeVerts_openGLClipSpace[j].x;
-        verts[i++] = cubeVerts_openGLClipSpace[j].y;
-        verts[i++] = cubeVerts_openGLClipSpace[j].z;
-        verts[i++] = cubeVerts_openGLClipSpace[j].w;
-        verts[i++] = colorR;
-        verts[i++] = colorG;
-        verts[i++] = colorB;
-        
-        if(colorR > 1.0f)
-        {
-            colorR = 0.0f;
-        };
-        
-        if(colorG > 1.0f)
-        {
-            colorG = 0.0f;
-        };
-        
-        if(colorB > 1.0f)
-        {
-            colorB = 0.0f;
-        };
-        
-        colorR += .01f;
-        colorG += .54f;
-        colorB += .27f;
-    };
-    
-    GLuint bufferID;
-    glGenBuffers(1, &bufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
-    
-    GLuint indexBufferID;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
-    
-    glDisable(GL_TEXTURE_2D);
-    glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
-    glEnable(GL_TEXTURE_2D);
-};
-#endif
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
 {
@@ -729,10 +627,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Test:
             {
-                Cube cube0{};
-                Cube cube1{};
+                Cube cube0{}, cube1{};
                 
-#ifndef USE_GLM_PATH
                 cube0.verts = {
                     v3{-0.5f, 0.5f, -0.5f }, //0
                     v3{+0.5f, 0.5f, -0.5f }, //1
@@ -766,22 +662,6 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 ProjectionTestUsingFullSquare(cube0, cube0_worldT, (f32)windowWidth, (f32)windowHeight);
                 ProjectionTestUsingFullSquare(cube1, cube1_worldT, (f32)windowWidth, (f32)windowHeight);
-#else
-                cube0.verts = {
-                    glm::vec4{-0.5f, 0.5f, -0.5f, 1.0f }, //0
-                    glm::vec4{+0.5f, 0.5f, -0.5f, 1.0f }, //1
-                    glm::vec4{-0.5f, -0.5f, -0.5f, 1.0f },//2
-                    glm::vec4{+0.5f, -0.5f, -0.5f, 1.0f },//3
-                    glm::vec4{+0.5f, -0.5f, +0.5f, 1.0f },//4
-                    glm::vec4{+0.5f, +0.5f, +0.5f, 1.0f },//5
-                    glm::vec4{-0.5f, +0.5f, +0.5f, 1.0f },//6
-                    glm::vec4{-0.5f, -0.5f, +0.5f, 1.0f },//7
-                };
-                
-                ProjectionTestUsingFullSquare_GLM(cube0, (f32)windowWidth, (f32)windowHeight);
-#endif
-                
-                currentRenderBufferEntry += sizeof(RenderEntry_Test);
             }break;
             
             InvalidDefaultCase;
