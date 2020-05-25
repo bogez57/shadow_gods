@@ -728,6 +728,20 @@ PerspectiveProjection(f32 aspectRatio, f32 focalLength)
     return r;
 };
 
+inline v3
+GetColumn(mat4x4 A, ui32 c)
+{
+    v3 result = {A.elem[0][c], A.elem[1][c], A.elem[2][c]};
+    return(result);
+};
+
+inline v3
+GetRow(mat4x4 A, ui32 r)
+{
+    v3 result = {A.elem[r][0], A.elem[r][1], A.elem[r][2]};
+    return(result);
+};
+
 local_func mat4x4
 ColumnPicture3x3(v3 xAxis, v3 yAxis, v3 zAxis)
 {
