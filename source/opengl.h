@@ -342,33 +342,6 @@ Array<v4, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3, NUM_VERTS> s
     return squareVerts_openGLClipSpace;
 };
 
-Array<v4, NUM_VERTS> ProjectionTransform_UsingFOV(Array<v3, NUM_VERTS> squareVerts_camera)
-{
-    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace{};
-    
-    f32 fov = Radians(80.0f);
-    f32 aspectRatio = 16.0f/9.0f;
-    f32 tanHalfFov = TanR(fov / 2.0f);
-    f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
-    f32 yScale = 1.0f / tanHalfFov;
-    
-    f32 farClip = 100.0f;
-    f32 nearClip = 0.1f;
-    
-    f32 a = (-farClip - nearClip) / (nearClip - farClip);
-    f32 b = (2.0f * farClip * nearClip) / (nearClip - farClip);
-    
-    for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
-    {
-        squareVerts_openGLClipSpace[vertI].x = squareVerts_camera[vertI].x * xScale;
-        squareVerts_openGLClipSpace[vertI].y = squareVerts_camera[vertI].y * yScale;
-        squareVerts_openGLClipSpace[vertI].z = squareVerts_camera[vertI].z * a + b;
-        squareVerts_openGLClipSpace[vertI].w = squareVerts_camera[vertI].z;
-    };
-    
-    return squareVerts_openGLClipSpace;
-};
-
 struct Basis
 {
     v3 origin{};//Universal space
@@ -452,50 +425,52 @@ mat4x4 ProduceWorldTransform(v3 translation, v3 rotation, v3 scale)
     return result;
 };
 
-void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
+local_func mat4x4
+ProduceCameraTransform(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
 {
-    mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
+    mat4x4 result = RowPicture3x3(xAxis, yAxis, zAxis);
+    v4 vecToTransform_4d {vecToTransform, 1.0f};
+    result = Translate(result, -(result*vecToTransform_4d));
     
-    //World Transform
-    Array<v3, NUM_VERTS> cubeVerts_world{};
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        cubeVerts_world[i] = (worldTransformMatrix * v4{cube.verts[i], 1.0f}).xyz;
+    return result;
+};
+
+mat4x4 ProduceProjectionTransform_UsingFOV(Array<v3, NUM_VERTS> squareVerts_camera, f32 FOV_inDegrees, f32 aspectRatio, f32 nearPlane, f32 farPlane)
+{
+    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace{};
     
-    Array<v3, NUM_VERTS> cubeVerts_camera{};
-    {//Camera Transform
-        local_persist v3 cameraPostion_world{0.0f, 0.0f, -2.0f};
-        local_persist v3 rotation_camera{0.0f, 0.0f, 0.0f};
-        
-        Basis camera{};
-        local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
-        mat4x4 xRotMatrix = XRotation(camRotation.x);
-        mat4x4 yRotMatrix = YRotation(camRotation.y);
-        mat4x4 zRotMatrix = ZRotation(camRotation.z);
-        mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
-        v3 xAxis = GetColumn(fullRotMatrix, 0);
-        v3 yAxis = GetColumn(fullRotMatrix, 1);
-        v3 zAxis = GetColumn(fullRotMatrix, 2);
-        mat4x4 camTransform = CamTransform(xAxis, yAxis, zAxis, cameraPostion_world);
-        
-        for(i32 i{}; i < NUM_VERTS; ++i)
+    f32 fov = Radians(FOV_inDegrees);
+    f32 tanHalfFov = TanR(fov / 2.0f);
+    f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
+    f32 yScale = 1.0f / tanHalfFov;
+    
+    f32 a = (-farPlane - nearPlane) / (nearPlane - farPlane);
+    f32 b = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
+    
+    mat4x4 result =
+    {
         {
-            cubeVerts_camera[i] = (camTransform * v4{cubeVerts_world[i], 1.0f}).xyz;
-        }
-    }
+            {xScale, 0,      0,  0},
+            {  0,    yScale, 0,  0},
+            {  0,    0,      a,  b},
+            {  0,    0,      1,  0}
+        },
+    };
     
-    //ProjectionTransform
-    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFOV(cubeVerts_camera);
-    //Array<v4, NUM_VERTS> squareVerts_openGLClipSpace = ProjectionTransform_UsingFocalLength(cubeVerts_camera, windowWidth, windowHeight);
-    
+    return result;
+};
+
+void DrawCube(Array<v4, NUM_VERTS> cubeVerts_glClipSpace)
+{
     GLfloat verts[NUM_VERTS * 7] = {};
     i32 i{};
     f32 colorR{}, colorG{}, colorB{};
     for(i32 j{}; j < NUM_VERTS; ++j)
     {
-        verts[i++] = squareVerts_openGLClipSpace[j].x;
-        verts[i++] = squareVerts_openGLClipSpace[j].y;
-        verts[i++] = squareVerts_openGLClipSpace[j].z;
-        verts[i++] = squareVerts_openGLClipSpace[j].w;
+        verts[i++] = cubeVerts_glClipSpace[j].x;
+        verts[i++] = cubeVerts_glClipSpace[j].y;
+        verts[i++] = cubeVerts_glClipSpace[j].z;
+        verts[i++] = cubeVerts_glClipSpace[j].w;
         verts[i++] = colorR;
         verts[i++] = colorG;
         verts[i++] = colorB;
@@ -537,6 +512,44 @@ void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 w
     glDisable(GL_TEXTURE_2D);
     glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
+};
+
+void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
+{
+    mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
+    
+    //World Transform
+    Array<v3, NUM_VERTS> cubeVerts_world{};
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        cubeVerts_world[i] = (worldTransformMatrix * v4{cube.verts[i], 1.0f}).xyz;
+    
+    Array<v3, NUM_VERTS> cubeVerts_camera{};
+    {//Camera Transform
+        local_persist v3 cameraPostion_world{0.0f, 0.0f, -2.0f};
+        local_persist v3 rotation_camera{0.0f, 0.0f, 0.0f};
+        
+        Basis camera{};
+        local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
+        mat4x4 xRotMatrix = XRotation(camRotation.x);
+        mat4x4 yRotMatrix = YRotation(camRotation.y);
+        mat4x4 zRotMatrix = ZRotation(camRotation.z);
+        mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
+        v3 xAxis = GetColumn(fullRotMatrix, 0);
+        v3 yAxis = GetColumn(fullRotMatrix, 1);
+        v3 zAxis = GetColumn(fullRotMatrix, 2);
+        mat4x4 camTransform = ProduceCameraTransform(xAxis, yAxis, zAxis, cameraPostion_world);
+        
+        for(i32 i{}; i < NUM_VERTS; ++i)
+            cubeVerts_camera[i] = (camTransform * v4{cubeVerts_world[i], 1.0f}).xyz;
+    }
+    
+    //ProjectionTransform
+    mat4x4 projectionMatrix = ProduceProjectionTransform_UsingFOV(cubeVerts_camera, 90.0f, 16.0f/9.0f, .1f, 100.0f);
+    Array<v4, NUM_VERTS> cubeVerts_openGLClipSpace{};
+    for(i32 i{}; i < NUM_VERTS; ++i)
+        cubeVerts_openGLClipSpace[i] = projectionMatrix * v4{cubeVerts_camera[i], 1.0f};
+    
+    DrawCube(cubeVerts_openGLClipSpace);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
