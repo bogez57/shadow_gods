@@ -17,8 +17,8 @@ struct Game_Controller
     b32 IsConnected;
     b32 IsAnalog;
     
-    v2f LThumbStick;
-    v2f RThumbStick;
+    v2 LThumbStick;
+    v2 RThumbStick;
     
     union
     {
@@ -113,10 +113,10 @@ enum ChannelType
     BGRA
 };
 
-local_func v4f
+local_func v4
 UnPackPixelValues(ui32 pixel, ChannelType channelType)
 {
-    v4f result {};
+    v4 result {};
     
     ui32* pixelInfo = &pixel;
     

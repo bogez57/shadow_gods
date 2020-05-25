@@ -41,7 +41,7 @@ LoadTexture(ui8* textureData, v2i textureSize)
 }
 
 local_func void
-DrawTexture(ui32 TextureID, Quadf textureCoords, v2f MinUV, v2f MaxUV)
+DrawTexture(ui32 TextureID, Quadf textureCoords, v2 MinUV, v2 MaxUV)
 {
     glBindTexture(GL_TEXTURE_2D, TextureID);
     
@@ -65,7 +65,7 @@ DrawTexture(ui32 TextureID, Quadf textureCoords, v2f MinUV, v2f MaxUV)
 }
 
 local_func void
-DrawQuad(Quadf quad, v4f color)
+DrawQuad(Quadf quad, v4 color)
 {
     glBegin(GL_QUADS);
     
@@ -85,7 +85,7 @@ DrawQuad(Quadf quad, v4f color)
 };
 
 local_func void
-DrawRect(v2f MinPoint, v2f MaxPoint, v4f color)
+DrawRect(v2 MinPoint, v2 MaxPoint, v4 color)
 {
     glBegin(GL_QUADS);
     
@@ -105,7 +105,7 @@ DrawRect(v2f MinPoint, v2f MaxPoint, v4f color)
 }
 
 local_func void
-DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
+DrawLine(v2 minPoint, v2 maxPoint, v3 color, f32 lineThickness)
 {
     glLineWidth(lineThickness);
     glBegin(GL_LINES);
@@ -132,7 +132,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     
     f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
     v2i screenSize = { windowWidth, windowHeight };
-    v2f screenSize_meters = CastV2IToV2F(screenSize) / pixelsPerMeter;
+    v2 screenSize_meters = CastV2IToV2F(screenSize) / pixelsPerMeter;
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
     camera->viewCenter = screenSize_meters / 2.0f;
@@ -172,7 +172,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
                 Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
-                v4f color = { rectEntry.color.r, rectEntry.color.g, rectEntry.color.b, 1.0f };
+                v4 color = { rectEntry.color, 1.0f };
                 
                 glDisable(GL_TEXTURE_2D);
                 DrawQuad(targetRect_screen, color);
@@ -185,11 +185,11 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Line: {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
                 
-                v2f lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
-                v2f lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
+                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
                 
-                v2f lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
-                v2f lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
+                v2 lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
+                v2 lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
                 lineEntry.minPoint = lineMinPoint_screen;
                 lineEntry.maxPoint = lineMaxPoint_screen;
                 

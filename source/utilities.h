@@ -32,15 +32,15 @@ Defer<F> operator+( defer_dummy, F&& f )
 struct Transform
 {
     Transform() = default;
-    Transform(v2f translation, f32 rotation, v2f scale) :
-        translation{translation},
-        rotation{rotation},
-        scale{scale}
+    Transform(v2 translation, f32 rotation, v2 scale) :
+    translation{translation},
+    rotation{rotation},
+    scale{scale}
     {}
-
-    v2f translation{};
+    
+    v2 translation{};
     f32 rotation{};
-    v2f scale{};
+    v2 scale{};
 };
 
 inline ui32
@@ -58,9 +58,9 @@ inline auto Swap(f32* a, f32* b) -> void
     *b = c;
 };
 
-inline auto Swap(v2f* a, v2f* b) -> void
+inline auto Swap(v2* a, v2* b) -> void
 {
-    v2f c { *a };
+    v2 c { *a };
     *a = *b;
     *b = c;
 };
@@ -69,35 +69,35 @@ inline i32
 RoundFloat32ToInt32(f32 float32)
 {
     i32 result{};
-
+    
     if(float32 < 0.0f) i32 result = (i32)(float32 - 0.5f);
     else result = (i32)(float32 + 0.5f);
-
+    
     return(result);
 }
 
-inline ui32 
+inline ui32
 RoundFloat32ToUInt32(f32 float32)
 {
     ui32 result;
-
+    
     if(float32 < 0.0f) i32 result = (i32)(float32 - 0.5f);
     else result = (ui32)(float32 + 0.5f);
-
+    
     return(result);
 }
 
 inline v2i
-RoundFloat32ToInt32(v2f floats)
+RoundFloat32ToInt32(v2 floats)
 {
     v2i result{};
-
+    
     if(floats.x < 0.0f) result.x = (i32)(floats.x - 0.5f);
     else result.x = (i32)(floats.x + .5f);
-
+    
     if(floats.y < 0.0f) result.y = (i32)(floats.y - 0.5f);
     else result.y = (i32)(floats.y + .5f);
-
+    
     return result;
 }
 
@@ -105,7 +105,7 @@ inline b32
 StringCmp(const char* str1, const char* str2)
 {
     b32 didStringsMatch = strcmp(str1, str2);
-
+    
     if(!didStringsMatch)
         return 1;
     else

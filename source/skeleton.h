@@ -8,7 +8,7 @@
 struct Region_Attachment
 {
     f32 width, height {};
-    v2f scale {};
+    v2 scale {};
     Transform parentBoneSpace {};
     AtlasRegion region_image;
 };
@@ -20,12 +20,12 @@ struct Bone
     Transform parentBoneSpace;
     Transform worldSpace;
     f32 initialRotation_parentBoneSpace {};
-    v2f initialPos_parentBoneSpace {};
-    v2f initialTranslationForMixing {};
+    v2 initialPos_parentBoneSpace {};
+    v2 initialTranslationForMixing {};
     f32 initialRotationForMixing {};
     f32 length {};
     Bone* parentBone { nullptr };
-    RunTimeArr<v2f> originalCollisionBoxVerts;
+    RunTimeArr<v2> originalCollisionBoxVerts;
     RunTimeArr<Bone*> childBones;
     b isRoot { false };
     const char* name { nullptr };
@@ -124,7 +124,7 @@ void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFile
                         i32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
                         for (i32 i {}; i < numVerts; ++i)
                         {
-                            bone->originalCollisionBoxVerts.Push() = v2f { verts_json->valueFloat, verts_json->next->valueFloat };
+                            bone->originalCollisionBoxVerts.Push() = v2 { verts_json->valueFloat, verts_json->next->valueFloat };
                             verts_json = verts_json->next->next;
                         };
                     }
@@ -263,17 +263,17 @@ Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName)
     return bone;
 };
 
-v2f ParentTransform_1Vector(v2f localCoords, Transform parentTransform)
+v2 ParentTransform_1Vector(v2 localCoords, Transform parentTransform)
 {
     ConvertToCorrectPositiveRadian($(parentTransform.rotation));
     
     Coordinate_Space parentSpace {};
     parentSpace.origin = parentTransform.translation;
-    parentSpace.xBasis = v2f { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
+    parentSpace.xBasis = v2 { CosR(parentTransform.rotation), SinR(parentTransform.rotation) };
     parentSpace.yBasis = parentTransform.scale.y * PerpendicularOp(parentSpace.xBasis);
     parentSpace.xBasis *= parentTransform.scale.x;
     
-    v2f transformedCoords {};
+    v2 transformedCoords {};
     
     //This equation rotates first then moves to correct world position
     transformedCoords = parentSpace.origin + (localCoords.x * parentSpace.xBasis) + (localCoords.y * parentSpace.yBasis);
@@ -299,9 +299,9 @@ f32 WorldRotation_Bone(Bone bone)
         return RecursivelyAddBoneRotations(bone.parentBoneSpace.rotation, *bone.parentBone);
 };
 
-v2f WorldTransform_Bone(v2f vertToTransform, Bone boneToGrabTransformFrom)
+v2 WorldTransform_Bone(v2 vertToTransform, Bone boneToGrabTransformFrom)
 {
-    v2f parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.parentBoneSpace);
+    v2 parentLocalPos = ParentTransform_1Vector(vertToTransform, boneToGrabTransformFrom.parentBoneSpace);
     
     if (boneToGrabTransformFrom.isRoot) //If root bone has been hit then exit recursion by returning world pos of main bone
     {
@@ -327,7 +327,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
     };
 }
 
-void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldPos)
+void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2 fighterWorldPos)
 {
     Bone* root = &fighterSkel.bones[0];
     

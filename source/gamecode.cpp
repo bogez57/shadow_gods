@@ -103,7 +103,7 @@ void GenerateSphereNormalMap(Image&& sourceImage)
         
         for(i32 x = 0; x < sourceImage.size.width; ++x)
         {
-            v2f normalUV = {invWidth*(f32)x, invHeight*(f32)y};
+            v2 normalUV = {invWidth*(f32)x, invHeight*(f32)y};
             
             f32 normalX = 2.0f*normalUV.x - 1.0f;
             f32 normalY = 2.0f*normalUV.y - 1.0f;
@@ -111,16 +111,16 @@ void GenerateSphereNormalMap(Image&& sourceImage)
             f32 rootTerm = 1.0f - normalX*normalX - normalY*normalY;
             f32 normalZ = 0.0f;
             
-            v3f normal {0.0f, 0.0f, 1.0f};
+            v3 normal {0.0f, 0.0f, 1.0f};
             
             if(rootTerm >= 0.0f)
             {
                 normalZ = Sqrt(rootTerm);
-                normal = v3f{normalX, normalY, normalZ};
+                normal = v3{normalX, normalY, normalZ};
             };
             
             //Convert from -1 to 1 range to value between 0 and 255
-            v4f color = {255.0f*(.5f*(normal.x + 1.0f)),
+            v4 color = {255.0f*(.5f*(normal.x + 1.0f)),
                 255.0f*(.5f*(normal.y + 1.0f)),
                 255.0f*(.5f*(normal.z + 1.0f)),
                 0.0f};
@@ -224,7 +224,7 @@ Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
 {
     Coordinate_Space parentSpace {};
     parentSpace.origin = transformInfo_world.translation;
-    parentSpace.xBasis = v2f { CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation) };
+    parentSpace.xBasis = v2 { CosR(transformInfo_world.rotation), SinR(transformInfo_world.rotation) };
     parentSpace.yBasis = transformInfo_world.scale.y * PerpendicularOp(parentSpace.xBasis);
     parentSpace.xBasis *= transformInfo_world.scale.x;
     
@@ -354,9 +354,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //TranslateCurrentMeasurementsToGameUnits($(enemySkel), $(enemyAnimData));
         
         //Init fighters
-        v2f playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
-        HurtBox playerDefaultHurtBox { playerWorldPos, v2f { 2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
-        //HurtBox enemyDefaultHurtBox { enemyWorldPos, v2f { -2.0f, 8.9f }, v2f { 2.3f, 2.3f } };
+        v2 playerWorldPos = { (stage->size.width / 2.0f) - 6.0f, 3.0f }, enemyWorldPos = { (stage->size.width / 2.0f) + 6.0f, 3.0f };
+        HurtBox playerDefaultHurtBox { playerWorldPos, v2 { 2.0f, 8.9f }, v2 { 2.3f, 2.3f } };
+        //HurtBox enemyDefaultHurtBox { enemyWorldPos, v2 { -2.0f, 8.9f }, v2 { 2.3f, 2.3f } };
         InitFighter($(*player), playerAnimData, playerSkel, /*player height*/ 20.0f, playerDefaultHurtBox, playerWorldPos, /*flipX*/ false);
         //InitFighter($(*enemy), enemyAnimData, enemySkel, /*player height*/ enemySkel.height, enemyDefaultHurtBox, enemyWorldPos, /*flipX*/ false );
         
@@ -364,6 +364,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //SetIdleAnimation($(enemy->animQueue), enemy->animData, "idle");
         
         gState->openGLRenderTest = LoadBitmap_BGRA("data/left-bicep.png");
+        
+        v2 vec2 {.4f, .2f};
+        v3 vec3 = { vec2, 1.0f};
+        //v4 vec4 = {v3{0.0f, 0.0f, 0.0f}, 1.0f};
     };
     
     Animation playerCurrentAnim = UpdateAnimationState($(player->animQueue), deltaT);
@@ -407,19 +411,19 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
                 
                 AtlasRegion* region = &currentSlot->regionAttachment.region_image;
-                Array<v2f, 2> uvs2 = { v2f { region->u, region->v }, v2f { region->u2, region->v2 } };
+                Array<v2, 2> uvs2 = { v2 { region->u, region->v }, v2 { region->u2, region->v2 } };
                 
                 Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
                 Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
                 Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, currentSlot->bone->worldSpace);
                 
-                PushTexture(global_renderingInfo, region_worldSpaceCoords, $(region->page->rendererObject), v2f { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
+                PushTexture(global_renderingInfo, region_worldSpaceCoords, $(region->page->rendererObject), v2 { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
             };
         };
         
         //Push background
 #if 1
-        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
+        Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
         //PushTexture(global_renderingInfo, targetRect_worldCoords, $(stage->backgroundImg), stage->size.height, uvs, "background");
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
@@ -429,8 +433,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         DrawFighter(*player);
         //DrawFighter(*enemy);
         
-        v2f line_minPoint = {(stage->size.width / 2.0f) - 9.0f, 3.0f };
-        v2f line_maxPoint = {(stage->size.width / 2.0f) - 3.0f, 10.0f };
+        v2 line_minPoint = {(stage->size.width / 2.0f) - 9.0f, 3.0f };
+        v2 line_maxPoint = {(stage->size.width / 2.0f) - 3.0f, 10.0f };
         
         PushLine(global_renderingInfo, line_minPoint, line_maxPoint, {0.0f, 1.0f, 0.0f}/*color*/, 5.0f/*thickness*/);
         
@@ -445,8 +449,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
 #if 0
         { //Draw collision boxes
-            Quadf playerTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, player->hurtBox.size.width, player->hurtBox.size.height);
-            //Quadf enemyTargetRect_localCoords = ProduceQuadFromCenterPoint(v2f { 0.0f, 0.0f }, enemy->hurtBox.size.width, enemy->hurtBox.size.height);
+            Quadf playerTargetRect_localCoords = ProduceQuadFromCenterPoint(v2 { 0.0f, 0.0f }, player->hurtBox.size.width, player->hurtBox.size.height);
+            //Quadf enemyTargetRect_localCoords = ProduceQuadFromCenterPoint(v2 { 0.0f, 0.0f }, enemy->hurtBox.size.width, enemy->hurtBox.size.height);
             
             Quadf playerTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { player->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
             //Quadf enemyTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { enemy->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
@@ -472,7 +476,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         Quadf textureTargetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, gState->openGLRenderTest.aspectRatio * BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest));
         Quadf textureTargetRect_worldCoords = ParentTransform(textureTargetRect_localCoords, rectTransform);
-        Array<v2f, 2> uvs = { v2f { 0.0f, 0.0f }, v2f { 1.0f, 1.0f } };
+        Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         PushTexture(global_renderingInfo, textureTargetRect_worldCoords, $(gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), uvs, "left-bicep-image");
     };
     

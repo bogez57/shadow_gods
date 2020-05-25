@@ -34,11 +34,11 @@ struct TranslationTimeline
 {
     TranslationTimeline() = default;
     
-    v2f (*GetTransformationVal)(TranslationTimeline, i32);
+    v2 (*GetTransformationVal)(TranslationTimeline, i32);
     b exists { false };
     Array<f32, 10> times;
     Array<CurveType, 10> curves;
-    Array<v2f, 10> translations;
+    Array<v2, 10> translations;
     i32 timesCount {}, curvesCount {}, translationCount {};
 };
 
@@ -46,11 +46,11 @@ struct ScaleTimeline
 {
     ScaleTimeline() = default;
     
-    v2f (*GetTransformationVal)(ScaleTimeline, i32);
+    v2 (*GetTransformationVal)(ScaleTimeline, i32);
     b exists { false };
     Array<f32, 10> times;
     Array<CurveType, 10> curves;
-    Array<v2f, 10> scales;
+    Array<v2, 10> scales;
     i32 timesCount {}, curvesCount {}, scaleCount {};
 };
 
@@ -59,12 +59,12 @@ f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, i32
     return rotationTimeline.angles[keyFrameIndex];
 };
 
-v2f GetTransformationVal_TranslationTimeline(TranslationTimeline translationTimeline, i32 keyFrameIndex)
+v2 GetTransformationVal_TranslationTimeline(TranslationTimeline translationTimeline, i32 keyFrameIndex)
 {
     return translationTimeline.translations[keyFrameIndex];
 };
 
-v2f GetTransformationVal_ScaleTimeline(ScaleTimeline scaleTimeline, i32 keyFrameIndex)
+v2 GetTransformationVal_ScaleTimeline(ScaleTimeline scaleTimeline, i32 keyFrameIndex)
 {
     return scaleTimeline.scales[keyFrameIndex];
 };
@@ -100,7 +100,7 @@ struct Animation
     Array<TranslationTimeline, 20> boneTranslationTimelines;
     Array<ScaleTimeline, 20> boneScaleTimelines;
     Array<f32, 20> boneRotations;
-    Array<v2f, 20> boneTranslations;
+    Array<v2, 20> boneTranslations;
 };
 
 struct AnimationMap
@@ -308,7 +308,7 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
                     
                     Temporary_Memory collisionVertsTemp = BeginTemporaryMemory($(memPart));
                     {
-                        RunTimeArr<v2f> adjustedCollisionBoxVerts, finalCollsionBoxVertCoords;
+                        RunTimeArr<v2> adjustedCollisionBoxVerts, finalCollsionBoxVertCoords;
                         InitArr($(adjustedCollisionBoxVerts), &memPart, 20);
                         InitArr($(finalCollsionBoxVertCoords), &memPart, 20);
                         
@@ -321,16 +321,16 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
                         for (i32 i {}; i < numVerts; ++i)
                         {
                             //Read in adjusted/deformed vert data from individual animation json info
-                            adjustedCollisionBoxVerts.Push() = v2f { deformedVerts_json->valueFloat, deformedVerts_json->next->valueFloat };
+                            adjustedCollisionBoxVerts.Push() = v2 { deformedVerts_json->valueFloat, deformedVerts_json->next->valueFloat };
                             deformedVerts_json = deformedVerts_json->next->next;
                             
                             //Transform original verts into new transformed vert positions based on anim deformed verts
-                            v2f finalVertCoord = bone->originalCollisionBoxVerts[i] + adjustedCollisionBoxVerts[i];
+                            v2 finalVertCoord = bone->originalCollisionBoxVerts[i] + adjustedCollisionBoxVerts[i];
                             finalCollsionBoxVertCoords.Push() = finalVertCoord;
                         };
                         
-                        v2f vector0_1 = finalCollsionBoxVertCoords[0] - finalCollsionBoxVertCoords[1];
-                        v2f vector1_2 = finalCollsionBoxVertCoords[1] - finalCollsionBoxVertCoords[2];
+                        v2 vector0_1 = finalCollsionBoxVertCoords[0] - finalCollsionBoxVertCoords[1];
+                        v2 vector1_2 = finalCollsionBoxVertCoords[1] - finalCollsionBoxVertCoords[2];
                         
                         anim->hitBoxes[hitBoxIndex].size.width = Magnitude(vector0_1);
                         anim->hitBoxes[hitBoxIndex].size.height = Magnitude(vector1_2);
@@ -620,8 +620,8 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     auto DetermineRotationAmountAndDirection = [](TransformationRangeResult<f32> rotationRange, f32 boneLength) -> f32 {
         f32 amountOfRotation {};
         
-        v2f boneVector_frame0 = { boneLength * CosR(rotationRange.transformation0), boneLength * SinR(rotationRange.transformation0) };
-        v2f boneVector_frame1 = { boneLength * CosR(rotationRange.transformation1), boneLength * SinR(rotationRange.transformation1) };
+        v2 boneVector_frame0 = { boneLength * CosR(rotationRange.transformation0), boneLength * SinR(rotationRange.transformation0) };
+        v2 boneVector_frame1 = { boneLength * CosR(rotationRange.transformation1), boneLength * SinR(rotationRange.transformation1) };
         f32 directionOfRotation = CrossProduct(boneVector_frame0, boneVector_frame1);
         
         if (directionOfRotation > 0) //Rotate counter-clockwise
@@ -682,7 +682,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         const Bone* bone = anim->bones[boneIndex];
         
         //Gather transformation timelines
-        v2f amountOfTranslation { 0.0f, 0.0f };
+        v2 amountOfTranslation { 0.0f, 0.0f };
         f32 amountOfRotation { 0.0f };
         TranslationTimeline translationTimelineOfBone = anim->boneTranslationTimelines[boneIndex];
         RotationTimeline rotationTimelineOfBone = anim->boneRotationTimelines[boneIndex];
@@ -699,14 +699,14 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
                 if (nextAnimInQueue)
                     nextAnimTranslationTimeline = nextAnimInQueue->boneTranslationTimelines[boneIndex];
                 
-                TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, anim->bones[boneIndex]->initialTranslationForMixing);
+                TransformationRangeResult<v2> translationRange = _GetTransformationRangeFromKeyFrames<v2, TranslationTimeline>(anim, translationTimelineOfBone, nextAnimTranslationTimeline, anim->currentTime, anim->bones[boneIndex]->initialTranslationForMixing);
                 amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
             }
             else
             {
                 if (translationTimelineOfBone.exists)
                 {
-                    TransformationRangeResult<v2f> translationRange = _GetTransformationRangeFromKeyFrames<v2f, TranslationTimeline>(translationTimelineOfBone, anim->currentTime);
+                    TransformationRangeResult<v2> translationRange = _GetTransformationRangeFromKeyFrames<v2, TranslationTimeline>(translationTimelineOfBone, anim->currentTime);
                     amountOfTranslation = Lerp(translationRange.transformation0, translationRange.transformation1, translationRange.percentToLerp);
                 };
             };
@@ -786,7 +786,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
         f32 boneRotationToAdd = anim.boneRotations[boneIndex];
         skel.bones[boneIndex].parentBoneSpace.rotation += boneRotationToAdd;
         
-        v2f boneTranslationToAdd = anim.boneTranslations[boneIndex];
+        v2 boneTranslationToAdd = anim.boneTranslations[boneIndex];
         skel.bones[boneIndex].parentBoneSpace.translation += boneTranslationToAdd;
     };
 };
