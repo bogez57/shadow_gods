@@ -8,18 +8,17 @@ R"HereDoc(
 
 #version 430
 
-in layout(location=0) vec4 position;
+in layout(location=0) vec3 position;
 in layout(location=1) vec3 color;
 out vec3 fragColor;
 
+uniform mat4 transformationMatrix;
+
 void main()
 {
-    gl_Position = position;
-    vec3 changedColors;
-    changedColors.r += color.r + .41;
-    changedColors.g += color.g + .04;
-    changedColors.b += color.b + .02;
-    fragColor = changedColors;
+vec4 newPos = vec4(position, 1.0) * transformationMatrix;//vector is on the left side because my matrices are row major
+    gl_Position = newPos;
+    fragColor = color;
 };
 
 )HereDoc";
@@ -470,39 +469,19 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     return result;
 };
 
-void DrawCube(Array<v4, NUM_VERTS> cubeVerts_glClipSpace)
+void DrawCube(Array<v3, NUM_VERTS> cubeVerts_glClipSpace)
 {
-    GLfloat verts[NUM_VERTS * 7] = {};
+    GLfloat verts[NUM_VERTS * 6] = {};
     i32 i{};
-    f32 colorR{}, colorG{}, colorB{};
+    f32 colorR{0.5f}, colorG{0.4f}, colorB{};
     for(i32 j{}; j < NUM_VERTS; ++j)
     {
         verts[i++] = cubeVerts_glClipSpace[j].x;
         verts[i++] = cubeVerts_glClipSpace[j].y;
         verts[i++] = cubeVerts_glClipSpace[j].z;
-        verts[i++] = cubeVerts_glClipSpace[j].w;
         verts[i++] = colorR;
         verts[i++] = colorG;
         verts[i++] = colorB;
-        
-        if(colorR > 1.0f)
-        {
-            colorR = 0.0f;
-        };
-        
-        if(colorG > 1.0f)
-        {
-            colorG = 0.0f;
-        };
-        
-        if(colorB > 1.0f)
-        {
-            colorB = 0.0f;
-        };
-        
-        colorR += .01f;
-        colorG += .54f;
-        colorB += .27f;
     };
     
     GLuint bufferID;
@@ -510,9 +489,9 @@ void DrawCube(Array<v4, NUM_VERTS> cubeVerts_glClipSpace)
     glBindBuffer(GL_ARRAY_BUFFER, bufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
     
     GLuint indexBufferID;
     glGenBuffers(1, &indexBufferID);
@@ -545,11 +524,10 @@ void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 w
     
     mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
     
-    Array<v4, NUM_VERTS> cubeVerts_openGLClipSpace{};
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        cubeVerts_openGLClipSpace[i] = fullTransformMatrix * v4{cube.verts[i], 1.0f};
+    GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
+    glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
     
-    DrawCube(cubeVerts_openGLClipSpace);
+    DrawCube(cube.verts);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
@@ -670,7 +648,6 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 cube1_worldT.rotation.y += .01f;
                 
                 ProjectionTestUsingFullSquare(cube0, cube0_worldT, (f32)windowWidth, (f32)windowHeight);
-                ProjectionTestUsingFullSquare(cube1, cube1_worldT, (f32)windowWidth, (f32)windowHeight);
             }break;
             
             InvalidDefaultCase;
