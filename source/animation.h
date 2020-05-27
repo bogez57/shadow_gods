@@ -22,49 +22,49 @@ struct RotationTimeline
 {
     RotationTimeline() = default;
     
-    f32 (*GetTransformationVal)(RotationTimeline, i32);
-    b exists { false };
+    f32 (*GetTransformationVal)(RotationTimeline, s32);
+    bool  exists { false };
     Array<f32, 10> times;
     Array<CurveType, 10> curves;
     Array<f32, 10> angles;
-    i32 timesCount {}, curvesCount {}, anglesCount {};
+    s32 timesCount {}, curvesCount {}, anglesCount {};
 };
 
 struct TranslationTimeline
 {
     TranslationTimeline() = default;
     
-    v2f (*GetTransformationVal)(TranslationTimeline, i32);
-    b exists { false };
+    v2f (*GetTransformationVal)(TranslationTimeline, s32);
+    bool  exists { false };
     Array<f32, 10> times;
     Array<CurveType, 10> curves;
     Array<v2f, 10> translations;
-    i32 timesCount {}, curvesCount {}, translationCount {};
+    s32 timesCount {}, curvesCount {}, translationCount {};
 };
 
 struct ScaleTimeline
 {
     ScaleTimeline() = default;
     
-    v2f (*GetTransformationVal)(ScaleTimeline, i32);
-    b exists { false };
+    v2f (*GetTransformationVal)(ScaleTimeline, s32);
+    bool exists { false };
     Array<f32, 10> times;
     Array<CurveType, 10> curves;
     Array<v2f, 10> scales;
-    i32 timesCount {}, curvesCount {}, scaleCount {};
+    s32 timesCount {}, curvesCount {}, scaleCount {};
 };
 
-f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, i32 keyFrameIndex)
+f32 GetTransformationVal_RotationTimeline(RotationTimeline rotationTimeline, s32 keyFrameIndex)
 {
     return rotationTimeline.angles[keyFrameIndex];
 };
 
-v2f GetTransformationVal_TranslationTimeline(TranslationTimeline translationTimeline, i32 keyFrameIndex)
+v2f GetTransformationVal_TranslationTimeline(TranslationTimeline translationTimeline, s32 keyFrameIndex)
 {
     return translationTimeline.translations[keyFrameIndex];
 };
 
-v2f GetTransformationVal_ScaleTimeline(ScaleTimeline scaleTimeline, i32 keyFrameIndex)
+v2f GetTransformationVal_ScaleTimeline(ScaleTimeline scaleTimeline, s32 keyFrameIndex)
 {
     return scaleTimeline.scales[keyFrameIndex];
 };
@@ -90,9 +90,9 @@ struct Animation
     f32 currentMixTime {};
     f32 initialTimeLeftInAnimAtMixingStart {};
     PlayBackStatus status { PlayBackStatus::DEFAULT };
-    b repeat { false };
-    b hasEnded { false };
-    b MixingStarted { false };
+    bool repeat { false };
+    bool hasEnded { false };
+    bool MixingStarted { false };
     DbgArray<HitBox, 10> hitBoxes;
     DbgArray<Animation*, 10> animsToTransitionTo;
     Array<Bone*, 20> bones;
@@ -106,10 +106,10 @@ struct Animation
 struct AnimationMap
 {
     RunTimeArr<Animation> animations {};
-    RunTimeArr<i32> keys {};
+    RunTimeArr<s32> keys {};
 };
 
-void InitAnimMap(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
+void InitAnimMap(AnimationMap&& animMap, Memory_Partition&& memPart, s32 size)
 {
     InitArr($(animMap.animations), &memPart, size);
     InitArr($(animMap.keys), &memPart, size);
@@ -117,8 +117,8 @@ void InitAnimMap(AnimationMap&& animMap, Memory_Partition&& memPart, i32 size)
 
 void InsertAnimation(AnimationMap&& animMap, const char* animName, Animation anim)
 {
-    i32 uniqueID {};
-    for (i32 i {}; animName[i] != 0; ++i)//TODO: Using this method to come up with keys isn't full proof. Could have a name with same letters in different order and it would produce conflicting keys. Prob need to change.
+    s32 uniqueID {};
+    for (s32 i {}; animName[i] != 0; ++i)//TODO: Using this method to come up with keys isn't full proof. Could have a name with same letters in different order and it would produce conflicting keys. Prob need to change.
         uniqueID += animName[i];
     
     animMap.keys.Push() = uniqueID;
@@ -127,12 +127,12 @@ void InsertAnimation(AnimationMap&& animMap, const char* animName, Animation ani
 
 Animation* GetAnimation(AnimationMap animMap, const char* animName)
 {
-    i32 uniqueID {};
-    for (i32 i {}; animName[i] != 0; ++i)
+    s32 uniqueID {};
+    for (s32 i {}; animName[i] != 0; ++i)
         uniqueID += animName[i];
     
-    i32 keyIndex { -1 };
-    for (i32 i {}; i < animMap.keys.length; ++i)
+    s32 keyIndex { -1 };
+    for (s32 i {}; i < animMap.keys.length; ++i)
     {
         if (uniqueID == animMap.keys[i])
         {
@@ -158,7 +158,7 @@ struct AnimationQueue
 {
     AnimationQueue() = default;
     
-    b hasIdleAnim { false };
+    bool hasIdleAnim { false };
     Animation idleAnim;
     Ring_Buffer<Animation, 10> queuedAnimations;
 };
@@ -177,7 +177,7 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel)
 {
-    i32 length;
+    s32 length;
     
     const char* jsonFile = globalPlatformServices->ReadEntireFile($(length), animDataJsonFilePath);
     
@@ -187,7 +187,7 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
     
     InitAnimMap($(animData.animMap), $(memPart), 20);
     
-    i32 animIndex {};
+    s32 animIndex {};
     for (Json* currentAnimation_json = animations ? animations->child : 0; currentAnimation_json; currentAnimation_json = currentAnimation_json->next, ++animIndex)
     {
         Animation newAnimation {};
@@ -196,15 +196,15 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
         
         anim->name = currentAnimation_json->name;
         
-        for (i32 i {}; i < anim->bones.Size(); ++i)
+        for (s32 i {}; i < anim->bones.Size(); ++i)
             anim->bones[i] = &skel.bones[i];
         
         Json* bonesOfAnimation = Json_getItem(currentAnimation_json, "bones");
-        i32 boneIndex_json {};
+        s32 boneIndex_json {};
         f32 maxTimeOfAnimation {};
         for (Json* currentBone = bonesOfAnimation ? bonesOfAnimation->child : 0; currentBone; currentBone = currentBone->next, ++boneIndex_json)
         {
-            i32 boneIndex {};
+            s32 boneIndex {};
             while (boneIndex < anim->bones.Size())
             {
                 if (StringCmp(anim->bones[boneIndex]->name, currentBone->name))
@@ -223,7 +223,7 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
                 boneRotationTimeline->exists = true;
                 boneRotationTimeline->GetTransformationVal = &GetTransformationVal_RotationTimeline;
                 
-                i32 keyFrameIndex {};
+                s32 keyFrameIndex {};
                 for (Json* jsonKeyFrame = rotateTimeline_json ? rotateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
                     boneRotationTimeline->times[boneRotationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
@@ -248,7 +248,7 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
                 boneTranslationTimeline->exists = true;
                 boneTranslationTimeline->GetTransformationVal = &GetTransformationVal_TranslationTimeline;
                 
-                i32 keyFrameIndex {};
+                s32 keyFrameIndex {};
                 for (Json* jsonKeyFrame = translateTimeline_json ? translateTimeline_json->child : 0; jsonKeyFrame; jsonKeyFrame = jsonKeyFrame->next, ++keyFrameIndex)
                 {
                     boneTranslationTimeline->times[boneTranslationTimeline->timesCount++] = Json_getFloat(jsonKeyFrame, "time", 0.0f);
@@ -281,7 +281,7 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
             
             if (collisionBoxesOfAnimation_json)
             {
-                i32 hitBoxIndex {};
+                s32 hitBoxIndex {};
                 for (Json* currentCollisionBox_json = collisionBoxesOfAnimation_json ? collisionBoxesOfAnimation_json->child : 0; currentCollisionBox_json; currentCollisionBox_json = currentCollisionBox_json->next, ++hitBoxIndex)
                 {
                     anim->hitBoxes.Push() = HitBox {};
@@ -289,8 +289,8 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
                     
                     { //Get bone name collision box is attached to by cutting out "box-" prefix
                         char boneName[100] = {};
-                        i32 j { 0 };
-                        for (i32 i = 4; i < strlen(currentCollisionBox_json->name); ++i, ++j)
+                        s32 j { 0 };
+                        for (s32 i = 4; i < strlen(currentCollisionBox_json->name); ++i, ++j)
                             boneName[j] = currentCollisionBox_json->name[i];
                         
                         memcpy(anim->hitBoxes[hitBoxIndex].boneName, boneName, strlen(boneName));
@@ -317,8 +317,8 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
                         Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
                         
                         Bone* bone = GetBoneFromSkeleton(&skel, anim->hitBoxes[hitBoxIndex].boneName);
-                        i32 numVerts = (i32)bone->originalCollisionBoxVerts.length;
-                        for (i32 i {}; i < numVerts; ++i)
+                        s32 numVerts = (s32)bone->originalCollisionBoxVerts.length;
+                        for (s32 i {}; i < numVerts; ++i)
                         {
                             //Read in adjusted/deformed vert data from individual animation json info
                             adjustedCollisionBoxVerts.Push() = v2f { deformedVerts_json->valueFloat, deformedVerts_json->next->valueFloat };
@@ -361,7 +361,7 @@ void MixAnimations(AnimationData&& animData, const char* animName_from, const ch
     
     if (anim_from->animsToTransitionTo.length > 0)
     {
-        for (i32 i {}; i < anim_from->animsToTransitionTo.length; ++i)
+        for (s32 i {}; i < anim_from->animsToTransitionTo.length; ++i)
         {
             BGZ_ASSERT(NOT StringCmp(anim_from->animsToTransitionTo[i]->name, anim_to.name), "Duplicate mix animation tyring to be set");
         };
@@ -380,7 +380,7 @@ void CopyAnimation(Animation src, Animation&& dest)
 {
     dest = src;
     
-    for (i32 boneIndex {}; boneIndex < src.bones.Size(); ++boneIndex)
+    for (s32 boneIndex {}; boneIndex < src.bones.Size(); ++boneIndex)
     {
         CopyArray(src.boneTranslationTimelines[boneIndex].times, $(dest.boneTranslationTimelines[boneIndex].times));
         CopyArray(src.boneTranslationTimelines[boneIndex].translations, $(dest.boneTranslationTimelines[boneIndex].translations));
@@ -474,12 +474,12 @@ void QueueAnimation(AnimationQueue&& animQueue, const AnimationData animData, co
 
 //Returns lower keyFrame of range(e.g. if range is between 0 - 1 then keyFrame number 0 is returned)
 template <typename TransformationTimelineType>
-i32 _CurrentActiveKeyFrame(TransformationTimelineType transformationTimelineOfBone, f32 currentAnimRuntime)
+s32 _CurrentActiveKeyFrame(TransformationTimelineType transformationTimelineOfBone, f32 currentAnimRuntime)
 {
     BGZ_ASSERT(transformationTimelineOfBone.exists, "Trying to get keyframes from a timeline that does not exist");
     
-    i32 result {};
-    i32 keyFrameCount = (i32)transformationTimelineOfBone.timesCount - 1;
+    s32 result {};
+    s32 keyFrameCount = (s32)transformationTimelineOfBone.timesCount - 1;
     
     f32 keyFrameTime0 {};
     f32 keyFrameTime1 = transformationTimelineOfBone.times[keyFrameCount];
@@ -518,7 +518,7 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
     
     TransformationRangeResult<TransformationType> result {};
     
-    i32 firstKeyFrame { 0 }, lastKeyFrame { (i32)transformationTimelineOfBone.timesCount - 1 };
+    s32 firstKeyFrame { 0 }, lastKeyFrame { (s32)transformationTimelineOfBone.timesCount - 1 };
     if (transformationTimelineOfBone.timesCount == 1)
     {
         if (currentAnimRunTime >= transformationTimelineOfBone.times[firstKeyFrame])
@@ -530,7 +530,7 @@ TransformationRangeResult<TransformationType> _GetTransformationRangeFromKeyFram
     }
     else if (currentAnimRunTime >= transformationTimelineOfBone.times[firstKeyFrame] && currentAnimRunTime < transformationTimelineOfBone.times[lastKeyFrame])
     {
-        i32 activeKeyFrameIndex = _CurrentActiveKeyFrame(transformationTimelineOfBone, currentAnimRunTime);
+        s32 activeKeyFrameIndex = _CurrentActiveKeyFrame(transformationTimelineOfBone, currentAnimRunTime);
         BGZ_ASSERT(activeKeyFrameIndex != lastKeyFrame, "Should never be returning the last keyframe of timeline here!");
         
         switch (transformationTimelineOfBone.curves[activeKeyFrameIndex])
@@ -584,7 +584,7 @@ TransformationRangeResult<transformationRangeType> _GetTransformationRangeFromKe
     
     else if ((boneRotationTimeline_originalAnim.exists && boneRotationTimeline_nextAnim.exists) || (boneRotationTimeline_originalAnim.exists && NOT boneRotationTimeline_nextAnim.exists))
     {
-        i32 firstKeyFrame_index = 0;
+        s32 firstKeyFrame_index = 0;
         result.transformation1 = boneRotationTimeline_nextAnim.GetTransformationVal(boneRotationTimeline_nextAnim, firstKeyFrame_index);
     }
     
@@ -603,7 +603,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
             anim.initialTimeLeftInAnimAtMixingStart = amountOfTimeLeftInAnim;
             anim.MixingStarted = true;
             
-            for (i32 boneIndex {}; boneIndex < anim.bones.Size(); ++boneIndex)
+            for (s32 boneIndex {}; boneIndex < anim.bones.Size(); ++boneIndex)
             {
                 anim.bones[boneIndex]->initialRotationForMixing = anim.boneRotations[boneIndex];
                 anim.bones[boneIndex]->initialTranslationForMixing = anim.boneTranslations[boneIndex];
@@ -663,7 +663,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
         Animation* nextAnimInQueue = animQueue.queuedAnimations.GetNextElem();
         if (nextAnimInQueue)
         {
-            for (i32 animIndex {}; animIndex < anim->animsToTransitionTo.length; ++animIndex)
+            for (s32 animIndex {}; animIndex < anim->animsToTransitionTo.length; ++animIndex)
             {
                 if (StringCmp(anim->animsToTransitionTo[animIndex]->name, nextAnimInQueue->name))
                 {
@@ -677,7 +677,7 @@ Animation UpdateAnimationState(AnimationQueue&& animQueue, f32 prevFrameDT)
     };
     
     f32 maxTimeOfAnimation {};
-    for (i32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
+    for (s32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
     {
         const Bone* bone = anim->bones[boneIndex];
         
@@ -781,7 +781,7 @@ void ApplyAnimationToSkeleton(Skeleton&& skel, Animation anim)
 {
     ResetBonesToSetupPose($(skel));
     
-    for (i32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
+    for (s32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
     {
         f32 boneRotationToAdd = anim.boneRotations[boneIndex];
         skel.bones[boneIndex].parentBoneSpace.rotation += boneRotationToAdd;

@@ -11,7 +11,7 @@ struct Collision_Box
 {
     Collision_Box() = default;
     Collision_Box(v2f worldPos, v2f worldPosOffset, v2f size);
-
+    
     AABB bounds;
     v2f worldPosOffset {};
     v2f pos_worldSpace {};
@@ -22,13 +22,13 @@ struct HitBox : public Collision_Box
 {
     HitBox() = default;
     HitBox(v2f worldPos, v2f worldPosOffset, v2f size);
-
-    b isActive { false };
+    
+    bool isActive { false };
     char* boneName;
     f32 endTime {};
     f32 duration {};
     f32 timeUntilHitBoxIsActivated {};
-    b timerStarted { false };
+    bool timerStarted { false };
 };
 
 struct HurtBox : public Collision_Box
@@ -46,45 +46,45 @@ b CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Bo
 #ifdef COLLISION_DETECTION_IMPL
 
 Collision_Box::Collision_Box(v2f worldPos, v2f worldPosOffset, v2f size)
-    : worldPosOffset(worldPosOffset)
-    , size(size)
+: worldPosOffset(worldPosOffset)
+, size(size)
 {
     this->pos_worldSpace = worldPos;
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(*this), worldPos);
 }
 
 HurtBox::HurtBox(v2f worldPos, v2f worldPosOffset, v2f size)
-    : Collision_Box(worldPos, worldPosOffset, size)
+: Collision_Box(worldPos, worldPosOffset, size)
 {}
 
 HitBox::HitBox(v2f worldPos, v2f worldPosOffset, v2f size)
-    : Collision_Box(worldPos, worldPosOffset, size)
+: Collision_Box(worldPos, worldPosOffset, size)
 {}
 
 void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& collisionBox, v2f newWorldPos)
 {
     collisionBox.pos_worldSpace = newWorldPos + collisionBox.worldPosOffset;
-
+    
     collisionBox.bounds.minCorner.x = collisionBox.pos_worldSpace.x - (collisionBox.size.x / 2.0f);
     collisionBox.bounds.minCorner.y = collisionBox.pos_worldSpace.y - (collisionBox.size.y / 2.0f);
     collisionBox.bounds.maxCorner.x = collisionBox.pos_worldSpace.x + (collisionBox.size.x / 2.0f);
     collisionBox.bounds.maxCorner.y = collisionBox.pos_worldSpace.y + (collisionBox.size.y / 2.0f);
 };
 
-local_func b CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Box fighter2Box)
+local_func bool CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Box fighter2Box)
 {
     // Exit returning NO intersection between bounding boxes
     if (fighter1Box.bounds.maxCorner.x < fighter2Box.bounds.minCorner.x || fighter1Box.bounds.minCorner.x > fighter2Box.bounds.maxCorner.x)
     {
         return false;
     };
-
+    
     // Exit returning NO intersection between bounding boxes
     if (fighter1Box.bounds.maxCorner.y < fighter2Box.bounds.minCorner.y || fighter1Box.bounds.minCorner.y > fighter2Box.bounds.maxCorner.y)
     {
         return false;
     };
-
+    
     // Else intersection and thus collision has occured!
     return true;
 };
@@ -93,7 +93,7 @@ void UpdateHitBoxStatus(HitBox&& hitBox, f32 currentAnimRunTime)
 {
     if (currentAnimRunTime > hitBox.timeUntilHitBoxIsActivated && currentAnimRunTime < hitBox.timeUntilHitBoxIsActivated + hitBox.duration)
         hitBox.endTime = globalPlatformServices->realLifeTimeInSecs + hitBox.duration;
-
+    
     if (globalPlatformServices->realLifeTimeInSecs <= hitBox.endTime)
         hitBox.isActive = true;
     else
@@ -103,10 +103,10 @@ void UpdateHitBoxStatus(HitBox&& hitBox, f32 currentAnimRunTime)
 local_func v2f FindCenterOfRectangle(AABB rectangle)
 {
     v2f centerPoint {};
-
+    
     centerPoint.x = ((rectangle.minCorner.x + rectangle.maxCorner.x) / 2);
     centerPoint.y = ((rectangle.maxCorner.y + rectangle.maxCorner.y) / 2);
-
+    
     return centerPoint;
 };
 

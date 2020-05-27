@@ -26,7 +26,7 @@ Mod(f32 x, f32 y)
 };
 
 inline void
-AbsoluteVal(i32&& Value)
+AbsoluteVal(s32&& Value)
 {
     Value = abs(Value);
 }
@@ -214,17 +214,17 @@ Floor(f32 floatToFloor)
     return result;
 };
 
-inline i32
+inline s32
 FloorF32ToI32(f32 floatToFloor)
 {
-    i32 result = (i32)floorf(floatToFloor);
+    s32 result = (s32)floorf(floatToFloor);
     return result;
 };
 
-inline i32
+inline s32
 CeilF32ToI32(f32 floatToCeil)
 {
-    i32 result = (i32)ceilf(floatToCeil);
+    s32 result = (s32)ceilf(floatToCeil);
     return result;
 };
 

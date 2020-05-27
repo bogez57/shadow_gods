@@ -27,7 +27,7 @@ struct Bone
     Bone* parentBone { nullptr };
     RunTimeArr<v2f> originalCollisionBoxVerts;
     RunTimeArr<Bone*> childBones;
-    b isRoot { false };
+    bool isRoot { false };
     const char* name { nullptr };
 };
 
@@ -68,7 +68,7 @@ Bone InitBone(Memory_Partition&& memPart)
 
 void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFilePath, const char* jsonFilePath)
 {
-    i32 length;
+    s32 length;
     
     const char* skeletonJson = globalPlatformServices->ReadEntireFile($(length), jsonFilePath);
     
@@ -88,7 +88,7 @@ void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFile
         skel.height = Json_getFloat(jsonSkeleton, "height", 0.0f);
         
         { //Read in Bone data
-            i32 boneIndex {};
+            s32 boneIndex {};
             InitArr($(skel.bones), &memPart, jsonBones->size);
             for (Json* currentBone_json = jsonBones->child; boneIndex < jsonBones->size; currentBone_json = currentBone_json->next, ++boneIndex)
             {
@@ -121,8 +121,8 @@ void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFile
                         Json* collisionBox_json = Json_getItem(defaultSkinAttachments_json, nameOfCollisionBoxAttachment)->child;
                         Json* verts_json = Json_getItem(collisionBox_json, "vertices")->child;
                         
-                        i32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
-                        for (i32 i {}; i < numVerts; ++i)
+                        s32 numVerts = Json_getInt(collisionBox_json, "vertexCount", 0);
+                        for (s32 i {}; i < numVerts; ++i)
                         {
                             bone->originalCollisionBoxVerts.Push() = v2f { verts_json->valueFloat, verts_json->next->valueFloat };
                             verts_json = verts_json->next->next;
@@ -139,7 +139,7 @@ void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFile
         };
         
         { //Read in Slot data
-            i32 slotIndex {};
+            s32 slotIndex {};
             InitArr($(skel.slots), &memPart, jsonBones->size);
             for (Json* currentSlot_json = jsonSlots->child; slotIndex < jsonSlots->size; currentSlot_json = currentSlot_json->next, ++slotIndex)
             {
@@ -162,7 +162,7 @@ void InitSkel(Skeleton&& skel, Memory_Partition&& memPart, const char* atlasFile
                         const char* attachmentName = Json_getString(currentSlot_json, "attachment", 0);
                         Json* jsonDefaultSkin = Json_getItem(skins_json->child, "attachments");
                         
-                        i32 attachmentCounter {};
+                        s32 attachmentCounter {};
                         for (Json* currentBodyPartOfSkin_json = jsonDefaultSkin->child; attachmentCounter < jsonDefaultSkin->size; currentBodyPartOfSkin_json = currentBodyPartOfSkin_json->next, ++attachmentCounter)
                         {
                             Json* jsonAttachment = currentBodyPartOfSkin_json->child;
@@ -223,9 +223,9 @@ Skeleton CopySkeleton(Skeleton src)
     CopyArray(src.bones, $(dest.bones));
     CopyArray(src.slots, $(dest.slots));
     
-    for (i32 boneIndex {}; boneIndex < src.bones.length; ++boneIndex)
+    for (s32 boneIndex {}; boneIndex < src.bones.length; ++boneIndex)
     {
-        for (i32 childBoneIndex {}; childBoneIndex < src.bones[boneIndex].childBones.size; ++childBoneIndex)
+        for (s32 childBoneIndex {}; childBoneIndex < src.bones[boneIndex].childBones.size; ++childBoneIndex)
         {
             const char* childBoneName = src.bones[boneIndex].childBones.At(childBoneIndex)->name;
             Bone* bone = GetBoneFromSkeleton(&dest, (char*)childBoneName);
@@ -238,7 +238,7 @@ Skeleton CopySkeleton(Skeleton src)
 
 void ResetBonesToSetupPose(Skeleton&& skel)
 {
-    for (i32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
+    for (s32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
     {
         skel.bones[boneIndex].parentBoneSpace.rotation = skel.bones[boneIndex].initialRotation_parentBoneSpace;
         skel.bones[boneIndex].parentBoneSpace.translation = skel.bones[boneIndex].initialPos_parentBoneSpace;
@@ -249,7 +249,7 @@ Bone* GetBoneFromSkeleton(Skeleton* skeleton, char* boneName)
 {
     Bone* bone {};
     
-    for (i32 i = 0; i < skeleton->bones.length; ++i)
+    for (s32 i = 0; i < skeleton->bones.length; ++i)
     {
         if (StringCmp(skeleton->bones[i].name, boneName))
         {
@@ -317,7 +317,7 @@ inline void UpdateBoneChainsWorldPositions_StartingFrom(Bone&& mainBone)
 {
     if (mainBone.childBones.length > 0)
     {
-        for (i32 childBoneIndex {}; childBoneIndex < mainBone.childBones.length; ++childBoneIndex)
+        for (s32 childBoneIndex {}; childBoneIndex < mainBone.childBones.length; ++childBoneIndex)
         {
             Bone* childBone = mainBone.childBones[childBoneIndex];
             childBone->worldSpace.translation = WorldTransform_Bone(childBone->parentBoneSpace.translation, *childBone->parentBone);
@@ -333,7 +333,7 @@ void UpdateSkeletonBoneWorldTransforms(Skeleton&& fighterSkel, v2f fighterWorldP
     
     UpdateBoneChainsWorldPositions_StartingFrom($(*root));
     
-    for (i32 i {}; i < fighterSkel.bones.length; ++i)
+    for (s32 i {}; i < fighterSkel.bones.length; ++i)
     {
         fighterSkel.bones[i].worldSpace.translation += fighterWorldPos;
         fighterSkel.bones[i].worldSpace.rotation = WorldRotation_Bone(fighterSkel.bones[i]);

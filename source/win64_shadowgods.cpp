@@ -55,11 +55,11 @@
 #define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_context.cpp>
 
-global_variable ui32 globalWindowWidth { 1280 };
-global_variable ui32 globalWindowHeight { 720 };
+global_variable u32 globalWindowWidth { 1280 };
+global_variable u32 globalWindowHeight { 720 };
 global_variable Win32::Offscreen_Buffer globalBackBuffer_forSoftwareRendering;
 global_variable Application_Memory gameMemory;
-global_variable bool GameRunning {};
+global_variable bool  GameRunning {};
 
 namespace Win32::Dbg
 {
@@ -116,7 +116,7 @@ namespace Win32::Dbg
     };
     
     local_func auto
-        WriteEntireFile(const char* FileName, void* memory, ui32 MemorySize) -> bool
+        WriteEntireFile(const char* FileName, void* memory, u32 MemorySize) -> bool
     {
         b32 Result = false;
         
@@ -147,7 +147,7 @@ namespace Win32::Dbg
     };
     
     local_func auto
-        ReadEntireFile(i32&& length, const char* FilePath) -> char*
+        ReadEntireFile(s32&& length, const char* FilePath) -> char*
     {
         char* data;
         FILE* file;
@@ -159,7 +159,7 @@ namespace Win32::Dbg
         };
         
         fseek(file, 0, SEEK_END);
-        length = (i32)ftell(file);
+        length = (s32)ftell(file);
         fseek(file, 0, SEEK_SET);
         
         data = (char*)malloc(length);
@@ -171,19 +171,19 @@ namespace Win32::Dbg
     };
     
     local_func auto
-        LoadBGRAImage(const char* ImagePath, i32&& width, i32&& height) -> ui8*
+        LoadBGRAImage(const char* ImagePath, s32&& width, s32&& height) -> u8*
     {
         stbi_set_flip_vertically_on_load(true); //So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
         
-        i32 numOfLoadedChannels {};
-        i32 desiredChannels { 4 }; //Since I still draw assuming 4 byte pixels I need 4 channels
+        s32 numOfLoadedChannels {};
+        s32 desiredChannels { 4 }; //Since I still draw assuming 4 byte pixels I need 4 channels
         
         //Returns RGBA
         unsigned char* imageData = stbi_load(ImagePath, &width, &height, &numOfLoadedChannels, desiredChannels);
         BGZ_ASSERT(imageData, "Invalid image data!");
         
-        i32 totalPixelCountOfImg = width * height;
-        ui32* imagePixel = (ui32*)imageData;
+        s32 totalPixelCountOfImg = width * height;
+        u32* imagePixel = (u32*)imageData;
         
         //Swap R and B channels of image
         for (int i = 0; i < totalPixelCountOfImg; ++i)
@@ -194,12 +194,12 @@ namespace Win32::Dbg
             f32 alphaBlend = color.a / 255.0f;
             color.rgb *= alphaBlend;
             
-            ui32 newSwappedPixelColor = (((ui8)color.a << 24) | ((ui8)color.r << 16) | ((ui8)color.g << 8) | ((ui8)color.b << 0));
+            u32 newSwappedPixelColor = (((u8)color.a << 24) | ((u8)color.r << 16) | ((u8)color.g << 8) | ((u8)color.b << 0));
             
             *imagePixel++ = newSwappedPixelColor;
         }
         
-        return (ui8*)imageData;
+        return (u8*)imageData;
     }
     
     local_func auto
@@ -254,9 +254,9 @@ namespace Win32::Dbg
         //Copy app code dll file to a temp file and load that temp file so that original app code dll can be written to while exe
         //is running. This is For live editing purposes. Code is currently being looped because the modified source dll that gets compiled
         //apparently isn't unlocked by Windows in time for it to be copied upon the first few CopyFile() function calls.
-        bool CopyFileFuncNotWorking { true };
-        ui32 Counter {};
-        ui32 MaxAllowedLoops { 5000 };
+        bool  CopyFileFuncNotWorking { true };
+        u32 Counter {};
+        u32 MaxAllowedLoops { 5000 };
         
         while (CopyFileFuncNotWorking)
         {
@@ -334,9 +334,9 @@ namespace Win32::Dbg
         EndInputPlayBack(Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void
     {
         GameReplayState.InputPlayBack = false;
-        for (ui32 ControllerIndex { 0 }; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
+        for (u32 ControllerIndex { 0 }; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
         {
-            for (ui32 ButtonIndex { 0 }; ButtonIndex < ArrayCount(Input.Controllers[ControllerIndex].Buttons); ++ButtonIndex)
+            for (u32 ButtonIndex { 0 }; ButtonIndex < ArrayCount(Input.Controllers[ControllerIndex].Buttons); ++ButtonIndex)
             {
                 Input.Controllers[ControllerIndex].Buttons[ButtonIndex].Pressed = false;
             }
@@ -412,7 +412,7 @@ namespace Win32
     local_func void
         DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
-        b renderThroughHardware { true };
+        bool renderThroughHardware { false };
         if (renderThroughHardware)
         {
             RenderViaHardware($(renderingInfo), windowWidth, windowHeight);
@@ -475,7 +475,7 @@ namespace Win32
                 case WM_SYSKEYUP:
                 case WM_KEYDOWN:
                 case WM_KEYUP: {
-                    ui32 VKCode = (ui32)Message.wParam;
+                    u32 VKCode = (u32)Message.wParam;
                     
                     Game_Controller* Keyboard = &Input.Controllers[0];
                     
@@ -737,10 +737,10 @@ struct Work_Queue_Entry
 struct Work_Queue
 {
     HANDLE semaphoreHandle;
-    i32 volatile entryCompletionGoal;
-    i32 volatile entryCompletionCount;
-    i32 volatile nextEntryToWrite;
-    i32 volatile nextEntryToRead;
+    s32 volatile entryCompletionGoal;
+    s32 volatile entryCompletionCount;
+    s32 volatile nextEntryToWrite;
+    s32 volatile nextEntryToRead;
     Work_Queue_Entry entries[256];
 };
 
@@ -748,12 +748,12 @@ global_variable Work_Queue globalWorkQueue;
 
 struct Thread_Info
 {
-    i32 logicalThreadIndex;
+    s32 logicalThreadIndex;
 };
 
 void AddToWorkQueue(platform_work_queue_callback* callback, void* data)
 {
-    i32 newNextEntryToWrite = (globalWorkQueue.nextEntryToWrite + 1) % ArrayCount(globalWorkQueue.entries);
+    s32 newNextEntryToWrite = (globalWorkQueue.nextEntryToWrite + 1) % ArrayCount(globalWorkQueue.entries);
     Assert(newNextEntryToWrite != globalWorkQueue.nextEntryToRead);
     
     Work_Queue_Entry entry { callback, data };
@@ -781,13 +781,13 @@ void FinishAllWork()
 
 b DoWork()
 {
-    b isThereStillWork {};
+    bool isThereStillWork {};
     
-    i32 originalNextEntryToRead = globalWorkQueue.nextEntryToRead;
-    i32 newNextEntryToRead = (originalNextEntryToRead + 1) % ArrayCount(globalWorkQueue.entries);
+    s32 originalNextEntryToRead = globalWorkQueue.nextEntryToRead;
+    s32 newNextEntryToRead = (originalNextEntryToRead + 1) % ArrayCount(globalWorkQueue.entries);
     if (originalNextEntryToRead != globalWorkQueue.nextEntryToWrite)
     {
-        i32 entryIndex = _InterlockedCompareExchange((LONG volatile*)&globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
+        s32 entryIndex = _InterlockedCompareExchange((LONG volatile*)&globalWorkQueue.nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
         _ReadBarrier();
         
         if (entryIndex == originalNextEntryToRead)
@@ -832,12 +832,12 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     Win32::Dbg::UseConsole();
     
     Thread_Info threadInfo[8] = {};
-    i32 threadCount = ArrayCount(threadInfo);
+    s32 threadCount = ArrayCount(threadInfo);
     
-    i32 initialThreadCount = 0;
+    s32 initialThreadCount = 0;
     globalWorkQueue.semaphoreHandle = CreateSemaphoreExA(0, initialThreadCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
     
-    for (i32 threadIndex {}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
+    for (s32 threadIndex {}; threadIndex < ArrayCount(threadInfo); ++threadIndex)
     {
         
         Thread_Info* info = threadInfo + threadIndex;
@@ -898,8 +898,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "level");
             
             { //Init render command buffer and other render stuff
-                void* renderCommandBaseAddress = (void*)(((ui8*)baseAddress) + gameMemory.totalSize + 1);
-                renderingInfo.cmdBuffer.baseAddress = (ui8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+                void* renderCommandBaseAddress = (void*)(((u8*)baseAddress) + gameMemory.totalSize + 1);
+                renderingInfo.cmdBuffer.baseAddress = (u8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
                 renderingInfo.cmdBuffer.size = Megabytes(5);
                 renderingInfo.cmdBuffer.entryCount = 0;
                 renderingInfo.cmdBuffer.usedAmount = 0;
@@ -925,7 +925,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.FinishAllWork = &FinishAllWork;
             }
             
-            ui32 MonitorRefreshRate = bgz::MonitorRefreshHz();
+            u32 MonitorRefreshRate = bgz::MonitorRefreshHz();
             int GameRefreshRate {};
             f32 TargetSecondsPerFrame {};
             
@@ -966,7 +966,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             
             auto UpdateInput = [window](Game_Input&& Input, Win32::Dbg::Game_Replay_State&& GameReplayState) -> void {
                 
-                for (ui32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
+                for (u32 ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     ClearTransitionCounts(&Input.Controllers[ControllerIndex]);
                 
                 ClearTransitionCounts(Input.mouseButtons);
@@ -977,7 +977,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     ScreenToClient(window, &mousePos);
                     
                     //Since game screen coords are bottom up and not top down (windows seems to assume top down coords for mouse pos) I'm converting to bottom up here
-                    i32 mousePosY = mousePos.y;
+                    s32 mousePosY = mousePos.y;
                     mousePosY -= globalWindowHeight;
                     AbsoluteVal($(mousePosY));
                     

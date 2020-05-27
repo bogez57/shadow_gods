@@ -21,7 +21,7 @@
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
 
-global_variable i32 heap;
+global_variable s32 heap;
 
 #include "memory_handling.h"
 #include "runtime_array.h"
@@ -43,7 +43,7 @@ global_variable Platform_Services* globalPlatformServices;
 global_variable Rendering_Info* global_renderingInfo;
 global_variable f32 deltaT;
 global_variable f32 deltaTFixed;
-global_variable i32 renderBuffer;
+global_variable s32 renderBuffer;
 
 //Third Party source
 #define STB_IMAGE_IMPLEMENTATION
@@ -78,12 +78,12 @@ global_variable i32 renderBuffer;
 //Move out to Renderer eventually
 #if 0
 local_func
-Image CreateEmptyImage(i32 width, i32 height)
+Image CreateEmptyImage(s32 width, s32 height)
 {
     Image image{};
     
-    i32 numBytesPerPixel{4};
-    image.data = (ui8*)MallocSize(heap, width*height*numBytesPerPixel);
+    s32 numBytesPerPixel{4};
+    image.data = (u8*)MallocSize(heap, width*height*numBytesPerPixel);
     image.size = v2i{width, height};
     image.pitch = width*numBytesPerPixel;
     
@@ -96,12 +96,12 @@ void GenerateSphereNormalMap(Image&& sourceImage)
     f32 invWidth = 1.0f / (f32)(sourceImage.size.width - 1);
     f32 invHeight = 1.0f / (f32)(sourceImage.size.height - 1);
     
-    ui8* row = (ui8*)sourceImage.data;
-    for(i32 y = 0; y < sourceImage.size.height; ++y)
+    u8* row = (u8*)sourceImage.data;
+    for(s32 y = 0; y < sourceImage.size.height; ++y)
     {
-        ui32* pixel = (ui32*)row;
+        u32* pixel = (u32*)row;
         
-        for(i32 x = 0; x < sourceImage.size.width; ++x)
+        for(s32 x = 0; x < sourceImage.size.width; ++x)
         {
             v2f normalUV = {invWidth*(f32)x, invHeight*(f32)y};
             
@@ -125,10 +125,10 @@ void GenerateSphereNormalMap(Image&& sourceImage)
                 255.0f*(.5f*(normal.z + 1.0f)),
                 0.0f};
             
-            *pixel++ = (((ui8)(color.a + .5f) << 24) |
-                        ((ui8)(color.r + .5f) << 16) |
-                        ((ui8)(color.g + .5f) << 8) |
-                        ((ui8)(color.b + .5f) << 0));
+            *pixel++ = (((u8)(color.a + .5f) << 24) |
+                        ((u8)(color.r + .5f) << 16) |
+                        ((u8)(color.g + .5f) << 8) |
+                        ((u8)(color.b + .5f) << 0));
         };
         
         row += sourceImage.pitch;
@@ -138,18 +138,18 @@ void GenerateSphereNormalMap(Image&& sourceImage)
 local_func
 Image FlipImage(Image image)
 {
-    i32 widthInBytes = image.size.width * 4;
-    ui8* p_topRowOfTexels = nullptr;
-    ui8* p_bottomRowOfTexels = nullptr;
-    ui8 temp = 0;
-    i32 halfHeight = image.size.height / 2;
+    s32 widthInBytes = image.size.width * 4;
+    u8* p_topRowOfTexels = nullptr;
+    u8* p_bottomRowOfTexels = nullptr;
+    u8 temp = 0;
+    s32 halfHeight = image.size.height / 2;
     
-    for (i32 row = 0; row < halfHeight; ++row)
+    for (s32 row = 0; row < halfHeight; ++row)
     {
         p_topRowOfTexels = image.data + row * widthInBytes;
         p_bottomRowOfTexels = image.data + (image.size.height - row - 1) * widthInBytes;
         
-        for (i32 col = 0; col < widthInBytes; ++col)
+        for (s32 col = 0; col < widthInBytes; ++col)
         {
             temp = *p_topRowOfTexels;
             *p_topRowOfTexels = *p_bottomRowOfTexels;
@@ -163,7 +163,7 @@ Image FlipImage(Image image)
 };
 #endif
 
-inline b KeyPressed(Button_State KeyState)
+inline bool KeyPressed(Button_State KeyState)
 {
     if (KeyState.Pressed && KeyState.NumTransitionsPerFrame)
     {
@@ -173,7 +173,7 @@ inline b KeyPressed(Button_State KeyState)
     return false;
 };
 
-inline b KeyComboPressed(Button_State KeyState1, Button_State KeyState2)
+inline bool KeyComboPressed(Button_State KeyState1, Button_State KeyState2)
 {
     if (KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame || KeyState2.NumTransitionsPerFrame))
     {
@@ -183,7 +183,7 @@ inline b KeyComboPressed(Button_State KeyState1, Button_State KeyState2)
     return false;
 };
 
-inline b KeyHeld(Button_State KeyState)
+inline bool KeyHeld(Button_State KeyState)
 {
     if (KeyState.Pressed && (KeyState.NumTransitionsPerFrame == 0))
     {
@@ -193,7 +193,7 @@ inline b KeyHeld(Button_State KeyState)
     return false;
 };
 
-inline b KeyComboHeld(Button_State KeyState1, Button_State KeyState2)
+inline bool KeyComboHeld(Button_State KeyState1, Button_State KeyState2)
 {
     if (KeyState1.Pressed && KeyState2.Pressed && (KeyState1.NumTransitionsPerFrame == 0 && KeyState2.NumTransitionsPerFrame == 0))
     {
@@ -203,7 +203,7 @@ inline b KeyComboHeld(Button_State KeyState1, Button_State KeyState2)
     return false;
 };
 
-inline b KeyReleased(Button_State KeyState)
+inline bool KeyReleased(Button_State KeyState)
 {
     if (!KeyState.Pressed && KeyState.NumTransitionsPerFrame)
     {
@@ -229,7 +229,7 @@ Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
     parentSpace.xBasis *= transformInfo_world.scale.x;
     
     Quadf transformedCoords {};
-    for (i32 vertIndex {}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
+    for (s32 vertIndex {}; vertIndex < transformedCoords.vertices.Size(); ++vertIndex)
     {
         //This equation rotates first then moves to correct parent position
         transformedCoords.vertices[vertIndex] = parentSpace.origin + (localCoords.vertices[vertIndex].x * parentSpace.xBasis) + (localCoords.vertices[vertIndex].y * parentSpace.yBasis);
@@ -246,7 +246,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         skel.width /= pixelsPerMeter;
         skel.height /= pixelsPerMeter;
         
-        for (i32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
+        for (s32 boneIndex {}; boneIndex < skel.bones.length; ++boneIndex)
         {
             skel.bones[boneIndex].parentBoneSpace.translation.x /= pixelsPerMeter;
             skel.bones[boneIndex].parentBoneSpace.translation.y /= pixelsPerMeter;
@@ -259,7 +259,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.bones[boneIndex].length /= pixelsPerMeter;
         };
         
-        for (i32 slotI {}; slotI < skel.slots.length; ++slotI)
+        for (s32 slotI {}; slotI < skel.slots.length; ++slotI)
         {
             skel.slots[slotI].regionAttachment.height /= pixelsPerMeter;
             skel.slots[slotI].regionAttachment.width /= pixelsPerMeter;
@@ -268,29 +268,29 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y /= pixelsPerMeter;
         };
         
-        for (i32 animIndex {}; animIndex < animData.animMap.animations.length; ++animIndex)
+        for (s32 animIndex {}; animIndex < animData.animMap.animations.length; ++animIndex)
         {
             Animation* anim = &animData.animMap.animations[animIndex];
             
             if (anim->name)
             {
-                for (i32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
+                for (s32 boneIndex {}; boneIndex < anim->bones.Size(); ++boneIndex)
                 {
                     TranslationTimeline* boneTranslationTimeline = &anim->boneTranslationTimelines[boneIndex];
-                    for (i32 keyFrameIndex {}; keyFrameIndex < boneTranslationTimeline->translations.Size(); ++keyFrameIndex)
+                    for (s32 keyFrameIndex {}; keyFrameIndex < boneTranslationTimeline->translations.Size(); ++keyFrameIndex)
                     {
                         boneTranslationTimeline->translations[keyFrameIndex].x /= pixelsPerMeter;
                         boneTranslationTimeline->translations[keyFrameIndex].y /= pixelsPerMeter;
                     }
                     
                     RotationTimeline* boneRotationTimeline = &anim->boneRotationTimelines[boneIndex];
-                    for (i32 keyFrameIndex {}; keyFrameIndex < boneRotationTimeline->angles.Size(); ++keyFrameIndex)
+                    for (s32 keyFrameIndex {}; keyFrameIndex < boneRotationTimeline->angles.Size(); ++keyFrameIndex)
                     {
                         boneRotationTimeline->angles[keyFrameIndex] = Radians(boneRotationTimeline->angles[keyFrameIndex]);
                     }
                 };
                 
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
+                for (s32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
                 {
                     anim->hitBoxes[hitBoxIndex].size.width /= pixelsPerMeter;
                     anim->hitBoxes[hitBoxIndex].size.height /= pixelsPerMeter;
@@ -379,7 +379,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     //UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
     
 #if 0
-    for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
+    for (s32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
     {
         UpdateHitBoxStatus($(playerCurrentAnim.hitBoxes[hitBoxIndex]), playerCurrentAnim.currentTime);
         
@@ -389,7 +389,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             
             Bone* bone = GetBoneFromSkeleton(&player->skel, playerCurrentAnim.hitBoxes[hitBoxIndex].boneName);
             UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(playerCurrentAnim.hitBoxes[hitBoxIndex]), bone->worldSpace.translation);
-            b collisionOccurred = CheckForFighterCollisions_AxisAligned(playerCurrentAnim.hitBoxes[hitBoxIndex], enemy->hurtBox);
+            bool collisionOccurred = CheckForFighterCollisions_AxisAligned(playerCurrentAnim.hitBoxes[hitBoxIndex], enemy->hurtBox);
             
             if (collisionOccurred)
                 BGZ_CONSOLE("ahhahha");
@@ -402,7 +402,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     { //Render
 #if 0
         auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length - 1; ++slotIndex)
+            for (s32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length - 1; ++slotIndex)
             {
                 Slot* currentSlot = &fighter.skel.slots[slotIndex];
                 
@@ -435,7 +435,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         PushLine(global_renderingInfo, line_minPoint, line_maxPoint, {0.0f, 1.0f, 0.0f}/*color*/, 5.0f/*thickness*/);
         
 #if 0
-        for (i32 i {}; i < player->skel.bones.length; ++i)
+        for (s32 i {}; i < player->skel.bones.length; ++i)
         {
             Bone bone = player->skel.bones[i];
             Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
@@ -454,7 +454,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             PushRect(global_renderingInfo, playerTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
             //PushRect(global_renderingInfo, enemyTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
             
-            for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
+            for (s32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
             {
                 Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(playerCurrentAnim.hitBoxes[hitBoxIndex].pos_worldSpace, playerCurrentAnim.hitBoxes[hitBoxIndex].size.width, playerCurrentAnim.hitBoxes[hitBoxIndex].size.height);
                 

@@ -18,10 +18,10 @@ GLInit(int windowWidth, int windowHeight)
     glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0); //Sets the projection matrix in openGL which will take our screen coordinates and tramsform them to openGL's clip space (-1 to 1)
 }
 
-local_func ui32
-LoadTexture(ui8* textureData, v2i textureSize)
+local_func u32
+LoadTexture(u8* textureData, v2i textureSize)
 {
-    ui32 textureID {};
+    u32 textureID {};
     glEnable(GL_TEXTURE_2D);
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
@@ -41,7 +41,7 @@ LoadTexture(ui8* textureData, v2i textureSize)
 }
 
 local_func void
-DrawTexture(ui32 TextureID, Quadf textureCoords, v2f MinUV, v2f MaxUV)
+DrawTexture(u32 TextureID, Quadf textureCoords, v2f MinUV, v2f MaxUV)
 {
     glBindTexture(GL_TEXTURE_2D, TextureID);
     
@@ -119,7 +119,7 @@ DrawLine(v2f minPoint, v2f maxPoint, v3f color, f32 lineThickness)
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
 {
-    local_persist b glIsInitialized { false };
+    local_persist bool glIsInitialized { false };
     if (NOT glIsInitialized)
     {
         GLInit(windowWidth, windowHeight);
@@ -127,7 +127,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
         glIsInitialized = true;
     };
     
-    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
+    u8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
     Camera2D* camera = &renderingInfo.camera;
     
     f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
@@ -141,7 +141,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     
     glEnable(GL_TEXTURE_2D);
     
-    for (i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
+    for (s32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
         switch (entryHeader->type)
@@ -149,7 +149,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Texture: {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
                 
-                local_persist ui32 textureID{};
+                local_persist u32 textureID{};
                 if (NOT textureEntry.isLoadedOnGPU)
                 {
                     textureID = LoadTexture(textureEntry.colorData, v2i { textureEntry.size.width, textureEntry.size.height });

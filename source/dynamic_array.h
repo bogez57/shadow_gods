@@ -54,12 +54,12 @@
 template <typename Type>
 class Dynam_Array
 {
-public:
+    public:
     Dynam_Array() = default;
-    Dynam_Array(i32 memPartitionID_dynamic) 
+    Dynam_Array(s32 memPartitionID_dynamic) 
         : memPartitionID(memPartitionID_dynamic)
     {}
-    Dynam_Array(i64 initialSize, i32 memPartitionID_dynamic)
+    Dynam_Array(s64 initialSize, s32 memPartitionID_dynamic)
         : capacity(initialSize)
         , memPartitionID(memPartitionID_dynamic)
     {
@@ -67,46 +67,46 @@ public:
         memset(this->elements, 0, initialSize); 
         this->size = initialSize;
     };
-    Dynam_Array(i64 initialSize, const Type& type, i32 memPartitionID_dynamic)//Have default initialized elements
+    Dynam_Array(s64 initialSize, const Type& type, s32 memPartitionID_dynamic)//Have default initialized elements
         : capacity(initialSize)
         , memPartitionID(memPartitionID_dynamic)
     {
         ResizeArray<Type>($(*this), initialSize);
         memset(this->elements, 0, initialSize); 
         this->size = initialSize;
-
-        for(i32 i{}; i < this->size; ++i)
+        
+        for(s32 i{}; i < this->size; ++i)
         {
             this->elements[i] = type;
         };
     };
-
-    Type& operator[](i64 index)
+    
+    Type& operator[](s64 index)
     {
         BGZ_ASSERT(index >= 0, "Cannot access a negative index!");
         BGZ_ASSERT(index < this->capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which is out of current dynam array bounds - current max array size: %i", index, size);
-
+        
         return (this->elements[index]);
     };
-
-    Type& At(i64 index)
+    
+    Type& At(s64 index)
     {
         BGZ_ASSERT(index >= 0, "Cannot access a negative index!");
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which exceeds capacity - current max array capacity: %i", index, capacity);
         BGZ_ASSERT(index < this->size, "Attempting to access index %i which exceeds current array size - current max array size: %i", index, size);
-
+        
         return (this->elements[index]);
     };
-
-    i64 size {}, capacity {};
-    b hasArrayBeenDestroyed { false };
+    
+    s64 size {}, capacity {};
+    bool hasArrayBeenDestroyed { false };
     Type* elements { nullptr };
-    i32 memPartitionID{0};
+    s32 memPartitionID{0};
 };
 
 template <typename Type>
-void Initialize(Dynam_Array<Type>&& arr, i32 memPartitionID_dynamic)
+void Initialize(Dynam_Array<Type>&& arr, s32 memPartitionID_dynamic)
 {
     arr.memPartitionID = memPartitionID_dynamic;
 };
@@ -128,30 +128,30 @@ void PushBack(Dynam_Array<Type>&& arr, Type element)
         arr.capacity = arr.capacity ? arr.capacity << 1 : 2;
         arr.elements = (Type*)ReAllocSize(arr.memPartitionID, arr.elements, sizeof(Type) * arr.capacity);
     }
-
+    
     arr.elements[arr.size++] = (element);
 };
 
 template <typename Type>
-void Insert(Dynam_Array<Type>&& arr, Type element, i32 AtIndex)
+void Insert(Dynam_Array<Type>&& arr, Type element, s32 AtIndex)
 {
     BGZ_ASSERT(AtIndex >= 0, "Cannot access a negative index!");
-
-    ((arr.capacity <= (i64)(AtIndex) ? (arr.capacity = arr.size = (AtIndex) + 1,
-                                            Roundup32(arr.capacity),
-                                            arr.elements = (Type*)ReAllocSize(arr.memPartitionID, arr.elements, sizeof(Type) * arr.capacity),
-                                            0)
-                                            : arr.size <= (i64)(AtIndex) ? arr.size = (AtIndex) + 1 : 0),
-            arr.elements[(AtIndex)])
-            = element;
+    
+    ((arr.capacity <= (s64)(AtIndex) ? (arr.capacity = arr.size = (AtIndex) + 1,
+                                        Roundup32(arr.capacity),
+                                        arr.elements = (Type*)ReAllocSize(arr.memPartitionID, arr.elements, sizeof(Type) * arr.capacity),
+                                        0)
+      : arr.size <= (s64)(AtIndex) ? arr.size = (AtIndex) + 1 : 0),
+     arr.elements[(AtIndex)])
+        = element;
 };
 
 template <typename Type>
-void Reserve(Dynam_Array<Type>&& arr, i32 numItems)
+void Reserve(Dynam_Array<Type>&& arr, s32 numItems)
 {
     BGZ_ASSERT(numItems >= 0, "Cannot reserve a negative number of items!");
-
-    i64 newSize = arr.capacity + numItems;
+    
+    s64 newSize = arr.capacity + numItems;
     ResizeArray<Type>($(arr), newSize);
 };
 
@@ -175,14 +175,14 @@ template <typename Type>
 Type* GetLastElem(Dynam_Array<Type> arr) 
 {
     BGZ_ASSERT(arr.size != 0, "Nothing has been pushed or insereted onto array");
-
+    
     Type* lastElem = &arr.elements[arr.size - 1];
-
+    
     return lastElem;
 };
 
 template <typename Type>
-void ResizeArray(Dynam_Array<Type>&& arrayToResize, i64 size)
+void ResizeArray(Dynam_Array<Type>&& arrayToResize, s64 size)
 {
     (arrayToResize.capacity = (size), arrayToResize.elements = (Type*)ReAllocSize(arrayToResize.memPartitionID, arrayToResize.elements, (sizeof(Type) * arrayToResize.capacity)));
 };
@@ -194,14 +194,14 @@ void CopyArray(Dynam_Array<Type> sourceArray, Dynam_Array<Type>&& destinationArr
     {
         ResizeArray<Type>($(destinationArray), sourceArray.size);
     };
-
+    
     BGZ_ASSERT(destinationArray.size == sourceArray.size, "Did not resize arrays correctly when copying!");
-
+    
     if(destinationArray.elements == sourceArray.elements)
     {
         destinationArray.elements = MallocType(heap, Type, destinationArray.size);
     };
-
+    
     memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.size);
 };
 

@@ -4,17 +4,16 @@
 #include <stdint.h>
 #include <utility>
 
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
-typedef i32 b32;
-typedef bool b;
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
+typedef s32 b32;
 
-typedef uint8_t ui8;
-typedef uint16_t ui16;
-typedef uint32_t ui32;
-typedef uint64_t ui64;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 typedef uintptr_t uintptr;
 
 typedef size_t sizet;
@@ -126,22 +125,22 @@ struct v4f
 struct v2i
 {
     v2i() = default;
-    v2i(i32 x, i32 y);
+    v2i(s32 x, s32 y);
     
     union
     {
-        i32 Elem[2];
+        s32 Elem[2];
         struct
         {
-            i32 x, y;
+            s32 x, y;
         };
         struct
         {
-            i32 width, height;
+            s32 width, height;
         };
         struct
         {
-            i32 u, v;
+            s32 u, v;
         };
     };
 };
@@ -149,19 +148,19 @@ struct v2i
 struct v3i
 {
     v3i() = default;
-    v3i(i32 x, i32 y, i32 z);
+    v3i(s32 x, s32 y, s32 z);
     
     union
     {
-        i32 Elem[3];
+        s32 Elem[3];
         struct
         {
-            i32 x, y, z;
+            s32 x, y, z;
         };
         
         struct
         {
-            i32 r, g, b;
+            s32 r, g, b;
         };
     };
 };
@@ -169,39 +168,39 @@ struct v3i
 struct v4i
 {
     v4i() = default;
-    v4i(i32 x, i32 y, i32 z, i32 w);
+    v4i(s32 x, s32 y, s32 z, s32 w);
     
     union
     {
-        i32 Elem[4];
+        s32 Elem[4];
         struct
         {
-            i32 x, y, z, w;
+            s32 x, y, z, w;
         };
         
         struct
         {
-            i32 r, g, b, a;
+            s32 r, g, b, a;
         };
     };
 };
 
-struct v4ui32
+struct v4u32
 {
-    v4ui32() = default;
-    v4ui32(ui32 x, ui32 y, ui32 z, ui32 w);
+    v4u32() = default;
+    v4u32(u32 x, u32 y, u32 z, u32 w);
     
     union
     {
-        i32 Elem[4];
+        s32 Elem[4];
         struct
         {
-            ui32 x, y, z, w;
+            u32 x, y, z, w;
         };
         
         struct
         {
-            ui32 r, g, b, a;
+            u32 r, g, b, a;
         };
     };
 };
@@ -232,8 +231,8 @@ v2i CastV2FToV2I(v2f vecToCast)
 {
     v2i result{};
     
-    result.x = (i32)vecToCast.x;
-    result.y = (i32)vecToCast.y;
+    result.x = (s32)vecToCast.x;
+    result.y = (s32)vecToCast.y;
     
     return result;
 };
@@ -243,10 +242,10 @@ v2f::v2f(f32 x, f32 y)
 , y(y)
 {}
 
-inline b
+inline bool
 operator==(v2f a, v2f B)
 {
-    b result { false };
+    bool  result { false };
     
     if (a.x == B.x && a.y == B.y)
         result = true;
@@ -254,10 +253,10 @@ operator==(v2f a, v2f B)
     return result;
 };
 
-inline b
+inline bool
 operator!=(v2f a, v2f B)
 {
-    b result { false };
+    bool  result { false };
     
     if (a.x != B.x || a.y != B.y)
         result = true;
@@ -535,13 +534,13 @@ operator+=(v4f &a, v4f B)
     return(a);
 }
 
-v2i::v2i(i32 x, i32 y)
+v2i::v2i(s32 x, s32 y)
 : x(x)
 , y(y)
 {}
 
 inline v2i
-operator*(i32 a, v2i B)
+operator*(s32 a, v2i B)
 {
     v2i result;
     
@@ -552,7 +551,7 @@ operator*(i32 a, v2i B)
 }
 
 inline v2i
-operator*(v2i B, i32 a)
+operator*(v2i B, s32 a)
 {
     v2i result = a * B;
     
@@ -560,7 +559,7 @@ operator*(v2i B, i32 a)
 }
 
 inline v2i&
-operator*=(v2i& B, i32 a)
+operator*=(v2i& B, s32 a)
 {
     B = a * B;
     
@@ -587,7 +586,7 @@ operator+=(v2i& a, v2i b)
 }
 
 inline v2i&
-operator+=(v2i& a, i32 b)
+operator+=(v2i& a, s32 b)
 {
     a.x = a.x + b;
     a.y = a.y + b;
@@ -596,7 +595,7 @@ operator+=(v2i& a, i32 b)
 }
 
 inline v2i&
-operator-=(v2i& a, i32 b)
+operator-=(v2i& a, s32 b)
 {
     a.x = a.x - b;
     a.y = a.y - b;
@@ -624,7 +623,7 @@ operator-(v2i a, v2i b)
     return (result);
 }
 
-v3i::v3i(i32 x, i32 y, i32 z)
+v3i::v3i(s32 x, s32 y, s32 z)
 : x(x)
 , y(y)
 , z(z)
@@ -632,7 +631,7 @@ v3i::v3i(i32 x, i32 y, i32 z)
 
 /* all v3i suff */
 
-v4i::v4i(i32 x, i32 y, i32 z, i32 w)
+v4i::v4i(s32 x, s32 y, s32 z, s32 w)
 : x(x)
 , y(y)
 , z(z)

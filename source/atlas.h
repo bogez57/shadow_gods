@@ -72,7 +72,7 @@ struct AtlasPage
     AtlasWrap uWrap, vWrap;
     
     Image rendererObject;
-    i32 width{0}, height{0};
+    s32 width{0}, height{0};
     
     AtlasPage* next{nullptr};
 };
@@ -83,15 +83,15 @@ void AtlasPage_dispose(AtlasPage* self);
 struct AtlasRegion
 {
     const char* name;
-    i32 x{}, y{}, width{}, height{};
+    s32 x{}, y{}, width{}, height{};
     f32 u{}, v{}, u2{}, v2{};
-    i32 offsetX{}, offsetY{};
-    i32 originalWidth{}, originalHeight{};
-    i32 index{};
+    s32 offsetX{}, offsetY{};
+    s32 originalWidth{}, originalHeight{};
+    s32 index{};
     b32 rotate{false};
     b32 flip{false};
-    i32* splits{nullptr};
-    i32* pads{nullptr};
+    s32* splits{nullptr};
+    s32* pads{nullptr};
     
     AtlasPage* page{nullptr};
     
@@ -110,7 +110,7 @@ struct Atlas
 /* Image files referenced in the atlas file will be prefixed with the directory containing the atlas file. */
 Atlas* CreateAtlasFromFile(const char* path, void* rendererObject);
 
-Atlas* CreateAtlas(const char* begin, i64 length, const char* dir, void* rendererObject);
+Atlas* CreateAtlas(const char* begin, s64 length, const char* dir, void* rendererObject);
 void Atlas_dispose(Atlas* atlas);
 
 /* Returns 0 if the region was not found. */
@@ -182,7 +182,7 @@ static void trim(Str* str)
 }
 
 /* Tokenize string without modification. Returns 0 on failure. */
-static i32 readLine(const char** begin, const char* end, Str* str)
+static s32 readLine(const char** begin, const char* end, Str* str)
 {
     if (*begin == end)
         return 0;
@@ -201,7 +201,7 @@ static i32 readLine(const char** begin, const char* end, Str* str)
 }
 
 /* Moves str->begin past the first occurence of c. Returns 0 on failure. */
-static i32 beginPast(Str* str, char c)
+static s32 beginPast(Str* str, char c)
 {
     const char* begin = str->begin;
     while (1)
@@ -218,7 +218,7 @@ static i32 beginPast(Str* str, char c)
 }
 
 /* Returns 0 on failure. */
-static i32 readValue(const char** begin, const char* end, Str* str)
+static s32 readValue(const char** begin, const char* end, Str* str)
 {
     readLine(begin, end, str);
     if (!beginPast(str, ':'))
@@ -228,9 +228,9 @@ static i32 readValue(const char** begin, const char* end, Str* str)
 }
 
 /* Returns the number of tuple values read (1, 2, 4, or 0 for failure). */
-static i32 readTuple(const char** begin, const char* end, Str tuple[])
+static s32 readTuple(const char** begin, const char* end, Str tuple[])
 {
-    i32 i;
+    s32 i;
     Str str = { NULL, NULL };
     readLine(begin, end, &str);
     if (!beginPast(&str, ':'))
@@ -252,17 +252,17 @@ static i32 readTuple(const char** begin, const char* end, Str tuple[])
 
 static char* mallocString(Str* str)
 {
-    i32 length = (int)(str->end - str->begin);
+    s32 length = (int)(str->end - str->begin);
     char* string = MallocType(heap, char, length + 1);
     memcpy(string, str->begin, length);
     string[length] = '\0';
     return string;
 }
 
-static i32 indexOf(const char** array, i32 count, Str* str)
+static s32 indexOf(const char** array, s32 count, Str* str)
 {
-    i32 length = (int)(str->end - str->begin);
-    i32 i;
+    s32 length = (int)(str->end - str->begin);
+    s32 i;
     for (i = count - 1; i >= 0; i--)
         if (strncmp(array[i], str->begin, length) == 0)
         return i;
@@ -274,7 +274,7 @@ static b32 equals(Str* str, const char* other)
     return strncmp(other, str->begin, str->end - str->begin) == 0;
 }
 
-static i32 toInt(Str* str)
+static s32 toInt(Str* str)
 {
     return (int)strtol(str->begin, (char**)&str->end, 10);
 }
@@ -304,14 +304,14 @@ static const char* formatNames[] = { "", "Alpha", "Intensity", "LuminanceAlpha",
 static const char* textureFilterNames[] = { "", "Nearest", "Linear", "MipMap", "MipMapNearestNearest", "MipMapLinearNearest",
     "MipMapNearestLinear", "MipMapLinearLinear" };
 
-Atlas* CreateAtlas(const char* begin, i64 length, const char* dir)
+Atlas* CreateAtlas(const char* begin, s64 length, const char* dir)
 {
     Atlas* self;
     
-    i64 count;
+    s64 count;
     const char* end = begin + length;
-    i64 dirLength = (i64)strlen(dir);
-    i64 needsSlash = dirLength > 0 && dir[dirLength - 1] != '/' && dir[dirLength - 1] != '\\';
+    s64 dirLength = (s64)strlen(dir);
+    s64 needsSlash = dirLength > 0 && dir[dirLength - 1] != '/' && dir[dirLength - 1] != '\\';
     
     AtlasPage* page = 0;
     AtlasPage* lastPage = 0;
@@ -431,7 +431,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir)
                 return abortAtlas(self);
             if (count == 4)
             { /* split is optional */
-                region->splits = MallocType(heap, i32, 4);
+                region->splits = MallocType(heap, s32, 4);
                 region->splits[0] = toInt(tuple);
                 region->splits[1] = toInt(tuple + 1);
                 region->splits[2] = toInt(tuple + 2);
@@ -442,7 +442,7 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir)
                     return abortAtlas(self);
                 if (count == 4)
                 { /* pad is optional, but only present with splits */
-                    region->pads = MallocType(heap, i32, 4);
+                    region->pads = MallocType(heap, s32, 4);
                     region->pads[0] = toInt(tuple);
                     region->pads[1] = toInt(tuple + 1);
                     region->pads[2] = toInt(tuple + 2);
@@ -471,9 +471,9 @@ Atlas* CreateAtlas(const char* begin, i64 length, const char* dir)
 
 Atlas* CreateAtlasFromFile(const char* path)
 {
-    i32 dirLength;
+    s32 dirLength;
     char* dir;
-    i32 length;
+    s32 length;
     
     Atlas* atlas = 0;
     
@@ -483,7 +483,7 @@ Atlas* CreateAtlasFromFile(const char* path)
     const char* lastSlash = lastForwardSlash > lastBackwardSlash ? lastForwardSlash : lastBackwardSlash;
     if (lastSlash == path)
         lastSlash++; /* Never drop starting slash. */
-    dirLength = (i32)(lastSlash ? lastSlash - path : 0);
+    dirLength = (s32)(lastSlash ? lastSlash - path : 0);
     dir = MallocType(heap, char, dirLength + 1);
     memcpy(dir, path, dirLength);
     dir[dirLength] = '\0';

@@ -4,38 +4,38 @@
 template <typename Type>
 class RunTimeArr
 {
-public:
+    public:
     RunTimeArr() = default;
-    RunTimeArr(Memory_Partition* memPart, i64 capacity)
+    RunTimeArr(Memory_Partition* memPart, s64 capacity)
     {
         this->capacity = capacity;
         this->elements = PushType(memPart, Type, capacity);
     };
-
-    Type& operator[](i64 index)
+    
+    Type& operator[](s64 index)
     {
         BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current arround bounds - current max index allowed: %i", index, capacity - 1);
         BGZ_ASSERT(index < length, "Attempting to access index %i which hasn't been initialized yet. Current buffer length is %i", index, length);
-
+        
         return this->elements[index];
     };
-
+    
     inline Type& Push()
     {
         BGZ_ASSERT(length < capacity, "Attempting to access index %i which out of current arround bounds - current max index allowed: %i", length, capacity - 1);
         return (Type&)this->elements[length++];
     };
-
-    i64 length {};
-    i64 capacity {};
+    
+    s64 length {};
+    s64 capacity {};
     Type* elements {};
 };
 
 template <typename Type>
-void InitArr(RunTimeArr<Type>&& varArr, Memory_Partition* memPart, i64 capacity)
+void InitArr(RunTimeArr<Type>&& varArr, Memory_Partition* memPart, s64 capacity)
 {
     BGZ_ASSERT(varArr.capacity == 0, "Trying to initialize array twice!");
-
+    
     varArr.capacity = capacity;
     varArr.elements = PushType(memPart, Type, capacity);
 };
@@ -45,7 +45,7 @@ void CopyArray(RunTimeArr<Type> sourceArray, RunTimeArr<Type>&& destinationArray
 {
     BGZ_ASSERT(destinationArray.capacity == sourceArray.capacity, "Variable Array capacities do not match!");
     BGZ_ASSERT(destinationArray.elements == sourceArray.elements, "Both varialbe arrays pointing to same memory address");
-
+    
     memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.size);
     destinationArray.length = sourceArray.length;
 };
