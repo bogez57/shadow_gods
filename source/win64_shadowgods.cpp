@@ -413,7 +413,7 @@ namespace Win32
     local_func void
         DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
-        bool renderThroughHardware { false };
+        bool renderThroughHardware { true };
         if (renderThroughHardware)
         {
             RenderViaHardware($(renderingInfo), windowWidth, windowHeight);

@@ -55,10 +55,10 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
             ++imagePixel;
 #else
             //Pre-multiplied alpha
-            v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
-            v4f foregroundColors = UnPackPixelValues(*imagePixel, BGRA);
+            v4 backgroundColors = UnPackPixelValues(*destPixel, BGRA);
+            v4 foregroundColors = UnPackPixelValues(*imagePixel, BGRA);
             f32 alphaBlend = foregroundColors.a / 255.0f;
-            v4f finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + foregroundColors;
+            v4 finalBlendedColor = (1.0f - alphaBlend)*backgroundColors + foregroundColors;
             
             *destPixel = ((0xFF << 24) |
                           ((u8)finalBlendedColor.r << 16) |
@@ -82,9 +82,9 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 {
     u32* imagePixel = (u32*)image.data;
     
-    v2f targetQuadOrigin = targetQuad.bottomLeft;
-    v2f targetQuadXAxis = targetQuad.bottomRight - targetQuadOrigin;
-    v2f targetQuadYAxis = targetQuad.topLeft - targetQuadOrigin;
+    v2 targetQuadOrigin = targetQuad.bottomLeft;
+    v2 targetQuadXAxis = targetQuad.bottomRight - targetQuadOrigin;
+    v2 targetQuadYAxis = targetQuad.topLeft - targetQuadOrigin;
     
     u8* currentRow = (u8*)buffer.data;
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetQuadXAxis);
@@ -96,8 +96,8 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
         
         for(s32 screenPixelRow = 0; screenPixelRow < buffer.size.width; ++screenPixelRow)
         {
-            v2f screenPixelCoord{(f32)screenPixelRow, (f32)screenPixelColumn};
-            v2f d {screenPixelCoord - targetQuadOrigin};
+            v2 screenPixelCoord{(f32)screenPixelRow, (f32)screenPixelColumn};
+            v2 d {screenPixelCoord - targetQuadOrigin};
             
             f32 u = invertedXAxisSqd * DotProduct(d, targetQuadXAxis);
             f32 v = invertedYAxisSqd * DotProduct(d, targetQuadYAxis);
@@ -110,7 +110,7 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
             
             u32* backgroundTexel = (u32*)(((u8*)image.data) + ((u32)texelPos_y*image.pitch) + ((u32)texelPos_x*sizeof(u32)));//size of pixel
             
-            v4f imagePixel = UnPackPixelValues(*backgroundTexel, BGRA);
+            v4 imagePixel = UnPackPixelValues(*backgroundTexel, BGRA);
             
             *destPixel = ((0xFF << 24) |
                           ((u8)imagePixel.r << 16) |
@@ -126,20 +126,20 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 #endif
 
 
-void DrawRectangle(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect);
+void DrawRectangle(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Quadf targetRect_screenCoords, v3 rectColor, Rectf clipRect);
 local_func void
-DrawLine(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, v2f minPoint, v2f maxPoint, v3f lineColor, f32 thickness, Rectf clipRect)
+DrawLine(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, v2 minPoint, v2 maxPoint, v3 lineColor, f32 thickness, Rectf clipRect)
 {
-    v2f lineVector = maxPoint - minPoint;
+    v2 lineVector = maxPoint - minPoint;
     
     Normalize($(lineVector));
-    v2f normalPerpVec = PerpendicularOp(lineVector);
+    v2 normalPerpVec = PerpendicularOp(lineVector);
     normalPerpVec *= thickness;
     
-    v2f bottomLeft = minPoint + normalPerpVec;
-    v2f bottomRight = minPoint - normalPerpVec;
-    v2f topLeft = maxPoint + normalPerpVec;
-    v2f topRight = maxPoint - normalPerpVec;
+    v2 bottomLeft = minPoint + normalPerpVec;
+    v2 bottomRight = minPoint - normalPerpVec;
+    v2 topLeft = maxPoint + normalPerpVec;
+    v2 topRight = maxPoint - normalPerpVec;
     
     Quadf targetRect_screenCoords{};
     targetRect_screenCoords.bottomLeft = bottomLeft;
@@ -151,11 +151,11 @@ DrawLine(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, v2f mi
 };
 
 local_func void
-DrawRectangle(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Quadf targetRect_screenCoords, v3f rectColor, Rectf clipRect)
+DrawRectangle(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Quadf targetRect_screenCoords, v3 rectColor, Rectf clipRect)
 {
-    v2f origin = targetRect_screenCoords.bottomLeft;
-    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
-    v2f targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
+    v2 origin = targetRect_screenCoords.bottomLeft;
+    v2 targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
+    v2 targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
     
     u32 pixelColor = { (0xFF << 24) | (RoundFloat32ToUInt32(rectColor.r * 255.0f) << 16) | (RoundFloat32ToUInt32(rectColor.g * 255.0f) << 8) | (RoundFloat32ToUInt32(rectColor.b * 255.0f) << 0) };
     
@@ -168,10 +168,10 @@ DrawRectangle(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Q
     f32 yMax = clipRect.min.y;
     
     { //Optimization to avoid iterating over every pixel on the screen - HH ep 92
-        Array<v2f, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
+        Array<v2, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
         for (s32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
         {
-            v2f testVec = vecs[vecIndex];
+            v2 testVec = vecs[vecIndex];
             s32 flooredX = FloorF32ToI32(testVec.x);
             s32 ceiledX = CeilF32ToI32(testVec.x);
             s32 flooredY = FloorF32ToI32(testVec.y);
@@ -223,8 +223,8 @@ DrawRectangle(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Q
         
         for (f32 screenX = xMin; screenX < xMax; ++screenX)
         {
-            v2f screenPixelCoord { screenX, screenY };
-            v2f d { screenPixelCoord - origin };
+            v2 screenPixelCoord { screenX, screenY };
+            v2 d { screenPixelCoord - origin };
             
             f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
             f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
@@ -246,9 +246,9 @@ DrawRectangle(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Q
 #include <immintrin.h>
 void DrawTexture_Optimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch, Quadf targetRect_screenCoords, RenderEntry_Texture image, Rectf clipRect)
 {
-    v2f origin = targetRect_screenCoords.bottomLeft;
-    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
-    v2f targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
+    v2 origin = targetRect_screenCoords.bottomLeft;
+    v2 targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
+    v2 targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
     
     s32 widthMax = (s32)clipRect.max.x;
     s32 heightMax = (s32)clipRect.max.y;
@@ -259,10 +259,10 @@ void DrawTexture_Optimized(u32* colorBufferData, v2i colorBufferSize, s32 colorB
     s32 yMax = (s32)clipRect.min.y;
     
     { //Optimization to avoid iterating over every pixel on the screen - HH ep 92
-        Array<v2f, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
+        Array<v2, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
         for (s32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
         {
-            v2f testVec = vecs[vecIndex];
+            v2 testVec = vecs[vecIndex];
             s32 flooredX = FloorF32ToI32(testVec.x);
             s32 ceiledX = CeilF32ToI32(testVec.x);
             s32 flooredY = FloorF32ToI32(testVec.y);
@@ -299,8 +299,8 @@ void DrawTexture_Optimized(u32* colorBufferData, v2i colorBufferSize, s32 colorB
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
     s32 imageWidth = image.size.width - 3;
     s32 imageHeight = image.size.height - 3;
-    v2f normalizedXAxis = invertedXAxisSqd * targetRectXAxis;
-    v2f normalizedYAxis = invertedYAxisSqd * targetRectYAxis;
+    v2 normalizedXAxis = invertedXAxisSqd * targetRectXAxis;
+    v2 normalizedYAxis = invertedYAxisSqd * targetRectYAxis;
     
     s32 sizeOfPixel_inBytes = 4;
     u8* currentRow = (u8*)colorBufferData + (s32)xMin * sizeOfPixel_inBytes + (s32)yMin * colorBufferPitch;
@@ -592,23 +592,23 @@ DrawTexture_UnOptimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBuff
         return result;
     };
     
-    auto BiLinearLerp = [](v4u32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4f {
-        v4f newBlendedValue {};
-        v4f texelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
-        v4f texelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
-        v4f texelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
-        v4f texelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
+    auto BiLinearLerp = [](v4u32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4 {
+        v4 newBlendedValue {};
+        v4 texelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
+        v4 texelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
+        v4 texelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
+        v4 texelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
         
-        v4f ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
-        v4f CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
+        v4 ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
+        v4 CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
         newBlendedValue = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
         
         return newBlendedValue;
     };
     
-    v2f origin = targetRect_screenCoords.bottomLeft;
-    v2f targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
-    v2f targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
+    v2 origin = targetRect_screenCoords.bottomLeft;
+    v2 targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
+    v2 targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
     
     f32 widthMax = clipRect.max.x;
     f32 heightMax = clipRect.max.y;
@@ -619,10 +619,10 @@ DrawTexture_UnOptimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBuff
     f32 yMax = clipRect.min.y;
     
     { //Optimization to avoid iterating over every pixel on the screen - HH ep 92
-        Array<v2f, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
+        Array<v2, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
         for (s32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
         {
-            v2f testVec = vecs[vecIndex];
+            v2 testVec = vecs[vecIndex];
             s32 flooredX = FloorF32ToI32(testVec.x);
             s32 ceiledX = CeilF32ToI32(testVec.x);
             s32 flooredY = FloorF32ToI32(testVec.y);
@@ -664,7 +664,7 @@ DrawTexture_UnOptimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBuff
         }
     };
     
-    v2f uvRangeForTexture = { texture.uvBounds[1].u - texture.uvBounds[0].u, texture.uvBounds[1].v - texture.uvBounds[0].v };
+    v2 uvRangeForTexture = { texture.uvBounds[1].u - texture.uvBounds[0].u, texture.uvBounds[1].v - texture.uvBounds[0].v };
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
     
@@ -675,8 +675,8 @@ DrawTexture_UnOptimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBuff
         
         for (f32 screenX = xMin; screenX < xMax; ++screenX)
         {
-            v2f screenPixelCoord { screenX, screenY };
-            v2f d { screenPixelCoord - origin };
+            v2 screenPixelCoord { screenX, screenY };
+            v2 d { screenPixelCoord - origin };
             
             f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
             f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
@@ -706,15 +706,15 @@ DrawTexture_UnOptimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBuff
                 texelSquare.w = *(u32*)(texelPtr + texture.pitch_pxls + sizeof(u32));
                 
                 //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
-                v4f newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
+                v4 newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
                 
                 if(StringCmp(texture.name, "right-forearm"))
                     int x{};
                 
                 //Linearly Blend with background - Assuming Pre-multiplied alpha
-                v4f backgroundColors = UnPackPixelValues(*destPixel, BGRA);
+                v4 backgroundColors = UnPackPixelValues(*destPixel, BGRA);
                 f32 alphaBlend = newBlendedTexel.a / 255.0f;
-                v4f finalBlendedColor = (1.0f - alphaBlend) * backgroundColors + newBlendedTexel;
+                v4 finalBlendedColor = (1.0f - alphaBlend) * backgroundColors + newBlendedTexel;
                 
                 bool shadePixel { false };
                 
@@ -726,18 +726,18 @@ DrawTexture_UnOptimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBuff
                     //Grab 4 normals (in a square pattern) to blend
                     v4u32 normalSquare_inRGBSpace = Grab4NearestPixelPtrs_SquarePattern(normalPtr, texture.pitch_pxls);
                     
-                    v4f blendedNormal_inRGBSspace = BiLinearLerp(normalSquare_inRGBSpace, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
+                    v4 blendedNormal_inRGBSspace = BiLinearLerp(normalSquare_inRGBSpace, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
                     
                     //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
                     f32 inv255 = 1.0f / 255.0f;
-                    v4f blendedNormal{};
+                    v4 blendedNormal{};
                     blendedNormal.x = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.r);
                     blendedNormal.y = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.g);
                     blendedNormal.z = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.b);
                     
                     { //Rotating and scaling normals (supports non-uniform scaling of normal x and y)
-                        v2f normalXBasis = v2f { CosR(normalMap.rotation), SinR(normalMap.rotation) };
-                        v2f normalYBasis = normalMap.scale.y * PerpendicularOp(normalXBasis);
+                        v2 normalXBasis = v2 { CosR(normalMap.rotation), SinR(normalMap.rotation) };
+                        v2 normalYBasis = normalMap.scale.y * PerpendicularOp(normalXBasis);
                         normalXBasis *= normalMap.scale.x;
                         
                         normalXBasis *= (Magnitude(normalYBasis) / Magnitude(normalXBasis));
@@ -856,10 +856,10 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
     Camera2D* camera = &work->renderingInfo.camera;
     
     f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
-    v2f screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
+    v2 screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
-    v2f screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
+    v2 screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
     camera->viewCenter = screenDimensions_meters / 2.0f;
     
     for (s32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
@@ -913,10 +913,10 @@ void DoRenderWork(void* data)
     Camera2D* camera = &work->renderingInfo.camera;
     
     f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
-    v2f screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
+    v2 screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
-    v2f screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
+    v2 screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
     camera->viewCenter = screenDimensions_meters / 2.0f;
     
     for (s32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
@@ -954,11 +954,11 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
                 
-                v2f lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
-                v2f lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
+                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
                 
-                v2f lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
-                v2f lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
+                v2 lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
+                v2 lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
                 lineEntry.minPoint = lineMinPoint_screen;
                 lineEntry.maxPoint = lineMaxPoint_screen;
                 
@@ -991,8 +991,8 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
     {
         for (u32 screenRegion_x {}; screenRegion_x < screenRegionCount_x; ++screenRegion_x)
         {
-            v2f screenRegion_min = v2f { screenRegion_x * singleScreenRegion_width, screenRegion_y * singleScreenRegion_height };
-            v2f screenRegion_max = v2f { screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height };
+            v2 screenRegion_min = v2 { screenRegion_x * singleScreenRegion_width, screenRegion_y * singleScreenRegion_height };
+            v2 screenRegion_max = v2 { screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height };
             Rectf screenRegionCoords { screenRegion_min, screenRegion_max };
             
             Screen_Region_Render_Work* renderWork = &workArray[workIndex];

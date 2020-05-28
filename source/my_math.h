@@ -38,7 +38,7 @@ AbsoluteVal(f32&& Value)
 }
 
 inline void
-AbsoluteVal(v2f&& Value)
+AbsoluteVal(v2&& Value)
 {
     Value = { (f32)fabs(Value.x), (f32)fabs(Value.y) };
 }
@@ -228,15 +228,15 @@ CeilF32ToI32(f32 floatToCeil)
     return result;
 };
 
-inline v2f
-PerpendicularOp(v2f A)
+inline v2
+PerpendicularOp(v2 A)
 {
-    v2f Result = {-A.y, A.x};
+    v2 Result = {-A.y, A.x};
     return(Result);
 }
 
 inline f32
-DotProduct(v2f a, v2f b)
+DotProduct(v2 a, v2 b)
 {
     f32 result = a.x*b.x + a.y*b.y;
     
@@ -244,37 +244,37 @@ DotProduct(v2f a, v2f b)
 }
 
 inline f32
-DotProduct(v3f a, v3f b)
+DotProduct(v3 a, v3 b)
 {
     f32 result = a.x*b.x + a.y*b.y + a.z*b.z;
     
     return(result);
 }
 
-inline v2f
-Hadamard(v2f a, v2f b)
+inline v2
+Hadamard(v2 a, v2 b)
 {
-    v2f result = {a.x*b.x, a.y*b.y};
+    v2 result = {a.x*b.x, a.y*b.y};
     
     return(result);
 }
 
-inline v3f
-Hadamard(v3f a, v3f b)
+inline v3
+Hadamard(v3 a, v3 b)
 {
-    v3f result = {a.x*b.x, a.y*b.y, a.z*b.z};
+    v3 result = {a.x*b.x, a.y*b.y, a.z*b.z};
     
     return(result);
 }
 
 inline f32
-CrossProduct(v2f a, v2f b)
+CrossProduct(v2 a, v2 b)
 {
     return a.x * b.y - a.y * b.x;
 }
 
 inline f32
-MagnitudeSqd(v2f a)
+MagnitudeSqd(v2 a)
 {
     f32 result = DotProduct(a,a);
     
@@ -282,7 +282,7 @@ MagnitudeSqd(v2f a)
 }
 
 inline f32
-MagnitudeSqd(v3f a)
+MagnitudeSqd(v3 a)
 {
     f32 result = DotProduct(a,a);
     
@@ -290,14 +290,14 @@ MagnitudeSqd(v3f a)
 }
 
 inline f32
-Magnitude(v2f a)
+Magnitude(v2 a)
 {
     f32 result = Sqrt(MagnitudeSqd(a));
     return(result);
 }
 
 inline f32
-Magnitude(v3f a)
+Magnitude(v3 a)
 {
     f32 result = Sqrt(MagnitudeSqd(a));
     return(result);
@@ -311,30 +311,30 @@ Lerp(f32 a, f32 b, f32 t)
     return(result);
 }
 
-inline v4f
-Lerp(v4f a, v4f b, f32 t)
+inline v4
+Lerp(v4 a, v4 b, f32 t)
 {
-    v4f result = (1.0f - t)*a + t*b;
+    v4 result = (1.0f - t)*a + t*b;
     
     return(result);
 }
 
-inline v2f
-Lerp(v2f a, v2f b, f32 t)
+inline v2
+Lerp(v2 a, v2 b, f32 t)
 {
-    v2f result = (1.0f - t)*a + t*b;
+    v2 result = (1.0f - t)*a + t*b;
     
     return(result);
 }
 
 inline void
-Normalize(v2f&& a)
+Normalize(v2&& a)
 {
     a *= (1.0f / Magnitude(a));
 };
 
 inline void
-Normalize(v3f&& a)
+Normalize(v3&& a)
 {
     a *= (1.0f / Magnitude(a));
 };
