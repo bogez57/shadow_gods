@@ -326,7 +326,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
-        test_OBJFileParsing();
+        test_OBJFileParsing(framePart);
         
         BGZ_ERRCTXT1("When Initializing game memory and game state");
         
