@@ -328,7 +328,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     {
         test_OBJFileParsing();
         
-        
         BGZ_ERRCTXT1("When Initializing game memory and game state");
         
         gameMemory->initialized = true;

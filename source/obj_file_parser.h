@@ -155,7 +155,6 @@ void AdvanceTokenizer(Tokenizer&& tokenizer)
 {
     BGZ_ASSERT(*tokenizer.at != '\0', "Reached end of file!");
     ++tokenizer.at;
-    BGZ_ASSERT(*tokenizer.at != '\0', "Reached end of file!");
 };
 
 void Parse(char* fileContents)
