@@ -27,6 +27,7 @@ struct Stage_Data
 
 struct Game_State
 {
+    Geometry cube{};
     Image composite;
     Image normalMap;
     Atlas* atlas;

@@ -163,8 +163,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 DrawTexture(textureID, imageTargetRect_screen, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
-            }
-            break;
+            }break;
             
             case EntryType_Rect: {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
@@ -179,8 +178,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-            }
-            break;
+            }break;
             
             case EntryType_Line: {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
@@ -198,8 +196,11 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Line);
-            }
-            break;
+            }break;
+            
+            case EntryType_Geometry: {
+                
+            }break;
             
             InvalidDefaultCase;
         };

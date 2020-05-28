@@ -6,15 +6,16 @@
 #endif
 
 #include "my_math.h"
+#include "runtime_array.h"
 
 /*
 
     Current Renderer assumptions:
-    
+
     1.) User sends world coordinates to renderer. 4 verts pushed per texture/rect.
     2.) Renderer expects all verts to be in meters and not pixels.
     3.) Y axis is going up and bottom left corner of rect is expected to be origin
-    
+
 */
 
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
@@ -67,6 +68,12 @@ struct Quadi
             v2i topLeft;
         };
     };
+};
+
+struct Geometry
+{
+    RunTimeArr<v3> verts{};
+    RunTimeArr<s16> indicies{};
 };
 
 struct Game_Render_Cmd_Buffer
@@ -123,6 +130,7 @@ enum Render_Entry_Type
 {
     EntryType_Line,
     EntryType_Rect,
+    EntryType_Geometry,
     EntryType_Texture
 };
 
@@ -136,6 +144,13 @@ struct RenderEntry_Rect
     RenderEntry_Header header;
     Quadf worldCoords;
     v3 color {};
+};
+
+struct RenderEntry_Geometry
+{
+    RenderEntry_Header header;
+    RunTimeArr<v3> verts{};
+    RunTimeArr<s16> indicies{};
 };
 
 struct RenderEntry_Texture
@@ -171,6 +186,7 @@ v2 viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 //Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
+void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies);
 void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3 color);
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2 lookAt, v2 dilatePoint_inScreenCoords, f32 zoomFactor);
@@ -203,6 +219,17 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, s32 sizeOfCommand)
     return memoryPointer;
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
+
+void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies)
+{
+    RenderEntry_Geometry* geomEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Geometry);
+    
+    geomEntry->header.type = EntryType_Geometry;
+    geomEntry->verts = worldVerts;
+    geomEntry->indicies = indicies;
+    
+    ++renderingInfo->cmdBuffer.entryCount;
+};
 
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness)
 {
