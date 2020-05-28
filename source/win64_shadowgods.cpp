@@ -162,8 +162,9 @@ namespace Win32::Dbg
         length = (s32)ftell(file);
         fseek(file, 0, SEEK_SET);
         
-        data = (char*)malloc(length);
+        data = (char*)malloc(length + 1);
         fread(data, 1, length, file);
+        data[length] = 0;
         
         fclose(file);
         

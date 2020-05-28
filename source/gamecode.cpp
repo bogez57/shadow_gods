@@ -74,6 +74,8 @@ global_variable s32 renderBuffer;
 #include "fighter.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
+#define OBJ_FILE_PARSER_IMPL
+#include "obj_file_parser.h"
 
 //Move out to Renderer eventually
 #if 0
@@ -324,6 +326,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
+        test_OBJFileParsing();
+        
+        
         BGZ_ERRCTXT1("When Initializing game memory and game state");
         
         gameMemory->initialized = true;
