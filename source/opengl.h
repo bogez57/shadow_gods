@@ -312,7 +312,9 @@ GLushort indicies[] =
     1, 0, 2,  1, 2, 3,//Front
     4, 1, 3,  5, 1, 4, //Right side
     4, 5, 7,  7, 5, 6, //Back side
-    6, 7, 0,  0, 7, 2 //Left side
+    6, 7, 0,  0, 7, 2, //Left side
+    7, 0, 1,  4, 7, 1, //top side
+    6, 5, 3,  6, 3, 2 //bottom side
 };
 
 f32 epsilon = 0.00001f; //TODO: Remove????
@@ -473,7 +475,7 @@ void DrawCube(Array<v3, NUM_VERTS> cubeVerts_glClipSpace)
 {
     GLfloat verts[NUM_VERTS * 6] = {};
     i32 i{};
-    f32 colorR{0.5f}, colorG{0.4f}, colorB{};
+    f32 colorR{0.5f}, colorG{0.0f}, colorB{};
     for(i32 j{}; j < NUM_VERTS; ++j)
     {
         verts[i++] = cubeVerts_glClipSpace[j].x;
@@ -499,7 +501,7 @@ void DrawCube(Array<v3, NUM_VERTS> cubeVerts_glClipSpace)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
     
     glDisable(GL_TEXTURE_2D);
-    glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
 };
 
