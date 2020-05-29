@@ -23,12 +23,12 @@ struct HitBox : public Collision_Box
     HitBox() = default;
     HitBox(v2 worldPos, v2 worldPosOffset, v2 size);
     
-    b isActive { false };
+    bool isActive { false };
     char* boneName;
     f32 endTime {};
     f32 duration {};
     f32 timeUntilHitBoxIsActivated {};
-    b timerStarted { false };
+    bool timerStarted { false };
 };
 
 struct HurtBox : public Collision_Box
@@ -71,7 +71,7 @@ void UpdateCollisionBoxWorldPos_BasedOnCenterPoint(Collision_Box&& collisionBox,
     collisionBox.bounds.maxCorner.y = collisionBox.pos_worldSpace.y + (collisionBox.size.y / 2.0f);
 };
 
-local_func b CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Box fighter2Box)
+local_func bool CheckForFighterCollisions_AxisAligned(Collision_Box& fighter1Box, Collision_Box fighter2Box)
 {
     // Exit returning NO intersection between bounding boxes
     if (fighter1Box.bounds.maxCorner.x < fighter2Box.bounds.minCorner.x || fighter1Box.bounds.minCorner.x > fighter2Box.bounds.maxCorner.x)

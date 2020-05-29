@@ -15,7 +15,7 @@ REM Debug/Development build
 set CommonCompilerFlags=-Gm- -MP -Z7 -nologo -Oi -Od -WX -W3 -GR -EHa- -arch:AVX2 -std:c++17 -wd4505 -wd4101 -wd4530 -w14700
 set CommonLinkerFlags=-subsystem:windows -machine:x64 -incremental:no -nologo -opt:ref -debug -ignore:4099 -STACK:2000000
 
-set GameIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" -I %cwd%"third_party/stb/include"
+set GameIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" -I %cwd%"third_party/stb/include" -I %cwd%"third_party/micro_parser_combinators"
 set GameLibraryPaths=
 
 set PlatformIncludePaths=-I %cwd%"third_party/boagz/include" -I %cwd%"third_party/boagz/src" -I %cwd%"third_party/glew-2.1.0/include" -I %cwd%"third_party/stb/include"
@@ -28,8 +28,8 @@ pushd build
 
 REM Clear out pdb files so build directory doesn't get too huge and build app DLL
 del *.pdb > NUL 2> NUL
-cl /c ..\source\gamecode.cpp %CommonCompilerFlags% %GameIncludePaths% %PreProcessorSwitches%
-link gamecode.obj -dll -PDB:gamecode_%random%.pdb -export:GameUpdate %CommonLinkerFlags%
+cl /c ..\source\gamecode.cpp %cwd%third_party/micro_parser_combinators/mpc/mpc.c  %GameIncludePaths% %CommonCompilerFlags% %PreProcessorSwitches%
+link gamecode.obj mpc.obj -dll -PDB:gamecode_%random%.pdb -export:GameUpdate %GameLibraryPaths% %CommonLinkerFlags%
 
 REM Build exe
 cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %PlatformIncludePaths% %PreProcessorSwitches%

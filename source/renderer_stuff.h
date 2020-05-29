@@ -6,6 +6,7 @@
 #endif
 
 #include "my_math.h"
+#include "runtime_array.h"
 
 /*
 
@@ -69,12 +70,18 @@ struct Quadi
     };
 };
 
+struct Geometry
+{
+    RunTimeArr<v3> verts{};
+    RunTimeArr<s16> indicies{};
+};
+
 struct Game_Render_Cmd_Buffer
 {
-    ui8* baseAddress { nullptr };
-    i32 usedAmount {};
-    i32 size {};
-    i32 entryCount {};
+    u8* baseAddress { nullptr };
+    s32 usedAmount {};
+    s32 size {};
+    s32 entryCount {};
 };
 
 struct Rendering_Info
@@ -86,7 +93,7 @@ struct Rendering_Info
 
 struct NormalMap
 {
-    ui8* mapData { nullptr };
+    u8* mapData { nullptr };
     f32 rotation {};
     v2 scale { 1.0f, 1.0f };
     f32 lightAngle {};
@@ -95,14 +102,14 @@ struct NormalMap
 
 struct Image
 {
-    ui8* data { nullptr };
+    u8* data { nullptr };
     f32 aspectRatio {};
-    i32 width_pxls {};
-    i32 height_pxls {};
-    i32 pitch_pxls {};
+    s32 width_pxls {};
+    s32 height_pxls {};
+    s32 pitch_pxls {};
     f32 opacity { 1.0f };
     v2 scale { 1.0f, 1.0f };
-    b isLoadedOnGPU{false};//TODO: Eventually remove
+    bool isLoadedOnGPU{false};//TODO: Eventually remove
 };
 
 struct Coordinate_Space
@@ -123,6 +130,7 @@ enum Render_Entry_Type
 {
     EntryType_Line,
     EntryType_Rect,
+    EntryType_Geometry,
     EntryType_Texture
 };
 
@@ -138,18 +146,25 @@ struct RenderEntry_Rect
     v3 color {};
 };
 
+struct RenderEntry_Geometry
+{
+    RenderEntry_Header header;
+    RunTimeArr<v3> verts{};
+    RunTimeArr<s16> indicies{};
+};
+
 struct RenderEntry_Texture
 {
     RenderEntry_Header header;
     const char* name;
-    ui8* colorData { nullptr };
+    u8* colorData { nullptr };
     NormalMap normalMap {};
     v2i size {};
-    i32 pitch_pxls {};
+    s32 pitch_pxls {};
     v2 dimensions {};
     Array<v2, 2> uvBounds;
     Quadf targetRect_worldCoords;
-    b isLoadedOnGPU{false};//TODO: Eventually remove
+    bool isLoadedOnGPU{false};//TODO: Eventually remove
 };
 
 struct RenderEntry_Line
@@ -171,11 +186,12 @@ v2 viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 //Render Commands
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
+void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies);
 void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3 color);
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2 lookAt, v2 dilatePoint_inScreenCoords, f32 zoomFactor);
 void UpdateCamera(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor);
-void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
+void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch);
 
 void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -196,13 +212,24 @@ Quadf ProduceQuadFromCenterPoint(v2 originPoint, f32 width, f32 height);
 
 #ifdef GAME_RENDERER_STUFF_IMPL
 
-void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
+void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, s32 sizeOfCommand)
 {
     void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
     commandBuf->usedAmount += (sizeOfCommand);
     return memoryPointer;
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
+
+void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies)
+{
+    RenderEntry_Geometry* geomEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Geometry);
+    
+    geomEntry->header.type = EntryType_Geometry;
+    geomEntry->verts = worldVerts;
+    geomEntry->indicies = indicies;
+    
+    ++renderingInfo->cmdBuffer.entryCount;
+};
 
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness)
 {
@@ -237,7 +264,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap
     textureEntry->targetRect_worldCoords = worldVerts;
     textureEntry->colorData = bitmap.data;
     textureEntry->normalMap = normalMap;
-    textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
+    textureEntry->size = v2i { (s32)bitmap.width_pxls, (s32)bitmap.height_pxls };
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     textureEntry->isLoadedOnGPU = bitmap.isLoadedOnGPU;//TODO: Remove
@@ -262,7 +289,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap
     textureEntry->targetRect_worldCoords = worldVerts;
     textureEntry->colorData = bitmap.data;
     textureEntry->normalMap = normalMap;
-    textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
+    textureEntry->size = v2i { (s32)bitmap.width_pxls, (s32)bitmap.height_pxls };
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     textureEntry->isLoadedOnGPU = bitmap.isLoadedOnGPU;//TODO: Remove
@@ -302,15 +329,15 @@ Image LoadBitmap_BGRA(const char* fileName)
     { //Load image data using stb (w/ user defined read/seek functions and memory allocation functions)
         stbi_set_flip_vertically_on_load(true); //So first byte stbi_load() returns is bottom left instead of top-left of image (which is stb's default)
         
-        i32 numOfLoadedChannels {};
-        i32 desiredChannels { 4 }; //Since I still draw assuming 4 byte pixels I need 4 channels
+        s32 numOfLoadedChannels {};
+        s32 desiredChannels { 4 }; //Since I still draw assuming 4 byte pixels I need 4 channels
         
         //Returns RGBA
         unsigned char* imageData = stbi_load(fileName, &result.width_pxls, &result.height_pxls, &numOfLoadedChannels, desiredChannels);
         BGZ_ASSERT(imageData, "Invalid image data!");
         
-        i32 totalPixelCountOfImg = result.width_pxls * result.height_pxls;
-        ui32* imagePixel = (ui32*)imageData;
+        s32 totalPixelCountOfImg = result.width_pxls * result.height_pxls;
+        u32* imagePixel = (u32*)imageData;
         
         //Swap R and B channels of image
         for (int i = 0; i < totalPixelCountOfImg; ++i)
@@ -321,16 +348,16 @@ Image LoadBitmap_BGRA(const char* fileName)
             f32 alphaBlend = color.a / 255.0f;
             color.rgb *= alphaBlend;
             
-            ui32 newSwappedPixelColor = (((ui8)color.a << 24) | ((ui8)color.r << 16) | ((ui8)color.g << 8) | ((ui8)color.b << 0));
+            u32 newSwappedPixelColor = (((u8)color.a << 24) | ((u8)color.r << 16) | ((u8)color.g << 8) | ((u8)color.b << 0));
             
             *imagePixel++ = newSwappedPixelColor;
         }
         
-        result.data = (ui8*)imageData;
+        result.data = (u8*)imageData;
     };
     
     result.aspectRatio = (f32)result.width_pxls / (f32)result.height_pxls;
-    result.pitch_pxls = (ui32)result.width_pxls * BYTES_PER_PIXEL;
+    result.pitch_pxls = (u32)result.width_pxls * BYTES_PER_PIXEL;
     
     return result;
 };
@@ -388,7 +415,7 @@ auto _DilateAboutArbitraryPoint(v2 PointOfDilation, f32 ScaleFactor, Quadf QuadT
 {
     Quadf DilatedQuad {};
     
-    for (i32 vertIndex = 0; vertIndex < 4; ++vertIndex)
+    for (s32 vertIndex = 0; vertIndex < 4; ++vertIndex)
     {
         v2 Distance = PointOfDilation - QuadToDilate.vertices[vertIndex];
         Distance *= ScaleFactor;
@@ -415,7 +442,7 @@ Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
     
     v2 translationToCameraSpace = camera.viewCenter - camera.lookAt;
     
-    for (i32 vertIndex {}; vertIndex < 4; vertIndex++)
+    for (s32 vertIndex {}; vertIndex < 4; vertIndex++)
     {
         worldCoords.vertices[vertIndex] += translationToCameraSpace;
     };
@@ -434,17 +461,17 @@ v2 ProjectionTransform_Ortho(v2 cameraCoords, f32 pixelsPerMeter)
 
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter)
 {
-    for (i32 vertIndex {}; vertIndex < 4; vertIndex++)
+    for (s32 vertIndex {}; vertIndex < 4; vertIndex++)
         cameraCoords.vertices[vertIndex] *= pixelsPerMeter;
     
     return cameraCoords;
 };
 
-local_func auto _LinearBlend(ui32 foregroundColor, ui32 backgroundColor, ChannelType colorFormat)
+local_func auto _LinearBlend(u32 foregroundColor, u32 backgroundColor, ChannelType colorFormat)
 {
     struct Result
     {
-        ui8 blendedPixel_R, blendedPixel_G, blendedPixel_B;
+        u8 blendedPixel_R, blendedPixel_G, blendedPixel_B;
     };
     Result blendedColor {};
     
@@ -453,9 +480,9 @@ local_func auto _LinearBlend(ui32 foregroundColor, ui32 backgroundColor, Channel
     
     f32 blendPercent = foreGroundColors.a / 255.0f;
     
-    blendedColor.blendedPixel_R = (ui8)Lerp(backgroundColors.r, foreGroundColors.r, blendPercent);
-    blendedColor.blendedPixel_G = (ui8)Lerp(backgroundColors.g, foreGroundColors.g, blendPercent);
-    blendedColor.blendedPixel_B = (ui8)Lerp(backgroundColors.b, foreGroundColors.b, blendPercent);
+    blendedColor.blendedPixel_R = (u8)Lerp(backgroundColors.r, foreGroundColors.r, blendPercent);
+    blendedColor.blendedPixel_G = (u8)Lerp(backgroundColors.g, foreGroundColors.g, blendPercent);
+    blendedColor.blendedPixel_B = (u8)Lerp(backgroundColors.b, foreGroundColors.b, blendPercent);
     
     return blendedColor;
 };

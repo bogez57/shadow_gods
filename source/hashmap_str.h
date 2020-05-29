@@ -13,9 +13,9 @@ enum Error
 template <typename Type>
 class KeyInfo
 {
-public:
+    public:
     const char* originalString{nullptr};
-    i32 uniqueID{};
+    s32 uniqueID{};
     Type value;
     KeyInfo<Type>* nextInfo;
 };
@@ -23,47 +23,47 @@ public:
 template <typename ValueType>
 class HashMap_Str
 {
-public:
+    public:
     HashMap_Str() = default;
-    HashMap_Str(i32 memParitionID) :
-        keyInfos{4096, memParitionID}
+    HashMap_Str(s32 memParitionID) :
+    keyInfos{4096, memParitionID}
     {};
-
+    
     Dynam_Array<KeyInfo<ValueType>> keyInfos;
-    i32 numOfCollisions{};
+    s32 numOfCollisions{};
 };
 
 template <typename ValueType>
 HashMap_Str<ValueType> CopyHashMap(HashMap_Str<ValueType> src)
 {
     HashMap_Str<ValueType> dest = src;
-
+    
     CopyArray(src.keyInfos, $(dest.keyInfos));
-
+    
     return dest;
 };
 
-i32 _ProduceUniqueIDForString(const char* key)
+s32 _ProduceUniqueIDForString(const char* key)
 {
-    i32 uniqueID{};
-    for (i32 i{}; key[i] != 0; ++i)
+    s32 uniqueID{};
+    for (s32 i{}; key[i] != 0; ++i)
     {
         uniqueID += key[i];
     };
-
+    
     return uniqueID;
 };
 
-ui16 _HashFunction(i32 numberToCondense)
+u16 _HashFunction(s32 numberToCondense)
 {
     BGZ_ASSERT(numberToCondense < 0xFFFF, "Key originalString was too big!");
-
-    ui16 indexIntoHashArr{};
-    ui16 mask_clearNibble{ 0x0FFF };
-
-    indexIntoHashArr = (ui16)numberToCondense;
+    
+    u16 indexIntoHashArr{};
+    u16 mask_clearNibble{ 0x0FFF };
+    
+    indexIntoHashArr = (u16)numberToCondense;
     indexIntoHashArr = indexIntoHashArr & mask_clearNibble;
-
+    
     return indexIntoHashArr;
 };
 
@@ -75,15 +75,15 @@ void CleanUpHashMap_Str(HashMap_Str<ValueType>&& map)
 };
 
 template <typename ValueType>
-ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
+u16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
 {
     KeyInfo<ValueType> info{};
     info.originalString = key;
     info.value = value;
     info.uniqueID = _ProduceUniqueIDForString(key);
-
-    ui16 indexIntoHashArr = _HashFunction(info.uniqueID);
-
+    
+    u16 indexIntoHashArr = _HashFunction(info.uniqueID);
+    
     if (NOT map.keyInfos.At(indexIntoHashArr).uniqueID || map.keyInfos.At(indexIntoHashArr).uniqueID == info.uniqueID)
     {
         Insert($(map.keyInfos), info, indexIntoHashArr);
@@ -91,49 +91,49 @@ ui16 Insert(HashMap_Str<ValueType>&& map, const char* key, ValueType value)
     else
     {
         KeyInfo<ValueType>** nextInfo = &map.keyInfos.At(indexIntoHashArr).nextInfo;
-
+        
         while (*nextInfo)
         {
             if ((*nextInfo)->uniqueID == info.uniqueID)
-               break;
+                break;
             else
                 nextInfo = &(*nextInfo)->nextInfo;
         };
-
+        
         BGZ_ASSERT(map.numOfCollisions < (map.keyInfos.size - 2) / 2, "Hash Table contains too many collisions! Reached end of space allocated for collision entries");
-
+        
         *nextInfo = &map.keyInfos.At((map.keyInfos.size - 1) - map.numOfCollisions);
         **nextInfo = info;
         ++map.numOfCollisions;
     };
-
+    
     return indexIntoHashArr;
 };
 
 template <typename ValueType>
-i32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
+s32 GetHashIndex(HashMap_Str<ValueType> map, const char* key)
 {
-    ui16 uniqueKeyID = _ProduceUniqueIDForString(key);
-
-    ui16 mask_clearNibble{ 0x0FFF };
-
-    i32 indexIntoHashArr{ Error::HASH_DOES_NOT_EXIST };
-
-    i32 tempIndex = _HashFunction(uniqueKeyID);
+    u16 uniqueKeyID = _ProduceUniqueIDForString(key);
+    
+    u16 mask_clearNibble{ 0x0FFF };
+    
+    s32 indexIntoHashArr{ Error::HASH_DOES_NOT_EXIST };
+    
+    s32 tempIndex = _HashFunction(uniqueKeyID);
     if (map.keyInfos.At(tempIndex).uniqueID)
         indexIntoHashArr = tempIndex;
-
+    
     return indexIntoHashArr;
 };
 
 template <typename ValueType>
-ValueType* GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
+ValueType* GetVal(HashMap_Str<ValueType> map, s32 hashIndex, const char* key)
 {
     ValueType* result{};
-
-    ui16 uniqueKeyID = _ProduceUniqueIDForString(key);
-
-    b run{ true };
+    
+    u16 uniqueKeyID = _ProduceUniqueIDForString(key);
+    
+    bool run{ true };
     KeyInfo<ValueType>* nextKey{ &map.keyInfos.At(hashIndex) };
     while (run)
     {
@@ -147,7 +147,7 @@ ValueType* GetVal(HashMap_Str<ValueType> map, i32 hashIndex, const char* key)
             nextKey = nextKey->nextInfo;
         }
     };
-
+    
     return result;
 };
 #endif

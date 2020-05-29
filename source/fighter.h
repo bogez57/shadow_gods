@@ -19,13 +19,13 @@ struct Fighter
     HurtBox hurtBox;
 };
 
-void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox,v2 worldPos, b flipX);
+void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox,v2 worldPos,bool flipX);
 
 #endif
 
 #ifdef FIGHTER_IMPL
 
-void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox, v2 worldPos, b flipX = false)
+void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 fighterHeight, HurtBox defaultHurtBox, v2 worldPos,bool flipX = false)
 {
     fighter.skel = skel;//Deep copy needed??
     fighter.animData = animData;
@@ -42,7 +42,7 @@ void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 f
         fighter.skel.height = fighter.height;
         fighter.skel.width = aspectRatio * fighter.height;
         
-        for (i32 boneIndex {}; boneIndex < fighter.skel.bones.length; ++boneIndex)
+        for (s32 boneIndex {}; boneIndex < fighter.skel.bones.length; ++boneIndex)
         {
             fighter.skel.bones[boneIndex].worldSpace.scale = fighter.world.scale;
             fighter.skel.bones[boneIndex].parentBoneSpace.translation.x *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
@@ -52,7 +52,7 @@ void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 f
             fighter.skel.bones[boneIndex].length *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
         };
         
-        for (i32 slotI {}; slotI < fighter.skel.slots.length; ++slotI)
+        for (s32 slotI {}; slotI < fighter.skel.slots.length; ++slotI)
         {
             fighter.skel.slots[slotI].regionAttachment.height *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
             fighter.skel.slots[slotI].regionAttachment.width *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
@@ -60,14 +60,14 @@ void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 f
             fighter.skel.slots[slotI].regionAttachment.parentBoneSpace.translation.y *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
         };
         
-        for (i32 animIndex {}; animIndex < fighter.animData.animMap.animations.length; ++animIndex)
+        for (s32 animIndex {}; animIndex < fighter.animData.animMap.animations.length; ++animIndex)
         {
             Animation* anim = (Animation*)&fighter.animData.animMap.animations[animIndex];
             
             if (anim->name)
             {
                 anim = GetAnimation(fighter.animData.animMap, anim->name);
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
+                for (s32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
                 {
                     anim->hitBoxes[hitBoxIndex].size.width *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
                     anim->hitBoxes[hitBoxIndex].size.height *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
@@ -80,19 +80,19 @@ void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 f
     
     { //Adjust animations to new height standards
         //TODO: Very stupid, move out or change as I'm currently iterating over ALL keyInfos for which there are a lot in my current hashMap_Str class
-        for (i32 animIndex {}; animIndex < fighter.animData.animMap.animations.length; ++animIndex)
+        for (s32 animIndex {}; animIndex < fighter.animData.animMap.animations.length; ++animIndex)
         {
             Animation anim = fighter.animData.animMap.animations[animIndex];
             
             if (anim.name)
             {
-                for (i32 boneIndex {}; boneIndex < fighter.skel.bones.length; ++boneIndex)
+                for (s32 boneIndex {}; boneIndex < fighter.skel.bones.length; ++boneIndex)
                 {
                     TranslationTimeline* translationTimeline = &anim.boneTranslationTimelines[boneIndex];
                     
                     if (translationTimeline->exists)
                     {
-                        for (i32 keyFrameIndex {}; keyFrameIndex < translationTimeline->timesCount; ++keyFrameIndex)
+                        for (s32 keyFrameIndex {}; keyFrameIndex < translationTimeline->timesCount; ++keyFrameIndex)
                         {
                             translationTimeline->translations[keyFrameIndex].x *= (scaleFactorForHeightAdjustment * fighter.world.scale.x);
                             translationTimeline->translations[keyFrameIndex].y *= (scaleFactorForHeightAdjustment * fighter.world.scale.y);
@@ -106,7 +106,7 @@ void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 f
     //Flip skeleton bones world positions/rotations
     if (flipX)
     {
-        for (i32 i {}; i < fighter.skel.bones.length; ++i)
+        for (s32 i {}; i < fighter.skel.bones.length; ++i)
         {
             if (fighter.skel.bones[i].isRoot)
                 fighter.skel.bones[i].parentBoneSpace.scale.x = -1.0f;
@@ -116,14 +116,14 @@ void InitFighter(Fighter&& fighter, AnimationData animData, Skeleton skel, f32 f
         
         UpdateSkeletonBoneWorldTransforms($(fighter.skel), fighter.world.translation);
         
-        for (i32 animIndex {}; animIndex < fighter.animData.animMap.animations.length; ++animIndex)
+        for (s32 animIndex {}; animIndex < fighter.animData.animMap.animations.length; ++animIndex)
         {
             Animation* anim = &fighter.animData.animMap.animations[animIndex];
             
             if (anim->name)
             {
                 anim = GetAnimation(fighter.animData.animMap, anim->name);
-                for (i32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
+                for (s32 hitBoxIndex {}; hitBoxIndex < anim->hitBoxes.length; ++hitBoxIndex)
                 {
                     anim->hitBoxes[hitBoxIndex].worldPosOffset.x *= -1.0f;
                 };

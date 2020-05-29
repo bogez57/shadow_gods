@@ -1,20 +1,20 @@
+
 #ifndef ATOMIC_TYPES_INCLUDE
 #define ATOMIC_TYPES_INCLUDE
 
 #include <stdint.h>
 #include <utility>
 
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
-typedef i32 b32;
-typedef bool b;
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
+typedef s32 b32;
 
-typedef uint8_t ui8;
-typedef uint16_t ui16;
-typedef uint32_t ui32;
-typedef uint64_t ui64;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 typedef uintptr_t uintptr;
 
 typedef size_t sizet;
@@ -215,22 +215,22 @@ inline mat4x4 IdentityMatrix();
 struct v2i
 {
     v2i() = default;
-    v2i(i32 x, i32 y);
+    v2i(s32 x, s32 y);
     
     union
     {
-        i32 Elem[2];
+        s32 Elem[2];
         struct
         {
-            i32 x, y;
+            s32 x, y;
         };
         struct
         {
-            i32 width, height;
+            s32 width, height;
         };
         struct
         {
-            i32 u, v;
+            s32 u, v;
         };
     };
 };
@@ -238,19 +238,19 @@ struct v2i
 struct v3i
 {
     v3i() = default;
-    v3i(i32 x, i32 y, i32 z);
+    v3i(s32 x, s32 y, s32 z);
     
     union
     {
-        i32 Elem[3];
+        s32 Elem[3];
         struct
         {
-            i32 x, y, z;
+            s32 x, y, z;
         };
         
         struct
         {
-            i32 r, g, b;
+            s32 r, g, b;
         };
     };
 };
@@ -258,39 +258,39 @@ struct v3i
 struct v4i
 {
     v4i() = default;
-    v4i(i32 x, i32 y, i32 z, i32 w);
+    v4i(s32 x, s32 y, s32 z, s32 w);
     
     union
     {
-        i32 Elem[4];
+        s32 Elem[4];
         struct
         {
-            i32 x, y, z, w;
+            s32 x, y, z, w;
         };
         
         struct
         {
-            i32 r, g, b, a;
+            s32 r, g, b, a;
         };
     };
 };
 
-struct v4ui32
+struct v4u32
 {
-    v4ui32() = default;
-    v4ui32(ui32 x, ui32 y, ui32 z, ui32 w);
+    v4u32() = default;
+    v4u32(u32 x, u32 y, u32 z, u32 w);
     
     union
     {
-        i32 Elem[4];
+        s32 Elem[4];
         struct
         {
-            ui32 x, y, z, w;
+            u32 x, y, z, w;
         };
         
         struct
         {
-            ui32 r, g, b, a;
+            u32 r, g, b, a;
         };
     };
 };
@@ -315,16 +315,16 @@ v2i CastV2FToV2I(v2 vecToCast)
 {
     v2i result{};
     
-    result.x = (i32)vecToCast.x;
-    result.y = (i32)vecToCast.y;
+    result.x = (s32)vecToCast.x;
+    result.y = (s32)vecToCast.y;
     
     return result;
 };
 
-inline b
+inline bool
 operator==(v2 a, v2 B)
 {
-    b result { false };
+    bool result { false };
     
     if (a.x == B.x && a.y == B.y)
         result = true;
@@ -332,10 +332,10 @@ operator==(v2 a, v2 B)
     return result;
 };
 
-inline b
+inline bool
 operator!=(v2 a, v2 B)
 {
-    b result { false };
+    bool result { false };
     
     if (a.x != B.x || a.y != B.y)
         result = true;
@@ -708,24 +708,18 @@ operator*(mat4x4 A, mat4x4 B)
     return(R);
 }
 
-inline mat4x4
-PerspectiveProjection(f32 aspectRatio, f32 focalLength)
+inline v3
+GetColumn(mat4x4 A, u32 c)
 {
-    f32 a = 1.0f;
-    f32 b = aspectRatio;
-    f32 c = focalLength;
-    
-    mat4x4 r =
-    {
-        {
-            {a*c, 0, 0, 0},
-            {0, b*c, 0, 0},
-            {0,   0, 1, 0},
-            {0,   0,-1, 0}
-        }
-    };
-    
-    return r;
+    v3 result = {A.elem[0][c], A.elem[1][c], A.elem[2][c]};
+    return(result);
+};
+
+inline v3
+GetRow(mat4x4 A, u32 r)
+{
+    v3 result = {A.elem[r][0], A.elem[r][1], A.elem[r][2]};
+    return(result);
 };
 
 local_func mat4x4
@@ -783,13 +777,13 @@ CamTransform(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
 };
 
 //Other v2 implementations
-v2i::v2i(i32 x, i32 y)
+v2i::v2i(s32 x, s32 y)
 : x(x)
 , y(y)
 {}
 
 inline v2i
-operator*(i32 a, v2i B)
+operator*(s32 a, v2i B)
 {
     v2i result;
     
@@ -800,7 +794,7 @@ operator*(i32 a, v2i B)
 }
 
 inline v2i
-operator*(v2i B, i32 a)
+operator*(v2i B, s32 a)
 {
     v2i result = a * B;
     
@@ -808,7 +802,7 @@ operator*(v2i B, i32 a)
 }
 
 inline v2i&
-operator*=(v2i& B, i32 a)
+operator*=(v2i& B, s32 a)
 {
     B = a * B;
     
@@ -835,7 +829,7 @@ operator+=(v2i& a, v2i b)
 }
 
 inline v2i&
-operator+=(v2i& a, i32 b)
+operator+=(v2i& a, s32 b)
 {
     a.x = a.x + b;
     a.y = a.y + b;
@@ -844,7 +838,7 @@ operator+=(v2i& a, i32 b)
 }
 
 inline v2i&
-operator-=(v2i& a, i32 b)
+operator-=(v2i& a, s32 b)
 {
     a.x = a.x - b;
     a.y = a.y - b;
@@ -872,7 +866,7 @@ operator-(v2i a, v2i b)
     return (result);
 }
 
-v3i::v3i(i32 x, i32 y, i32 z)
+v3i::v3i(s32 x, s32 y, s32 z)
 : x(x)
 , y(y)
 , z(z)
@@ -880,7 +874,7 @@ v3i::v3i(i32 x, i32 y, i32 z)
 
 /* all v3i suff */
 
-v4i::v4i(i32 x, i32 y, i32 z, i32 w)
+v4i::v4i(s32 x, s32 y, s32 z, s32 w)
 : x(x)
 , y(y)
 , z(z)

@@ -1,5 +1,5 @@
 //TODO: don't use member functions
-template <typename Type, i64 size>
+template <typename Type, s64 size>
 class Ring_Buffer
 {
     public:
@@ -70,12 +70,12 @@ class Ring_Buffer
         this->read = (this->read + 1) % this->maxSize;
     };
     
-    b Empty()
+    bool Empty()
     {
         return (NOT this->full && (this->write == this->read));
     };
     
-    b Full()
+    bool Full()
     {
         return this->full;
     };
@@ -86,9 +86,9 @@ class Ring_Buffer
         this->full = false;
     };
     
-    i64 Size()
+    s64 Size()
     {
-        i64 size = this->maxSize;
+        s64 size = this->maxSize;
         
         if (NOT this->full)
         {
@@ -113,9 +113,9 @@ class Ring_Buffer
             this->write = this->read + 1;
     };
     
-    i64 maxSize = size;
-    i64 write {};
-    i64 read {};
-    b full {};
+    s64 maxSize = size;
+    s64 write {};
+    s64 read {};
+    bool full {};
     Array<Type, size> buffer{};//TODO: Prob need to store on the heap since it's likely this will be used for larger arrays. Need to avoid stack overflow
 };

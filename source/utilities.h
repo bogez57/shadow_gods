@@ -43,11 +43,11 @@ struct Transform
     v2 scale{};
 };
 
-inline ui32
-SafeTruncateUInt64(ui64 Value)
+inline u32
+SafeTruncateUInt64(u64 Value)
 {
     BGZ_ASSERT(Value <= 0xFFFFFFFF, "Make sure there wouldn't be information lost with truncate if value was over 32-bits");
-    ui32 result = (ui32)Value;
+    u32 result = (u32)Value;
     return (result);
 };
 
@@ -65,24 +65,24 @@ inline auto Swap(v2* a, v2* b) -> void
     *b = c;
 };
 
-inline i32
+inline s32
 RoundFloat32ToInt32(f32 float32)
 {
-    i32 result{};
+    s32 result{};
     
-    if(float32 < 0.0f) i32 result = (i32)(float32 - 0.5f);
-    else result = (i32)(float32 + 0.5f);
+    if(float32 < 0.0f) s32 result = (s32)(float32 - 0.5f);
+    else result = (s32)(float32 + 0.5f);
     
     return(result);
 }
 
-inline ui32
+inline u32 
 RoundFloat32ToUInt32(f32 float32)
 {
-    ui32 result;
+    u32 result;
     
-    if(float32 < 0.0f) i32 result = (i32)(float32 - 0.5f);
-    else result = (ui32)(float32 + 0.5f);
+    if(float32 < 0.0f) s32 result = (s32)(float32 - 0.5f);
+    else result = (u32)(float32 + 0.5f);
     
     return(result);
 }
@@ -92,11 +92,11 @@ RoundFloat32ToInt32(v2 floats)
 {
     v2i result{};
     
-    if(floats.x < 0.0f) result.x = (i32)(floats.x - 0.5f);
-    else result.x = (i32)(floats.x + .5f);
+    if(floats.x < 0.0f) result.x = (s32)(floats.x - 0.5f);
+    else result.x = (s32)(floats.x + .5f);
     
-    if(floats.y < 0.0f) result.y = (i32)(floats.y - 0.5f);
-    else result.y = (i32)(floats.y + .5f);
+    if(floats.y < 0.0f) result.y = (s32)(floats.y - 0.5f);
+    else result.y = (s32)(floats.y + .5f);
     
     return result;
 }

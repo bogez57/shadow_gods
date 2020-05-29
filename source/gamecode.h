@@ -27,12 +27,13 @@ struct Stage_Data
 
 struct Game_State
 {
+    Geometry cube{};
     Image composite;
     Image normalMap;
     Atlas* atlas;
     f32 lightAngle{};
     f32 lightThreshold{};
     Stage_Data stage;
-    b isLevelOver{false};
+    bool isLevelOver{false};
     Image openGLRenderTest{};
 };
