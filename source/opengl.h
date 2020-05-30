@@ -395,18 +395,10 @@ void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
     
-    GLushort indicies_test[36]{};
-    
-    for(s32 i{}; i < 36; ++i)
-    {
-        indicies_test[i] = indicies.elements[i];
-        indicies_test[i] -= 1;
-    };
-    
     GLuint indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies_test), indicies_test, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * indicies.length, indicies.elements, GL_STATIC_DRAW);
     
     glDisable(GL_TEXTURE_2D);
     glDrawElements(GL_TRIANGLES, (s32)indicies.length, GL_UNSIGNED_SHORT, 0);
@@ -507,6 +499,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 local_persist Transform_v3 worldTransform{};
                 
                 worldTransform.rotation.x += .01f;
+                worldTransform.rotation.y += .01f;
                 
                 //World Transform
                 mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
