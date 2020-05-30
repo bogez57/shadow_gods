@@ -3,20 +3,41 @@
 
 #include "renderer_stuff.h"
 
-local_func void
-GLInit(int windowWidth, int windowHeight)
+const char* vertexShaderCode =
+R"HereDoc(
+
+#version 430
+
+in layout(location=0) vec4 position;
+in layout(location=1) vec3 color;
+out vec3 fragColor;
+
+void main()
 {
-    //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
-    //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
-    //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
-    glViewport(0, 0, windowWidth, windowHeight);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glMatrixMode(GL_MODELVIEW); //For fixed function pipeline modelview matrix is pretty much non-essential "handmade hero ep: 237 26:52". So just load identity matrix for this thing and be done with it (identiy matrix is basically a noop for matrices)
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0); //Sets the projection matrix in openGL which will take our screen coordinates and tramsform them to openGL's clip space (-1 to 1)
-}
+    gl_Position = position;
+    vec3 changedColors;
+    changedColors.r += color.r + .41;
+    changedColors.g += color.g + .04;
+    changedColors.b += color.b + .02;
+    fragColor = changedColors;
+};
+
+)HereDoc";
+
+const char* fragmentShaderCode =
+R"HereDoc(
+
+#version 430
+
+out vec4 color;
+in vec3 fragColor;
+
+void main()
+{
+    color = vec4(fragColor, 1.0f);
+};
+
+)HereDoc";
 
 local_func u32
 LoadTexture(u8* textureData, v2i textureSize)
@@ -115,6 +136,202 @@ DrawLine(v2 minPoint, v2 maxPoint, v3 color, f32 lineThickness)
     glVertex2f(maxPoint.x, maxPoint.y);
     glEnd();
     glFlush();
+};
+
+void CheckCompileStatus(GLuint shaderID)
+{
+    GLint compileStatus;
+    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &compileStatus);
+    
+    if(compileStatus != GL_TRUE)
+    {
+        GLint infoLogLength;
+        glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
+        
+        GLchar buffer[512] = {};
+        GLsizei bufferSize;
+        glGetShaderInfoLog(shaderID, infoLogLength, &bufferSize, buffer);
+        
+        BGZ_CONSOLE("%s", buffer);
+        InvalidCodePath;
+    };
+};
+
+void CheckLinkStatus(GLuint programID)
+{
+    GLint linkStatus;
+    glGetProgramiv(programID, GL_LINK_STATUS, &linkStatus);
+    
+    if(linkStatus != GL_TRUE)
+    {
+        GLint infoLogLength;
+        glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &infoLogLength);
+        
+        GLchar buffer[512] = {};
+        GLsizei bufferSize;
+        glGetProgramInfoLog(programID, infoLogLength, &bufferSize, buffer);
+        
+        BGZ_CONSOLE("%s", buffer);
+        InvalidCodePath;
+    };
+};
+
+local_func void InstallShaders()
+{
+    GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    const char* adapter[1];
+    adapter[0] = vertexShaderCode;
+    glShaderSource(vertexShaderID, 1, adapter, 0);
+    adapter[0] = fragmentShaderCode;
+    glShaderSource(fragmentShaderID, 1, adapter, 0);
+    
+    glCompileShader(vertexShaderID);
+    glCompileShader(fragmentShaderID);
+    
+    CheckCompileStatus(vertexShaderID);
+    CheckCompileStatus(fragmentShaderID);
+    
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexShaderID);
+    glAttachShader(programID, fragmentShaderID);
+    glLinkProgram(programID);
+    
+    CheckLinkStatus(programID);
+    
+    glUseProgram(programID);
+};
+
+local_func void
+GLInit(int windowWidth, int windowHeight)
+{
+#if 0
+    //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
+    //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
+    //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
+    glViewport(0, 0, windowWidth, windowHeight);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glMatrixMode(GL_MODELVIEW); //For fixed function pipeline modelview matrix is pretty much non-essential "handmade hero ep: 237 26:52". So just load identity matrix for this thing and be done with it (identiy matrix is basically a noop for matrices)
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0); //Sets the projection matrix in openGL which will take our screen coordinates and tramsform them to openGL's clip space (-1 to 1)
+#endif
+    
+    //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
+    //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
+    //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glEnable(GL_DEPTH_TEST);
+    InstallShaders();
+}
+
+mat4x4 XRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    mat4x4 R =
+    {
+        {
+            {1, 0, 0, 0},
+            {0, c,-s, 0},
+            {0, s, c, 0},
+            {0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
+inline mat4x4
+YRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    mat4x4 R =
+    {
+        {
+            { c, 0, s, 0},
+            { 0, 1, 0, 0},
+            {-s, 0, c, 0},
+            { 0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
+inline mat4x4
+ZRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    mat4x4 R =
+    {
+        {
+            {c,-s, 0, 0},
+            {s, c, 0, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
+mat4x4 ProduceWorldTransform(v3 translation, v3 rotation, v3 scale)
+{
+    mat4x4 result{};
+    
+    ConvertToCorrectPositiveRadian($(rotation.x));
+    ConvertToCorrectPositiveRadian($(rotation.y));
+    ConvertToCorrectPositiveRadian($(rotation.z));
+    
+    mat4x4 xRotMatrix = XRotation(rotation.x);
+    mat4x4 yRotMatrix = YRotation(rotation.y);
+    mat4x4 zRotMatrix = ZRotation(rotation.z);
+    mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
+    
+    result = Translate(fullRotMatrix, v4{translation, 1.0f});
+    
+    return result;
+};
+
+local_func mat4x4
+ProduceCameraTransform(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
+{
+    mat4x4 result = RowPicture3x3(xAxis, yAxis, zAxis);
+    v4 vecToTransform_4d {vecToTransform, 1.0f};
+    result = Translate(result, -(result*vecToTransform_4d));
+    
+    return result;
+};
+
+mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f32 nearPlane, f32 farPlane)
+{
+    f32 fov = ToRadians(FOV_inDegrees);
+    f32 tanHalfFov = TanR(fov / 2.0f);
+    f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
+    f32 yScale = 1.0f / tanHalfFov;
+    
+    f32 a = (-farPlane - nearPlane) / (nearPlane - farPlane);
+    f32 b = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
+    
+    mat4x4 result =
+    {
+        {
+            {xScale, 0,      0,  0},
+            {  0,    yScale, 0,  0},
+            {  0,    0,      a,  b},
+            {  0,    0,      1,  0}
+        },
+    };
+    
+    return result;
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
