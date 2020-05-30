@@ -383,7 +383,10 @@ void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
     GLfloat indicies_test[36]{};
     
     for(s32 i{}; i < 36; ++i)
+    {
         indicies_test[i] = indicies.elements[i];
+        indicies_test[i] -= 1;
+    };
     
     GLuint indexBufferID;
     glGenBuffers(1, &indexBufferID);
