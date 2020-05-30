@@ -222,6 +222,7 @@ GLInit(int windowWidth, int windowHeight)
     //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
     //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
     //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
+    glViewport(0, 0, windowWidth, windowHeight);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_DEPTH_TEST);
     InstallShaders();
