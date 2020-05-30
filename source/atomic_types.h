@@ -766,16 +766,6 @@ Translate(mat4x4 A, v4 T)
     return result;
 };
 
-local_func mat4x4
-CamTransform(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
-{
-    mat4x4 result = RowPicture3x3(xAxis, yAxis, zAxis);
-    v4 vecToTransform_4d {vecToTransform, 1.0f};
-    result = Translate(result, -(result*vecToTransform_4d));
-    
-    return result;
-};
-
 //Other v2 implementations
 v2i::v2i(s32 x, s32 y)
 : x(x)

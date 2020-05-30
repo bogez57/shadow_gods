@@ -334,6 +334,74 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     return result;
 };
 
+void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
+{
+    GLfloat verts[8 * 7] = {};
+    s32 i{};
+    f32 colorR{}, colorG{}, colorB{};
+    for(s32 j{}; j < 8; ++j)
+    {
+        verts[i++] = cubeVerts_glClipSpace[j].x;
+        verts[i++] = cubeVerts_glClipSpace[j].y;
+        verts[i++] = cubeVerts_glClipSpace[j].z;
+        verts[i++] = cubeVerts_glClipSpace[j].w;
+        verts[i++] = colorR;
+        verts[i++] = colorG;
+        verts[i++] = colorB;
+        
+        if(colorR > 1.0f)
+        {
+            colorR = 0.0f;
+        };
+        
+        if(colorG > 1.0f)
+        {
+            colorG = 0.0f;
+        };
+        
+        if(colorB > 1.0f)
+        {
+            colorB = 0.0f;
+        };
+        
+        colorR += .01f;
+        colorG += .54f;
+        colorB += .27f;
+    };
+    
+    s32 sizeTest = sizeof(verts);
+    
+    GLuint bufferID;
+    glGenBuffers(1, &bufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
+    
+    GLfloat indicies_test[36]{};
+    
+    for(s32 i{}; i < 36; ++i)
+        indicies_test[i] = indicies.elements[i];
+    
+    GLuint indexBufferID;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * indicies.length, indicies_test, GL_STATIC_DRAW);
+    
+    glDisable(GL_TEXTURE_2D);
+    glDrawElements(GL_TRIANGLES, (s32)indicies.length, GL_UNSIGNED_SHORT, 0);
+    glEnable(GL_TEXTURE_2D);
+};
+
+struct Transform_v3
+{
+    v3 translation{};
+    v3 rotation{};
+    v3 scale{1.0f, 1.0f, 1.0f};
+};
+
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
 {
     local_persist bool glIsInitialized { false };
@@ -354,7 +422,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     
     camera->viewCenter = screenSize_meters / 2.0f;
     
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glEnable(GL_TEXTURE_2D);
     
@@ -416,7 +484,34 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             }break;
             
             case EntryType_Geometry: {
-                RenderEntry_Geometry goemetryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
+                RenderEntry_Geometry geometryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
+                
+                Transform_v3 worldTransform{};
+                
+                //World Transform
+                mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
+                
+                local_persist v3 camPos_world{0.0f, 0.0f, -7.0f};
+                local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
+                mat4x4 xRotMatrix = XRotation(camRotation.x);
+                mat4x4 yRotMatrix = YRotation(camRotation.y);
+                mat4x4 zRotMatrix = ZRotation(camRotation.z);
+                mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
+                v3 xAxis = GetColumn(fullRotMatrix, 0);
+                v3 yAxis = GetColumn(fullRotMatrix, 1);
+                v3 zAxis = GetColumn(fullRotMatrix, 2);
+                mat4x4 camTransformMatrix = ProduceCameraTransform(xAxis, yAxis, zAxis, camPos_world);
+                
+                //ProjectionTransform
+                mat4x4 projectionMatrix = ProduceProjectionTransform_UsingFOV(60.0f, 16.0f/9.0f, .1f, 100.0f);
+                
+                mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
+                
+                Array<v4, 8> cubeVerts_openGLClipSpace{};
+                for(s32 i{}; i < 8; ++i)
+                    cubeVerts_openGLClipSpace[i] = fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f};
+                
+                DrawCube(cubeVerts_openGLClipSpace, geometryEntry.indicies);
                 
             }break;
             

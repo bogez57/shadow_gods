@@ -354,10 +354,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     { //Render
         //Push background
+#if 0
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
-        //PushTexture(global_renderingInfo, targetRect_worldCoords, $(stage->backgroundImg), stage->size.height, uvs, "background");
-        PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+#endif
         
         PushGeometry(global_renderingInfo, gState->cube.verts, gState->cube.indicies);
         
