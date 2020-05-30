@@ -20,10 +20,10 @@ class RunTimeArr
         return this->elements[index];
     };
     
-    inline Type& Push()
+    inline Type& Push(Type element = Type())
     {
         BGZ_ASSERT(length < capacity, "Attempting to access index %i which out of current arround bounds - current max index allowed: %i", length, capacity - 1);
-        return (Type&)this->elements[length++];
+        return (Type&)this->elements[length++] = element;
     };
     
     s64 length {};
@@ -44,7 +44,7 @@ template <typename Type>
 void CopyArray(RunTimeArr<Type> sourceArray, RunTimeArr<Type>&& destinationArray)
 {
     BGZ_ASSERT(destinationArray.capacity == sourceArray.capacity, "Variable Array capacities do not match!");
-    BGZ_ASSERT(destinationArray.elements == sourceArray.elements, "Both varialbe arrays pointing to same memory address");
+    BGZ_ASSERT(destinationArray.elements != sourceArray.elements, "Both varialbe arrays pointing to same memory address!");
     
     memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.size);
     destinationArray.length = sourceArray.length;

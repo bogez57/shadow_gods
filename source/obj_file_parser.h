@@ -10,9 +10,11 @@ struct ObjFileData
     RunTimeArr<s16> indicies{};
 };
 
+void test_MPCLibrary();
+void test_OBJFileParsing();
+
 #endif //OBJ_FILE_PARSER_H
 
-void test_MPCLibrary();
 
 #ifdef OBJ_FILE_PARSER_IMPL
 
@@ -30,12 +32,14 @@ static mpc_val_t *print_token(mpc_val_t *x) {
 enum Token_Type
 {
     END_OF_FILE = 0,
-    VECTOR = 'v'
+    VECTOR = 'v',
+    FACE = 'f'
 };
 
 struct Token
 {
     Token_Type type;
+    char* text{};
     s32 length{};
 };
 
@@ -81,7 +85,27 @@ void AdvanceTokenizer(Tokenizer&& tokenizer)
     ++tokenizer.at;
 };
 
-Token GetToken(Tokenizer&& tokenizer)
+char Peek(char* string, s32 howFarAheadToPeek)
+{
+    BGZ_ASSERT(*string != '\0', "Reached end of file!");
+    BGZ_ASSERT(string != nullptr, "Trying to read uninitialized pointer!");
+    
+    for(s32 i{}; i < howFarAheadToPeek; ++i)
+    {
+        ++string;
+        if(*string == '\0')
+            break;
+    }
+    
+    char result = *string;
+    
+    if(*string != '\0')
+        string -= howFarAheadToPeek;
+    
+    return result;
+};
+
+Token GetToken(Tokenizer&& tokenizer, Memory_Partition* memPart)
 {
     Token token{};
     token.length = 1;
@@ -99,15 +123,72 @@ Token GetToken(Tokenizer&& tokenizer)
             
             case 'v':
             {
-                AdvanceTokenizer($(tokenizer));
-                if(IsWhiteSpace(tokenizer.at[0]))
+                if(IsWhiteSpace(Peek(tokenizer.at, 1)) && (IsDigit(Peek(tokenizer.at, 2)) || IsMinusSign(Peek(tokenizer.at, 2))))
+                {
+                    token.type = VECTOR;
+                    contentsStillNeedParsed = false;
+                    
+                    //Remove v and initial whitespace
+                    AdvanceTokenizer($(tokenizer));
+                    AdvanceTokenizer($(tokenizer));
+                    
+                    char* scalarString = PushType(memPart, char, 100);
+                    s32 stringI{}, sizeOfString{};
+                    while(tokenizer.at[0] != 'v')
+                    {
+                        scalarString[stringI] = tokenizer.at[0];
+                        AdvanceTokenizer($(tokenizer));
+                        ++stringI;
+                        ++sizeOfString;
+                    };
+                    
+                    token.text = scalarString;
+                    token.length = sizeOfString;
+                }
+                else
                 {
                     AdvanceTokenizer($(tokenizer));
-                    if(IsDigit(tokenizer.at[0]) || IsPeriod(tokenizer.at[0]) || IsMinusSign(tokenizer.at[0]))
+                };
+            }break;
+            
+            case 'f':
+            {
+                if(IsWhiteSpace(Peek(tokenizer.at, 1)) && IsDigit(Peek(tokenizer.at, 2)))
+                {
+                    token.type = FACE;
+                    contentsStillNeedParsed = false;
+                    
+                    //Remove f and initial whitespace
+                    AdvanceTokenizer($(tokenizer));
+                    AdvanceTokenizer($(tokenizer));
+                    
+                    char* indexString = PushType(memPart, char, 100);
+                    
+                    bool indiciesStillNeedLoaded{true};
+                    s32 stringI{};
+                    while(indiciesStillNeedLoaded)
                     {
-                        token.type = VECTOR;
-                        contentsStillNeedParsed = false;
+                        indexString[stringI] = tokenizer.at[0];
+                        ++stringI;
+                        indexString[stringI] = ',';
+                        ++stringI;
+                        AdvanceTokenizer($(tokenizer));
+                        
+                        while(NOT IsWhiteSpace(tokenizer.at[0]) && tokenizer.at[0] != '\0')
+                            AdvanceTokenizer($(tokenizer));
+                        
+                        while(IsWhiteSpace(tokenizer.at[0]) || tokenizer.at[0] == 'f')
+                            AdvanceTokenizer($(tokenizer));
+                        
+                        if(tokenizer.at[0] == '\0')
+                            indiciesStillNeedLoaded = false;
                     };
+                    
+                    token.text = indexString;
+                }
+                else
+                {
+                    AdvanceTokenizer($(tokenizer));
                 };
             }break;
             
@@ -121,42 +202,59 @@ Token GetToken(Tokenizer&& tokenizer)
     return token;
 };
 
-void ParseAndStoreContents(ObjFileData&& data, char* fileContents)
+void ParseAndStoreContents(ObjFileData&& data, Memory_Partition* memPart, char* fileContents)
 {
     Tokenizer tokenizer{};
     tokenizer.at = fileContents;
     
+    Temporary_Memory parsingMemory = BeginTemporaryMemory($(*memPart));
+    
     bool contentsStillNeedParsed{true};
     while(contentsStillNeedParsed)
     {
-        Token token = GetToken($(tokenizer));
+        Token token = GetToken($(tokenizer), memPart);
         
         switch(token.type)
         {
             case VECTOR:
             {
-                Array<f32, 3> scalars{};
+                BGZ_ASSERT(token.text != nullptr, "string should exist!");
+                
+                v3 vector{};
                 for(s32 i{}; i < 3; ++i)
                 {
-                    if(IsWhiteSpace(tokenizer.at[0]))
-                        AdvanceTokenizer($(tokenizer));
-                    
                     char scalarString[10]{};
                     s32 stringI{};
-                    while(IsDigit(tokenizer.at[0]) || IsPeriod(tokenizer.at[0]) || IsMinusSign(tokenizer.at[0]))
+                    while(IsDigit(*token.text) || IsPeriod(*token.text) || IsMinusSign(*token.text))
                     {
-                        scalarString[stringI] = tokenizer.at[0];
-                        AdvanceTokenizer($(tokenizer));
+                        scalarString[stringI] = *token.text++;
                         ++stringI;
                     };
                     
-                    scalars[i] = (f32)strtod(scalarString, NULL);
+                    vector.elem[i] = (f32)strtod(scalarString, NULL);
+                    token.text++;//Move past whitespace
                 };
                 
-                data.verts.Push();
-                data.verts[data.verts.length - 1].x = scalars[0];
-                data.verts[data.verts.length - 1].y = scalars[1];
-                data.verts[data.verts.length - 1].z = scalars[2];
+                data.verts.Push(vector);
+            }break;
+            
+            case FACE:
+            {
+                BGZ_ASSERT(token.text != nullptr, "string should exist!");
+                
+                bool stillIndiciesToStore{true};
+                while(stillIndiciesToStore)
+                {
+                    char* placeholder{};
+                    s32 num = strtol(&token.text[0], &placeholder, 10/*base*/);
+                    data.indicies.Push(num);
+                    ++token.text;
+                    
+                    if(Peek(token.text, 1) != '\0')
+                        ++token.text;
+                    else
+                        stillIndiciesToStore = false;
+                }
             }break;
             
             case END_OF_FILE:
@@ -165,6 +263,8 @@ void ParseAndStoreContents(ObjFileData&& data, char* fileContents)
             }break;
         };
     };
+    
+    EndTemporaryMemory(parsingMemory);
 };
 
 ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)
@@ -175,15 +275,18 @@ ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)
     
     ObjFileData data{};
     InitArr($(data.verts), memPart, 20/*capacity*/);
-    InitArr($(data.indicies), memPart, 20/*capacity*/);
+    InitArr($(data.indicies), memPart, 50/*capacity*/);
     
-    ParseAndStoreContents($(data), fileContents);
+    ParseAndStoreContents($(data), memPart, fileContents);
     
     return data;
 };
 
 void ConstructGeometry(RunTimeArr<v3>&& verts, RunTimeArr<s16>&& indicies, ObjFileData objFileData)
 {
+    BGZ_ASSERT(verts.capacity >= objFileData.verts.capacity, "Don't have enough space in the incoming vertex array to store all object file vertex data!");
+    BGZ_ASSERT(indicies.capacity >= objFileData.indicies.capacity, "Don't have enough space in the incoming index array to store all object file index data!");
+    
     
 };
 
