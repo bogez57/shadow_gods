@@ -46,7 +46,7 @@ void CopyArray(RunTimeArr<Type> sourceArray, RunTimeArr<Type>&& destinationArray
     BGZ_ASSERT(destinationArray.capacity == sourceArray.capacity, "Variable Array capacities do not match!");
     BGZ_ASSERT(destinationArray.elements != sourceArray.elements, "Both varialbe arrays pointing to same memory address!");
     
-    memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.size);
+    memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.length);
     destinationArray.length = sourceArray.length;
 };
 

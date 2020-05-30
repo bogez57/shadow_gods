@@ -199,6 +199,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             }break;
             
             case EntryType_Geometry: {
+                RenderEntry_Geometry goemetryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
                 
             }break;
             

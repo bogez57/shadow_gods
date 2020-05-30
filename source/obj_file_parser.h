@@ -284,16 +284,19 @@ ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)
 
 void ConstructGeometry(RunTimeArr<v3>&& verts, RunTimeArr<s16>&& indicies, ObjFileData objFileData)
 {
-    BGZ_ASSERT(verts.capacity >= objFileData.verts.capacity, "Don't have enough space in the incoming vertex array to store all object file vertex data!");
-    BGZ_ASSERT(indicies.capacity >= objFileData.indicies.capacity, "Don't have enough space in the incoming index array to store all object file index data!");
-    
-    
+    CopyArray(objFileData.verts, $(verts));
+    CopyArray(objFileData.indicies, $(indicies));
 };
-
 
 void test_OBJFileParsing(Memory_Partition* memPart)
 {
+    RunTimeArr<v3> cubeVerts{};
+    RunTimeArr<s16> cubeIndicies{};
+    InitArr($(cubeVerts), memPart, 20);
+    InitArr($(cubeIndicies), memPart, 50);
+    
     ObjFileData data = LoadObjFileData(memPart, "data/cube.obj");
+    ConstructGeometry($(cubeVerts), $(cubeIndicies), data);
 };
 
 

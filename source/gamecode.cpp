@@ -326,8 +326,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
-        test_OBJFileParsing(framePart);
-        
         BGZ_ERRCTXT1("When Initializing game memory and game state");
         
         gameMemory->initialized = true;
@@ -347,7 +345,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         //Init cube
         InitArr($(gState->cube.verts), levelPart, 20);
-        InitArr($(gState->cube.indicies), levelPart, 20);
+        InitArr($(gState->cube.indicies), levelPart, 50);
+        ObjFileData data = LoadObjFileData(framePart, "data/cube.obj");
+        ConstructGeometry($(gState->cube.verts), $(gState->cube.indicies), data);
     };
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
@@ -358,6 +358,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
         //PushTexture(global_renderingInfo, targetRect_worldCoords, $(stage->backgroundImg), stage->size.height, uvs, "background");
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+        
+        PushGeometry(global_renderingInfo, gState->cube.verts, gState->cube.indicies);
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);
