@@ -335,6 +335,22 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     return result;
 };
 
+GLushort indicies2[] =
+{
+    4,2,0,
+    2,7,3,
+    6,5,7,
+    1,7,5,
+    0,3,1,
+    4,1,5,
+    4,6,2,
+    2,6,7,
+    6,4,5,
+    1,3,7,
+    0,2,3,
+    4,0,1
+};
+
 void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
 {
     GLfloat verts[8 * 7] = {};
@@ -370,8 +386,6 @@ void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
         colorB += .27f;
     };
     
-    s32 sizeTest = sizeof(verts);
-    
     GLuint bufferID;
     glGenBuffers(1, &bufferID);
     glBindBuffer(GL_ARRAY_BUFFER, bufferID);
@@ -381,7 +395,7 @@ void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
     
-    GLfloat indicies_test[36]{};
+    GLushort indicies_test[36]{};
     
     for(s32 i{}; i < 36; ++i)
     {
@@ -392,7 +406,7 @@ void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
     GLuint indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * indicies.length, indicies_test, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies_test), indicies_test, GL_STATIC_DRAW);
     
     glDisable(GL_TEXTURE_2D);
     glDrawElements(GL_TRIANGLES, (s32)indicies.length, GL_UNSIGNED_SHORT, 0);
@@ -412,7 +426,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     if (NOT glIsInitialized)
     {
         GLInit(windowWidth, windowHeight);
-        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+        glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
         glIsInitialized = true;
     };
     
@@ -490,7 +504,9 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Geometry: {
                 RenderEntry_Geometry geometryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
                 
-                Transform_v3 worldTransform{};
+                local_persist Transform_v3 worldTransform{};
+                
+                worldTransform.rotation.x += .01f;
                 
                 //World Transform
                 mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
