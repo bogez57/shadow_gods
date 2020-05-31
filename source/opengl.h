@@ -39,6 +39,14 @@ void main()
 
 )HereDoc";
 
+void GLAPIENTRY MyOpenGLErrorCallbackFunc(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+    BGZ_CONSOLE("%s type=0x%x %s\n", ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, message);
+#if _MSC_VER
+    __debugbreak();
+#endif
+};
+
 local_func u32
 LoadTexture(u8* textureData, v2i textureSize)
 {
@@ -206,23 +214,14 @@ local_func void InstallShaders()
 local_func void
 GLInit(int windowWidth, int windowHeight)
 {
-#if 0
-    //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
-    //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
-    //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MyOpenGLErrorCallbackFunc, 0);
+    
     glViewport(0, 0, windowWidth, windowHeight);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glMatrixMode(GL_MODELVIEW); //For fixed function pipeline modelview matrix is pretty much non-essential "handmade hero ep: 237 26:52". So just load identity matrix for this thing and be done with it (identiy matrix is basically a noop for matrices)
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, (f32)windowWidth, 0.0, (f32)windowHeight, -1.0, 1.0); //Sets the projection matrix in openGL which will take our screen coordinates and tramsform them to openGL's clip space (-1 to 1)
-#endif
     
     //If this is set to GL_MODULATE instead then you might get unwanted texture coloring.
     //In order to avoid that in GL_MODULATE mode you need to constantly set glcolor to white after drawing.
     //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
-    glViewport(0, 0, windowWidth, windowHeight);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_DEPTH_TEST);
     InstallShaders();
@@ -333,22 +332,6 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     };
     
     return result;
-};
-
-GLushort indicies2[] =
-{
-    4,2,0,
-    2,7,3,
-    6,5,7,
-    1,7,5,
-    0,3,1,
-    4,1,5,
-    4,6,2,
-    2,6,7,
-    6,4,5,
-    1,3,7,
-    0,2,3,
-    4,0,1
 };
 
 void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
