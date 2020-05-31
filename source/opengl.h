@@ -509,6 +509,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 DrawCube(cubeVerts_openGLClipSpace, geometryEntry.indicies);
                 
+                currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;
             
             InvalidDefaultCase;
