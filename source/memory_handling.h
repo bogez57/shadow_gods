@@ -38,6 +38,12 @@ struct _PartitionMap
     s32 currentCount{};
 };
 
+struct Temporary_Memory
+{
+    Memory_Partition* memPartition {};
+    s64 initialusedAmountFromMemPartition {};
+};
+
 struct Application_Memory
 {
     bool  initialized { false };
@@ -56,6 +62,11 @@ void Release(Memory_Partition&& memPartition);
 
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress);
 Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, s64 size, const char* partName);
+Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, const char* partName);
+Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition);
+void EndTemporaryMemory(Temporary_Memory TempMem);
+void IsAllTempMemoryCleared(Memory_Partition* memPartition);
+void Release(Memory_Partition&& memPartition);
 
 #endif
 
@@ -146,12 +157,6 @@ auto _FreeSize(Memory_Partition&& memPartition, s64 sizeToFree) -> void
     ASSERT(sizeToFree < memPartition.usedAmount);
     
     memPartition.usedAmount -= sizeToFree;
-};
-
-struct Temporary_Memory
-{
-    Memory_Partition* memPartition {};
-    s64 initialusedAmountFromMemPartition {};
 };
 
 Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition)

@@ -43,6 +43,7 @@
 #include "renderer_stuff.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
+
 #include "opengl.h"
 #include "software_rendering.h"
 
@@ -52,6 +53,7 @@
 #include "renderer_stuff.h"
 #define MEMORY_HANDLING_IMPL
 #include "memory_handling.h"
+
 
 global_variable u32 globalWindowWidth { 1280 };
 global_variable u32 globalWindowHeight { 720 };
@@ -405,12 +407,12 @@ namespace Win32
     }
     
     local_func void
-        DisplayBufferInWindow(Rendering_Info&& renderingInfo, Application_Memory* appMemory, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
+        DisplayBufferInWindow(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
         bool renderThroughHardware { true };
         if (renderThroughHardware)
         {
-            RenderViaHardware($(renderingInfo), appMemory, windowWidth, windowHeight);
+            RenderViaHardware($(renderingInfo), platformMemoryPart, windowWidth, windowHeight);
             SwapBuffers(deviceContext);
         }
         else
@@ -891,6 +893,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "frame");
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "level");
+            Memory_Partition* platformMemoryPart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "platform");
             
             { //Init render command buffer and other render stuff
                 void* renderCommandBaseAddress = (void*)(((u8*)baseAddress) + gameMemory.totalSize + 1);
@@ -1107,7 +1110,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     //BGZ_CONSOLE("Missed our frame rate!!!\n");
                 }
                 
-                Win32::DisplayBufferInWindow($(renderingInfo), &gameMemory, deviceContext, windowDimension.width, windowDimension.height, platformServices);
+                Win32::DisplayBufferInWindow($(renderingInfo), platformMemoryPart, deviceContext, windowDimension.width, windowDimension.height, platformServices);
                 ReleaseDC(window, deviceContext);
                 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();
@@ -1117,6 +1120,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.realLifeTimeInSecs += platformServices.prevFrameTimeInSecs;
                 
                 FramePerformanceTimer.UpdateTimeCount();
+                
+                IsAllTempMemoryCleared(platformMemoryPart);
             };
             
             //Hardware Rendering shutdown procedure

@@ -5,6 +5,7 @@
 #include "skeleton.h"
 #include "collision_detection.h"
 #include "json.h"
+#include "memory_handling.h"
 
 /*
     1. Organize data in more of a SOA fashion?

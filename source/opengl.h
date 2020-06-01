@@ -2,7 +2,7 @@
 #define OPENGL_INCLUDE_H
 
 #include "renderer_stuff.h"
-Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, const char* partName);
+#include "memory_handling.h"
 
 const char* vertexShaderCode =
 R"HereDoc(
@@ -396,7 +396,7 @@ struct Transform_v3
     v3 scale{1.0f, 1.0f, 1.0f};
 };
 
-void RenderViaHardware(Rendering_Info&& renderingInfo, Application_Memory* memory, int windowWidth, int windowHeight)
+void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, int windowWidth, int windowHeight)
 {
     local_persist bool glIsInitialized { false };
     if (NOT glIsInitialized)
@@ -504,14 +504,16 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Application_Memory* memor
                 
                 mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
                 
-                Memory_Partition* levelPart = GetMemoryPartition(memory, "level");
+                Temporary_Memory cubeVerts = BeginTemporaryMemory($(*platformMemoryPart));
                 
                 RunTimeArr<v4> cubeVerts_openGLClipSpace{};
-                InitArr($(cubeVerts_openGLClipSpace), levelPart, geometryEntry.verts.length);
+                InitArr($(cubeVerts_openGLClipSpace), platformMemoryPart, geometryEntry.verts.length);
                 for(s32 i{}; i < geometryEntry.verts.length; ++i)
                     cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
                 
                 DrawCube(cubeVerts_openGLClipSpace, geometryEntry.indicies);
+                
+                EndTemporaryMemory(cubeVerts);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;
