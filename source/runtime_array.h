@@ -2,7 +2,7 @@
 #define VARIABLE_ARRAY_H
 
 template <typename Type>
-class RunTimeArr
+struct RunTimeArr
 {
     public:
     RunTimeArr() = default;

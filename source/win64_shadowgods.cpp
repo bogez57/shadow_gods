@@ -411,12 +411,12 @@ namespace Win32
     }
     
     local_func void
-        DisplayBufferInWindow(Rendering_Info&& renderingInfo, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
+        DisplayBufferInWindow(Rendering_Info&& renderingInfo, Application_Memory* appMemory, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
         bool renderThroughHardware { true };
         if (renderThroughHardware)
         {
-            RenderViaHardware($(renderingInfo), windowWidth, windowHeight);
+            RenderViaHardware($(renderingInfo), appMemory, windowWidth, windowHeight);
             SwapBuffers(deviceContext);
         }
         else
@@ -1113,7 +1113,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     //BGZ_CONSOLE("Missed our frame rate!!!\n");
                 }
                 
-                Win32::DisplayBufferInWindow($(renderingInfo), deviceContext, windowDimension.width, windowDimension.height, platformServices);
+                Win32::DisplayBufferInWindow($(renderingInfo), &gameMemory, deviceContext, windowDimension.width, windowDimension.height, platformServices);
                 ReleaseDC(window, deviceContext);
                 
                 f32 frameTimeInMS = FramePerformanceTimer.MilliSecondsElapsed();

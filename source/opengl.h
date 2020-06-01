@@ -2,6 +2,7 @@
 #define OPENGL_INCLUDE_H
 
 #include "renderer_stuff.h"
+Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, const char* partName);
 
 const char* vertexShaderCode =
 R"HereDoc(
@@ -334,12 +335,12 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     return result;
 };
 
-void DrawCube(Array<v4, 8> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
+void DrawCube(RunTimeArr<v4> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
 {
-    GLfloat verts[8 * 7] = {};
+    GLfloat verts[20 * 7] = {};
     s32 i{};
     f32 colorR{}, colorG{}, colorB{};
-    for(s32 j{}; j < 8; ++j)
+    for(s32 j{}; j < 20; ++j)
     {
         verts[i++] = cubeVerts_glClipSpace[j].x;
         verts[i++] = cubeVerts_glClipSpace[j].y;
@@ -395,7 +396,7 @@ struct Transform_v3
     v3 scale{1.0f, 1.0f, 1.0f};
 };
 
-void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
+void RenderViaHardware(Rendering_Info&& renderingInfo, Application_Memory* memory, int windowWidth, int windowHeight)
 {
     local_persist bool glIsInitialized { false };
     if (NOT glIsInitialized)
@@ -503,9 +504,12 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
                 
-                Array<v4, 8> cubeVerts_openGLClipSpace{};
-                for(s32 i{}; i < 8; ++i)
-                    cubeVerts_openGLClipSpace[i] = fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f};
+                Memory_Partition* levelPart = GetMemoryPartition(memory, "level");
+                
+                RunTimeArr<v4> cubeVerts_openGLClipSpace{};
+                InitArr($(cubeVerts_openGLClipSpace), levelPart, geometryEntry.verts.length);
+                for(s32 i{}; i < geometryEntry.verts.length; ++i)
+                    cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
                 
                 DrawCube(cubeVerts_openGLClipSpace, geometryEntry.indicies);
                 

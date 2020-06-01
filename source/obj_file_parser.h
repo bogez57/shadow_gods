@@ -168,10 +168,16 @@ Token GetToken(Tokenizer&& tokenizer, Memory_Partition* memPart)
                     s32 stringI{};
                     while(indiciesStillNeedLoaded)
                     {
-                        indexString[stringI] = tokenizer.at[0];
-                        ++stringI;
+                        while(IsDigit(tokenizer.at[0]))
+                        {
+                            indexString[stringI] = tokenizer.at[0];
+                            AdvanceTokenizer($(tokenizer));
+                            ++stringI;
+                        };
+                        
                         indexString[stringI] = ',';
                         ++stringI;
+                        
                         AdvanceTokenizer($(tokenizer));
                         
                         while(NOT IsWhiteSpace(tokenizer.at[0]) && tokenizer.at[0] != '\0')
@@ -248,7 +254,16 @@ void ParseAndStoreContents(ObjFileData&& data, Memory_Partition* memPart, char* 
                     char* placeholder{};
                     s32 num = strtol(&token.text[0], &placeholder, 10/*base*/);
                     data.indicies.Push(num - 1);//Index needs to start from a 0 base (0, 1, 2, 3) for opengl. Obj file has it starting at 1 for some reason.
-                    ++token.text;
+                    
+                    if(num > 9)
+                    {
+                        ++token.text;
+                        ++token.text;
+                    }
+                    else
+                    {
+                        ++token.text;
+                    };
                     
                     if(Peek(token.text, 1) != '\0')
                         ++token.text;
@@ -273,9 +288,10 @@ ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)
     char* fileContents = globalPlatformServices->ReadEntireFile($(length), filePath);
     BGZ_ASSERT(*(fileContents + length) == '\0', "No null termination at end of file!");
     
+    //TODO: Just over estimate vertex and index capacity and try and load in more complicated geometry
     ObjFileData data{};
-    InitArr($(data.verts), memPart, 20/*capacity*/);
-    InitArr($(data.indicies), memPart, 50/*capacity*/);
+    InitArr($(data.verts), memPart, 100/*capacity*/);
+    InitArr($(data.indicies), memPart, 300/*capacity*/);
     
     ParseAndStoreContents($(data), memPart, fileContents);
     
