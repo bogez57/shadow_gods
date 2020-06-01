@@ -286,7 +286,6 @@ ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)
 {
     s32 length{};
     char* fileContents = globalPlatformServices->ReadEntireFile($(length), filePath);
-    BGZ_ASSERT(*(fileContents + length) == '\0', "No null termination at end of file!");
     
     //TODO: Just over estimate vertex and index capacity and try and load in more complicated geometry
     ObjFileData data{};

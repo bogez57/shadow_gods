@@ -14,7 +14,6 @@
 
 #define _CRT_SECURE_NO_WARNINGS // to surpress things like 'use printf_s func instead!'
 
-#define BGZ_MAX_CONTEXTS 10000
 #include <boagz/error_handling.h>
 #include <stb/stb_image.h>
 
@@ -51,7 +50,6 @@ global_variable s32 renderBuffer;
 #define STBI_REALLOC(p, newsz) ReAllocSize(heap, p, newsz)
 #define STBI_FREE(p) DeAlloc(heap, p)
 #include <stb/stb_image.h>
-#include <boagz/error_context.cpp>
 
 //User source
 #define MEMORY_HANDLING_IMPL
@@ -302,8 +300,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             };
         }
     };
-    
-    BGZ_ERRCTXT1("When entering GameUpdate");
     
     const Game_Controller* keyboard = &gameInput->Controllers[0];
     const Game_Controller* gamePad = &gameInput->Controllers[1];

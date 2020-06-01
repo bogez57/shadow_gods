@@ -138,7 +138,6 @@ void _AtlasPage_createTexture(AtlasPage* self, const char* path)
 
 void _AtlasPage_disposeTexture(AtlasPage* self)
 {
-    BGZ_ERRCTXT1("When disposing of texture in spine's atlaspage");
     BGZ_ASSERT(self->rendererObject.data, "Texture does not exist!");
     
     DeAlloc(heap, self->rendererObject.data);

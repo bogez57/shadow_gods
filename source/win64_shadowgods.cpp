@@ -52,8 +52,6 @@
 #include "renderer_stuff.h"
 #define MEMORY_HANDLING_IMPL
 #include "memory_handling.h"
-#define BGZ_MAX_CONTEXTS 10000
-#include <boagz/error_context.cpp>
 
 global_variable u32 globalWindowWidth { 1280 };
 global_variable u32 globalWindowHeight { 720 };
@@ -151,12 +149,8 @@ namespace Win32::Dbg
     {
         char* data;
         FILE* file;
-        errno_t err;
         
-        if ((err = fopen_s(&file, FilePath, "rb")) != 0)
-        {
-            InvalidCodePath;
-        };
+        BGZ_ASSERT(fopen_s(&file, FilePath, "rb") == 0, "File path %s is incorrect or doesn't exist!", FilePath);
         
         fseek(file, 0, SEEK_END);
         length = (s32)ftell(file);
