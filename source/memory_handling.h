@@ -72,8 +72,6 @@ void Release(Memory_Partition&& memPartition);
 void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress);
 Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, s64 size, const char* partName);
 Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, const char* partName);
-Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition);
-void EndTemporaryMemory(Temporary_Memory TempMem);
 void IsAllTempMemoryCleared(Memory_Partition* memPartition);
 void Release(Memory_Partition&& memPartition);
 
@@ -185,29 +183,6 @@ auto _FreeSize(Memory_Partition&& memPartition, s64 sizeToFree) -> void
     
     memPartition.usedAmount -= sizeToFree;
 };
-
-Temporary_Memory BeginTemporaryMemory(Memory_Partition&& memPartition)
-{
-    Temporary_Memory result;
-    
-    result.memPartition = &memPartition;
-    result.initialusedAmountFromMemPartition = memPartition.usedAmount;
-    
-    ++memPartition.tempMemoryCount;
-    
-    return (result);
-}
-
-void EndTemporaryMemory(Temporary_Memory TempMem)
-{
-    Memory_Partition* memPartition = TempMem.memPartition;
-    ASSERT(memPartition->usedAmount >= TempMem.initialusedAmountFromMemPartition);
-    
-    memPartition->usedAmount = TempMem.initialusedAmountFromMemPartition;
-    
-    ASSERT(memPartition->tempMemoryCount > 0);
-    --memPartition->tempMemoryCount;
-}
 
 void IsAllTempMemoryCleared(Memory_Partition* memPartition)
 {
