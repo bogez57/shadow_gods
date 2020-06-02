@@ -79,6 +79,12 @@ bool IsMinusSign(char character)
     return result;
 };
 
+void AdvanceStream(char** stream)
+{
+    BGZ_ASSERT(stream != '\0', "Reached end of file!");
+    ++*stream;
+};
+
 void AdvanceTokenizer(Tokenizer&& tokenizer)
 {
     BGZ_ASSERT(*tokenizer.at != '\0', "Reached end of file!");
@@ -99,8 +105,101 @@ char Peek(char* string, s32 howFarAheadToPeek)
     
     char result = *string;
     
-    if(*string != '\0')
-        string -= howFarAheadToPeek;
+    return result;
+};
+
+auto GetNumberOfVertsAndIndicies(char* fileContents)
+{
+    struct GeometryInfo{ s32 vertCount{}; s32 indexCount{};};
+    GeometryInfo result{};
+    
+    char* stream = fileContents;
+    
+    bool contentsStillNeedParsed{true};
+    while(contentsStillNeedParsed)
+    {
+        switch(stream[0])
+        {
+            case '\0':
+            {
+                contentsStillNeedParsed = false;
+            }break;
+            
+            case 'v':
+            {
+                if(IsWhiteSpace(Peek(stream, 1)) && (IsDigit(Peek(stream, 2)) || IsMinusSign(Peek(stream, 2))))
+                {
+                    bool notAllVertsCountedYet{true};
+                    while(notAllVertsCountedYet)
+                    {
+                        if(stream[0] == 'v')
+                        {
+                            ++result.vertCount;
+                            AdvanceStream(&stream);
+                        }
+                        
+                        while(stream[0] != 'v')
+                            AdvanceStream(&stream);
+                        
+                        BGZ_ASSERT(stream[0] != '\0', "Reached end of stream!");
+                        
+                        if(Peek(stream, 1) == 't')
+                            notAllVertsCountedYet = false;
+                    }
+                }
+                else
+                {
+                    AdvanceStream(&stream);
+                };
+            }break;
+            
+            case 'f':
+            {
+                if(IsWhiteSpace(Peek(stream, 1)) && (IsDigit(Peek(stream, 2))))
+                {
+                    //Remove f and initial whitespace
+                    AdvanceStream(&stream);
+                    AdvanceStream(&stream);
+                    
+                    bool notAllIndiciesCountedYet{true};
+                    while(notAllIndiciesCountedYet)
+                    {
+                        bool firstPassThroughWhileLoop{true};
+                        while(IsDigit(stream[0]))
+                        {
+                            if(firstPassThroughWhileLoop)
+                            {
+                                ++result.indexCount;
+                                firstPassThroughWhileLoop = false;
+                            }
+                            
+                            AdvanceStream(&stream);
+                        };
+                        
+                        AdvanceStream(&stream);
+                        
+                        while(NOT IsWhiteSpace(stream[0]) && stream[0] != '\0')
+                            AdvanceStream(&stream);
+                        
+                        while(IsWhiteSpace(stream[0]) || stream[0] == 'f')
+                            AdvanceStream(&stream);
+                        
+                        if(stream[0] == '\0')
+                            notAllIndiciesCountedYet = false;
+                    };
+                }
+                else
+                {
+                    AdvanceStream(&stream);
+                };
+            }break;
+            
+            default:
+            {
+                AdvanceStream(&stream);
+            }break;
+        };
+    }
     
     return result;
 };
@@ -287,18 +386,25 @@ ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)
     s32 length{};
     char* fileContents = globalPlatformServices->ReadEntireFile($(length), filePath);
     
-    //TODO: Just over estimate vertex and index capacity and try and load in more complicated geometry
+    auto [numVerts, numIndicies] = GetNumberOfVertsAndIndicies(fileContents);
+    BGZ_ASSERT(numVerts < numIndicies, "There should always be more indicies than vertices!");
+    
     ObjFileData data{};
-    InitArr($(data.verts), memPart, 100/*capacity*/);
-    InitArr($(data.indicies), memPart, 300/*capacity*/);
+    InitArr($(data.verts), memPart, numVerts/*capacity*/);
+    InitArr($(data.indicies), memPart, numIndicies/*capacity*/);
     
     ParseAndStoreContents($(data), memPart, fileContents);
     
     return data;
 };
 
-void ConstructGeometry(RunTimeArr<v3>&& verts, RunTimeArr<s16>&& indicies, ObjFileData objFileData)
+void ConstructGeometry(RunTimeArr<v3>&& verts, RunTimeArr<s16>&& indicies, Memory_Partition* memPart, ObjFileData objFileData)
 {
+    if(verts.capacity == 0)
+        InitArr($(verts), memPart, objFileData.verts.length);
+    if(indicies.capacity == 0)
+        InitArr($(indicies), memPart, objFileData.indicies.length);
+    
     CopyArray(objFileData.verts, $(verts));
     CopyArray(objFileData.indicies, $(indicies));
 };
@@ -311,7 +417,7 @@ void test_OBJFileParsing(Memory_Partition* memPart)
     InitArr($(cubeIndicies), memPart, 50);
     
     ObjFileData data = LoadObjFileData(memPart, "data/cube.obj");
-    ConstructGeometry($(cubeVerts), $(cubeIndicies), data);
+    ConstructGeometry($(cubeVerts), $(cubeIndicies), memPart, data);
 };
 
 

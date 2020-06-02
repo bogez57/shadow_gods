@@ -338,10 +338,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = .4f;
         
         //Init cube
-        InitArr($(gState->cube.verts), levelPart, 100);
-        InitArr($(gState->cube.indicies), levelPart, 300);
         ObjFileData data = LoadObjFileData(framePart, "data/shape.obj");
-        ConstructGeometry($(gState->cube.verts), $(gState->cube.indicies), data);
+        ConstructGeometry($(gState->cube.verts), $(gState->cube.indicies), levelPart, data);
     };
     
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);

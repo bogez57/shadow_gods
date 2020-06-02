@@ -335,20 +335,21 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     return result;
 };
 
-void DrawCube(RunTimeArr<v4> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
+void DrawCube(RunTimeArr<v4> cubeVerts_glClipSpace, Memory_Partition* memPart, RunTimeArr<s16> indicies)
 {
-    GLfloat verts[20 * 7] = {};
+    RunTimeArr<GLfloat> verts{};
+    InitArr($(verts), memPart, cubeVerts_glClipSpace.length * 7);
     s32 i{};
     f32 colorR{}, colorG{}, colorB{};
-    for(s32 j{}; j < 20; ++j)
+    for(s32 j{}; j < cubeVerts_glClipSpace.length; ++j)
     {
-        verts[i++] = cubeVerts_glClipSpace[j].x;
-        verts[i++] = cubeVerts_glClipSpace[j].y;
-        verts[i++] = cubeVerts_glClipSpace[j].z;
-        verts[i++] = cubeVerts_glClipSpace[j].w;
-        verts[i++] = colorR;
-        verts[i++] = colorG;
-        verts[i++] = colorB;
+        verts.Push(cubeVerts_glClipSpace[j].x);
+        verts.Push(cubeVerts_glClipSpace[j].y);
+        verts.Push(cubeVerts_glClipSpace[j].z);
+        verts.Push(cubeVerts_glClipSpace[j].w);
+        verts.Push(colorR);
+        verts.Push(colorG);
+        verts.Push(colorB);
         
         if(colorR > 1.0f)
         {
@@ -373,7 +374,7 @@ void DrawCube(RunTimeArr<v4> cubeVerts_glClipSpace, RunTimeArr<s16> indicies)
     GLuint bufferID;
     glGenBuffers(1, &bufferID);
     glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
     glEnableVertexAttribArray(1);
@@ -511,7 +512,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 for(s32 i{}; i < geometryEntry.verts.length; ++i)
                     cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
                 
-                DrawCube(cubeVerts_openGLClipSpace, geometryEntry.indicies);
+                DrawCube(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
                 
                 EndTemporaryMemory(cubeVerts);
                 
