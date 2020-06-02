@@ -13,7 +13,7 @@ class DbgArray
         return this->elements[index];
     };
     
-    inline Type& Push()
+    inline Type& Push(Type element = Type())
     {
         BGZ_ASSERT(length < capacity, "Attempting to access index %i which out of current arround bounds - current max index allowed: %i", length, capacity - 1);
         return (Type&)this->elements[length++];
