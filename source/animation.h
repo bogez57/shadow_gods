@@ -307,39 +307,36 @@ void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const ch
                     anim->hitBoxes[hitBoxIndex].timeUntilHitBoxIsActivated = time1;
                     anim->hitBoxes[hitBoxIndex].duration = time2 - time1;
                     
-                    Temporary_Memory collisionVertsTemp = BeginTemporaryMemory($(memPart));
+                    ScopedMemory scope{&memPart};
+                    
+                    RunTimeArr<v2> adjustedCollisionBoxVerts, finalCollsionBoxVertCoords;
+                    InitArr($(adjustedCollisionBoxVerts), &memPart, 20);
+                    InitArr($(finalCollsionBoxVertCoords), &memPart, 20);
+                    
+                    Json* collisionBoxDeformTimeline_json = Json_getItem(currentAnimation_json, "deform");
+                    Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
+                    Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
+                    
+                    Bone* bone = GetBoneFromSkeleton(&skel, anim->hitBoxes[hitBoxIndex].boneName);
+                    s32 numVerts = (s32)bone->originalCollisionBoxVerts.length;
+                    for (s32 i {}; i < numVerts; ++i)
                     {
-                        RunTimeArr<v2> adjustedCollisionBoxVerts, finalCollsionBoxVertCoords;
-                        InitArr($(adjustedCollisionBoxVerts), &memPart, 20);
-                        InitArr($(finalCollsionBoxVertCoords), &memPart, 20);
+                        //Read in adjusted/deformed vert data from individual animation json info
+                        adjustedCollisionBoxVerts.Push() = v2 { deformedVerts_json->valueFloat, deformedVerts_json->next->valueFloat };
+                        deformedVerts_json = deformedVerts_json->next->next;
                         
-                        Json* collisionBoxDeformTimeline_json = Json_getItem(currentAnimation_json, "deform");
-                        Json* deformKeyFrame_json = collisionBoxDeformTimeline_json->child->child->child->child;
-                        Json* deformedVerts_json = Json_getItem(deformKeyFrame_json, "vertices")->child;
-                        
-                        Bone* bone = GetBoneFromSkeleton(&skel, anim->hitBoxes[hitBoxIndex].boneName);
-                        s32 numVerts = (s32)bone->originalCollisionBoxVerts.length;
-                        for (s32 i {}; i < numVerts; ++i)
-                        {
-                            //Read in adjusted/deformed vert data from individual animation json info
-                            adjustedCollisionBoxVerts.Push() = v2 { deformedVerts_json->valueFloat, deformedVerts_json->next->valueFloat };
-                            deformedVerts_json = deformedVerts_json->next->next;
-                            
-                            //Transform original verts into new transformed vert positions based on anim deformed verts
-                            v2 finalVertCoord = bone->originalCollisionBoxVerts[i] + adjustedCollisionBoxVerts[i];
-                            finalCollsionBoxVertCoords.Push() = finalVertCoord;
-                        };
-                        
-                        v2 vector0_1 = finalCollsionBoxVertCoords[0] - finalCollsionBoxVertCoords[1];
-                        v2 vector1_2 = finalCollsionBoxVertCoords[1] - finalCollsionBoxVertCoords[2];
-                        
-                        anim->hitBoxes[hitBoxIndex].size.width = Magnitude(vector0_1);
-                        anim->hitBoxes[hitBoxIndex].size.height = Magnitude(vector1_2);
-                        anim->hitBoxes[hitBoxIndex].worldPosOffset = { (finalCollsionBoxVertCoords[0].x + finalCollsionBoxVertCoords[2].x) / 2.0f,
-                            (finalCollsionBoxVertCoords[0].y + finalCollsionBoxVertCoords[2].y) / 2.0f };
-                        
-                        EndTemporaryMemory(collisionVertsTemp);
+                        //Transform original verts into new transformed vert positions based on anim deformed verts
+                        v2 finalVertCoord = bone->originalCollisionBoxVerts[i] + adjustedCollisionBoxVerts[i];
+                        finalCollsionBoxVertCoords.Push() = finalVertCoord;
                     };
+                    
+                    v2 vector0_1 = finalCollsionBoxVertCoords[0] - finalCollsionBoxVertCoords[1];
+                    v2 vector1_2 = finalCollsionBoxVertCoords[1] - finalCollsionBoxVertCoords[2];
+                    
+                    anim->hitBoxes[hitBoxIndex].size.width = Magnitude(vector0_1);
+                    anim->hitBoxes[hitBoxIndex].size.height = Magnitude(vector1_2);
+                    anim->hitBoxes[hitBoxIndex].worldPosOffset = { (finalCollsionBoxVertCoords[0].x + finalCollsionBoxVertCoords[2].x) / 2.0f,
+                        (finalCollsionBoxVertCoords[0].y + finalCollsionBoxVertCoords[2].y) / 2.0f };
                 }
             };
         }

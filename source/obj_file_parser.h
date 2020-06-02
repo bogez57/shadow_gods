@@ -312,7 +312,7 @@ void ParseAndStoreContents(ObjFileData&& data, Memory_Partition* memPart, char* 
     Tokenizer tokenizer{};
     tokenizer.at = fileContents;
     
-    Temporary_Memory parsingMemory = BeginTemporaryMemory($(*memPart));
+    ScopedMemory scope{memPart};
     
     bool contentsStillNeedParsed{true};
     while(contentsStillNeedParsed)
@@ -377,8 +377,6 @@ void ParseAndStoreContents(ObjFileData&& data, Memory_Partition* memPart, char* 
             }break;
         };
     };
-    
-    EndTemporaryMemory(parsingMemory);
 };
 
 ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)

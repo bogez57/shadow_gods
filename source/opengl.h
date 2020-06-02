@@ -505,16 +505,16 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
                 
-                Temporary_Memory cubeVerts = BeginTemporaryMemory($(*platformMemoryPart));
-                
-                RunTimeArr<v4> cubeVerts_openGLClipSpace{};
-                InitArr($(cubeVerts_openGLClipSpace), platformMemoryPart, geometryEntry.verts.length);
-                for(s32 i{}; i < geometryEntry.verts.length; ++i)
-                    cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
-                
-                DrawCube(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
-                
-                EndTemporaryMemory(cubeVerts);
+                {
+                    ScopedMemory scope{platformMemoryPart};
+                    
+                    RunTimeArr<v4> cubeVerts_openGLClipSpace{};
+                    InitArr($(cubeVerts_openGLClipSpace), platformMemoryPart, geometryEntry.verts.length);
+                    for(s32 i{}; i < geometryEntry.verts.length; ++i)
+                        cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
+                    
+                    DrawCube(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
+                }
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;

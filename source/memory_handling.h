@@ -44,6 +44,15 @@ struct Temporary_Memory
     s64 initialusedAmountFromMemPartition {};
 };
 
+struct ScopedMemory
+{
+    ScopedMemory(Memory_Partition* memPart);
+    ~ScopedMemory();
+    
+    Memory_Partition* _memPartition{};
+    s64 _initialusedAmountFromMemPartition{};
+};
+
 struct Application_Memory
 {
     bool  initialized { false };
@@ -71,6 +80,24 @@ void Release(Memory_Partition&& memPartition);
 #endif
 
 #ifdef MEMORY_HANDLING_IMPL
+
+ScopedMemory::ScopedMemory(Memory_Partition* memPart)
+{
+    _memPartition = memPart;
+    _initialusedAmountFromMemPartition = memPart->usedAmount;
+    
+    ++memPart->tempMemoryCount;
+};
+
+ScopedMemory::~ScopedMemory()
+{
+    ASSERT(_memPartition->usedAmount >= _initialusedAmountFromMemPartition);
+    
+    _memPartition->usedAmount = _initialusedAmountFromMemPartition;
+    
+    ASSERT(_memPartition->tempMemoryCount > 0);
+    --_memPartition->tempMemoryCount;
+};
 
 void _InsertPartition(_PartitionMap&& partMap, const char* partName, Memory_Partition memPartToInsert)
 {
