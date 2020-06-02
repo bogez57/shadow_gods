@@ -17,7 +17,7 @@ fprintf_s(stderr, __VA_ARGS__); \
 
 #if BGZ_ERRHANDLING_ON
 
-#define InvalidCodePath assert(!"InvalidCodePath")
+#define InvalidCodePath __debugbreak();
 #define InvalidDefaultCase default: {InvalidCodePath;} break
 #define BGZ_ASSERT(condition, msg, ...)                                                   \
 do                                                                                    \
