@@ -191,7 +191,7 @@ typedef union v4
 #endif
 } v4;
 
-struct mat4x4
+struct Mat4x4
 {
     //These are stored ROW MAJOR - elem[ROW][COLUMN]!!!
     f32 elem[4][4];
@@ -209,7 +209,7 @@ struct mat2x2
     f32 elem[2][2];
 };
 
-inline mat4x4 IdentityMatrix();
+inline Mat4x4 IdentityMatrix();
 
 //Other v2's I might use. Torn on whether or not I should template things but I think for 90 percent of what I'm using vectors for floats should be what I want
 struct v2i
@@ -638,61 +638,12 @@ operator-(v4 a)
     return (result);
 }
 
-inline mat4x4 IdentityMatrix()
-{
-    mat4x4 R =
-    {
-        {{1, 0, 0, 0},
-            {0, 1, 0, 0},
-            {0, 0, 1, 0},
-            {0, 0, 0, 1}},
-    };
-    
-    return(R);
-}
-
-local_func v4
-TransformVec(mat4x4 A, v4 P)
-{
-    v4 R;
-    
-    R.x = P.x*A.elem[0][0] + P.y*A.elem[0][1] + P.z*A.elem[0][2] + P.w*A.elem[0][3];
-    R.y = P.x*A.elem[1][0] + P.y*A.elem[1][1] + P.z*A.elem[1][2] + P.w*A.elem[1][3];
-    R.z = P.x*A.elem[2][0] + P.y*A.elem[2][1] + P.z*A.elem[2][2] + P.w*A.elem[2][3];
-    R.w = P.x*A.elem[3][0] + P.y*A.elem[3][1] + P.z*A.elem[3][2] + P.w*A.elem[3][3];
-    
-    return(R);
-};
-
-inline mat4x4
-Transpose(mat4x4 A)
-{
-    mat4x4 R;
-    
-    for(int j = 0; j <= 3; ++j)
-    {
-        for(int i = 0; i <= 3; ++i)
-        {
-            R.elem[j][i] = A.elem[i][j];
-        }
-    }
-    
-    return(R);
-}
-
-inline v4
-operator*(mat4x4 A, v4 P)
-{
-    v4 R = TransformVec(A, P);
-    return(R);
-};
-
-local_func mat4x4
-operator*(mat4x4 A, mat4x4 B)
+local_func Mat4x4
+operator*(Mat4x4 A, Mat4x4 B)
 {
     // NOTE(casey): This is written to be instructive, not optimal!
     
-    mat4x4 R = {};
+    Mat4x4 R = {};
     
     for(int r = 0; r <= 3; ++r) // NOTE(casey): Rows (of A)
     {
@@ -708,24 +659,39 @@ operator*(mat4x4 A, mat4x4 B)
     return(R);
 }
 
-inline v3
-GetColumn(mat4x4 A, u32 c)
+local_func v4 TransformVec(Mat4x4 A, v4 P)
+{
+    v4 R;
+    
+    R.x = P.x*A.elem[0][0] + P.y*A.elem[0][1] + P.z*A.elem[0][2] + P.w*A.elem[0][3];
+    R.y = P.x*A.elem[1][0] + P.y*A.elem[1][1] + P.z*A.elem[1][2] + P.w*A.elem[1][3];
+    R.z = P.x*A.elem[2][0] + P.y*A.elem[2][1] + P.z*A.elem[2][2] + P.w*A.elem[2][3];
+    R.w = P.x*A.elem[3][0] + P.y*A.elem[3][1] + P.z*A.elem[3][2] + P.w*A.elem[3][3];
+    
+    return(R);
+};
+
+inline v4 operator*(Mat4x4 A, v4 P)
+{
+    v4 R = TransformVec(A, P);
+    return(R);
+};
+
+inline v3 GetColumn(Mat4x4 A, u32 c)
 {
     v3 result = {A.elem[0][c], A.elem[1][c], A.elem[2][c]};
     return(result);
 };
 
-inline v3
-GetRow(mat4x4 A, u32 r)
+inline v3 GetRow(Mat4x4 A, u32 r)
 {
     v3 result = {A.elem[r][0], A.elem[r][1], A.elem[r][2]};
     return(result);
 };
 
-local_func mat4x4
-ColumnPicture3x3(v3 xAxis, v3 yAxis, v3 zAxis)
+local_func Mat4x4 ColumnPicture3x3(v3 xAxis, v3 yAxis, v3 zAxis)
 {
-    mat4x4 result =
+    Mat4x4 result =
     {
         {
             {xAxis.x, yAxis.x, zAxis.x, 0.0f},
@@ -738,10 +704,10 @@ ColumnPicture3x3(v3 xAxis, v3 yAxis, v3 zAxis)
     return result;
 };
 
-local_func mat4x4
+local_func Mat4x4
 RowPicture3x3(v3 xAxis, v3 yAxis, v3 zAxis)
 {
-    mat4x4 result =
+    Mat4x4 result =
     {
         {
             {xAxis.x, xAxis.y, xAxis.z, 0.0f},
@@ -750,18 +716,6 @@ RowPicture3x3(v3 xAxis, v3 yAxis, v3 zAxis)
             {   0.0f,    0.0f,    0.0f, 1.0f}
         }
     };
-    
-    return result;
-};
-
-local_func mat4x4
-Translate(mat4x4 A, v4 T)
-{
-    mat4x4 result = A;
-    
-    result.elem[0][3] += T.x;
-    result.elem[1][3] += T.y;
-    result.elem[2][3] += T.z;
     
     return result;
 };

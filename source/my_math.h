@@ -368,3 +368,165 @@ void ConvertToCorrectPositiveRadian(f32&& angle)
     f32 unitCircleCircumferenceInRadians = 2*PI;
     angle = Mod(angle, unitCircleCircumferenceInRadians);
 };
+
+Mat4x4 XRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    Mat4x4 R =
+    {
+        {
+            {1, 0, 0, 0},
+            {0, c,-s, 0},
+            {0, s, c, 0},
+            {0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
+inline Mat4x4
+YRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    Mat4x4 R =
+    {
+        {
+            { c, 0, s, 0},
+            { 0, 1, 0, 0},
+            {-s, 0, c, 0},
+            { 0, 0, 0, 1}
+        },
+    };
+    
+    return(R);
+}
+
+inline Mat4x4
+ZRotation(f32 Angle)
+{
+    f32 c = CosR(Angle);
+    f32 s = SinR(Angle);
+    
+    Mat4x4 result =
+    {
+        {
+            {c,-s, 0, 0},
+            {s, c, 0, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}
+        },
+    };
+    
+    return(result);
+}
+
+inline Mat4x4 Scale(v3 scale)
+{
+    v3 s = scale;
+    Mat4x4 result =
+    {
+        {
+            {s.x, 0,   0,   0},
+            {0,   s.y, 0,   0},
+            {0,   0,   s.z, 0},
+            {0,   0,   0,   1}
+        },
+    };
+    
+    return result;
+};
+
+local_func Mat4x4 Translate(Mat4x4 A, v4 T)
+{
+    Mat4x4 result = A;
+    
+    result.elem[0][3] += T.x;
+    result.elem[1][3] += T.y;
+    result.elem[2][3] += T.z;
+    
+    return result;
+};
+
+local_func Mat4x4 ProduceWorldTransformMatrix(v3 translation, v3 rotation, v3 scale)
+{
+    Mat4x4 result{};
+    
+    ConvertToCorrectPositiveRadian($(rotation.x));
+    ConvertToCorrectPositiveRadian($(rotation.y));
+    ConvertToCorrectPositiveRadian($(rotation.z));
+    
+    Mat4x4 xRotMatrix = XRotation(rotation.x);
+    Mat4x4 yRotMatrix = YRotation(rotation.y);
+    Mat4x4 zRotMatrix = ZRotation(rotation.z);
+    Mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
+    
+    result = Translate(fullRotMatrix, v4{translation, 1.0f});
+    
+    return result;
+};
+
+local_func Mat4x4 ProduceCameraTransformMatrix(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
+{
+    Mat4x4 result = RowPicture3x3(xAxis, yAxis, zAxis);
+    v4 vecToTransform_4d {vecToTransform, 1.0f};
+    result = Translate(result, -(result*vecToTransform_4d));
+    
+    return result;
+};
+
+local_func Mat4x4 ProduceProjectionTransformMatrix_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f32 nearPlane, f32 farPlane)
+{
+    f32 fov = ToRadians(FOV_inDegrees);
+    f32 tanHalfFov = TanR(fov / 2.0f);
+    f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
+    f32 yScale = 1.0f / tanHalfFov;
+    
+    f32 a = (-farPlane - nearPlane) / (nearPlane - farPlane);
+    f32 b = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
+    
+    Mat4x4 result =
+    {
+        {
+            {xScale, 0,      0,  0},
+            {  0,    yScale, 0,  0},
+            {  0,    0,      a,  b},
+            {  0,    0,      1,  0}
+        },
+    };
+    
+    return result;
+};
+
+inline Mat4x4 IdentityMatrix()
+{
+    Mat4x4 R =
+    {
+        {{1, 0, 0, 0},
+            {0, 1, 0, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}},
+    };
+    
+    return(R);
+}
+
+inline Mat4x4
+Transpose(Mat4x4 A)
+{
+    Mat4x4 R;
+    
+    for(int j = 0; j <= 3; ++j)
+    {
+        for(int i = 0; i <= 3; ++i)
+        {
+            R.elem[j][i] = A.elem[i][j];
+        }
+    }
+    
+    return(R);
+}

@@ -163,6 +163,13 @@ Image FlipImage(Image image)
 };
 #endif
 
+struct Transform_v3
+{
+    v3 translation{};
+    v3 rotation{};
+    v3 scale{1.0f, 1.0f, 1.0f};
+};
+
 inline bool KeyPressed(Button_State KeyState)
 {
     if (KeyState.Pressed && KeyState.NumTransitionsPerFrame)
@@ -338,7 +345,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = .4f;
         
         //Init cube
-        ObjFileData data = LoadObjFileData(framePart, "data/sphere_low_poly.obj");
+        ObjFileData data = LoadObjFileData(framePart, "data/cube.obj");
         ConstructGeometry($(gState->cube.verts), $(gState->cube.indicies), levelPart, data);
     };
     
@@ -350,8 +357,34 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
 #endif
+        local_persist Transform_v3 worldTransform{};
+        worldTransform.translation.x = 3.0f;
+        worldTransform.rotation.x += .01f;
         
-        PushGeometry(global_renderingInfo, gState->cube.verts, gState->cube.indicies);
+        //World Transform
+        Mat4x4 worldTransformMatrix = ProduceWorldTransformMatrix(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
+        
+        //camera transform
+        local_persist v3 camPos_world{0.0f, 0.0f, -7.0f};
+        local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
+        
+        Mat4x4 xRotMatrix = XRotation(camRotation.x);
+        Mat4x4 yRotMatrix = YRotation(camRotation.y);
+        Mat4x4 zRotMatrix = ZRotation(camRotation.z);
+        Mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
+        v3 xAxis = GetColumn(fullRotMatrix, 0);
+        v3 yAxis = GetColumn(fullRotMatrix, 1);
+        v3 zAxis = GetColumn(fullRotMatrix, 2);
+        Mat4x4 camTransformMatrix = ProduceCameraTransformMatrix(xAxis, yAxis, zAxis, camPos_world);
+        
+        //ProjectionTransform
+        //f32 fov = (InvTanR(1.0f/camMagnification) * 2.0f) / (PI / 180.0f); //For if you want to use a magnification value to calculate fov 1x, 2x, 10x, etc. Adjusting fov too much causes distortion or 'fish eye' effect though
+        f32 fov = 60.0f;
+        Mat4x4 projectionMatrix = ProduceProjectionTransformMatrix_UsingFOV(fov, 16.0f/9.0f, .1f, 100.0f);
+        
+        Mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
+        
+        PushGeometry(global_renderingInfo, gState->cube.verts, gState->cube.indicies, fullTransformMatrix);
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);

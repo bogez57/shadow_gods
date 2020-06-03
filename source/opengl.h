@@ -230,112 +230,6 @@ GLInit(int windowWidth, int windowHeight)
     InstallShaders();
 }
 
-mat4x4 XRotation(f32 Angle)
-{
-    f32 c = CosR(Angle);
-    f32 s = SinR(Angle);
-    
-    mat4x4 R =
-    {
-        {
-            {1, 0, 0, 0},
-            {0, c,-s, 0},
-            {0, s, c, 0},
-            {0, 0, 0, 1}
-        },
-    };
-    
-    return(R);
-}
-
-inline mat4x4
-YRotation(f32 Angle)
-{
-    f32 c = CosR(Angle);
-    f32 s = SinR(Angle);
-    
-    mat4x4 R =
-    {
-        {
-            { c, 0, s, 0},
-            { 0, 1, 0, 0},
-            {-s, 0, c, 0},
-            { 0, 0, 0, 1}
-        },
-    };
-    
-    return(R);
-}
-
-inline mat4x4
-ZRotation(f32 Angle)
-{
-    f32 c = CosR(Angle);
-    f32 s = SinR(Angle);
-    
-    mat4x4 R =
-    {
-        {
-            {c,-s, 0, 0},
-            {s, c, 0, 0},
-            {0, 0, 1, 0},
-            {0, 0, 0, 1}
-        },
-    };
-    
-    return(R);
-}
-
-mat4x4 ProduceWorldTransform(v3 translation, v3 rotation, v3 scale)
-{
-    mat4x4 result{};
-    
-    ConvertToCorrectPositiveRadian($(rotation.x));
-    ConvertToCorrectPositiveRadian($(rotation.y));
-    ConvertToCorrectPositiveRadian($(rotation.z));
-    
-    mat4x4 xRotMatrix = XRotation(rotation.x);
-    mat4x4 yRotMatrix = YRotation(rotation.y);
-    mat4x4 zRotMatrix = ZRotation(rotation.z);
-    mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
-    
-    result = Translate(fullRotMatrix, v4{translation, 1.0f});
-    
-    return result;
-};
-
-local_func mat4x4
-ProduceCameraTransform(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
-{
-    mat4x4 result = RowPicture3x3(xAxis, yAxis, zAxis);
-    v4 vecToTransform_4d {vecToTransform, 1.0f};
-    result = Translate(result, -(result*vecToTransform_4d));
-    
-    return result;
-};
-
-mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f32 nearPlane, f32 farPlane)
-{
-    f32 fov = ToRadians(FOV_inDegrees);
-    f32 tanHalfFov = TanR(fov / 2.0f);
-    f32 xScale = 1.0f / (tanHalfFov * aspectRatio);
-    f32 yScale = 1.0f / tanHalfFov;
-    
-    f32 a = (-farPlane - nearPlane) / (nearPlane - farPlane);
-    f32 b = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
-    
-    mat4x4 result =
-    {
-        {
-            {xScale, 0,      0,  0},
-            {  0,    yScale, 0,  0},
-            {  0,    0,      a,  b},
-            {  0,    0,      1,  0}
-        },
-    };
-    
-    return result;
-};
 
 void DrawCube(RunTimeArr<v4> cubeVerts_glClipSpace, Memory_Partition* memPart, RunTimeArr<s16> indicies)
 {
@@ -390,13 +284,6 @@ void DrawCube(RunTimeArr<v4> cubeVerts_glClipSpace, Memory_Partition* memPart, R
     glDisable(GL_TEXTURE_2D);
     glDrawElements(GL_TRIANGLES, (s32)indicies.length, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
-};
-
-struct Transform_v3
-{
-    v3 translation{};
-    v3 rotation{};
-    v3 scale{1.0f, 1.0f, 1.0f};
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, int windowWidth, int windowHeight)
@@ -481,41 +368,16 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
             }break;
             
             case EntryType_Geometry: {
+                ScopedMemory scope{platformMemoryPart};
+                
                 RenderEntry_Geometry geometryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
                 
-                local_persist Transform_v3 worldTransform{};
+                RunTimeArr<v4> cubeVerts_openGLClipSpace{};
+                InitArr($(cubeVerts_openGLClipSpace), platformMemoryPart, geometryEntry.verts.length);
+                for(s32 i{}; i < geometryEntry.verts.length; ++i)
+                    cubeVerts_openGLClipSpace.Push(geometryEntry.fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
                 
-                worldTransform.rotation.x += .01f;
-                
-                //World Transform
-                mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
-                
-                local_persist v3 camPos_world{0.0f, 0.0f, -7.0f};
-                local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
-                mat4x4 xRotMatrix = XRotation(camRotation.x);
-                mat4x4 yRotMatrix = YRotation(camRotation.y);
-                mat4x4 zRotMatrix = ZRotation(camRotation.z);
-                mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
-                v3 xAxis = GetColumn(fullRotMatrix, 0);
-                v3 yAxis = GetColumn(fullRotMatrix, 1);
-                v3 zAxis = GetColumn(fullRotMatrix, 2);
-                mat4x4 camTransformMatrix = ProduceCameraTransform(xAxis, yAxis, zAxis, camPos_world);
-                
-                //ProjectionTransform
-                mat4x4 projectionMatrix = ProduceProjectionTransform_UsingFOV(60.0f, 16.0f/9.0f, .1f, 100.0f);
-                
-                mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
-                
-                {
-                    ScopedMemory scope{platformMemoryPart};
-                    
-                    RunTimeArr<v4> cubeVerts_openGLClipSpace{};
-                    InitArr($(cubeVerts_openGLClipSpace), platformMemoryPart, geometryEntry.verts.length);
-                    for(s32 i{}; i < geometryEntry.verts.length; ++i)
-                        cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
-                    
-                    DrawCube(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
-                }
+                DrawCube(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;
