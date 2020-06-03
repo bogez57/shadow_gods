@@ -338,7 +338,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.zoomFactor = .4f;
         
         //Init cube
-        ObjFileData data = LoadObjFileData(framePart, "data/shape.obj");
+        ObjFileData data = LoadObjFileData(framePart, "data/sphere_low_poly.obj");
         ConstructGeometry($(gState->cube.verts), $(gState->cube.indicies), levelPart, data);
     };
     

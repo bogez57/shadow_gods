@@ -354,12 +354,7 @@ void ParseAndStoreContents(ObjFileData&& data, Memory_Partition* memPart, char* 
                     s32 num = strtol(&token.text[0], &placeholder, 10/*base*/);
                     data.indicies.Push(num - 1);//Index needs to start from a 0 base (0, 1, 2, 3) for opengl. Obj file has it starting at 1 for some reason.
                     
-                    if(num > 9)
-                    {
-                        ++token.text;
-                        ++token.text;
-                    }
-                    else
+                    while(IsDigit(token.text[0]))
                     {
                         ++token.text;
                     };

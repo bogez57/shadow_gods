@@ -225,6 +225,8 @@ GLInit(int windowWidth, int windowHeight)
     //For more info: https://stackoverflow.com/questions/53180760/all-texture-colors-affected-by-colored-rectangle-opengl
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);//Defaults to CCW ordering of indicies meaning all indicies that, from the viewers perspective, creating triangles in a CW manner repsrent visible triangles.
+    glCullFace(GL_BACK);//Culls only back faces (faces facing away from viewer)
     InstallShaders();
 }
 
@@ -484,7 +486,6 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 local_persist Transform_v3 worldTransform{};
                 
                 worldTransform.rotation.x += .01f;
-                worldTransform.rotation.y += .01f;
                 
                 //World Transform
                 mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);

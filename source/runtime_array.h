@@ -22,7 +22,7 @@ struct RunTimeArr
     
     inline Type& Push(Type element = Type())
     {
-        BGZ_ASSERT(length < capacity, "Attempting to access index %i which out of current arround bounds - current max index allowed: %i", length, capacity - 1);
+        BGZ_ASSERT(length < capacity, "Trying to add more elements to array than array has capacity for. You're trying to make length of array %i and current capacity is %i", length+1, capacity);
         return (Type&)this->elements[length++] = element;
     };
     
