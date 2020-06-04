@@ -80,6 +80,7 @@ struct Geometry
 {
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
+    Mat4x4 worldTransform{};
 };
 
 struct Game_Render_Cmd_Buffer

@@ -6,6 +6,19 @@
 #include "animation.h"
 #include "fighter.h"
 
+struct Transform_v3
+{
+    v3 translation{};
+    v3 rotation{};
+    v3 scale{1.0f, 1.0f, 1.0f};
+};
+
+struct Fighter3D
+{
+    Geometry mesh{};
+    Transform_v3 worldTransform{};
+};
+
 struct Game_Camera
 {
     v2 lookAt{};
@@ -27,7 +40,9 @@ struct Stage_Data
 
 struct Game_State
 {
-    Geometry cube{};
+    Fighter3D fighter0{};
+    Fighter3D fighter1{};
+    Camera3D camera{};
     Image composite;
     Image normalMap;
     Atlas* atlas;
@@ -35,5 +50,4 @@ struct Game_State
     f32 lightThreshold{};
     Stage_Data stage;
     bool isLevelOver{false};
-    Image openGLRenderTest{};
 };

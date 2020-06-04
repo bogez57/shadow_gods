@@ -231,7 +231,7 @@ GLInit(int windowWidth, int windowHeight)
 }
 
 
-void DrawCube(RunTimeArr<v4> cubeVerts_glClipSpace, Memory_Partition* memPart, RunTimeArr<s16> indicies)
+void Draw(RunTimeArr<v4> cubeVerts_glClipSpace, Memory_Partition* memPart, RunTimeArr<s16> indicies)
 {
     RunTimeArr<GLfloat> verts{};
     InitArr($(verts), memPart, cubeVerts_glClipSpace.length * 7);
@@ -392,7 +392,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 for(s32 i{}; i < geometryEntry.verts.length; ++i)
                     cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
                 
-                DrawCube(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
+                Draw(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;

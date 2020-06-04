@@ -163,13 +163,6 @@ Image FlipImage(Image image)
 };
 #endif
 
-struct Transform_v3
-{
-    v3 translation{};
-    v3 rotation{};
-    v3 scale{1.0f, 1.0f, 1.0f};
-};
-
 inline bool KeyPressed(Button_State KeyState)
 {
     if (KeyState.Pressed && KeyState.NumTransitionsPerFrame)
@@ -320,9 +313,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     global_renderingInfo = renderingInfo;
     
     Stage_Data* stage = &gState->stage;
-    Fighter* player = &stage->player;
-    Fighter* enemy = &stage->enemy;
-    Fighter* enemy2 = &stage->enemy2;
+    Fighter3D* fighter0 = &gState->fighter0;
+    Fighter3D* fighter1 = &gState->fighter1;
+    Camera3D* camera = &gState->camera;
     
     Memory_Partition* framePart = GetMemoryPartition(gameMemory, "frame");
     Memory_Partition* levelPart = GetMemoryPartition(gameMemory, "level");
@@ -342,18 +335,22 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
         
         //Camera Init
-        stage->camera.dilatePointOffset_normalized = { 0.0f, -0.3f };
-        stage->camera.lookAt = { stage->size.width / 2.0f, 10.0f };
-        stage->camera.zoomFactor = .4f;
+        camera->worldPos = {0.0f, 0.0f, -7.0f};
+        camera->rotation = {0.0f, 0.0f, 0.0f};
         
-        //Init cube
-        ObjFileData data = LoadObjFileData(framePart, "data/cube.obj");
-        ConstructGeometry($(gState->cube.verts), $(gState->cube.indicies), levelPart, data);
+        //Fighter Init
+        ObjFileData data = LoadObjFileData(framePart, "data/face.obj");
+        ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, data);
+        ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, data);
+        fighter1->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
     };
     
-    local_persist v3 camRotation{};
-    local_persist v3 camWorldPos{0.0f, 0.0f, -7.0f};
-    UpdateCamera3D(global_renderingInfo, camWorldPos, camRotation);
+    if(KeyHeld(keyboard->MoveRight))
+    {
+        fighter0->worldTransform.translation.x += 0.1f;
+    };
+    
+    UpdateCamera3D(global_renderingInfo, camera->worldPos, camera->rotation);
     
     { //Render
         //Push background
@@ -361,14 +358,12 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
 #endif
-        local_persist Transform_v3 worldTransform{};
-        worldTransform.translation.x = 3.0f;
-        worldTransform.rotation.x += .01f;
         
         //World Transform
-        Mat4x4 worldTransformMatrix = ProduceWorldTransformMatrix(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
-        
-        PushGeometry(global_renderingInfo, gState->cube.verts, gState->cube.indicies, worldTransformMatrix);
+        Mat4x4 fighter0_worldTransformMatrix = ProduceWorldTransformMatrix(fighter0->worldTransform.translation, fighter0->worldTransform.rotation, fighter0->worldTransform.scale);
+        Mat4x4 fighter1_worldTransformMatrix = ProduceWorldTransformMatrix(fighter1->worldTransform.translation, fighter1->worldTransform.rotation, fighter1->worldTransform.scale);
+        PushGeometry(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
+        PushGeometry(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies, fighter1_worldTransformMatrix);
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);
