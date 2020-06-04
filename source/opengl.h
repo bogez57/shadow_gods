@@ -297,14 +297,15 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
     };
     
     u8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &renderingInfo.camera;
+    Camera2D* camera2d = &renderingInfo.camera2d;
+    Camera3D camera3d = renderingInfo.camera3d;
     
     f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
     v2i screenSize = { windowWidth, windowHeight };
     v2 screenSize_meters = CastV2IToV2F(screenSize) / pixelsPerMeter;
-    camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
+    camera2d->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera2d->dilatePointOffset_normalized));
     
-    camera->viewCenter = screenSize_meters / 2.0f;
+    camera2d->viewCenter = screenSize_meters / 2.0f;
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -326,7 +327,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 glBindTexture(GL_TEXTURE_2D, textureID);
                 
-                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera2d);
                 Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
                 DrawTexture(textureID, imageTargetRect_screen, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
@@ -337,7 +338,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
             case EntryType_Rect: {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera2d);
                 Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 v4 color = { rectEntry.color, 1.0f };
@@ -352,8 +353,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
             case EntryType_Line: {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
                 
-                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
-                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera2d);
+                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera2d);
                 
                 v2 lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
                 v2 lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
@@ -372,10 +373,24 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 RenderEntry_Geometry geometryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
                 
+                //camera transform
+                Mat4x4 xRotMatrix = XRotation(camera3d.rotation.x);
+                Mat4x4 yRotMatrix = YRotation(camera3d.rotation.y);
+                Mat4x4 zRotMatrix = ZRotation(camera3d.rotation.z);
+                Mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
+                v3 xAxis = GetColumn(fullRotMatrix, 0);
+                v3 yAxis = GetColumn(fullRotMatrix, 1);
+                v3 zAxis = GetColumn(fullRotMatrix, 2);
+                Mat4x4 camTransform = ProduceCameraTransformMatrix(xAxis, yAxis, zAxis, camera3d.worldPos);
+                
+                Mat4x4 projectionTransform = ProduceProjectionTransformMatrix_UsingFOV(renderingInfo.fov, renderingInfo.aspectRatio, renderingInfo.nearPlane, renderingInfo.farPlane);
+                
+                Mat4x4 fullTransformMatrix = projectionTransform * camTransform * geometryEntry.worldTransform;
+                
                 RunTimeArr<v4> cubeVerts_openGLClipSpace{};
                 InitArr($(cubeVerts_openGLClipSpace), platformMemoryPart, geometryEntry.verts.length);
                 for(s32 i{}; i < geometryEntry.verts.length; ++i)
-                    cubeVerts_openGLClipSpace.Push(geometryEntry.fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
+                    cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
                 
                 DrawCube(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
                 

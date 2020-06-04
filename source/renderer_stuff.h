@@ -28,6 +28,12 @@ struct Camera2D
     f32 zoomFactor {};
 };
 
+struct Camera3D
+{
+    v3 worldPos{};
+    v3 rotation{};
+};
+
 struct Rectf
 {
     v2 min {};
@@ -87,7 +93,12 @@ struct Game_Render_Cmd_Buffer
 struct Rendering_Info
 {
     Game_Render_Cmd_Buffer cmdBuffer;
-    Camera2D camera;
+    Camera2D camera2d{};
+    Camera3D camera3d{};
+    f32 fov{};
+    f32 aspectRatio{};
+    f32 nearPlane{};
+    f32 farPlane{};
     f32 _pixelsPerMeter {};
 };
 
@@ -151,7 +162,7 @@ struct RenderEntry_Geometry
     RenderEntry_Header header;
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
-    Mat4x4 fullTransformMatrix{};
+    Mat4x4 worldTransform{};
 };
 
 struct RenderEntry_Texture
@@ -190,7 +201,8 @@ void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap,
 void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3 color);
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2 lookAt, v2 dilatePoint_inScreenCoords, f32 zoomFactor);
-void UpdateCamera(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor);
+void UpdateCamera2D(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor);
+void UpdateCamera3D(Rendering_Info* renderingInfo, v3 camWorldPos, v3 camRotation);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch);
 
 //Render Commands 3d
@@ -223,14 +235,24 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, s32 sizeOfCommand)
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
 
-void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies, Mat4x4 fullTransformMatrix)
+void InitRenderer(Rendering_Info* renderingInfo, f32 fov, f32 aspectRatio, f32 nearPlane, f32 farPlane)
+{
+    //ProjectionTransform
+    //f32 fov = (InvTanR(1.0f/camMagnification) * 2.0f) / (PI / 180.0f); //For if you want to use a magnification value to calculate fov 1x, 2x, 10x, etc. Adjusting fov too much causes distortion or 'fish eye' effect though
+    renderingInfo->fov = fov;
+    renderingInfo->aspectRatio = aspectRatio;
+    renderingInfo->nearPlane = nearPlane;
+    renderingInfo->farPlane = farPlane;
+};
+
+void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
 {
     RenderEntry_Geometry* geomEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Geometry);
     
     geomEntry->header.type = EntryType_Geometry;
     geomEntry->verts = worldVerts;
     geomEntry->indicies = indicies;
-    geomEntry->fullTransformMatrix = fullTransformMatrix;
+    geomEntry->worldTransform = worldTransform;
     
     ++renderingInfo->cmdBuffer.entryCount;
 };
@@ -304,26 +326,32 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void UpdateCamera(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor, v2 normalizedDilatePointOffset)
+void UpdateCamera2D(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor, v2 normalizedDilatePointOffset)
 {
     BGZ_ASSERT(normalizedDilatePointOffset.x >= -1.0f && normalizedDilatePointOffset.x <= 1.0f
                && normalizedDilatePointOffset.y >= -1.0f && normalizedDilatePointOffset.y <= 1.0f,
                "Dilate point is not normalized!");
     
-    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
-    renderingInfo->camera.zoomFactor = zoomFactor;
-    renderingInfo->camera.dilatePointOffset_normalized = normalizedDilatePointOffset;
+    renderingInfo->camera2d.lookAt = cameraLookAtCoords_meters;
+    renderingInfo->camera2d.zoomFactor = zoomFactor;
+    renderingInfo->camera2d.dilatePointOffset_normalized = normalizedDilatePointOffset;
 };
 
-void UpdateCamera(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor)
+void UpdateCamera3D(Rendering_Info* renderingInfo, v3 camWorldPos, v3 camRotation)
 {
-    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
-    renderingInfo->camera.zoomFactor = zoomFactor;
+    renderingInfo->camera3d.worldPos = camWorldPos;
+    renderingInfo->camera3d.rotation = camRotation;
 };
 
-void UpdateCamera(Rendering_Info* renderingInfo, f32 zoomFactor)
+void UpdateCamera2D(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor)
 {
-    renderingInfo->camera.zoomFactor = zoomFactor;
+    renderingInfo->camera2d.lookAt = cameraLookAtCoords_meters;
+    renderingInfo->camera2d.zoomFactor = zoomFactor;
+};
+
+void UpdateCamera2D(Rendering_Info* renderingInfo, f32 zoomFactor)
+{
+    renderingInfo->camera2d.zoomFactor = zoomFactor;
 };
 
 Image LoadBitmap_BGRA(const char* fileName)

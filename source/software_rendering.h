@@ -853,14 +853,14 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
     Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
     
     u8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &work->renderingInfo.camera;
+    Camera2D* camera2d = &work->renderingInfo.camera2d;
     
     f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
     v2 screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
-    camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
+    camera2d->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera2d->dilatePointOffset_normalized));
     
     v2 screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
-    camera->viewCenter = screenDimensions_meters / 2.0f;
+    camera2d->viewCenter = screenDimensions_meters / 2.0f;
     
     for (s32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {
@@ -871,7 +871,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
                 
-                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera2d);
                 Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
                 DrawTexture_Optimized((u32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
@@ -884,7 +884,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera2d);
                 Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 DrawRectangle((u32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
@@ -910,14 +910,14 @@ void DoRenderWork(void* data)
     Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
     
     u8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &work->renderingInfo.camera;
+    Camera2D* camera2d = &work->renderingInfo.camera2d;
     
     f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
     v2 screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
-    camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
+    camera2d->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera2d->dilatePointOffset_normalized));
     
     v2 screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
-    camera->viewCenter = screenDimensions_meters / 2.0f;
+    camera2d->viewCenter = screenDimensions_meters / 2.0f;
     
     for (s32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
     {
@@ -928,7 +928,7 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
                 
-                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera2d);
                 Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
                 DrawTexture_UnOptimized((u32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
@@ -941,7 +941,7 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera2d);
                 Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 DrawRectangle((u32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
@@ -954,8 +954,8 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
                 
-                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
-                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera2d);
+                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera2d);
                 
                 v2 lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
                 v2 lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
