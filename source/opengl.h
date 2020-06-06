@@ -9,17 +9,21 @@ R"HereDoc(
 
 #version 430
 
-in layout(location=0) vec4 position;
+in layout(location=0) vec3 position;
 in layout(location=1) vec3 color;
 out vec3 fragColor;
 
+uniform mat4 transformationMatrix;
+
 void main()
 {
-    gl_Position = position;
+vec4 newPos = vec4(position, 1.0) * transformationMatrix;//vector is on the left side because my matrices are row major
+gl_Position = newPos;
+
     vec3 changedColors;
-    changedColors.r += color.r + .41;
-    changedColors.g += color.g + .04;
-    changedColors.b += color.b + .02;
+    changedColors.r += color.r + 0;
+    changedColors.g += color.g + 0;
+    changedColors.b += color.b + 0;
     fragColor = changedColors;
 };
 
@@ -231,40 +235,20 @@ GLInit(int windowWidth, int windowHeight)
 }
 
 
-void Draw(RunTimeArr<v4> cubeVerts_glClipSpace, Memory_Partition* memPart, RunTimeArr<s16> indicies)
+void Draw(Memory_Partition* memPart, RunTimeArr<v3> meshVerts_objectSpace, RunTimeArr<s16> meshIndicies)
 {
     RunTimeArr<GLfloat> verts{};
-    InitArr($(verts), memPart, cubeVerts_glClipSpace.length * 7);
+    InitArr($(verts), memPart, meshVerts_objectSpace.length * 6);
     s32 i{};
-    f32 colorR{}, colorG{}, colorB{};
-    for(s32 j{}; j < cubeVerts_glClipSpace.length; ++j)
+    f32 colorR{1.0f}, colorG{}, colorB{};
+    for(s32 j{}; j < meshVerts_objectSpace.length; ++j)
     {
-        verts.Push(cubeVerts_glClipSpace[j].x);
-        verts.Push(cubeVerts_glClipSpace[j].y);
-        verts.Push(cubeVerts_glClipSpace[j].z);
-        verts.Push(cubeVerts_glClipSpace[j].w);
+        verts.Push(meshVerts_objectSpace[j].x);
+        verts.Push(meshVerts_objectSpace[j].y);
+        verts.Push(meshVerts_objectSpace[j].z);
         verts.Push(colorR);
         verts.Push(colorG);
         verts.Push(colorB);
-        
-        if(colorR > 1.0f)
-        {
-            colorR = 0.0f;
-        };
-        
-        if(colorG > 1.0f)
-        {
-            colorG = 0.0f;
-        };
-        
-        if(colorB > 1.0f)
-        {
-            colorB = 0.0f;
-        };
-        
-        colorR += .01f;
-        colorG += .54f;
-        colorB += .27f;
     };
     
     GLuint bufferID;
@@ -272,17 +256,17 @@ void Draw(RunTimeArr<v4> cubeVerts_glClipSpace, Memory_Partition* memPart, RunTi
     glBindBuffer(GL_ARRAY_BUFFER, bufferID);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, 0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7, (char*)(sizeof(GLfloat)*3));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
     
     GLuint indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * indicies.length, indicies.elements, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * meshIndicies.length, meshIndicies.elements, GL_STATIC_DRAW);
     
     glDisable(GL_TEXTURE_2D);
-    glDrawElements(GL_TRIANGLES, (s32)indicies.length, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, (s32)meshIndicies.length, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
 };
 
@@ -387,12 +371,10 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 Mat4x4 fullTransformMatrix = projectionTransform * camTransform * geometryEntry.worldTransform;
                 
-                RunTimeArr<v4> cubeVerts_openGLClipSpace{};
-                InitArr($(cubeVerts_openGLClipSpace), platformMemoryPart, geometryEntry.verts.length);
-                for(s32 i{}; i < geometryEntry.verts.length; ++i)
-                    cubeVerts_openGLClipSpace.Push(fullTransformMatrix * v4{geometryEntry.verts[i], 1.0f});
+                GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
+                glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
                 
-                Draw(cubeVerts_openGLClipSpace, platformMemoryPart, geometryEntry.indicies);
+                Draw(platformMemoryPart, geometryEntry.verts, geometryEntry.indicies);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;

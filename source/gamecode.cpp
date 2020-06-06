@@ -339,10 +339,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         camera->rotation = {0.0f, 0.0f, 0.0f};
         
         //Fighter Init
-        ObjFileData data = LoadObjFileData(framePart, "data/face.obj");
+        ObjFileData data = LoadObjFileData(framePart, "data/cube.obj");
         ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, data);
         ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, data);
-        fighter1->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
+        fighter0->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
+        fighter1->worldTransform.translation = {+4.0f, 0.0f, 0.0f};
     };
     
     if(KeyHeld(keyboard->MoveRight))
