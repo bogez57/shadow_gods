@@ -20,7 +20,7 @@ void main()
 vec4 newPos = vec4(position, 1.0) * transformationMatrix;//vector is on the left side because my matrices are row major
 gl_Position = newPos;
 
-    vec3 changedColors;
+    vec3 changedColors = vec3(0);
     changedColors.r += color.r + 0;
     changedColors.g += color.g + 0;
     changedColors.b += color.b + 0;
@@ -44,9 +44,59 @@ void main()
 
 )HereDoc";
 
-void GLAPIENTRY MyOpenGLErrorCallbackFunc(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+void GLAPIENTRY MyOpenGLErrorCallbackFunc(GLenum source, GLenum debugErrorType, GLuint errorID, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 {
-    BGZ_CONSOLE("%s type=0x%x %s\n", ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, message);
+    switch(debugErrorType)
+    {
+        case GL_DEBUG_TYPE_ERROR:
+        {
+            BGZ_CONSOLE("GL Type error: %s\nGL error id: 0x%x\n", message, errorID);
+#if _MSC_VER
+            __debugbreak();
+#endif
+        }break;
+        
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        {
+            BGZ_CONSOLE("GL deprecated gl function usage error: %s\nGL error id: 0x%x\n", message, errorID);
+#if _MSC_VER
+            __debugbreak();
+#endif
+        }break;
+        
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        {
+            BGZ_CONSOLE("GL undefined behavior error: %s\nGL error id: 0x%x\n", message, errorID);
+            
+#if _MSC_VER
+            __debugbreak();
+#endif
+        }break;
+        
+        case GL_DEBUG_TYPE_PERFORMANCE:
+        {
+            BGZ_CONSOLE("GL performance warning/error: %s\nGL error id: 0x%x\n", message, errorID);
+            
+        }break;
+        
+        case GL_DEBUG_TYPE_PORTABILITY:
+        {
+            BGZ_CONSOLE("GL portability warning/error: %s\nGL error id: 0x%x\n", message, errorID);
+            
+        }break;
+        
+        case GL_DEBUG_TYPE_OTHER:
+        {
+            if(errorID == 0x20071)//Ignores the warning: Buffer object 1 (bound to WHATEVER_BUFFER, usage hint is GL_STATIC_DRAW) will use VIDEO memory.... Apparently this doesn't mean much
+            {
+                //Ignore
+            }
+            else
+            {
+                BGZ_CONSOLE("GL other error: %s\nGL error id: 0x%x\n", message, errorID);
+            };
+        }break;
+    };
 };
 
 local_func u32
