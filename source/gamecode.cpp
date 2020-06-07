@@ -342,8 +342,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         ObjFileData data = LoadObjFileData(framePart, "data/cube.obj");
         ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, data);
         ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, data);
-        fighter0->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
-        fighter1->worldTransform.translation = {+4.0f, 0.0f, 0.0f};
+        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
+        fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
+        
+        fighter0->worldTransform.translation = {+3.0f, 0.0f, 0.0f};
+        fighter1->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
     };
     
     if(KeyHeld(keyboard->MoveRight))
@@ -363,8 +366,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //World Transform
         Mat4x4 fighter0_worldTransformMatrix = ProduceWorldTransformMatrix(fighter0->worldTransform.translation, fighter0->worldTransform.rotation, fighter0->worldTransform.scale);
         Mat4x4 fighter1_worldTransformMatrix = ProduceWorldTransformMatrix(fighter1->worldTransform.translation, fighter1->worldTransform.rotation, fighter1->worldTransform.scale);
-        PushGeometry(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
-        PushGeometry(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies, fighter1_worldTransformMatrix);
+        PushGeometry(global_renderingInfo, fighter0->id, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
+        PushGeometry(global_renderingInfo, fighter1->id, fighter1->mesh.indicies, fighter1_worldTransformMatrix);
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);

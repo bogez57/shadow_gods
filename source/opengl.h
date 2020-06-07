@@ -235,39 +235,13 @@ GLInit(int windowWidth, int windowHeight)
 }
 
 
-void Draw(Memory_Partition* memPart, RunTimeArr<v3> meshVerts_objectSpace, RunTimeArr<s16> meshIndicies)
+void Draw(Memory_Partition* memPart, s32 id, RunTimeArr<s16> meshIndicies)
 {
-    RunTimeArr<GLfloat> verts{};
-    InitArr($(verts), memPart, meshVerts_objectSpace.length * 6);
-    s32 i{};
-    f32 colorR{1.0f}, colorG{}, colorB{};
-    for(s32 j{}; j < meshVerts_objectSpace.length; ++j)
-    {
-        verts.Push(meshVerts_objectSpace[j].x);
-        verts.Push(meshVerts_objectSpace[j].y);
-        verts.Push(meshVerts_objectSpace[j].z);
-        verts.Push(colorR);
-        verts.Push(colorG);
-        verts.Push(colorB);
-    };
-    
-    GLuint bufferID;
-    glGenBuffers(1, &bufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
-    
-    GLuint indexBufferID;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * meshIndicies.length, meshIndicies.elements, GL_STATIC_DRAW);
-    
     glDisable(GL_TEXTURE_2D);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 2);
     glDrawElements(GL_TRIANGLES, (s32)meshIndicies.length, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, int windowWidth, int windowHeight)
@@ -300,6 +274,42 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
         switch (entryHeader->type)
         {
+            case EntryType_InitBuffer:{
+                RenderEntry_InitBuffer bufferData = *(RenderEntry_InitBuffer*)currentRenderBufferEntry;
+                
+                ScopedMemory scope{platformMemoryPart};
+                
+                RunTimeArr<GLfloat> verts{};
+                InitArr($(verts), platformMemoryPart, bufferData.verts.length * 6);
+                s32 i{};
+                f32 colorR{1.0f}, colorG{}, colorB{};
+                for(s32 j{}; j < bufferData.verts.length; ++j)
+                {
+                    verts.Push(bufferData.verts[j].x);
+                    verts.Push(bufferData.verts[j].y);
+                    verts.Push(bufferData.verts[j].z);
+                    verts.Push(colorR);
+                    verts.Push(colorG);
+                    verts.Push(colorB);
+                };
+                
+                GLuint bufferID;
+                glGenBuffers(1, &bufferID);
+                glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_STATIC_DRAW);
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+                glEnableVertexAttribArray(1);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
+                
+                GLuint indexBufferID;
+                glGenBuffers(1, &indexBufferID);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * bufferData.indicies.length, bufferData.indicies.elements, GL_STATIC_DRAW);
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_InitBuffer);
+            }break;
+            
             case EntryType_Texture: {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
                 
@@ -374,7 +384,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
                 glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
                 
-                Draw(platformMemoryPart, geometryEntry.verts, geometryEntry.indicies);
+                Draw(platformMemoryPart, geometryEntry.id, geometryEntry.indicies);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;
