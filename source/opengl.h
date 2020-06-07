@@ -47,9 +47,6 @@ void main()
 void GLAPIENTRY MyOpenGLErrorCallbackFunc(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 {
     BGZ_CONSOLE("%s type=0x%x %s\n", ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, message);
-#if _MSC_VER
-    __debugbreak();
-#endif
 };
 
 local_func u32
@@ -235,13 +232,13 @@ GLInit(int windowWidth, int windowHeight)
 }
 
 
-void Draw(Memory_Partition* memPart, s32 id, RunTimeArr<s16> meshIndicies)
+void Draw(Memory_Partition* memPart, u32 id, RunTimeArr<s16> meshIndicies)
 {
     glDisable(GL_TEXTURE_2D);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 2);
+    glBindVertexArray(id);
     glDrawElements(GL_TRIANGLES, (s32)meshIndicies.length, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, int windowWidth, int windowHeight)
@@ -293,19 +290,23 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                     verts.Push(colorB);
                 };
                 
+                u32 vertexArrayID{};
+                glGenVertexArrays(1, &vertexArrayID);
+                glBindVertexArray(vertexArrayID);
+                
                 GLuint bufferID;
                 glGenBuffers(1, &bufferID);
                 glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_STATIC_DRAW);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_DYNAMIC_DRAW);
                 glEnableVertexAttribArray(0);
-                glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
                 glEnableVertexAttribArray(1);
+                glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
                 glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
                 
                 GLuint indexBufferID;
                 glGenBuffers(1, &indexBufferID);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * bufferData.indicies.length, bufferData.indicies.elements, GL_STATIC_DRAW);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * bufferData.indicies.length, bufferData.indicies.elements, GL_DYNAMIC_DRAW);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_InitBuffer);
             }break;
@@ -367,7 +368,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 RenderEntry_Geometry geometryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
                 
-                //camera transform
+                //camera transform setup
                 Mat4x4 xRotMatrix = XRotation(camera3d.rotation.x);
                 Mat4x4 yRotMatrix = YRotation(camera3d.rotation.y);
                 Mat4x4 zRotMatrix = ZRotation(camera3d.rotation.z);
@@ -375,12 +376,13 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 v3 xAxis = GetColumn(fullRotMatrix, 0);
                 v3 yAxis = GetColumn(fullRotMatrix, 1);
                 v3 zAxis = GetColumn(fullRotMatrix, 2);
+                
+                //Setup full transform matrix
                 Mat4x4 camTransform = ProduceCameraTransformMatrix(xAxis, yAxis, zAxis, camera3d.worldPos);
-                
                 Mat4x4 projectionTransform = ProduceProjectionTransformMatrix_UsingFOV(renderingInfo.fov, renderingInfo.aspectRatio, renderingInfo.nearPlane, renderingInfo.farPlane);
-                
                 Mat4x4 fullTransformMatrix = projectionTransform * camTransform * geometryEntry.worldTransform;
                 
+                //Send transform matrix to vertex shader
                 GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
                 glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
                 

@@ -339,9 +339,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         camera->rotation = {0.0f, 0.0f, 0.0f};
         
         //Fighter Init
-        ObjFileData data = LoadObjFileData(framePart, "data/cube.obj");
-        ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, data);
-        ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, data);
+        ObjFileData cubeData = LoadObjFileData(framePart, "data/cube.obj");
+        ObjFileData monkeyData = LoadObjFileData(framePart, "data/monkey.obj");
+        ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, cubeData);
+        ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, monkeyData);
         fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
         fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
         

@@ -164,7 +164,7 @@ struct RenderEntry_Rect
 struct RenderEntry_Geometry
 {
     RenderEntry_Header header;
-    s32 id{};
+    u32 id{};
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
     Mat4x4 worldTransform{};
@@ -272,8 +272,7 @@ s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTim
     
     ++renderingInfo->cmdBuffer.entryCount;
     
-    bufferCount += 2;
-    return bufferCount;
+    return ++bufferCount;
 };
 
 void PushGeometry(Rendering_Info* renderingInfo, s32 id, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
