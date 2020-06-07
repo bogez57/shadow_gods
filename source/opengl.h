@@ -267,6 +267,7 @@ local_func void
 GLInit(int windowWidth, int windowHeight)
 {
     glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);//This makes things so debug callback function doesn't get called from a thread other than which one I need to view the call stack in debugger
     glDebugMessageCallback(MyOpenGLErrorCallbackFunc, 0);
     
     glViewport(0, 0, windowWidth, windowHeight);
