@@ -15,6 +15,7 @@ struct Transform_v3
 
 struct Fighter3D
 {
+    s32 id{};
     Geometry mesh{};
     Transform_v3 worldTransform{};
 };

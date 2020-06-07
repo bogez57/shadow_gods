@@ -18,6 +18,8 @@
 
 */
 
+global_variable s32 bufferCount{};
+
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
 struct Camera2D
 {
@@ -140,6 +142,7 @@ struct Object_Transform
 
 enum Render_Entry_Type
 {
+    EntryType_InitBuffer,
     EntryType_Line,
     EntryType_Rect,
     EntryType_Geometry,
@@ -161,9 +164,17 @@ struct RenderEntry_Rect
 struct RenderEntry_Geometry
 {
     RenderEntry_Header header;
+    s32 id{};
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
     Mat4x4 worldTransform{};
+};
+
+struct RenderEntry_InitBuffer
+{
+    RenderEntry_Header header;
+    RunTimeArr<v3> verts{};
+    RunTimeArr<s16> indicies{};
 };
 
 struct RenderEntry_Texture
@@ -196,6 +207,8 @@ f32 BitmapWidth_Meters(Image bitmap);
 f32 BitmapHeight_Meters(Rendering_Info info, Image bitmap);
 v2 viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
+s32 InitBuffer(Rendering_Info&& renderingInfo, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies);
+
 //Render Commands 2d - Need to redoe these with matrices in mind and vertices in object space (instead of world space) before being sent down
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
@@ -207,7 +220,7 @@ void UpdateCamera3D(Rendering_Info* renderingInfo, v3 camWorldPos, v3 camRotatio
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch);
 
 //Render Commands 3d
-void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies, Mat4x4 fullTransformMatrix);
+void PushGeometry(Rendering_Info* renderingInfo, s32 id, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies, Mat4x4 fullTransformMatrix);
 
 void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -246,11 +259,25 @@ void InitRenderer(Rendering_Info* renderingInfo, f32 fov, f32 aspectRatio, f32 n
     renderingInfo->farPlane = farPlane;
 };
 
-void PushGeometry(Rendering_Info* renderingInfo, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
+s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies)
+{
+    RenderEntry_InitBuffer* bufInit = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_InitBuffer);
+    
+    bufInit->header.type = EntryType_InitBuffer;
+    bufInit->verts = objectVerts;
+    bufInit->indicies = indicies;
+    
+    ++renderingInfo->cmdBuffer.entryCount;
+    
+    return bufferCount++;
+};
+
+void PushGeometry(Rendering_Info* renderingInfo, s32 id, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
 {
     RenderEntry_Geometry* geomEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Geometry);
     
     geomEntry->header.type = EntryType_Geometry;
+    geomEntry->id = id;
     geomEntry->verts = worldVerts;
     geomEntry->indicies = indicies;
     geomEntry->worldTransform = worldTransform;
