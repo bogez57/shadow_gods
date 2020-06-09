@@ -6,7 +6,7 @@ class Array
     public:
     Type& operator[](s64 index)
     {
-        BGZ_ASSERT(index < size, "Attempting to access index %i which is out of current array bounds - current max array index: %i", index, size - 1);
+        BGZ_ASSERT(index < size, "Attempting to access an index which is outside of current array bounds!");
         return this->elements[index];
     };
     

@@ -692,10 +692,10 @@ DrawTexture_UnOptimized(u32* colorBufferData, v2i colorBufferSize, s32 colorBuff
                 f32 texelPos_y = (textureV * (f32)(texture.size.height));
                 
                 f32 epiilon = 0.00001f; //TODO: Remove????
-                BGZ_ASSERT(((u + epiilon) >= 0.0f) && ((u - epiilon) <= 1.0f), "u is out of range! %f", u);
-                BGZ_ASSERT(((v + epiilon) >= 0.0f) && ((v - epiilon) <= 1.0f), "v is out of range! %f", v);
-                BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (s32)texture.size.width), "x coord is out of range!: %f", texelPos_x);
-                BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (s32)texture.size.height), "x coord is out of range!: %f", texelPos_y);
+                BGZ_ASSERT(((u + epiilon) >= 0.0f) && ((u - epiilon) <= 1.0f), "u is out of range!");
+                BGZ_ASSERT(((v + epiilon) >= 0.0f) && ((v - epiilon) <= 1.0f), "v is out of range!");
+                BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (s32)texture.size.width), "x coord is out of range!");
+                BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (s32)texture.size.height), "x coord is out of range!");
                 
                 u8* texelPtr = ((u8*)texture.colorData) + ((u32)texelPos_y * texture.pitch_pxls) + ((u32)texelPos_x * sizeof(u32)); //size of pixel
                 

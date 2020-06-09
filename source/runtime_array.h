@@ -14,15 +14,15 @@ struct RunTimeArr
     
     Type& operator[](s64 index)
     {
-        BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current arround bounds - current max index allowed: %i", index, capacity - 1);
-        BGZ_ASSERT(index < length, "Attempting to access index %i which hasn't been initialized yet. Current buffer length is %i", index, length);
+        BGZ_ASSERT(index < capacity, "Attempting to access an index which is outside of current arround bounds!");
+        BGZ_ASSERT(index < length, "Attempting to access an index which hasn't been initialized yet!");
         
         return this->elements[index];
     };
     
     inline Type& Push(Type element = Type())
     {
-        BGZ_ASSERT(length < capacity, "Trying to add more elements to array than array has capacity for. You're trying to make length of array %i and current capacity is %i", length+1, capacity);
+        BGZ_ASSERT(length < capacity, "Trying to add more elements to array than array has capacity for!");
         return (Type&)this->elements[length++] = element;
     };
     
