@@ -112,9 +112,9 @@ char Peek(char* string, s32 howFarAheadToPeek)
 
 struct Vertex
 {
-    RunTimeArr<v3> position{};
-    RunTimeArr<v2> texCoord{};
-    RunTimeArr<v3> normal{};
+    v3 position{};
+    v2 texCoord{};
+    v3 normal{};
 };
 
 RunTimeArr<Vertex> LoadOBJ(const char* filePath, Memory_Partition* memPart)
@@ -338,23 +338,25 @@ RunTimeArr<Vertex> LoadOBJ(const char* filePath, Memory_Partition* memPart)
         };
     };
     
-    //TODO: Now store all vertex attribute info (position, texCoord, normal) into resulting vertex array
-    //InitArr($(resultVertices), vertexPositionIndicies.length);
-    //for(i64 i{}; i < vertices.length; ++i)
-    //{
-    //   verticies[i].position = vertexPositions[vertexPositionIndicies[i]];
-    //   ......
-    //}
+    InitArr($(resultVertices), memPart, vertexPositionIndicies.length);
+    for(s64 i{}; i < resultVertices.capacity; ++i)
+    {
+        resultVertices.Push();
+        resultVertices[i].position = vertexPositions[vertexPositionIndicies[i] - 1];
+        resultVertices[i].texCoord = vertexTexCoords[vertexTexCoordIndicies[i] - 1];
+        resultVertices[i].normal = vertexNormals[vertexnormalIndicies[i] - 1];
+    }
     
     return resultVertices;
 };
 
 void testOBJFileLoader(Memory_Partition* memPart)
 {
-    RunTimeArr<Vertex> temp{memPart, 50};
+    RunTimeArr<Vertex> temp{memPart, 36};//Only works for cube right now
     
-    ScopedMemory scope{memPart};
-    CopyArray(LoadOBJ("data/cube.obj", memPart), $(temp));
+    RunTimeArr<Vertex> temp2 = LoadOBJ("data/cube.obj", memPart);
+    
+    CopyArray(temp2, $(temp));
 };
 
 
