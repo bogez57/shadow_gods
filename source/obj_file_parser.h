@@ -108,11 +108,29 @@ char Peek(char* string, s32 howFarAheadToPeek)
     return result;
 };
 
-auto GetNumberOfVertsAndIndicies(char* fileContents)
+/* date = June 10th 2020 4:41 am */
+
+struct Vertex
 {
-    struct GeometryInfo{ s32 vertCount{}; s32 indexCount{};};
-    GeometryInfo result{};
+    RunTimeArr<v3> position{};
+    RunTimeArr<v2> texCoord{};
+    RunTimeArr<v3> normal{};
+};
+
+RunTimeArr<Vertex> LoadOBJ(const char* filePath, Memory_Partition* memPart)
+{
+    RunTimeArr<v3> vertexPositions{memPart, 100};
+    RunTimeArr<v2> vertexTexCoords{memPart, 100};
+    RunTimeArr<v3> vertexNormals{memPart, 100};
     
+    RunTimeArr<s32> vertexPositionIndicies{memPart, 100};
+    RunTimeArr<s32> vertexTexCoordIndicies{memPart, 100};
+    RunTimeArr<s32> vertexnormalIndicies{memPart, 100};
+    
+    RunTimeArr<Vertex> resultVertices{};
+    
+    s32 length{};
+    char* fileContents = globalPlatformServices->ReadEntireFile($(length), filePath);
     char* stream = fileContents;
     
     bool contentsStillNeedParsed{true};
@@ -127,24 +145,124 @@ auto GetNumberOfVertsAndIndicies(char* fileContents)
             
             case 'v':
             {
-                if(IsWhiteSpace(Peek(stream, 1)) && (IsDigit(Peek(stream, 2)) || IsMinusSign(Peek(stream, 2))))
+                if(Peek(stream, 1) == 't')
                 {
-                    bool notAllVertsCountedYet{true};
-                    while(notAllVertsCountedYet)
+                    bool notAllTexCoordsParsed{true};
+                    while(notAllTexCoordsParsed)
+                    {
+                        //Remove initial prefix and whitespace
+                        AdvanceStream(&stream);
+                        AdvanceStream(&stream);
+                        AdvanceStream(&stream);
+                        
+                        while(IsDigit(stream[0]) || IsPeriod(stream[0]) || IsMinusSign(stream[0]))
+                        {
+                            v2 texCoord{};
+                            for(s32 i{}; i < 2; ++i)
+                            {
+                                char scalarString[10]{};
+                                s32 stringI{};
+                                while(IsDigit(stream[0]) || IsPeriod(stream[0]) || IsMinusSign(stream[0]))
+                                {
+                                    scalarString[stringI] = *stream++;
+                                    ++stringI;
+                                };
+                                
+                                texCoord.elem[i] = (f32)strtod(scalarString, NULL);
+                                AdvanceStream(&stream);
+                            };
+                            
+                            vertexTexCoords.Push(texCoord);
+                            
+                            while(stream[0] != 'v')
+                                AdvanceStream(&stream);
+                        };
+                        
+                        BGZ_ASSERT(stream[0] != '\0', "Reached end of stream!");
+                        
+                        if(Peek(stream, 1) == 'n')
+                            notAllTexCoordsParsed = false;
+                    };
+                }
+                else if(Peek(stream, 1) == 'n')
+                {
+                    //normals
+                    bool notAllNormalsParsed{true};
+                    while(notAllNormalsParsed)
+                    {
+                        //Remove initial prefix and whitespace
+                        AdvanceStream(&stream);
+                        AdvanceStream(&stream);
+                        AdvanceStream(&stream);
+                        
+                        while(IsDigit(stream[0]) || IsPeriod(stream[0]) || IsMinusSign(stream[0]))
+                        {
+                            v3 normal{};
+                            for(s32 i{}; i < 3; ++i)
+                            {
+                                char scalarString[10]{};
+                                s32 stringI{};
+                                while(IsDigit(stream[0]) || IsPeriod(stream[0]) || IsMinusSign(stream[0]))
+                                {
+                                    scalarString[stringI] = *stream++;
+                                    ++stringI;
+                                };
+                                
+                                normal.elem[i] = (f32)strtod(scalarString, NULL);
+                                AdvanceStream(&stream);
+                            };
+                            
+                            vertexNormals.Push(normal);
+                            
+                            while(stream[0] != 'v' && stream[0] != 'u')
+                                AdvanceStream(&stream);
+                        };
+                        
+                        BGZ_ASSERT(stream[0] != '\0', "Reached end of stream!");
+                        
+                        if(NOT IsDigit(Peek(stream, 3)))
+                            notAllNormalsParsed = false;
+                    };
+                }
+                else if(Peek(stream, 1) == ' ' && (IsDigit(Peek(stream, 2)) || IsMinusSign(Peek(stream, 2))))
+                {
+                    bool notAllVertsParsed{true};
+                    while(notAllVertsParsed)
                     {
                         if(stream[0] == 'v')
                         {
-                            ++result.vertCount;
+                            //Remove initial prefix and whitespace
                             AdvanceStream(&stream);
+                            AdvanceStream(&stream);
+                            
+                            while(IsDigit(stream[0]) || IsPeriod(stream[0]) || IsMinusSign(stream[0]))
+                            {
+                                v3 vector{};
+                                for(s32 i{}; i < 3; ++i)
+                                {
+                                    char scalarString[10]{};
+                                    s32 stringI{};
+                                    while(IsDigit(stream[0]) || IsPeriod(stream[0]) || IsMinusSign(stream[0]))
+                                    {
+                                        scalarString[stringI] = *stream++;
+                                        ++stringI;
+                                    };
+                                    
+                                    vector.elem[i] = (f32)strtod(scalarString, NULL);
+                                    AdvanceStream(&stream);
+                                };
+                                
+                                vertexPositions.Push(vector);
+                                
+                                while(stream[0] != 'v')
+                                    AdvanceStream(&stream);
+                            };
                         }
-                        
-                        while(stream[0] != 'v')
-                            AdvanceStream(&stream);
                         
                         BGZ_ASSERT(stream[0] != '\0', "Reached end of stream!");
                         
                         if(Peek(stream, 1) == 't')
-                            notAllVertsCountedYet = false;
+                            notAllVertsParsed = false;
                     }
                 }
                 else
@@ -155,37 +273,56 @@ auto GetNumberOfVertsAndIndicies(char* fileContents)
             
             case 'f':
             {
-                if(IsWhiteSpace(Peek(stream, 1)) && (IsDigit(Peek(stream, 2))))
+                if(Peek(stream, 1) == ' ')
                 {
-                    //Remove f and initial whitespace
+                    //Remove initial prefix and whitespace
                     AdvanceStream(&stream);
                     AdvanceStream(&stream);
                     
-                    bool notAllIndiciesCountedYet{true};
-                    while(notAllIndiciesCountedYet)
+                    s32 counter{};
+                    bool notAllFacesParsed{true};
+                    while(notAllFacesParsed)
                     {
-                        bool firstPassThroughWhileLoop{true};
-                        while(IsDigit(stream[0]))
+                        char numString[10]{};
+                        for(s32 i{}; IsDigit(stream[0]); ++i)
                         {
-                            if(firstPassThroughWhileLoop)
-                            {
-                                ++result.indexCount;
-                                firstPassThroughWhileLoop = false;
-                            }
-                            
+                            numString[i] = stream[0];
                             AdvanceStream(&stream);
                         };
                         
-                        AdvanceStream(&stream);
+                        if(counter == 0)
+                            vertexPositionIndicies.Push((s32)strtod(numString, NULL));
+                        else if (counter == 1)
+                            vertexTexCoordIndicies.Push((s32)strtod(numString, NULL));
+                        else if (counter == 2)
+                            vertexnormalIndicies.Push((s32)strtod(numString, NULL));
                         
-                        while(NOT IsWhiteSpace(stream[0]) && stream[0] != '\0')
+                        if(stream[0] == '/')
+                        {
+                            ++counter;
                             AdvanceStream(&stream);
-                        
-                        while(IsWhiteSpace(stream[0]) || stream[0] == 'f')
+                        }
+                        else if(stream[0] == ' ')
+                        {
+                            counter = 0;
                             AdvanceStream(&stream);
-                        
-                        if(stream[0] == '\0')
-                            notAllIndiciesCountedYet = false;
+                        }
+                        else if(IsWhiteSpace(Peek(stream, 1)))
+                        {
+                            counter = 0;
+                            AdvanceStream(&stream);
+                            AdvanceStream(&stream);
+                            if(stream[0] == '\0')
+                                break;
+                            AdvanceStream(&stream);
+                            if(stream[0] == '\0')
+                                break;
+                            AdvanceStream(&stream);
+                        }
+                        else if(Peek(stream, 1) == '\0' || stream[0] == '\0')
+                        {
+                            notAllFacesParsed = false;
+                        };
                     };
                 }
                 else
@@ -199,218 +336,25 @@ auto GetNumberOfVertsAndIndicies(char* fileContents)
                 AdvanceStream(&stream);
             }break;
         };
-    }
+    };
     
-    return result;
+    //TODO: Now store all vertex attribute info (position, texCoord, normal) into resulting vertex array
+    //InitArr($(resultVertices), vertexPositionIndicies.length);
+    //for(i64 i{}; i < vertices.length; ++i)
+    //{
+    //   verticies[i].position = vertexPositions[vertexPositionIndicies[i]];
+    //   ......
+    //}
+    
+    return resultVertices;
 };
 
-Token GetToken(Tokenizer&& tokenizer, Memory_Partition* memPart)
+void testOBJFileLoader(Memory_Partition* memPart)
 {
-    Token token{};
-    token.length = 1;
-    
-    bool contentsStillNeedParsed{true};
-    while(contentsStillNeedParsed)
-    {
-        switch(tokenizer.at[0])
-        {
-            case '\0':
-            {
-                token.type = END_OF_FILE;
-                contentsStillNeedParsed = false;
-            }break;
-            
-            case 'v':
-            {
-                if(IsWhiteSpace(Peek(tokenizer.at, 1)) && (IsDigit(Peek(tokenizer.at, 2)) || IsMinusSign(Peek(tokenizer.at, 2))))
-                {
-                    token.type = VECTOR;
-                    contentsStillNeedParsed = false;
-                    
-                    //Remove v and initial whitespace
-                    AdvanceTokenizer($(tokenizer));
-                    AdvanceTokenizer($(tokenizer));
-                    
-                    char* scalarString = PushType(memPart, char, 100);
-                    s32 stringI{}, sizeOfString{};
-                    while(tokenizer.at[0] != 'v')
-                    {
-                        scalarString[stringI] = tokenizer.at[0];
-                        AdvanceTokenizer($(tokenizer));
-                        ++stringI;
-                        ++sizeOfString;
-                    };
-                    
-                    token.text = scalarString;
-                    token.length = sizeOfString;
-                }
-                else
-                {
-                    AdvanceTokenizer($(tokenizer));
-                };
-            }break;
-            
-            case 'f':
-            {
-                if(IsWhiteSpace(Peek(tokenizer.at, 1)) && IsDigit(Peek(tokenizer.at, 2)))
-                {
-                    token.type = FACE;
-                    contentsStillNeedParsed = false;
-                    
-                    //Remove f and initial whitespace
-                    AdvanceTokenizer($(tokenizer));
-                    AdvanceTokenizer($(tokenizer));
-                    
-                    char* indexString = PushType(memPart, char, 100);
-                    
-                    bool indiciesStillNeedLoaded{true};
-                    s32 stringI{};
-                    while(indiciesStillNeedLoaded)
-                    {
-                        while(IsDigit(tokenizer.at[0]))
-                        {
-                            indexString[stringI] = tokenizer.at[0];
-                            AdvanceTokenizer($(tokenizer));
-                            ++stringI;
-                        };
-                        
-                        indexString[stringI] = ',';
-                        ++stringI;
-                        
-                        AdvanceTokenizer($(tokenizer));
-                        
-                        while(NOT IsWhiteSpace(tokenizer.at[0]) && tokenizer.at[0] != '\0')
-                            AdvanceTokenizer($(tokenizer));
-                        
-                        while(IsWhiteSpace(tokenizer.at[0]) || tokenizer.at[0] == 'f')
-                            AdvanceTokenizer($(tokenizer));
-                        
-                        if(tokenizer.at[0] == '\0')
-                            indiciesStillNeedLoaded = false;
-                    };
-                    
-                    token.text = indexString;
-                }
-                else
-                {
-                    AdvanceTokenizer($(tokenizer));
-                };
-            }break;
-            
-            default:
-            {
-                AdvanceTokenizer($(tokenizer));
-            }break;
-        };
-    }
-    
-    return token;
-};
-
-void ParseAndStoreContents(ObjFileData&& data, Memory_Partition* memPart, char* fileContents)
-{
-    Tokenizer tokenizer{};
-    tokenizer.at = fileContents;
+    RunTimeArr<Vertex> temp{memPart, 50};
     
     ScopedMemory scope{memPart};
-    
-    bool contentsStillNeedParsed{true};
-    while(contentsStillNeedParsed)
-    {
-        Token token = GetToken($(tokenizer), memPart);
-        
-        switch(token.type)
-        {
-            case VECTOR:
-            {
-                BGZ_ASSERT(token.text != nullptr, "string should exist!");
-                
-                v3 vector{};
-                for(s32 i{}; i < 3; ++i)
-                {
-                    char scalarString[10]{};
-                    s32 stringI{};
-                    while(IsDigit(*token.text) || IsPeriod(*token.text) || IsMinusSign(*token.text))
-                    {
-                        scalarString[stringI] = *token.text++;
-                        ++stringI;
-                    };
-                    
-                    vector.elem[i] = (f32)strtod(scalarString, NULL);
-                    token.text++;//Move past whitespace
-                };
-                
-                data.verts.Push(vector);
-            }break;
-            
-            case FACE:
-            {
-                BGZ_ASSERT(token.text != nullptr, "string should exist!");
-                
-                bool stillIndiciesToStore{true};
-                while(stillIndiciesToStore)
-                {
-                    char* placeholder{};
-                    s32 num = strtol(&token.text[0], &placeholder, 10/*base*/);
-                    data.indicies.Push(num - 1);//Index needs to start from a 0 base (0, 1, 2, 3) for opengl. Obj file has it starting at 1 for some reason.
-                    
-                    while(IsDigit(token.text[0]))
-                    {
-                        ++token.text;
-                    };
-                    
-                    if(Peek(token.text, 1) != '\0')
-                        ++token.text;
-                    else
-                        stillIndiciesToStore = false;
-                }
-            }break;
-            
-            case END_OF_FILE:
-            {
-                contentsStillNeedParsed = false;
-            }break;
-        };
-    };
-};
-
-ObjFileData LoadObjFileData(Memory_Partition* memPart, const char* filePath)
-{
-    s32 length{};
-    char* fileContents = globalPlatformServices->ReadEntireFile($(length), filePath);
-    
-    auto [numVerts, numIndicies] = GetNumberOfVertsAndIndicies(fileContents);
-    BGZ_ASSERT(numVerts < numIndicies, "There should always be more indicies than vertices!");
-    
-    ObjFileData data{};
-    InitArr($(data.verts), memPart, numVerts/*capacity*/);
-    InitArr($(data.indicies), memPart, numIndicies/*capacity*/);
-    
-    ParseAndStoreContents($(data), memPart, fileContents);
-    
-    return data;
-};
-
-void ConstructGeometry(RunTimeArr<v3>&& verts, RunTimeArr<s16>&& indicies, Memory_Partition* memPart, ObjFileData objFileData)
-{
-    if(verts.capacity == 0)
-        InitArr($(verts), memPart, objFileData.verts.length);
-    if(indicies.capacity == 0)
-        InitArr($(indicies), memPart, objFileData.indicies.length);
-    
-    CopyArray(objFileData.verts, $(verts));
-    CopyArray(objFileData.indicies, $(indicies));
-};
-
-void test_OBJFileParsing(Memory_Partition* memPart)
-{
-    RunTimeArr<v3> cubeVerts{};
-    RunTimeArr<s16> cubeIndicies{};
-    InitArr($(cubeVerts), memPart, 20);
-    InitArr($(cubeIndicies), memPart, 50);
-    
-    ObjFileData data = LoadObjFileData(memPart, "data/cube.obj");
-    ConstructGeometry($(cubeVerts), $(cubeIndicies), memPart, data);
+    CopyArray(LoadOBJ("data/cube.obj", memPart), $(temp));
 };
 
 

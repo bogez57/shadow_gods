@@ -322,6 +322,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
+        testOBJFileLoader(levelPart);
+        
         gameMemory->initialized = true;
         
         *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
@@ -339,12 +341,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         camera->rotation = {0.0f, 0.0f, 0.0f};
         
         //Fighter Init
+#if 0
         ObjFileData cubeData = LoadObjFileData(framePart, "data/cube.obj");
         ObjFileData monkeyData = LoadObjFileData(framePart, "data/monkey.obj");
         ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, cubeData);
         ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, monkeyData);
         fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
         fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
+#endif
         
         fighter0->worldTransform.translation = {+3.0f, 0.0f, 0.0f};
         fighter1->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
