@@ -72,8 +72,8 @@ global_variable s32 renderBuffer;
 #include "fighter.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
-#define OBJ_FILE_PARSER_IMPL
-#include "obj_file_parser.h"
+#define OBJ_PARSE_IMPLEMENTATION
+#include "fluery_obj_parser.h"
 
 //Move out to Renderer eventually
 #if 0
@@ -322,7 +322,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
-        testOBJFileLoader(levelPart);
+        {
+            ParsedOBJ obj = LoadOBJ("data/cube.obj");
+            FreeParsedOBJ(&obj);
+        };
         
         gameMemory->initialized = true;
         

@@ -50,4 +50,15 @@ void CopyArray(RunTimeArr<Type> sourceArray, RunTimeArr<Type>&& destinationArray
     destinationArray.length = sourceArray.length;
 };
 
+template <typename Type>
+RunTimeArr<Type> CopyArray(Memory_Partition* memPart, RunTimeArr<Type> sourceArray)
+{
+    RunTimeArr<Type> destinationArray{memPart, sourceArray.capacity};
+    
+    memcpy(destinationArray.elements, sourceArray.elements, sizeof(Type) * sourceArray.length);
+    destinationArray.length = sourceArray.length;
+    
+    return destinationArray;
+};
+
 #endif //VARIABLE_ARRAY_H
