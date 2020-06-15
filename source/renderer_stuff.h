@@ -78,10 +78,18 @@ struct Quadi
     };
 };
 
+struct Vertex
+{
+    v3 position{};
+    v2 texCoord{};
+    v3 normal{};
+};
+
 struct Geometry
 {
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
+    RunTimeArr<Vertex> vertices{};
     Mat4x4 worldTransform{};
 };
 
@@ -164,7 +172,7 @@ struct RenderEntry_Rect
 struct RenderEntry_Geometry
 {
     RenderEntry_Header header;
-    s32 id{};
+    u32 id{};
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
     Mat4x4 worldTransform{};
@@ -175,6 +183,7 @@ struct RenderEntry_InitBuffer
     RenderEntry_Header header;
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
+    RunTimeArr<Vertex> vertices{};
 };
 
 struct RenderEntry_Texture
@@ -220,7 +229,7 @@ void UpdateCamera3D(Rendering_Info* renderingInfo, v3 camWorldPos, v3 camRotatio
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch);
 
 //Render Commands 3d
-void PushGeometry(Rendering_Info* renderingInfo, s32 id, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies, Mat4x4 fullTransformMatrix);
+void PushGeometry(Rendering_Info* renderingInfo, s32 id, Mat4x4 fullTransformMatrix);
 
 void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -259,26 +268,29 @@ void InitRenderer(Rendering_Info* renderingInfo, f32 fov, f32 aspectRatio, f32 n
     renderingInfo->farPlane = farPlane;
 };
 
-s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies)
+s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<Vertex> verts, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies)
 {
+    BGZ_ASSERT(objectVerts.length > 0, "Vertex array not filled. Did you load in the object data?");
+    BGZ_ASSERT(indicies.length > 0, "Index array not filled. Did you load in the object data?");
+    
     RenderEntry_InitBuffer* bufInit = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_InitBuffer);
     
     bufInit->header.type = EntryType_InitBuffer;
     bufInit->verts = objectVerts;
     bufInit->indicies = indicies;
+    bufInit->vertices = verts;
     
     ++renderingInfo->cmdBuffer.entryCount;
     
-    return bufferCount++;
+    return ++bufferCount;
 };
 
-void PushGeometry(Rendering_Info* renderingInfo, s32 id, RunTimeArr<v3> worldVerts, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
+void PushGeometry(Rendering_Info* renderingInfo, s32 id, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
 {
     RenderEntry_Geometry* geomEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Geometry);
     
     geomEntry->header.type = EntryType_Geometry;
     geomEntry->id = id;
-    geomEntry->verts = worldVerts;
     geomEntry->indicies = indicies;
     geomEntry->worldTransform = worldTransform;
     

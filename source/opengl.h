@@ -20,7 +20,7 @@ void main()
 vec4 newPos = vec4(position, 1.0) * transformationMatrix;//vector is on the left side because my matrices are row major
 gl_Position = newPos;
 
-    vec3 changedColors;
+    vec3 changedColors = vec3(0);
     changedColors.r += color.r + 0;
     changedColors.g += color.g + 0;
     changedColors.b += color.b + 0;
@@ -44,12 +44,59 @@ void main()
 
 )HereDoc";
 
-void GLAPIENTRY MyOpenGLErrorCallbackFunc(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+void GLAPIENTRY MyOpenGLErrorCallbackFunc(GLenum source, GLenum debugErrorType, GLuint errorID, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 {
-    BGZ_CONSOLE("%s type=0x%x %s\n", ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, message);
+    switch(debugErrorType)
+    {
+        case GL_DEBUG_TYPE_ERROR:
+        {
+            BGZ_CONSOLE("GL Type error: %s\nGL error id: 0x%x\n", message, errorID);
 #if _MSC_VER
-    __debugbreak();
+            __debugbreak();
 #endif
+        }break;
+        
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        {
+            BGZ_CONSOLE("GL deprecated gl function usage error: %s\nGL error id: 0x%x\n", message, errorID);
+#if _MSC_VER
+            __debugbreak();
+#endif
+        }break;
+        
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        {
+            BGZ_CONSOLE("GL undefined behavior error: %s\nGL error id: 0x%x\n", message, errorID);
+            
+#if _MSC_VER
+            __debugbreak();
+#endif
+        }break;
+        
+        case GL_DEBUG_TYPE_PERFORMANCE:
+        {
+            BGZ_CONSOLE("GL performance warning/error: %s\nGL error id: 0x%x\n", message, errorID);
+            
+        }break;
+        
+        case GL_DEBUG_TYPE_PORTABILITY:
+        {
+            BGZ_CONSOLE("GL portability warning/error: %s\nGL error id: 0x%x\n", message, errorID);
+            
+        }break;
+        
+        case GL_DEBUG_TYPE_OTHER:
+        {
+            if(errorID == 0x20071)//Ignores the warning: Buffer object 1 (bound to WHATEVER_BUFFER, usage hint is GL_STATIC_DRAW) will use VIDEO memory.... Apparently this doesn't mean much
+            {
+                //Ignore
+            }
+            else
+            {
+                BGZ_CONSOLE("GL other error: %s\nGL error id: 0x%x\n", message, errorID);
+            };
+        }break;
+    };
 };
 
 local_func u32
@@ -220,6 +267,7 @@ local_func void
 GLInit(int windowWidth, int windowHeight)
 {
     glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);//This makes things so debug callback function doesn't get called from a thread other than which one I need to view the call stack in debugger
     glDebugMessageCallback(MyOpenGLErrorCallbackFunc, 0);
     
     glViewport(0, 0, windowWidth, windowHeight);
@@ -235,39 +283,13 @@ GLInit(int windowWidth, int windowHeight)
 }
 
 
-void Draw(Memory_Partition* memPart, RunTimeArr<v3> meshVerts_objectSpace, RunTimeArr<s16> meshIndicies)
+void Draw(Memory_Partition* memPart, u32 id, RunTimeArr<s16> meshIndicies)
 {
-    RunTimeArr<GLfloat> verts{};
-    InitArr($(verts), memPart, meshVerts_objectSpace.length * 6);
-    s32 i{};
-    f32 colorR{1.0f}, colorG{}, colorB{};
-    for(s32 j{}; j < meshVerts_objectSpace.length; ++j)
-    {
-        verts.Push(meshVerts_objectSpace[j].x);
-        verts.Push(meshVerts_objectSpace[j].y);
-        verts.Push(meshVerts_objectSpace[j].z);
-        verts.Push(colorR);
-        verts.Push(colorG);
-        verts.Push(colorB);
-    };
-    
-    GLuint bufferID;
-    glGenBuffers(1, &bufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
-    
-    GLuint indexBufferID;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * meshIndicies.length, meshIndicies.elements, GL_DYNAMIC_DRAW);
-    
     glDisable(GL_TEXTURE_2D);
+    glBindVertexArray(id);
     glDrawElements(GL_TRIANGLES, (s32)meshIndicies.length, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_TEXTURE_2D);
+    glBindVertexArray(0);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, int windowWidth, int windowHeight)
@@ -303,6 +325,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
             case EntryType_InitBuffer:{
                 RenderEntry_InitBuffer bufferData = *(RenderEntry_InitBuffer*)currentRenderBufferEntry;
                 
+                ScopedMemory scope{platformMemoryPart};
+                
                 RunTimeArr<GLfloat> verts{};
                 InitArr($(verts), platformMemoryPart, bufferData.verts.length * 6);
                 s32 i{};
@@ -317,19 +341,23 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                     verts.Push(colorB);
                 };
                 
+                u32 vertexArrayID{};
+                glGenVertexArrays(1, &vertexArrayID);
+                glBindVertexArray(vertexArrayID);
+                
                 GLuint bufferID;
                 glGenBuffers(1, &bufferID);
                 glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_STATIC_DRAW);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_DYNAMIC_DRAW);
                 glEnableVertexAttribArray(0);
-                glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
                 glEnableVertexAttribArray(1);
+                glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
                 glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
                 
                 GLuint indexBufferID;
                 glGenBuffers(1, &indexBufferID);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * bufferData.indicies.length, bufferData.indicies.elements, GL_STATIC_DRAW);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * bufferData.indicies.length, bufferData.indicies.elements, GL_DYNAMIC_DRAW);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_InitBuffer);
             }break;
@@ -391,7 +419,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 RenderEntry_Geometry geometryEntry = *(RenderEntry_Geometry*)currentRenderBufferEntry;
                 
-                //camera transform
+                //camera transform setup
                 Mat4x4 xRotMatrix = XRotation(camera3d.rotation.x);
                 Mat4x4 yRotMatrix = YRotation(camera3d.rotation.y);
                 Mat4x4 zRotMatrix = ZRotation(camera3d.rotation.z);
@@ -399,16 +427,17 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 v3 xAxis = GetColumn(fullRotMatrix, 0);
                 v3 yAxis = GetColumn(fullRotMatrix, 1);
                 v3 zAxis = GetColumn(fullRotMatrix, 2);
+                
+                //Setup full transform matrix
                 Mat4x4 camTransform = ProduceCameraTransformMatrix(xAxis, yAxis, zAxis, camera3d.worldPos);
-                
                 Mat4x4 projectionTransform = ProduceProjectionTransformMatrix_UsingFOV(renderingInfo.fov, renderingInfo.aspectRatio, renderingInfo.nearPlane, renderingInfo.farPlane);
-                
                 Mat4x4 fullTransformMatrix = projectionTransform * camTransform * geometryEntry.worldTransform;
                 
+                //Send transform matrix to vertex shader
                 GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
                 glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
                 
-                Draw(platformMemoryPart, geometryEntry.verts, geometryEntry.indicies);
+                Draw(platformMemoryPart, geometryEntry.id, geometryEntry.indicies);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;

@@ -32,9 +32,9 @@
 
 /*
     TODO:
-     1.) Currently, dynamic array always intializes elements to zero through constructor and Init func. If you want to 
-     give the option of more speed you will need to add a method similar to std::vector reserve(). The idea is you give 
-     the option to allocate memory (just call malloc) but don't initialize it to 0. 
+     1.) Currently, dynamic array always intializes elements to zero through constructor and Init func. If you want to
+     give the option of more speed you will need to add a method similar to std::vector reserve(). The idea is you give
+     the option to allocate memory (just call malloc) but don't initialize it to 0.
 */
 
 #pragma once
@@ -56,7 +56,7 @@ class Dynam_Array
 {
     public:
     Dynam_Array() = default;
-    Dynam_Array(s32 memPartitionID_dynamic) 
+    Dynam_Array(s32 memPartitionID_dynamic)
         : memPartitionID(memPartitionID_dynamic)
     {}
     Dynam_Array(s64 initialSize, s32 memPartitionID_dynamic)
@@ -64,7 +64,7 @@ class Dynam_Array
         , memPartitionID(memPartitionID_dynamic)
     {
         ResizeArray<Type>($(*this), initialSize);
-        memset(this->elements, 0, initialSize); 
+        memset(this->elements, 0, initialSize);
         this->size = initialSize;
     };
     Dynam_Array(s64 initialSize, const Type& type, s32 memPartitionID_dynamic)//Have default initialized elements
@@ -72,7 +72,7 @@ class Dynam_Array
         , memPartitionID(memPartitionID_dynamic)
     {
         ResizeArray<Type>($(*this), initialSize);
-        memset(this->elements, 0, initialSize); 
+        memset(this->elements, 0, initialSize);
         this->size = initialSize;
         
         for(s32 i{}; i < this->size; ++i)
@@ -84,8 +84,8 @@ class Dynam_Array
     Type& operator[](s64 index)
     {
         BGZ_ASSERT(index >= 0, "Cannot access a negative index!");
-        BGZ_ASSERT(index < this->capacity, "Attempting to access index %i which is out of current dynam array bounds - current max array capacity: %i", index, capacity);
-        BGZ_ASSERT(index < this->size, "Attempting to access index %i which is out of current dynam array bounds - current max array size: %i", index, size);
+        BGZ_ASSERT(index < this->capacity, "Attempting to access an index which is outside of current dynam array bounds!");
+        BGZ_ASSERT(index < this->size, "Attempting to access an index which is outside of current dynam array bounds!");
         
         return (this->elements[index]);
     };
@@ -93,8 +93,8 @@ class Dynam_Array
     Type& At(s64 index)
     {
         BGZ_ASSERT(index >= 0, "Cannot access a negative index!");
-        BGZ_ASSERT(index < capacity, "Attempting to access index %i which exceeds capacity - current max array capacity: %i", index, capacity);
-        BGZ_ASSERT(index < this->size, "Attempting to access index %i which exceeds current array size - current max array size: %i", index, size);
+        BGZ_ASSERT(index < capacity, "Attempting to access an index which exceeds capacity!");
+        BGZ_ASSERT(index < this->size, "Attempting to access an index which exceeds current array size!");
         
         return (this->elements[index]);
     };
@@ -172,7 +172,7 @@ b IsEmpty(Dynam_Array<Type>&& arr)
 };
 
 template <typename Type>
-Type* GetLastElem(Dynam_Array<Type> arr) 
+Type* GetLastElem(Dynam_Array<Type> arr)
 {
     BGZ_ASSERT(arr.size != 0, "Nothing has been pushed or insereted onto array");
     

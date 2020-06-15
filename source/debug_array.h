@@ -7,15 +7,15 @@ class DbgArray
     public:
     Type& operator[](s64 index)
     {
-        BGZ_ASSERT(index < capacity, "Attempting to access index %i which is out of current arround bounds - current max index allowed: %i", index, capacity - 1);
-        BGZ_ASSERT(index < length, "Attempting to access index %i which hasn't been initialized yet. Current buffer length is %i", index, length);
+        BGZ_ASSERT(index < capacity, "Attempting to access an index which is outside of current arround bounds!");
+        BGZ_ASSERT(index < length, "Attempting to access an index which hasn't been initialized yet!");
         
         return this->elements[index];
     };
     
     inline Type& Push(Type element = Type())
     {
-        BGZ_ASSERT(length < capacity, "Attempting to access index %i which out of current arround bounds - current max index allowed: %i", length, capacity - 1);
+        BGZ_ASSERT(length < capacity, "Attempting to push too many elements onto array!");
         return (Type&)this->elements[length++];
     };
     

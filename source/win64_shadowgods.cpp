@@ -152,7 +152,7 @@ namespace Win32::Dbg
         char* data;
         FILE* file;
         
-        BGZ_ASSERT(fopen_s(&file, FilePath, "rb") == 0, "File path %s is incorrect or doesn't exist!", FilePath);
+        BGZ_ASSERT(fopen_s(&file, FilePath, "rb") == 0, "File path used is incorrect or doesn't exist!");
         
         fseek(file, 0, SEEK_END);
         length = (s32)ftell(file);

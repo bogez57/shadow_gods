@@ -72,8 +72,8 @@ global_variable s32 renderBuffer;
 #include "fighter.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
-#define OBJ_FILE_PARSER_IMPL
-#include "obj_file_parser.h"
+#define OBJ_PARSE_IMPLEMENTATION
+#include "fluery_obj_parser.h"
 
 //Move out to Renderer eventually
 #if 0
@@ -322,6 +322,11 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
+        {
+            ParsedOBJ obj = LoadOBJ("data/cube.obj");
+            FreeParsedOBJ(&obj);
+        };
+        
         gameMemory->initialized = true;
         
         *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
@@ -339,11 +344,17 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         camera->rotation = {0.0f, 0.0f, 0.0f};
         
         //Fighter Init
-        ObjFileData data = LoadObjFileData(framePart, "data/cube.obj");
-        ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, data);
-        //fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
+#if 0
+        ObjFileData cubeData = LoadObjFileData(framePart, "data/cube.obj");
+        ObjFileData monkeyData = LoadObjFileData(framePart, "data/monkey.obj");
+        ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, cubeData);
+        ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, monkeyData);
+        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
+        fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
+#endif
         
         fighter0->worldTransform.translation = {+3.0f, 0.0f, 0.0f};
+        fighter1->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
     };
     
     if(KeyHeld(keyboard->MoveRight))
@@ -362,7 +373,9 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         //World Transform
         Mat4x4 fighter0_worldTransformMatrix = ProduceWorldTransformMatrix(fighter0->worldTransform.translation, fighter0->worldTransform.rotation, fighter0->worldTransform.scale);
-        PushGeometry(global_renderingInfo, fighter0->id, fighter0->mesh.verts, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
+        Mat4x4 fighter1_worldTransformMatrix = ProduceWorldTransformMatrix(fighter1->worldTransform.translation, fighter1->worldTransform.rotation, fighter1->worldTransform.scale);
+        PushGeometry(global_renderingInfo, fighter0->id, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
+        PushGeometry(global_renderingInfo, fighter1->id, fighter1->mesh.indicies, fighter1_worldTransformMatrix);
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);
