@@ -353,8 +353,34 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
 #endif
         
-        fighter0->worldTransform.translation = {+3.0f, 0.0f, 0.0f};
-        fighter1->worldTransform.translation = {-1.0f, 0.0f, 0.0f};
+        RunTimeArr<v3> verts{levelPart, 8};
+        RunTimeArr<s16> indicies{levelPart, 6};
+        
+        verts.Push({-.5f, -.5f, 0.0f});//0
+        verts.Push({1.0f, 0.0f, 0.0f});//color
+        verts.Push({+.5f, +.5f, 0.0f});//1
+        verts.Push({1.0f, 0.0f, 0.0f});//color
+        verts.Push({-.5f, +.5f, 0.0f});//2
+        verts.Push({1.0f, 0.0f, 0.0f});//color
+        verts.Push({+.5f, -.5f, 0.0f});//3
+        verts.Push({1.0f, 0.0f, 0.0f});//color
+        
+        indicies.Push(0);
+        indicies.Push(1);
+        indicies.Push(2);
+        indicies.Push(0);
+        indicies.Push(3);
+        indicies.Push(1);
+        
+        InitArr($(fighter0->mesh.verts), levelPart, 8);
+        InitArr($(fighter0->mesh.indicies), levelPart, 6);
+        
+        CopyArray(verts, $(fighter0->mesh.verts));
+        CopyArray(indicies, $(fighter0->mesh.indicies));
+        
+        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
+        
+        fighter0->worldTransform.translation = {+1.0f, 0.0f, 0.0f};
     };
     
     if(KeyHeld(keyboard->MoveRight))
@@ -375,7 +401,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         Mat4x4 fighter0_worldTransformMatrix = ProduceWorldTransformMatrix(fighter0->worldTransform.translation, fighter0->worldTransform.rotation, fighter0->worldTransform.scale);
         Mat4x4 fighter1_worldTransformMatrix = ProduceWorldTransformMatrix(fighter1->worldTransform.translation, fighter1->worldTransform.rotation, fighter1->worldTransform.scale);
         PushGeometry(global_renderingInfo, fighter0->id, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
-        PushGeometry(global_renderingInfo, fighter1->id, fighter1->mesh.indicies, fighter1_worldTransformMatrix);
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);

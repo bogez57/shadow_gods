@@ -282,7 +282,6 @@ GLInit(int windowWidth, int windowHeight)
     InstallShaders();
 }
 
-
 void Draw(Memory_Partition* memPart, u32 id, RunTimeArr<s16> meshIndicies)
 {
     glDisable(GL_TEXTURE_2D);
@@ -329,16 +328,11 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 RunTimeArr<GLfloat> verts{};
                 InitArr($(verts), platformMemoryPart, bufferData.verts.length * 6);
-                s32 i{};
-                f32 colorR{1.0f}, colorG{}, colorB{};
                 for(s32 j{}; j < bufferData.verts.length; ++j)
                 {
                     verts.Push(bufferData.verts[j].x);
                     verts.Push(bufferData.verts[j].y);
                     verts.Push(bufferData.verts[j].z);
-                    verts.Push(colorR);
-                    verts.Push(colorG);
-                    verts.Push(colorB);
                 };
                 
                 u32 vertexArrayID{};
