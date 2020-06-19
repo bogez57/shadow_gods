@@ -1505,6 +1505,7 @@ ParseOBJ(OBJParseInfo *info)
                         num_face_vertices_with_duplicates = geometry_group_face_vertex_count;
                         num_unique_vertices = geometry_group_face_vertex_count;
                         
+                        DbgArray<VertexUVAndNormalIndices, 150> allIndicies{};
                         for(unsigned int i = 0; i < geometry_group_face_vertex_count; ++i)
                         {
                             // NOTE(rjf): We subtract 1 because the OBJ spec has 1-based indices.
@@ -1523,26 +1524,47 @@ ParseOBJ(OBJParseInfo *info)
                                    vertex_uv_and_normal_indices_buffer[geometry_group_position_index].uv_index       != uv_index+1       ||
                                    vertex_uv_and_normal_indices_buffer[geometry_group_position_index].normal_index   != normal_index+1)
                                 {
-                                    // NOTE(rjf): This is a duplicate position, but it has different UV's or normals, so we
-                                    // need to duplicate this vertex.
+                                    //Iterate over all current index combinations and make sure there are not exact duplicates
+                                    bool completeDuplicate{false};
+                                    for(unsigned int i{}; i < geometry_group_face_vertex_count; ++i)
                                     {
-                                        VertexUVAndNormalIndices *duplicate = (VertexUVAndNormalIndices *)OBJParserArenaAllocate(arena, sizeof(VertexUVAndNormalIndices));
-                                        if(!duplicate)
+                                        if((position_index + 1) == vertex_uv_and_normal_indices_buffer[i].position_index &&
+                                           (uv_index + 1) == vertex_uv_and_normal_indices_buffer[i].uv_index &&
+                                           (normal_index + 1)  == vertex_uv_and_normal_indices_buffer[i].normal_index)
                                         {
-                                            // TODO(rjf): ERROR: Out of memory.
-                                            goto end_parse;
-                                        }
-                                        duplicate->position_index  = position_index+1;
-                                        duplicate->uv_index        = uv_index+1;
-                                        duplicate->normal_index    = normal_index+1;
-                                    }
+                                            //break and subtract num_unique_vertices and make sure to prevent the code below from executing
+                                            completeDuplicate = true;
+                                            break;
+                                        };
+                                    };
                                     
-                                    // NOTE(rjf): Fix up the reference to this position.
+                                    if(completeDuplicate)
                                     {
-                                        geometry_group_face_vertices[i*3 + 0] = geometry_group->lowest_position_index + num_face_vertices_with_duplicates;
+                                        --num_unique_vertices;
                                     }
-                                    
-                                    ++num_face_vertices_with_duplicates;
+                                    else
+                                    {
+                                        // NOTE(rjf): This is a duplicate position, but it has different UV's or normals, so we
+                                        // need to duplicate this vertex.
+                                        {
+                                            VertexUVAndNormalIndices *duplicate = (VertexUVAndNormalIndices *)OBJParserArenaAllocate(arena, sizeof(VertexUVAndNormalIndices));
+                                            if(!duplicate)
+                                            {
+                                                // TODO(rjf): ERROR: Out of memory.
+                                                goto end_parse;
+                                            }
+                                            duplicate->position_index  = position_index+1;
+                                            duplicate->uv_index        = uv_index+1;
+                                            duplicate->normal_index    = normal_index+1;
+                                        }
+                                        
+                                        // NOTE(rjf): Fix up the reference to this position.
+                                        {
+                                            geometry_group_face_vertices[i*3 + 0] = geometry_group->lowest_position_index + num_face_vertices_with_duplicates;
+                                        }
+                                        
+                                        ++num_face_vertices_with_duplicates;
+                                    }
                                 }
                                 else
                                 {
