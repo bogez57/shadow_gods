@@ -10,10 +10,9 @@ R"HereDoc(
 #version 430
 
 in layout(location=0) vec3 position;
-in layout(location=1) vec3 color;
-in layout(location=2) vec2 texCoord;
+in layout(location=1) vec2 texCoord;
+in layout(location=2) vec3 normals;
 
-out vec3 fragColor;
 out vec2 fragTexCoord;
 
 uniform mat4 transformationMatrix;
@@ -21,16 +20,9 @@ uniform mat4 transformationMatrix;
 void main()
 {
 vec4 newPos = vec4(position, 1.0) * transformationMatrix;//vector is on the left side because my matrices are row major
+
 gl_Position = newPos;
-
 fragTexCoord = texCoord;
-
-    vec3 changedColors = vec3(0);
-    changedColors.r += color.r + 0;
-    changedColors.g += color.g + 0;
-    changedColors.b += color.b + 0;
-
-    fragColor = changedColors;
 };
 
 )HereDoc";
@@ -41,7 +33,6 @@ R"HereDoc(
 #version 430
 
 out vec4 color;
-in vec3 fragColor;
 in vec2 fragTexCoord;
 
 uniform sampler2D id;
@@ -108,52 +99,6 @@ void GLAPIENTRY MyOpenGLErrorCallbackFunc(GLenum source, GLenum debugErrorType, 
         }break;
     };
 };
-
-local_func u32
-LoadTexture(u8* textureData, v2i textureSize)
-{
-    u32 textureID {};
-    glEnable(GL_TEXTURE_2D);
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, textureSize.width, textureSize.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, textureData);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    
-    //Enable alpha channel for transparency
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    
-    return textureID;
-}
-
-local_func void
-DrawTexture(u32 TextureID, Quadf textureCoords, v2 MinUV, v2 MaxUV)
-{
-    glBindTexture(GL_TEXTURE_2D, TextureID);
-    
-    glBegin(GL_QUADS);
-    glTexCoord2f(MinUV.x, MinUV.y);
-    glVertex2f(textureCoords.bottomLeft.x, textureCoords.bottomLeft.y);
-    
-    glTexCoord2f(MaxUV.x, MinUV.y);
-    glVertex2f(textureCoords.bottomRight.x, textureCoords.bottomRight.y);
-    
-    glTexCoord2f(MaxUV.x, MaxUV.y);
-    glVertex2f(textureCoords.topRight.x, textureCoords.topRight.y);
-    
-    glTexCoord2f(MinUV.x, MaxUV.y);
-    glVertex2f(textureCoords.topLeft.x, textureCoords.topLeft.y);
-    
-    glEnd();
-    glFlush();
-    
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
 
 local_func void
 DrawQuad(Quadf quad, v4 color)
@@ -331,8 +276,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
         RenderEntry_Header* entryHeader = (RenderEntry_Header*)currentRenderBufferEntry;
         switch (entryHeader->type)
         {
-            case EntryType_InitBuffer:{
-                RenderEntry_InitBuffer bufferData = *(RenderEntry_InitBuffer*)currentRenderBufferEntry;
+            case EntryType_InitVertexBuffer:{
+                RenderEntry_InitVertexBuffer bufferData = *(RenderEntry_InitVertexBuffer*)currentRenderBufferEntry;
                 
                 ScopedMemory scope{platformMemoryPart};
                 
@@ -347,35 +292,38 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 glEnableVertexAttribArray(0);
                 glEnableVertexAttribArray(1);
                 glEnableVertexAttribArray(2);
-                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, 0);
-                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*3));
-                glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*6));
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, 0);//position
+                glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*3));//tex coords
+                glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*5));//normals
                 
                 GLuint indexBufferID;
                 glGenBuffers(1, &indexBufferID);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s16) * bufferData.indicies.length, bufferData.indicies.elements, GL_DYNAMIC_DRAW);
                 
-                currentRenderBufferEntry += sizeof(RenderEntry_InitBuffer);
+                currentRenderBufferEntry += sizeof(RenderEntry_InitVertexBuffer);
             }break;
             
-            case EntryType_Texture: {
-                RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
+            case EntryType_LoadTexture: {
+                RenderEntry_LoadTexture loadTexEntry = *(RenderEntry_LoadTexture*)currentRenderBufferEntry;
                 
-                local_persist u32 textureID{};
-                if (NOT textureEntry.isLoadedOnGPU)
-                {
-                    textureID = LoadTexture(textureEntry.colorData, v2i { textureEntry.size.width, textureEntry.size.height });
-                };
-                
+                u32 textureID {};
+                glEnable(GL_TEXTURE_2D);
+                glGenTextures(1, &textureID);
                 glBindTexture(GL_TEXTURE_2D, textureID);
                 
-                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera2d);
-                Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, loadTexEntry.texture.width_pxls, loadTexEntry.texture.height_pxls, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, loadTexEntry.texture.data);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 
-                DrawTexture(textureID, imageTargetRect_screen, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
+                //Enable alpha channel for transparency
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glBindTexture(GL_TEXTURE_2D, 0);
                 
-                currentRenderBufferEntry += sizeof(RenderEntry_Texture);
+                currentRenderBufferEntry += sizeof(RenderEntry_LoadTexture);
             }break;
             
             case EntryType_Rect: {
@@ -409,28 +357,6 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Line);
-            }break;
-            
-            case EntryType_LoadTexture: {
-                RenderEntry_LoadTexture loadTexEntry = *(RenderEntry_LoadTexture*)currentRenderBufferEntry;
-                
-                u32 textureID {};
-                glEnable(GL_TEXTURE_2D);
-                glGenTextures(1, &textureID);
-                glBindTexture(GL_TEXTURE_2D, textureID);
-                
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, loadTexEntry.texture.width_pxls, loadTexEntry.texture.height_pxls, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, loadTexEntry.texture.data);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                
-                //Enable alpha channel for transparency
-                glEnable(GL_BLEND);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                glBindTexture(GL_TEXTURE_2D, 0);
-                
-                currentRenderBufferEntry += sizeof(RenderEntry_LoadTexture);
             }break;
             
             case EntryType_Geometry: {

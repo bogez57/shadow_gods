@@ -143,7 +143,7 @@ struct Object_Transform
 
 enum Render_Entry_Type
 {
-    EntryType_InitBuffer,
+    EntryType_InitVertexBuffer,
     EntryType_Line,
     EntryType_Rect,
     EntryType_Geometry,
@@ -179,7 +179,7 @@ struct RenderEntry_Geometry
     Mat4x4 worldTransform{};
 };
 
-struct RenderEntry_InitBuffer
+struct RenderEntry_InitVertexBuffer
 {
     RenderEntry_Header header;
     RunTimeArr<f32> vertAttribs{};
@@ -216,7 +216,7 @@ f32 BitmapWidth_Meters(Image bitmap);
 f32 BitmapHeight_Meters(Rendering_Info info, Image bitmap);
 v2 viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
-s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies);
+s32 InitVertexBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies);
 
 //Render Commands 2d - Need to redoe these with matrices in mind and vertices in object space (instead of world space) before being sent down
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
@@ -269,14 +269,14 @@ void InitRenderer(Rendering_Info* renderingInfo, f32 fov, f32 aspectRatio, f32 n
     renderingInfo->farPlane = farPlane;
 };
 
-s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<f32> objectVerts, RunTimeArr<s16> indicies)
+s32 InitVertexBuffer(Rendering_Info* renderingInfo, RunTimeArr<f32> objectVerts, RunTimeArr<s16> indicies)
 {
     BGZ_ASSERT(objectVerts.length > 0, "Vertex array not filled. Did you load in the object data?");
     BGZ_ASSERT(indicies.length > 0, "Index array not filled. Did you load in the object data?");
     
-    RenderEntry_InitBuffer* bufInit = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_InitBuffer);
+    RenderEntry_InitVertexBuffer* bufInit = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_InitVertexBuffer);
     
-    bufInit->header.type = EntryType_InitBuffer;
+    bufInit->header.type = EntryType_InitVertexBuffer;
     bufInit->vertAttribs = objectVerts;
     bufInit->indicies = indicies;
     

@@ -357,20 +357,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         RunTimeArr<f32>* vertAttribs = &fighter0->mesh.vertAttribs;
         vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//0
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);                        //tex coord
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);//normal
         
         vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//1
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         vertAttribs->Push(1.0f); vertAttribs->Push(1.0f);                        //tex Coord
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         
         vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//2
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);                       //tex Coord
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         
         vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//3
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         vertAttribs->Push(+1.0f); vertAttribs->Push(0.0f);                      //tex Coord
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         
         fighter0->mesh.indicies.Push(0);
         fighter0->mesh.indicies.Push(1);
@@ -379,7 +379,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         fighter0->mesh.indicies.Push(3);
         fighter0->mesh.indicies.Push(1);
         
-        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
+        fighter0->id = InitVertexBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
         
         Image fighterTexture = LoadBitmap_BGRA("data/1080p.jpg");
         fighter0->textureID = LoadTexture(global_renderingInfo, fighterTexture);
