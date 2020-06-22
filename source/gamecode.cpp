@@ -347,38 +347,42 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 #if 0
         ObjFileData cubeData = LoadObjFileData(framePart, "data/cube.obj");
         ObjFileData monkeyData = LoadObjFileData(framePart, "data/monkey.obj");
-        ConstructGeometry($(fighter0->mesh.verts), $(fighter0->mesh.indicies), levelPart, cubeData);
+        ConstructGeometry($(fighter0->mesh.vertAttribs), $(fighter0->mesh.indicies), levelPart, cubeData);
         ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, monkeyData);
-        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
+        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
         fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
 #endif
-        
-        RunTimeArr<v3> verts{levelPart, 8};
-        RunTimeArr<s16> indicies{levelPart, 6};
-        
-        verts.Push({-.5f, -.5f, 0.0f});//0
-        verts.Push({1.0f, 0.0f, 0.0f});//color
-        verts.Push({+.5f, +.5f, 0.0f});//1
-        verts.Push({1.0f, 0.0f, 0.0f});//color
-        verts.Push({-.5f, +.5f, 0.0f});//2
-        verts.Push({1.0f, 0.0f, 0.0f});//color
-        verts.Push({+.5f, -.5f, 0.0f});//3
-        verts.Push({1.0f, 0.0f, 0.0f});//color
-        
-        indicies.Push(0);
-        indicies.Push(1);
-        indicies.Push(2);
-        indicies.Push(0);
-        indicies.Push(3);
-        indicies.Push(1);
-        
-        InitArr($(fighter0->mesh.verts), levelPart, 8);
+        InitArr($(fighter0->mesh.vertAttribs), levelPart, 32);
         InitArr($(fighter0->mesh.indicies), levelPart, 6);
         
-        CopyArray(verts, $(fighter0->mesh.verts));
-        CopyArray(indicies, $(fighter0->mesh.indicies));
+        RunTimeArr<f32>* vertAttribs = &fighter0->mesh.vertAttribs;
+        vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//0
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
+        vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);                        //tex coord
         
-        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.verts, fighter0->mesh.indicies);
+        vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//1
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
+        vertAttribs->Push(1.0f); vertAttribs->Push(1.0f);                        //tex Coord
+        
+        vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//2
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
+        vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);                       //tex Coord
+        
+        vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//3
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
+        vertAttribs->Push(+1.0f); vertAttribs->Push(0.0f);                      //tex Coord
+        
+        fighter0->mesh.indicies.Push(0);
+        fighter0->mesh.indicies.Push(1);
+        fighter0->mesh.indicies.Push(2);
+        fighter0->mesh.indicies.Push(0);
+        fighter0->mesh.indicies.Push(3);
+        fighter0->mesh.indicies.Push(1);
+        
+        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
+        
+        Image fighterTexture = LoadBitmap_BGRA("data/1080p.jpg");
+        fighter0->textureID = LoadTexture(global_renderingInfo, fighterTexture);
         
         fighter0->worldTransform.translation = {+1.0f, 0.0f, 0.0f};
     };
@@ -400,7 +404,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         //World Transform
         Mat4x4 fighter0_worldTransformMatrix = ProduceWorldTransformMatrix(fighter0->worldTransform.translation, fighter0->worldTransform.rotation, fighter0->worldTransform.scale);
         Mat4x4 fighter1_worldTransformMatrix = ProduceWorldTransformMatrix(fighter1->worldTransform.translation, fighter1->worldTransform.rotation, fighter1->worldTransform.scale);
-        PushGeometry(global_renderingInfo, fighter0->id, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
+        PushGeometry(global_renderingInfo, fighter0->id, fighter0->textureID, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);

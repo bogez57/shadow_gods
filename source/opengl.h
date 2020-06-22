@@ -11,7 +11,10 @@ R"HereDoc(
 
 in layout(location=0) vec3 position;
 in layout(location=1) vec3 color;
+in layout(location=2) vec2 texCoord;
+
 out vec3 fragColor;
+out vec2 fragTexCoord;
 
 uniform mat4 transformationMatrix;
 
@@ -20,10 +23,13 @@ void main()
 vec4 newPos = vec4(position, 1.0) * transformationMatrix;//vector is on the left side because my matrices are row major
 gl_Position = newPos;
 
+fragTexCoord = texCoord;
+
     vec3 changedColors = vec3(0);
     changedColors.r += color.r + 0;
     changedColors.g += color.g + 0;
     changedColors.b += color.b + 0;
+
     fragColor = changedColors;
 };
 
@@ -36,10 +42,14 @@ R"HereDoc(
 
 out vec4 color;
 in vec3 fragColor;
+in vec2 fragTexCoord;
+
+uniform sampler2D id;
 
 void main()
 {
-    color = vec4(fragColor, 1.0f);
+vec4 texColor = texture(id, fragTexCoord);
+    color = texColor;
 };
 
 )HereDoc";
@@ -282,12 +292,12 @@ GLInit(int windowWidth, int windowHeight)
     InstallShaders();
 }
 
-void Draw(Memory_Partition* memPart, u32 id, RunTimeArr<s16> meshIndicies)
+//TODO: enable texture drawing
+void Draw(Memory_Partition* memPart, u32 id, s32 textureID, RunTimeArr<s16> meshIndicies)
 {
-    glDisable(GL_TEXTURE_2D);
     glBindVertexArray(id);
+    glBindTexture(GL_TEXTURE_2D, textureID);
     glDrawElements(GL_TRIANGLES, (s32)meshIndicies.length, GL_UNSIGNED_SHORT, 0);
-    glEnable(GL_TEXTURE_2D);
     glBindVertexArray(0);
 };
 
@@ -326,15 +336,6 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 
                 ScopedMemory scope{platformMemoryPart};
                 
-                RunTimeArr<GLfloat> verts{};
-                InitArr($(verts), platformMemoryPart, bufferData.verts.length * 6);
-                for(s32 j{}; j < bufferData.verts.length; ++j)
-                {
-                    verts.Push(bufferData.verts[j].x);
-                    verts.Push(bufferData.verts[j].y);
-                    verts.Push(bufferData.verts[j].z);
-                };
-                
                 u32 vertexArrayID{};
                 glGenVertexArrays(1, &vertexArrayID);
                 glBindVertexArray(vertexArrayID);
@@ -342,11 +343,13 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 GLuint bufferID;
                 glGenBuffers(1, &bufferID);
                 glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * verts.length, verts.elements, GL_DYNAMIC_DRAW);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * bufferData.vertAttribs.length, bufferData.vertAttribs.elements, GL_DYNAMIC_DRAW);
                 glEnableVertexAttribArray(0);
                 glEnableVertexAttribArray(1);
-                glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
-                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
+                glEnableVertexAttribArray(2);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, 0);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*3));
+                glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*6));
                 
                 GLuint indexBufferID;
                 glGenBuffers(1, &indexBufferID);
@@ -408,6 +411,28 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 currentRenderBufferEntry += sizeof(RenderEntry_Line);
             }break;
             
+            case EntryType_LoadTexture: {
+                RenderEntry_LoadTexture loadTexEntry = *(RenderEntry_LoadTexture*)currentRenderBufferEntry;
+                
+                u32 textureID {};
+                glEnable(GL_TEXTURE_2D);
+                glGenTextures(1, &textureID);
+                glBindTexture(GL_TEXTURE_2D, textureID);
+                
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, loadTexEntry.texture.width_pxls, loadTexEntry.texture.height_pxls, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, loadTexEntry.texture.data);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                
+                //Enable alpha channel for transparency
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_LoadTexture);
+            }break;
+            
             case EntryType_Geometry: {
                 ScopedMemory scope{platformMemoryPart};
                 
@@ -431,7 +456,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
                 glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
                 
-                Draw(platformMemoryPart, geometryEntry.id, geometryEntry.indicies);
+                Draw(platformMemoryPart, geometryEntry.meshID, geometryEntry.textureID, geometryEntry.indicies);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Geometry);
             }break;

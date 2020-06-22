@@ -19,6 +19,7 @@
 */
 
 global_variable s32 bufferCount{};
+global_variable s32 textureCount{};
 
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
 struct Camera2D
@@ -78,18 +79,10 @@ struct Quadi
     };
 };
 
-struct Vertex
-{
-    v3 position{};
-    v2 texCoord{};
-    v3 normal{};
-};
-
 struct Geometry
 {
-    RunTimeArr<v3> verts{};
+    RunTimeArr<f32> vertAttribs{};
     RunTimeArr<s16> indicies{};
-    RunTimeArr<Vertex> vertices{};
     Mat4x4 worldTransform{};
 };
 
@@ -154,12 +147,19 @@ enum Render_Entry_Type
     EntryType_Line,
     EntryType_Rect,
     EntryType_Geometry,
-    EntryType_Texture
+    EntryType_Texture,
+    EntryType_LoadTexture
 };
 
 struct RenderEntry_Header
 {
     Render_Entry_Type type;
+};
+
+struct RenderEntry_LoadTexture
+{
+    RenderEntry_Header header;
+    Image texture;
 };
 
 struct RenderEntry_Rect
@@ -172,7 +172,8 @@ struct RenderEntry_Rect
 struct RenderEntry_Geometry
 {
     RenderEntry_Header header;
-    u32 id{};
+    u32 meshID{};
+    s32 textureID{};
     RunTimeArr<v3> verts{};
     RunTimeArr<s16> indicies{};
     Mat4x4 worldTransform{};
@@ -181,9 +182,8 @@ struct RenderEntry_Geometry
 struct RenderEntry_InitBuffer
 {
     RenderEntry_Header header;
-    RunTimeArr<v3> verts{};
+    RunTimeArr<f32> vertAttribs{};
     RunTimeArr<s16> indicies{};
-    RunTimeArr<Vertex> vertices{};
 };
 
 struct RenderEntry_Texture
@@ -229,7 +229,8 @@ void UpdateCamera3D(Rendering_Info* renderingInfo, v3 camWorldPos, v3 camRotatio
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch);
 
 //Render Commands 3d
-void PushGeometry(Rendering_Info* renderingInfo, s32 id, Mat4x4 fullTransformMatrix);
+void PushGeometry(Rendering_Info* renderingInfo, s32 id, s32 textureID, Mat4x4 fullTransformMatrix);
+s32 LoadTexture(Rendering_Info* renderingInfo, Image texture);
 
 void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
@@ -268,7 +269,7 @@ void InitRenderer(Rendering_Info* renderingInfo, f32 fov, f32 aspectRatio, f32 n
     renderingInfo->farPlane = farPlane;
 };
 
-s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTimeArr<s16> indicies)
+s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<f32> objectVerts, RunTimeArr<s16> indicies)
 {
     BGZ_ASSERT(objectVerts.length > 0, "Vertex array not filled. Did you load in the object data?");
     BGZ_ASSERT(indicies.length > 0, "Index array not filled. Did you load in the object data?");
@@ -276,7 +277,7 @@ s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTim
     RenderEntry_InitBuffer* bufInit = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_InitBuffer);
     
     bufInit->header.type = EntryType_InitBuffer;
-    bufInit->verts = objectVerts;
+    bufInit->vertAttribs = objectVerts;
     bufInit->indicies = indicies;
     
     ++renderingInfo->cmdBuffer.entryCount;
@@ -284,14 +285,29 @@ s32 InitBuffer(Rendering_Info* renderingInfo, RunTimeArr<v3> objectVerts, RunTim
     return ++bufferCount;
 };
 
-void PushGeometry(Rendering_Info* renderingInfo, s32 id, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
+s32 LoadTexture(Rendering_Info* renderingInfo, Image texture)
+{
+    BGZ_ASSERT(texture.data, "Invalid/null texture data!");
+    
+    RenderEntry_LoadTexture* loadTextureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_LoadTexture);
+    
+    loadTextureEntry->header.type = EntryType_LoadTexture;
+    loadTextureEntry->texture = texture;
+    
+    ++renderingInfo->cmdBuffer.entryCount;
+    
+    return ++textureCount;
+};
+
+void PushGeometry(Rendering_Info* renderingInfo, s32 id, s32 textureID, RunTimeArr<s16> indicies, Mat4x4 worldTransform)
 {
     RenderEntry_Geometry* geomEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Geometry);
     
     geomEntry->header.type = EntryType_Geometry;
-    geomEntry->id = id;
+    geomEntry->meshID = id;
     geomEntry->indicies = indicies;
     geomEntry->worldTransform = worldTransform;
+    geomEntry->textureID = textureID;
     
     ++renderingInfo->cmdBuffer.entryCount;
 };
