@@ -1528,9 +1528,10 @@ ParseOBJ(OBJParseInfo *info)
                                     bool completeDuplicate{false};
                                     for(unsigned int i{}; i < geometry_group_face_vertex_count; ++i)
                                     {
-                                        if((position_index + 1) == vertex_uv_and_normal_indices_buffer[i].position_index &&
-                                           (uv_index + 1) == vertex_uv_and_normal_indices_buffer[i].uv_index &&
-                                           (normal_index + 1)  == vertex_uv_and_normal_indices_buffer[i].normal_index)
+                                        s32 positionIndexPlus1 = position_index + 1, uvIndexPlus1 = uv_index + 1, normalIndexPlus1 = normal_index + 1;
+                                        if((positionIndexPlus1) == vertex_uv_and_normal_indices_buffer[i].position_index &&
+                                           (uvIndexPlus1) == vertex_uv_and_normal_indices_buffer[i].uv_index &&
+                                           (normalIndexPlus1)  == vertex_uv_and_normal_indices_buffer[i].normal_index)
                                         {
                                             //break and subtract num_unique_vertices and make sure to prevent the code below from executing
                                             completeDuplicate = true;
