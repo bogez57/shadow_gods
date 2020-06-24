@@ -1526,7 +1526,7 @@ ParseOBJ(OBJParseInfo *info)
                                 {
                                     //Iterate over all current index combinations and make sure there are not exact duplicates
                                     bool completeDuplicate{false};
-                                    for(unsigned int i{}; i < geometry_group_face_vertex_count; ++i)
+                                    for(unsigned int i{}; i < num_face_vertices_with_duplicates; ++i)
                                     {
                                         s32 positionIndexPlus1 = position_index + 1, uvIndexPlus1 = uv_index + 1, normalIndexPlus1 = normal_index + 1;
                                         if((positionIndexPlus1) == vertex_uv_and_normal_indices_buffer[i].position_index &&
