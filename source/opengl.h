@@ -41,6 +41,7 @@ void main()
 {
 vec4 texColor = texture(id, fragTexCoord);
     color = texColor;
+//color = vec4(1.0, 0.0, 0.0, 1.0);
 };
 
 )HereDoc";
@@ -292,6 +293,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, Memory_Partition* platfor
                 glEnableVertexAttribArray(0);
                 glEnableVertexAttribArray(1);
                 glEnableVertexAttribArray(2);
+                glEnableVertexAttribArray(3);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, 0);//position
                 glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*3));//tex coords
                 glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (char*)(sizeof(GLfloat)*5));//normals

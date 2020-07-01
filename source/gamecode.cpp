@@ -322,11 +322,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
-        {
-            ParsedOBJ obj = LoadOBJ("data/cube.obj");
-            FreeParsedOBJ(&obj);
-        };
-        
         gameMemory->initialized = true;
         
         *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
@@ -352,10 +347,37 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
         fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
 #endif
-        InitArr($(fighter0->mesh.vertAttribs), levelPart, 32);
-        InitArr($(fighter0->mesh.indicies), levelPart, 6);
         
+        ParsedOBJ obj = LoadOBJ("data/plane.obj");
+        ParsedOBJRenderable renderable = obj.renderables[0];
+        
+        InitArr($(fighter0->mesh.vertAttribs), levelPart, renderable.floats_per_vertex * 6);
         RunTimeArr<f32>* vertAttribs = &fighter0->mesh.vertAttribs;
+        for(s32 i{}; i < 6 * 8; i += 8)
+        {
+            //Pos
+            vertAttribs->Push(renderable.vertices[i + 0]);
+            vertAttribs->Push(renderable.vertices[i + 1]);
+            vertAttribs->Push(renderable.vertices[i + 2]);
+            
+            //Tex Coord
+            vertAttribs->Push(renderable.vertices[i + 3]);
+            vertAttribs->Push(renderable.vertices[i + 4]);
+            
+            //Normal
+            vertAttribs->Push(renderable.vertices[i + 5]);
+            vertAttribs->Push(renderable.vertices[i + 6]);
+            vertAttribs->Push(renderable.vertices[i + 7]);
+        };
+        
+        InitArr($(fighter0->mesh.indicies), levelPart, renderable.index_count);
+        RunTimeArr<s16>* meshIndicies = &fighter0->mesh.indicies;
+        for(s32 i{}; i < (s32)renderable.index_count; ++i)
+        {
+            meshIndicies->Push((s16)renderable.indices[i]);
+        };
+        
+#if 0
         vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//0
         vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);                        //tex coord
         vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);//normal
@@ -368,16 +390,25 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);                       //tex Coord
         vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         
+        vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//0
+        vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);                        //tex coord
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);//normal
+        
         vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//3
         vertAttribs->Push(+1.0f); vertAttribs->Push(0.0f);                      //tex Coord
+        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
+        
+        vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//1
+        vertAttribs->Push(1.0f); vertAttribs->Push(1.0f);                        //tex Coord
         vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
         
         fighter0->mesh.indicies.Push(0);
         fighter0->mesh.indicies.Push(1);
         fighter0->mesh.indicies.Push(2);
-        fighter0->mesh.indicies.Push(0);
         fighter0->mesh.indicies.Push(3);
-        fighter0->mesh.indicies.Push(1);
+        fighter0->mesh.indicies.Push(4);
+        fighter0->mesh.indicies.Push(5);
+#endif
         
         fighter0->id = InitVertexBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
         
@@ -385,6 +416,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         fighter0->textureID = LoadTexture(global_renderingInfo, fighterTexture);
         
         fighter0->worldTransform.translation = {+1.0f, 0.0f, 0.0f};
+        
+        FreeParsedOBJ(&obj);
     };
     
     if(KeyHeld(keyboard->MoveRight))

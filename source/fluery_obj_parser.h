@@ -1600,7 +1600,7 @@ ParseOBJ(OBJParseInfo *info)
             // NOTE(rjf): Now that we've duplicated vertices where necessary, we can create
             // final vertex and index buffers, where everything is correct for rendering.
             int final_vertex_buffer_write_number = 0;
-            unsigned int bytes_needed_for_final_vertex_buffer = sizeof(float) * 8 * renderable_total_unique_vertices;
+            unsigned int bytes_needed_for_final_vertex_buffer = sizeof(float) * 8 * 6;//renderable_total_unique_vertices;
             float *final_vertex_buffer = (float *)OBJParserArenaAllocate(arena, bytes_needed_for_final_vertex_buffer);
             int final_index_buffer_write_number = 0;
             unsigned int bytes_needed_for_final_index_buffer = sizeof(int) * renderable_total_face_vertices_with_duplicates;
@@ -1617,6 +1617,7 @@ ParseOBJ(OBJParseInfo *info)
             {
                 GeometryGroupFinalData *group_final_data = geometry_groups_final_data + group_index;
                 
+                int vertexBufferIndex{};
                 for(unsigned int i = 0; i < group_final_data->face_vertex_count; ++i)
                 {
                     int position_index = group_final_data->face_vertices[i*3 + 0] - group_final_data->lowest_position_index;
@@ -1641,17 +1642,17 @@ ParseOBJ(OBJParseInfo *info)
                     
                     int geometry_group_position_index = vertex_data->position_index - group_final_data->lowest_position_index + group_index_offset;
                     
-                    final_vertex_buffer[(geometry_group_position_index)*8+0] = position[0];
-                    final_vertex_buffer[(geometry_group_position_index)*8+1] = position[1];
-                    final_vertex_buffer[(geometry_group_position_index)*8+2] = position[2];
-                    final_vertex_buffer[(geometry_group_position_index)*8+3] = uv[0];
-                    final_vertex_buffer[(geometry_group_position_index)*8+4] = uv[1];
-                    final_vertex_buffer[(geometry_group_position_index)*8+5] = normal[0];
-                    final_vertex_buffer[(geometry_group_position_index)*8+6] = normal[1];
-                    final_vertex_buffer[(geometry_group_position_index)*8+7] = normal[2];
-                    final_index_buffer[final_index_buffer_write_number++] = geometry_group_position_index;
+                    final_vertex_buffer[vertexBufferIndex + 0] = position[0];
+                    final_vertex_buffer[vertexBufferIndex + 1] = position[1];
+                    final_vertex_buffer[vertexBufferIndex + 2] = position[2];
+                    final_vertex_buffer[vertexBufferIndex + 3] = uv[0];
+                    final_vertex_buffer[vertexBufferIndex + 4] = uv[1];
+                    final_vertex_buffer[vertexBufferIndex + 5] = normal[0];
+                    final_vertex_buffer[vertexBufferIndex + 6] = normal[1];
+                    final_vertex_buffer[vertexBufferIndex + 7] = normal[2];
+                    final_index_buffer[final_index_buffer_write_number++] = final_index_buffer_write_number;
                     
-                    final_vertex_buffer_write_number += 8;
+                    vertexBufferIndex += 8;
                 }
                 
                 group_index_offset += group_final_data->num_unique_vertices;
