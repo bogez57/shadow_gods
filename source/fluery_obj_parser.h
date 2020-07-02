@@ -1600,7 +1600,7 @@ ParseOBJ(OBJParseInfo *info)
             // NOTE(rjf): Now that we've duplicated vertices where necessary, we can create
             // final vertex and index buffers, where everything is correct for rendering.
             int final_vertex_buffer_write_number = 0;
-            unsigned int bytes_needed_for_final_vertex_buffer = sizeof(float) * 8 * 6;//renderable_total_unique_vertices;
+            unsigned int bytes_needed_for_final_vertex_buffer = sizeof(float) * 8 * renderable_total_unique_vertices;
             float *final_vertex_buffer = (float *)OBJParserArenaAllocate(arena, bytes_needed_for_final_vertex_buffer);
             int final_index_buffer_write_number = 0;
             unsigned int bytes_needed_for_final_index_buffer = sizeof(int) * renderable_total_face_vertices_with_duplicates;
@@ -1623,34 +1623,49 @@ ParseOBJ(OBJParseInfo *info)
                     int position_index = group_final_data->face_vertices[i*3 + 0] - group_final_data->lowest_position_index;
                     VertexUVAndNormalIndices *vertex_data = group_final_data->vertex_uv_and_normal_indices_buffer + position_index;
                     
-                    float position[3] = {
-                        vertex_positions[(vertex_data->position_index-1)*3+0],
-                        vertex_positions[(vertex_data->position_index-1)*3+1],
-                        vertex_positions[(vertex_data->position_index-1)*3+2],
-                    };
+                    int index{};
+                    bool notAllFinalVerticesChecked{true};
+                    while(notAllFinalVerticesChecked)
+                    {
+                        if(final_vertex_buffer[i*8 + 0] != vertex_positions[(vertex_data->position_index-1)*3 + 0] &&
+                           final_vertex_buffer[i*8 + 1] != vertex_positions[(vertex_data->position_index-1)*3 + 1] &&
+                           final_vertex_buffer[i*8 + 2] != vertex_positions[(vertex_data->position_index-1)*3 + 2])
+                        {
+                            float position[3] = {
+                                vertex_positions[(vertex_data->position_index-1)*3+0],
+                                vertex_positions[(vertex_data->position_index-1)*3+1],
+                                vertex_positions[(vertex_data->position_index-1)*3+2],
+                            };
+                            
+                            float uv[2] = {
+                                vertex_uvs[(vertex_data->uv_index-1)*2+0],
+                                vertex_uvs[(vertex_data->uv_index-1)*2+1],
+                            };
+                            
+                            float normal[3] = {
+                                vertex_normals[(vertex_data->normal_index-1)*3+0],
+                                vertex_normals[(vertex_data->normal_index-1)*3+1],
+                                vertex_normals[(vertex_data->normal_index-1)*3+2],
+                            };
+                            
+                            int geometry_group_position_index = vertex_data->position_index - group_final_data->lowest_position_index + group_index_offset;
+                            
+                            final_vertex_buffer[vertexBufferIndex + 0] = position[0];
+                            final_vertex_buffer[vertexBufferIndex + 1] = position[1];
+                            final_vertex_buffer[vertexBufferIndex + 2] = position[2];
+                            final_vertex_buffer[vertexBufferIndex + 3] = uv[0];
+                            final_vertex_buffer[vertexBufferIndex + 4] = uv[1];
+                            final_vertex_buffer[vertexBufferIndex + 5] = normal[0];
+                            final_vertex_buffer[vertexBufferIndex + 6] = normal[1];
+                            final_vertex_buffer[vertexBufferIndex + 7] = normal[2];
+                            
+                            notAllFinalVerticesChecked = false;
+                        }
+                        
+                        ++index;
+                    }
                     
-                    float uv[2] = {
-                        vertex_uvs[(vertex_data->uv_index-1)*2+0],
-                        vertex_uvs[(vertex_data->uv_index-1)*2+1],
-                    };
-                    
-                    float normal[3] = {
-                        vertex_normals[(vertex_data->normal_index-1)*3+0],
-                        vertex_normals[(vertex_data->normal_index-1)*3+1],
-                        vertex_normals[(vertex_data->normal_index-1)*3+2],
-                    };
-                    
-                    int geometry_group_position_index = vertex_data->position_index - group_final_data->lowest_position_index + group_index_offset;
-                    
-                    final_vertex_buffer[vertexBufferIndex + 0] = position[0];
-                    final_vertex_buffer[vertexBufferIndex + 1] = position[1];
-                    final_vertex_buffer[vertexBufferIndex + 2] = position[2];
-                    final_vertex_buffer[vertexBufferIndex + 3] = uv[0];
-                    final_vertex_buffer[vertexBufferIndex + 4] = uv[1];
-                    final_vertex_buffer[vertexBufferIndex + 5] = normal[0];
-                    final_vertex_buffer[vertexBufferIndex + 6] = normal[1];
-                    final_vertex_buffer[vertexBufferIndex + 7] = normal[2];
-                    final_index_buffer[final_index_buffer_write_number++] = final_index_buffer_write_number;
+                    final_index_buffer[final_index_buffer_write_number++] = vertex_data->position_index - 1;
                     
                     vertexBufferIndex += 8;
                 }
