@@ -348,7 +348,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
 #endif
         
-        ParsedOBJ obj = LoadOBJ("data/plane.obj");
+        ParsedOBJ obj = LoadOBJ("data/plane.obj", levelPart);
         ParsedOBJRenderable renderable = obj.renderables[0];
         
         InitArr($(fighter0->mesh.vertAttribs), levelPart, renderable.floats_per_vertex * 6);

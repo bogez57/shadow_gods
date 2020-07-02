@@ -37,7 +37,7 @@ OBJParseInfo info = {0};
 
 // Pass a pointer to this structure to ParseOBJ, which will return a ParsedOBJ
 // structure, containing all of the information extracted from the .obj file.
-ParsedOBJ obj = ParseOBJ(&info);
+//ParsedOBJ obj = ParseOBJ(&info);
 
 // You can also choose to load in the MTL files found in the .obj file.
 for(unsigned int i = 0; i < obj.material_library_count; ++i)
@@ -105,7 +105,7 @@ struct ParsedOBJRenderable
     int flags;
     unsigned int vertex_count;
     unsigned int floats_per_vertex;
-    float *vertices;
+    RunTimeArr<float> vertices;
     unsigned int index_count;
     int *indices;
 };
@@ -124,7 +124,7 @@ typedef struct OBJParseInfo OBJParseInfo;
 typedef struct MTLParseInfo MTLParseInfo;
 ParsedOBJ  LoadOBJ(char *filename);
 void       LoadMTLForOBJ(char *filename, ParsedOBJ *obj);
-ParsedOBJ  ParseOBJ(OBJParseInfo *parse_info);
+ParsedOBJ  ParseOBJ(OBJParseInfo *parse_info, Memory_Partition*);
 void       ParseMTLForOBJ(MTLParseInfo *parse_info, ParsedOBJ *obj);
 void       FreeParsedOBJ(ParsedOBJ *parsed_obj);
 
@@ -769,7 +769,7 @@ OBJParseDefaultCRTWarningCallback(OBJParseWarning warning)
 }
 
 ParsedOBJ
-LoadOBJ(char *filename)
+LoadOBJ(char *filename, Memory_Partition* memPart)
 {
     OBJParseInfo info = {0};
     {
@@ -788,7 +788,7 @@ LoadOBJ(char *filename)
     ParsedOBJ obj = {0};
     if(info.obj_data)
     {
-        obj = ParseOBJ(&info);
+        obj = ParseOBJ(&info, memPart);
         OBJParseFreeFileData(info.obj_data);
         OBJParserPersistentState *persistent_state = (OBJParserPersistentState *)((char *)obj.renderables - sizeof(OBJParserPersistentState));
         persistent_state->parse_memory_to_free = info.parse_memory;
@@ -855,7 +855,7 @@ FreeParsedOBJ(ParsedOBJ *obj)
 #endif // OBJ_PARSE_NO_CRT
 
 ParsedOBJ
-ParseOBJ(OBJParseInfo *info)
+ParseOBJ(OBJParseInfo *info, Memory_Partition* memPart)
 {
     char *obj_data                  = info->obj_data;
     void *parse_memory              = info->parse_memory;
@@ -1601,15 +1601,11 @@ ParseOBJ(OBJParseInfo *info)
             // final vertex and index buffers, where everything is correct for rendering.
             int final_vertex_buffer_write_number = 0;
             unsigned int bytes_needed_for_final_vertex_buffer = sizeof(float) * 8 * renderable_total_unique_vertices;
-            float *final_vertex_buffer = (float *)OBJParserArenaAllocate(arena, bytes_needed_for_final_vertex_buffer);
+            //float *final_vertex_buffer = (float *)OBJParserArenaAllocate(arena, bytes_needed_for_final_vertex_buffer);
+            RunTimeArr<float> final_vertex_buffer{memPart, bytes_needed_for_final_vertex_buffer};
             int final_index_buffer_write_number = 0;
             unsigned int bytes_needed_for_final_index_buffer = sizeof(int) * renderable_total_face_vertices_with_duplicates;
             int *final_index_buffer = (int *)OBJParserArenaAllocate(arena, bytes_needed_for_final_index_buffer);
-            if(!final_vertex_buffer || !final_index_buffer)
-            {
-                // TODO(rjf): ERROR: Out of memory.
-                goto end_parse;
-            }
             
             unsigned int group_index_offset = 0;
             
@@ -1623,46 +1619,47 @@ ParseOBJ(OBJParseInfo *info)
                     int position_index = group_final_data->face_vertices[i*3 + 0] - group_final_data->lowest_position_index;
                     VertexUVAndNormalIndices *vertex_data = group_final_data->vertex_uv_and_normal_indices_buffer + position_index;
                     
-                    int index{};
-                    bool notAllFinalVerticesChecked{true};
-                    while(notAllFinalVerticesChecked)
+                    bool notDuplicate{true};
+                    for(int i{}; i < final_vertex_buffer.length; i+=8)
                     {
-                        if(final_vertex_buffer[i*8 + 0] != vertex_positions[(vertex_data->position_index-1)*3 + 0] &&
-                           final_vertex_buffer[i*8 + 1] != vertex_positions[(vertex_data->position_index-1)*3 + 1] &&
-                           final_vertex_buffer[i*8 + 2] != vertex_positions[(vertex_data->position_index-1)*3 + 2])
+                        if(final_vertex_buffer[i + 0] == vertex_positions[(vertex_data->position_index-1)*3 + 0] &&
+                           final_vertex_buffer[i + 1] == vertex_positions[(vertex_data->position_index-1)*3 + 1] &&
+                           final_vertex_buffer[i + 2] == vertex_positions[(vertex_data->position_index-1)*3 + 2])
                         {
-                            float position[3] = {
-                                vertex_positions[(vertex_data->position_index-1)*3+0],
-                                vertex_positions[(vertex_data->position_index-1)*3+1],
-                                vertex_positions[(vertex_data->position_index-1)*3+2],
-                            };
-                            
-                            float uv[2] = {
-                                vertex_uvs[(vertex_data->uv_index-1)*2+0],
-                                vertex_uvs[(vertex_data->uv_index-1)*2+1],
-                            };
-                            
-                            float normal[3] = {
-                                vertex_normals[(vertex_data->normal_index-1)*3+0],
-                                vertex_normals[(vertex_data->normal_index-1)*3+1],
-                                vertex_normals[(vertex_data->normal_index-1)*3+2],
-                            };
-                            
-                            int geometry_group_position_index = vertex_data->position_index - group_final_data->lowest_position_index + group_index_offset;
-                            
-                            final_vertex_buffer[vertexBufferIndex + 0] = position[0];
-                            final_vertex_buffer[vertexBufferIndex + 1] = position[1];
-                            final_vertex_buffer[vertexBufferIndex + 2] = position[2];
-                            final_vertex_buffer[vertexBufferIndex + 3] = uv[0];
-                            final_vertex_buffer[vertexBufferIndex + 4] = uv[1];
-                            final_vertex_buffer[vertexBufferIndex + 5] = normal[0];
-                            final_vertex_buffer[vertexBufferIndex + 6] = normal[1];
-                            final_vertex_buffer[vertexBufferIndex + 7] = normal[2];
-                            
-                            notAllFinalVerticesChecked = false;
-                        }
+                            notDuplicate = false;
+                            break;
+                        };
+                    };
+                    
+                    if(notDuplicate)
+                    {
+                        float position[3] = {
+                            vertex_positions[(vertex_data->position_index-1)*3+0],
+                            vertex_positions[(vertex_data->position_index-1)*3+1],
+                            vertex_positions[(vertex_data->position_index-1)*3+2],
+                        };
                         
-                        ++index;
+                        float uv[2] = {
+                            vertex_uvs[(vertex_data->uv_index-1)*2+0],
+                            vertex_uvs[(vertex_data->uv_index-1)*2+1],
+                        };
+                        
+                        float normal[3] = {
+                            vertex_normals[(vertex_data->normal_index-1)*3+0],
+                            vertex_normals[(vertex_data->normal_index-1)*3+1],
+                            vertex_normals[(vertex_data->normal_index-1)*3+2],
+                        };
+                        
+                        int geometry_group_position_index = vertex_data->position_index - group_final_data->lowest_position_index + group_index_offset;
+                        
+                        final_vertex_buffer.Push() = position[0];
+                        final_vertex_buffer.Push() = position[1];
+                        final_vertex_buffer.Push() = position[2];
+                        final_vertex_buffer.Push() = uv[0];
+                        final_vertex_buffer.Push() = uv[1];
+                        final_vertex_buffer.Push() = normal[0];
+                        final_vertex_buffer.Push() = normal[1];
+                        final_vertex_buffer.Push() = normal[2];
                     }
                     
                     final_index_buffer[final_index_buffer_write_number++] = vertex_data->position_index - 1;
