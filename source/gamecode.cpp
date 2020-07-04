@@ -16,6 +16,7 @@
 
 #include <boagz/error_handling.h>
 #include <stb/stb_image.h>
+#include "debug/debug.h"
 
 #define ATOMIC_TYPES_IMPL
 #include "atomic_types.h"
@@ -322,6 +323,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
+        TIMED_BLOCK;
+        
         gameMemory->initialized = true;
         
         *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
@@ -338,77 +341,39 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         camera->worldPos = {0.0f, 0.0f, -7.0f};
         camera->rotation = {0.0f, 0.0f, 0.0f};
         
-        //Fighter Init
-#if 0
-        ObjFileData cubeData = LoadObjFileData(framePart, "data/cube.obj");
-        ObjFileData monkeyData = LoadObjFileData(framePart, "data/monkey.obj");
-        ConstructGeometry($(fighter0->mesh.vertAttribs), $(fighter0->mesh.indicies), levelPart, cubeData);
-        ConstructGeometry($(fighter1->mesh.verts), $(fighter1->mesh.indicies), levelPart, monkeyData);
-        fighter0->id = InitBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
-        fighter1->id = InitBuffer(global_renderingInfo, fighter1->mesh.verts, fighter1->mesh.indicies);
-#endif
+        InitArr($(fighter0->mesh.vertAttribs), levelPart, 100);
         
-        ParsedOBJ obj = LoadOBJ("data/plane.obj", levelPart);
-        ParsedOBJRenderable renderable = obj.renderables[0];
+        fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(0.0f * 2.0f);//0
+        fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(0.0f);                        //tex coord
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(1.0f);//normal
         
-        InitArr($(fighter0->mesh.vertAttribs), levelPart, renderable.floats_per_vertex * 6);
-        RunTimeArr<f32>* vertAttribs = &fighter0->mesh.vertAttribs;
-        for(s32 i{}; i < 6 * 8; i += 8)
-        {
-            //Pos
-            vertAttribs->Push(renderable.vertices[i + 0]);
-            vertAttribs->Push(renderable.vertices[i + 1]);
-            vertAttribs->Push(renderable.vertices[i + 2]);
-            
-            //Tex Coord
-            vertAttribs->Push(renderable.vertices[i + 3]);
-            vertAttribs->Push(renderable.vertices[i + 4]);
-            
-            //Normal
-            vertAttribs->Push(renderable.vertices[i + 5]);
-            vertAttribs->Push(renderable.vertices[i + 6]);
-            vertAttribs->Push(renderable.vertices[i + 7]);
-        };
+        fighter0->mesh.vertAttribs.Push(+.5f * 2.0f); fighter0->mesh.vertAttribs.Push(+.5f * 2.0f); fighter0->mesh.vertAttribs.Push(0.0f * 2.0f);//1
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(1.0f);                        //tex Coord
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(0.0f);//color
         
-        InitArr($(fighter0->mesh.indicies), levelPart, renderable.index_count);
-        RunTimeArr<s16>* meshIndicies = &fighter0->mesh.indicies;
-        for(s32 i{}; i < (s32)renderable.index_count; ++i)
-        {
-            meshIndicies->Push((s16)renderable.indices[i]);
-        };
+        fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(+.5f * 2.0f); fighter0->mesh.vertAttribs.Push(0.0f * 2.0f);//2
+        fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(1.0f);                       //tex Coord
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(0.0f);//color
         
-#if 0
-        vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//0
-        vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);                        //tex coord
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);//normal
+        fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(0.0f * 2.0f);//0
+        fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(0.0f);                        //tex coord
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(1.0f);//normal
         
-        vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//1
-        vertAttribs->Push(1.0f); vertAttribs->Push(1.0f);                        //tex Coord
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
+        fighter0->mesh.vertAttribs.Push(+.5f * 2.0f); fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(0.0f * 2.0f);//3
+        fighter0->mesh.vertAttribs.Push(+1.0f); fighter0->mesh.vertAttribs.Push(0.0f);                      //tex Coord
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(0.0f);//color
         
-        vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//2
-        vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);                       //tex Coord
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
+        fighter0->mesh.vertAttribs.Push(+.5f * 2.0f); fighter0->mesh.vertAttribs.Push(+.5f * 2.0f); fighter0->mesh.vertAttribs.Push(0.0f * 2.0f);//1
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(1.0f);                        //tex Coord
+        fighter0->mesh.vertAttribs.Push(1.0f); fighter0->mesh.vertAttribs.Push(0.0f); fighter0->mesh.vertAttribs.Push(0.0f);//color
         
-        vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//0
-        vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);                        //tex coord
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(1.0f);//normal
-        
-        vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(-.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//3
-        vertAttribs->Push(+1.0f); vertAttribs->Push(0.0f);                      //tex Coord
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
-        
-        vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(+.5f * 2.0f); vertAttribs->Push(0.0f * 2.0f);//1
-        vertAttribs->Push(1.0f); vertAttribs->Push(1.0f);                        //tex Coord
-        vertAttribs->Push(1.0f); vertAttribs->Push(0.0f); vertAttribs->Push(0.0f);//color
-        
+        InitArr($(fighter0->mesh.indicies), levelPart, 6);
         fighter0->mesh.indicies.Push(0);
         fighter0->mesh.indicies.Push(1);
         fighter0->mesh.indicies.Push(2);
         fighter0->mesh.indicies.Push(3);
         fighter0->mesh.indicies.Push(4);
         fighter0->mesh.indicies.Push(5);
-#endif
         
         fighter0->id = InitVertexBuffer(global_renderingInfo, fighter0->mesh.vertAttribs, fighter0->mesh.indicies);
         
@@ -416,8 +381,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         fighter0->textureID = LoadTexture(global_renderingInfo, fighterTexture);
         
         fighter0->worldTransform.translation = {+1.0f, 0.0f, 0.0f};
-        
-        FreeParsedOBJ(&obj);
     };
     
     if(KeyHeld(keyboard->MoveRight))
