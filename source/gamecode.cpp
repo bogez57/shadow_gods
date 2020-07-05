@@ -324,7 +324,6 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     if (NOT gameMemory->initialized)
     {
         TIMED_BLOCK;
-        
         gameMemory->initialized = true;
         
         *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
@@ -392,6 +391,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     { //Render
         //Push background
+        TIMED_BLOCK;
 #if 0
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
@@ -408,5 +408,14 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         if (gState->isLevelOver)
             Release($(*levelPart));
+    };
+    
+    {
+        TIMED_BLOCK;
+        int myInt1 = 3;
+        int myInt2 = 3;
+        int myInt3 = 3;
+        
+        int myInt4 = myInt2 - myInt2;
     };
 };

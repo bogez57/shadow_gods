@@ -1,17 +1,14 @@
 #include "debug.h"
 #include <stdio.h>
 
-TimerStruct::TimerStruct()
+void BeginTimer(Timer* timer)
 {
-    printf("Constructor running! %i\n", num);
+    timer->startTime = __rdtsc();
 };
 
-TimerStruct::~TimerStruct()
+void EndTimer(Timer* timer)
 {
-    printf("Destructor running!");
-};
-
-extern "C" void TestFunc()
-{
-    printf("This is a func");
+    timer->endTime = __rdtsc();
+    uint64_t cyclesElapsed = timer->endTime - timer->startTime;
+    printf("cylces: %lu\n", (unsigned long)cyclesElapsed);
 };
