@@ -221,6 +221,13 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
     return width_meters;
 };
 
+void TestFunc()
+{
+    TIMED_SCOPE();
+    
+    BGZ_CONSOLE("ehllo\n\n");
+};
+
 Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
 {
     Coordinate_Space parentSpace {};
@@ -389,6 +396,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     };
     
     UpdateCamera3D(global_renderingInfo, camera->worldPos, camera->rotation);
+    
+    TestFunc();
     
     { //Render
         //Push background

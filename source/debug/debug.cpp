@@ -1,11 +1,13 @@
-#include "debug.h"
+
 #include <stdio.h>
+#include "intrinsics.h"
+#include "debug.h"
 
 TimedScopeInfo scopeInfoArray[];
 
 void BeginTimer(Timer* timer, int counter, char* fileName, char* functionName, int lineNumber, int hitCount)
 {
-    timer->startTime = __rdtsc();
+    timer->startCycles_count = __rdtsc();
     
     timer->scopeInfo = scopeInfoArray + counter;
     timer->scopeInfo->fileName = fileName;
@@ -16,9 +18,9 @@ void BeginTimer(Timer* timer, int counter, char* fileName, char* functionName, i
 
 void EndTimer(Timer* timer)
 {
-    timer->endTime = __rdtsc();
+    uint64_t cyclesElapsed = __rdtsc() - timer->startCycles_count;
     
-    timer->scopeInfo->cpuCyclesElapsed = timer->endTime - timer->startTime;
+    ThreadSafeAdd(&timer->scopeInfo->cpuCyclesElapsed, cyclesElapsed);
     
     printf("cylces: %lu\n", (unsigned long)timer->scopeInfo->cpuCyclesElapsed);
     printf("fileName: %s\n", timer->scopeInfo->fileName);

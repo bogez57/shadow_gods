@@ -40,8 +40,8 @@ struct TimedScopeInfo
 
 struct Timer
 {
-    uint64_t startTime{};
-    uint64_t endTime{};
+    uint64_t startCycles_count{};
+    uint64_t endCycles_count{};
     TimedScopeInfo* scopeInfo{};
 };
 
