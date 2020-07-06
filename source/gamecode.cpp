@@ -228,6 +228,12 @@ void TestFunc()
     BGZ_CONSOLE("ehllo\n\n");
 };
 
+void TestFunc2()
+{
+    for (int i {}; i < 10; ++i)
+        TestFunc();
+}
+
 Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
 {
     Coordinate_Space parentSpace {};
@@ -331,6 +337,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     if (NOT gameMemory->initialized)
     {
         TIMED_SCOPE();
+        
+        TestFunc2();
         
         gameMemory->initialized = true;
         
@@ -440,6 +448,10 @@ void EndOfFrame_ResetTimingInfo()
     for(int i{}; i < ArrayCount(scopeInfoArray); ++i)
     {
         TimedScopeInfo* scopeInfo = scopeInfoArray + i;
+        
+        printf("In %s ", scopeInfo->fileName);
+        printf("%s took ", scopeInfo->functionName);
+        printf("%llu cycles this frame - hit count: %llu\n\n", ((unsigned long long)scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF), (unsigned long long)scopeInfo->hitCount_cyclesElapsed >> 40);
         
         scopeInfo->hitCount_cyclesElapsed = 0;
     };
