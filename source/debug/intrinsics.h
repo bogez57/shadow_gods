@@ -4,12 +4,12 @@
 #include <intrin.h>
 #include <stdint.h>
 
-inline unsigned int ThreadSafeAdd(uint64_t volatile* val, uint64_t addAmount)
+inline int64_t ThreadSafeAdd(volatile uint64_t* val, uint64_t addAmount)
 {
     //This returns original value. Actual add result is from out param
-    unsigned int result = _InterlockedExchangeAdd((long*)val, (long)addAmount);
+    int64_t originalAmount = _InterlockedExchangeAdd64((__int64*)val, (__int64)addAmount);
     
-    return result;
+    return originalAmount;
 };
 
 #endif //INTRINSICS_H

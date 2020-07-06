@@ -429,6 +429,18 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         int myInt4 = myInt2 - myInt2;
     };
+    
+    EndOfFrame_ResetTimingInfo();
 };
 
 TimedScopeInfo scopeInfoArray[__COUNTER__];
+
+void EndOfFrame_ResetTimingInfo()
+{
+    for(int i{}; i < ArrayCount(scopeInfoArray); ++i)
+    {
+        TimedScopeInfo* scopeInfo = scopeInfoArray + i;
+        
+        scopeInfo->hitCount_cyclesElapsed = 0;
+    };
+};
