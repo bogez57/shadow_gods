@@ -33,7 +33,7 @@ link -lib debug.obj -OUT:debug.lib
 REM Clear out pdb files so build directory doesn't get too huge and build app DLL
 del *.pdb > NUL 2> NUL
 cl /c ..\source\gamecode.cpp %cwd%third_party/micro_parser_combinators/mpc/mpc.c  %GameIncludePaths% %CommonCompilerFlags% %PreProcessorSwitches%
-link gamecode.obj mpc.obj debug.lib -dll -PDB:gamecode_%random%.pdb -export:GameUpdate %GameLibraryPaths% %CommonLinkerFlags%
+link gamecode.obj mpc.obj debug.lib -dll -PDB:gamecode_%random%.pdb -export:GameUpdate -export:DebugFrameEnd %GameLibraryPaths% %CommonLinkerFlags%
 
 REM Build exe
 cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %PlatformIncludePaths% %PreProcessorSwitches%

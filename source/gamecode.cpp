@@ -456,3 +456,9 @@ void EndOfFrame_ResetTimingInfo()
         scopeInfo->hitCount_cyclesElapsed = 0;
     };
 };
+
+
+extern "C" void DebugFrameEnd(Application_Memory* debugMemory)
+{
+    BGZ_CONSOLE("Hello\n");
+};

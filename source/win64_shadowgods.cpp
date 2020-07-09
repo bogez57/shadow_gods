@@ -37,15 +37,14 @@
 #include "atomic_types.h"
 #include "array.h"
 #include "memory_handling.h"
-
 #include "my_math.h"
 #include "utilities.h"
 #include "renderer_stuff.h"
 #include "win64_shadowgods.h"
 #include "shared.h"
-
 #include "opengl.h"
 #include "software_rendering.h"
+#include "debug/debug.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
@@ -244,6 +243,7 @@ namespace Win32::Dbg
         LoadGameCodeDLL(const char* GameCodeDLL) -> Game_Code
     {
         Game_Code GameCode {};
+        
         const char* GameCodeTempDLL = "w:/shadow_gods/build/game_temp.dll";
         
         GameCode.PreviousDLLWriteTime = GetFileTime(GameCodeDLL);
@@ -264,6 +264,10 @@ namespace Win32::Dbg
                 if (GameCode.DLLHandle)
                 {
                     GameCode.UpdateFunc = (GameUpdateFuncPtr)GetProcAddress(GameCode.DLLHandle, "GameUpdate");
+                    GameCode.DebugFrameEnd = (GameDebugFrameEndFuncPtr)GetProcAddress(GameCode.DLLHandle, "DebugFrameEnd");
+                    BGZ_ASSERT(GameCode.UpdateFunc, "Dll function not loading!");
+                    BGZ_ASSERT(GameCode.DebugFrameEnd, "Dll function not loading!");
+                    
                     CopyFileFuncNotWorking = false;
                     
                     if (!GameCode.UpdateFunc)
@@ -1120,6 +1124,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 platformServices.realLifeTimeInSecs += platformServices.prevFrameTimeInSecs;
                 
                 FramePerformanceTimer.UpdateTimeCount();
+                
+                GameCode.DebugFrameEnd(&gameMemory);
                 
                 IsAllTempMemoryCleared(platformMemoryPart);
             };

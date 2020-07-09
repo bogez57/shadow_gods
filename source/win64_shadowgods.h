@@ -4,7 +4,7 @@
 
 namespace Win32
 {
-    struct Offscreen_Buffer 
+    struct Offscreen_Buffer
     {
         //Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
         BITMAPINFO Info;
@@ -19,6 +19,7 @@ namespace Win32
     {
         HMODULE DLLHandle {};
         void (*UpdateFunc)(Application_Memory*, Platform_Services*, Rendering_Info*, Game_Sound_Output_Buffer*, Game_Input*);
+        void (*DebugFrameEnd)(Application_Memory* debugMemory);
         FILETIME PreviousDLLWriteTime {};
     };
     
@@ -30,6 +31,7 @@ namespace Win32
 } // namespace Win32
 
 using GameUpdateFuncPtr = void (*)(Application_Memory*, Platform_Services*, Rendering_Info*, Game_Sound_Output_Buffer*, Game_Input*);
+using GameDebugFrameEndFuncPtr = void (*)(Application_Memory* debugMemory);
 
 namespace Win32::Dbg
 {
