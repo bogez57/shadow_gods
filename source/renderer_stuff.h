@@ -253,6 +253,8 @@ Quadf ProduceQuadFromCenterPoint(v2 originPoint, f32 width, f32 height);
 
 void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, s32 sizeOfCommand)
 {
+    BGZ_ASSERT(commandBuf->usedAmount < commandBuf->size, "Not enough space on render buffer!");
+    
     void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
     commandBuf->usedAmount += (sizeOfCommand);
     return memoryPointer;

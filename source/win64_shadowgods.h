@@ -18,8 +18,8 @@ namespace Win32
     struct Game_Code
     {
         HMODULE DLLHandle {};
-        void (*UpdateFunc)(Application_Memory*, Platform_Services*, Rendering_Info*, Game_Sound_Output_Buffer*, Game_Input*);
-        void (*DebugFrameEnd)(Application_Memory* debugMemory);
+        void (*UpdateFunc)(MemoryBlock*, MemoryBlock*, Platform_Services*, Rendering_Info*, Game_Sound_Output_Buffer*, Game_Input*);
+        void (*DebugFrameEnd)(MemoryBlock* debugMemory);
         FILETIME PreviousDLLWriteTime {};
     };
     
@@ -30,8 +30,8 @@ namespace Win32
     };
 } // namespace Win32
 
-using GameUpdateFuncPtr = void (*)(Application_Memory*, Platform_Services*, Rendering_Info*, Game_Sound_Output_Buffer*, Game_Input*);
-using GameDebugFrameEndFuncPtr = void (*)(Application_Memory* debugMemory);
+using GameUpdateFuncPtr = void (*)(MemoryBlock*, MemoryBlock*, Platform_Services*, Rendering_Info*, Game_Sound_Output_Buffer*, Game_Input*);
+using GameDebugFrameEndFuncPtr = void (*)(MemoryBlock* debugMemory);
 
 namespace Win32::Dbg
 {

@@ -37,7 +37,7 @@ struct Memory_Partition
     s64 Size;
 };
 
-struct Application_Memory
+struct MemoryBlock
 {
     bool  Initialized { false };
     
@@ -53,15 +53,15 @@ struct Application_Memory
     s32 partitionCount {};
 };
 
-void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress);
+void InitApplicationMemory(MemoryBlock* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress);
 
-Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory* Memory, s64 size);
+Memory_Partition CreatePartitionFromMemoryBlock(MemoryBlock* Memory, s64 size);
 
 #endif
 
 #ifdef MEMORY_HANDLING_TEST_IMPL
 
-void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress)
+void InitApplicationMemory(MemoryBlock* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress)
 {
     s32 sizeOfPermanentStorage = sizeOfPermanentStore;
     appMemory->SizeOfPermanentStorage = sizeOfPermanentStorage;
@@ -80,7 +80,7 @@ void* _PointerAddition(void* baseAddress, s64 amountToAdvancePointer)
     return newAddress;
 };
 
-Memory_Partition CreatePartitionFromMemoryBlock(Application_Memory* appMemory, s64 size)
+Memory_Partition CreatePartitionFromMemoryBlock(MemoryBlock* appMemory, s64 size)
 {
     ASSERT(size < appMemory->SizeOfTemporaryStorage);
     ASSERT((size + appMemory->TemporaryStorageUsed) < appMemory->SizeOfTemporaryStorage);

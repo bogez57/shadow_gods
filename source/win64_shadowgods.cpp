@@ -57,7 +57,8 @@
 global_variable u32 globalWindowWidth { 1280 };
 global_variable u32 globalWindowHeight { 720 };
 global_variable Win32::Offscreen_Buffer globalBackBuffer_forSoftwareRendering;
-global_variable Application_Memory gameMemory;
+global_variable MemoryBlock gameMemory;
+global_variable MemoryBlock debugMemory;
 global_variable bool  GameRunning {};
 
 namespace Win32::Dbg
@@ -893,16 +894,23 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
             
-            InitApplicationMemory(&gameMemory, Gigabytes(1), Megabytes(64), VirtualAlloc(baseAddress, Gigabytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)); //TODO: Add large page support?)
+            void* gameMemoryPtr = VirtualAlloc(baseAddress, Gigabytes(1) + Megabytes(64), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); //TODO: Add large page support?)
+            void* debugMemoryPtr = VirtualAlloc((void*)(((u8*)baseAddress) + (Gigabytes(1) + Megabytes(64)) + 1), Megabytes(50) + Kilobytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            if(!gameMemoryPtr) Win32::Dbg::LogErr("Virtual Alloc Failed!");
+            if(!debugMemoryPtr) Win32::Dbg::LogErr("Virtual Alloc Failed!");
+            
+            InitMemoryBlock(&gameMemory, Gigabytes(1), Megabytes(64), gameMemoryPtr);
+            InitMemoryBlock(&debugMemory, Megabytes(50), Kilobytes(1), debugMemoryPtr);
             
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "frame");
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "level");
-            Memory_Partition* platformMemoryPart = CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "platform");
+            CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "platform");
+            CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(10), "RenderCmdBuffer");
+            Memory_Partition* platformMemoryPart = GetMemoryPartition(&gameMemory, "platform");
             
             { //Init render command buffer and other render stuff
-                void* renderCommandBaseAddress = (void*)(((u8*)baseAddress) + gameMemory.totalSize + 1);
-                renderingInfo.cmdBuffer.baseAddress = (u8*)VirtualAlloc(renderCommandBaseAddress, Megabytes(5), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-                renderingInfo.cmdBuffer.size = Megabytes(5);
+                renderingInfo.cmdBuffer.baseAddress = (u8*)(GetMemoryPartition(&gameMemory, "RenderCmdBuffer"))->baseAddress;
+                renderingInfo.cmdBuffer.size = Megabytes(10);
                 renderingInfo.cmdBuffer.entryCount = 0;
                 renderingInfo.cmdBuffer.usedAmount = 0;
                 
@@ -1097,7 +1105,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                     Win32::Dbg::PlayBackInput($(Input), $(GameReplayState));
                 }
                 
-                GameCode.UpdateFunc(&gameMemory, &platformServices, &renderingInfo, &SoundBuffer, &Input);
+                GameCode.UpdateFunc(&gameMemory, &debugMemory, &platformServices, &renderingInfo, &SoundBuffer, &Input);
                 
                 Input = Input;
                 GameReplayState = GameReplayState;

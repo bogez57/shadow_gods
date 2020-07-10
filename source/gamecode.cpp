@@ -252,7 +252,7 @@ Quadf ParentTransform(Quadf localCoords, Transform transformInfo_world)
     return transformedCoords;
 };
 
-extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
+extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Platform_Services* platformServices, Rendering_Info* renderingInfo, Game_Sound_Output_Buffer* soundOutput, Game_Input* gameInput)
 {
     auto TranslateCurrentMeasurementsToGameUnits = [](Skeleton&& skel, AnimationData&& animData) {
         f32 pixelsPerMeter { global_renderingInfo->_pixelsPerMeter };
@@ -458,7 +458,7 @@ void EndOfFrame_ResetTimingInfo()
 };
 
 
-extern "C" void DebugFrameEnd(Application_Memory* debugMemory)
+extern "C" void DebugFrameEnd(MemoryBlock* debugMemory)
 {
     BGZ_CONSOLE("Hello\n");
 };

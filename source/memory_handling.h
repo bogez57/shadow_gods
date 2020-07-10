@@ -53,7 +53,7 @@ struct ScopedMemory
     s64 _initialusedAmountFromMemPartition{};
 };
 
-struct Application_Memory
+struct MemoryBlock
 {
     bool  initialized { false };
     void* permanentStorage { nullptr };
@@ -69,9 +69,9 @@ void* _AllocSize(Memory_Partition* memPartition, s64 size);
 #define PushType(memPartition, type, count) (type*)_AllocSize(memPartition, ((sizeof(type)) * (count)))
 void Release(Memory_Partition&& memPartition);
 
-void InitApplicationMemory(Application_Memory* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress);
-Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, s64 size, const char* partName);
-Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, const char* partName);
+void InitMemoryBlock(MemoryBlock* userDefinedAppMemoryStruct, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress);
+Memory_Partition* CreatePartitionFromMemoryBlock(MemoryBlock&& memBlock, s64 size, const char* partName);
+Memory_Partition* GetMemoryPartition(MemoryBlock* memBlock, const char* partName);
 void IsAllTempMemoryCleared(Memory_Partition* memPartition);
 void Release(Memory_Partition&& memPartition);
 
@@ -129,13 +129,13 @@ Memory_Partition* _GetPartition(_PartitionMap* partMap, const char* partName)
     return &partMap->partitions[keyIndex];
 };
 
-void InitApplicationMemory(Application_Memory* appMemory, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress)
+void InitMemoryBlock(MemoryBlock* memBlock, s64 sizeOfMemory, s32 sizeOfPermanentStore, void* memoryStartAddress)
 {
-    appMemory->sizeOfPermanentStorage = sizeOfPermanentStore;
-    appMemory->sizeOfTemporaryStorage = sizeOfMemory - (s64)sizeOfPermanentStore;
-    appMemory->totalSize = sizeOfMemory;
-    appMemory->permanentStorage = memoryStartAddress;
-    appMemory->temporaryStorage = ((u8*)appMemory->permanentStorage + appMemory->sizeOfPermanentStorage);
+    memBlock->sizeOfPermanentStorage = sizeOfPermanentStore;
+    memBlock->sizeOfTemporaryStorage = sizeOfMemory - (s64)sizeOfPermanentStore;
+    memBlock->totalSize = sizeOfMemory;
+    memBlock->permanentStorage = memoryStartAddress;
+    memBlock->temporaryStorage = ((u8*)memBlock->permanentStorage + memBlock->sizeOfPermanentStorage);
 };
 
 //TODO: Alignment
@@ -146,25 +146,25 @@ void* _PointerAddition(void* baseAddress, s64 amountToAdvancePointer)
     return newAddress;
 };
 
-Memory_Partition* CreatePartitionFromMemoryBlock(Application_Memory&& appMemory, s64 size, const char* partName)
+Memory_Partition* CreatePartitionFromMemoryBlock(MemoryBlock&& memBlock, s64 size, const char* partName)
 {
-    ASSERT(size < appMemory.sizeOfTemporaryStorage);
-    ASSERT((size + appMemory.temporaryStorageUsed) < appMemory.sizeOfTemporaryStorage);
+    ASSERT(size < memBlock.sizeOfTemporaryStorage);
+    ASSERT((size + memBlock.temporaryStorageUsed) < memBlock.sizeOfTemporaryStorage);
     
     Memory_Partition memPartition {};
-    memPartition.baseAddress = _PointerAddition(appMemory.temporaryStorage, appMemory.temporaryStorageUsed);
+    memPartition.baseAddress = _PointerAddition(memBlock.temporaryStorage, memBlock.temporaryStorageUsed);
     memPartition.size = size;
     memPartition.usedAmount = 0;
     
-    appMemory.temporaryStorageUsed += size;
-    _InsertPartition($(appMemory.partitionMap), partName, memPartition);
+    memBlock.temporaryStorageUsed += size;
+    _InsertPartition($(memBlock.partitionMap), partName, memPartition);
     
-    return _GetPartition(&appMemory.partitionMap, partName);
+    return _GetPartition(&memBlock.partitionMap, partName);
 };
 
-Memory_Partition* GetMemoryPartition(Application_Memory* appMemory, const char* partName)
+Memory_Partition* GetMemoryPartition(MemoryBlock* memBlock, const char* partName)
 {
-    return _GetPartition(&appMemory->partitionMap, partName);
+    return _GetPartition(&memBlock->partitionMap, partName);
 };
 
 auto _AllocSize(Memory_Partition* memPartition, s64 size) -> void*
