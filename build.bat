@@ -28,16 +28,16 @@ pushd build
 
 REM build debug lib
 cl /c ..\source\debug\debug.cpp %CommonCompilerFlags%
-link -lib debug.obj -OUT:debug.lib
+link debug.obj -dll -OUT:debugdll.dll -debug -machine:x64 -incremental:no -nologo -opt:ref -export:BeginTimer -export:EndTimer -export:AddTranslationUnitTimedScopesArray
 
 REM Clear out pdb files so build directory doesn't get too huge and build app DLL
-del *.pdb > NUL 2> NUL
+REM del *.pdb > NUL 2> NUL
 cl /c ..\source\gamecode.cpp %cwd%third_party/micro_parser_combinators/mpc/mpc.c  %GameIncludePaths% %CommonCompilerFlags% %PreProcessorSwitches%
-link gamecode.obj mpc.obj debug.lib -dll -PDB:gamecode_%random%.pdb -export:GameUpdate -export:DebugFrameEnd %GameLibraryPaths% %CommonLinkerFlags%
+link gamecode.obj mpc.obj debugdll.lib -dll -PDB:gamecode_%random%.pdb -export:GameUpdate -export:DebugFrameEnd %GameLibraryPaths% %CommonLinkerFlags%
 
 REM Build exe
 cl /c ..\source\win64_shadowgods.cpp %CommonCompilerFlags% %PlatformIncludePaths% %PreProcessorSwitches%
-link win64_shadowgods.obj -OUT:win64_shadowgods.exe %CommonLinkerFlags% %PlatformLibraryPaths% %PlatformImportLibraries% %PlatformStaticLibraries%
+link win64_shadowgods.obj debugdll.lib -OUT:win64_shadowgods.exe %CommonLinkerFlags% %PlatformLibraryPaths% %PlatformImportLibraries% %PlatformStaticLibraries%
 
 popd
 

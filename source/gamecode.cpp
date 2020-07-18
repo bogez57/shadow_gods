@@ -223,9 +223,11 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
 
 void TestFunc()
 {
-    TIMED_SCOPE();
+    TIMED_SCOPE(1);
     
-    BGZ_CONSOLE("ehllo\n\n");
+    int x = 3;
+    x = 34;
+    x += 4444;
 };
 
 void TestFunc2()
@@ -336,7 +338,9 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     
     if (NOT gameMemory->initialized)
     {
-        TIMED_SCOPE();
+        AddTranslationUnitTimedScopesArray(timedScopes_gameLayer);
+        
+        TIMED_SCOPE(1);
         
         TestFunc2();
         
@@ -405,17 +409,17 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     
     UpdateCamera3D(global_renderingInfo, camera->worldPos, camera->rotation);
     
-    TestFunc();
+    TestFunc2();
     
     { //Render
         //Push background
-        TIMED_SCOPE();
+        TIMED_SCOPE(1);
 #if 0
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
 #endif
         
-        TIMED_SCOPE();
+        TIMED_SCOPE(1);
         //World Transform
         Mat4x4 fighter0_worldTransformMatrix = ProduceWorldTransformMatrix(fighter0->worldTransform.translation, fighter0->worldTransform.rotation, fighter0->worldTransform.scale);
         Mat4x4 fighter1_worldTransformMatrix = ProduceWorldTransformMatrix(fighter1->worldTransform.translation, fighter1->worldTransform.rotation, fighter1->worldTransform.scale);
@@ -430,7 +434,7 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     };
     
     {
-        TIMED_SCOPE();
+        TIMED_SCOPE(1);
         int myInt1 = 3;
         int myInt2 = 3;
         int myInt3 = 3;
@@ -441,24 +445,39 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     EndOfFrame_ResetTimingInfo();
 };
 
-TimedScopeInfo scopeInfoArray[__COUNTER__];
+TimedScopeInfo timedScopes_gameLayer[__COUNTER__];
 
 void EndOfFrame_ResetTimingInfo()
 {
-    for(int i{}; i < ArrayCount(scopeInfoArray); ++i)
+    local_persist int frameCount{};
+    
+    if(frameCount == 120)
     {
-        TimedScopeInfo* scopeInfo = scopeInfoArray + i;
+        for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
+        {
+            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
+            
+            printf("In %s ", scopeInfo->fileName);
+            printf("%s on line %i took ", scopeInfo->functionName, scopeInfo->lineNumber);
+            printf("%llu cycles this frame - hit count: %llu\n", ((unsigned long long)scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF), (unsigned long long)scopeInfo->hitCount_cyclesElapsed >> 40);
+        };
         
-        printf("In %s ", scopeInfo->fileName);
-        printf("%s took ", scopeInfo->functionName);
-        printf("%llu cycles this frame - hit count: %llu\n\n", ((unsigned long long)scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF), (unsigned long long)scopeInfo->hitCount_cyclesElapsed >> 40);
-        
-        scopeInfo->hitCount_cyclesElapsed = 0;
+        frameCount = 0;
+        printf("\n\n");
+    }
+    else
+    {
+        for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
+        {
+            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
+            scopeInfo->hitCount_cyclesElapsed = 0;//This is the only thing we have to reset currently as everything else just gets overwritten every frame
+        };
     };
+    
+    ++frameCount;
 };
 
 
 extern "C" void DebugFrameEnd(MemoryBlock* debugMemory)
 {
-    BGZ_CONSOLE("Hello\n");
 };

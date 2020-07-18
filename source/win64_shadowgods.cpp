@@ -414,6 +414,8 @@ namespace Win32
     local_func void
         DisplayBufferInWindow(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
+        TIMED_SCOPE(0);
+        
         bool renderThroughHardware { true };
         if (renderThroughHardware)
         {
@@ -879,7 +881,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
         
         if (window && WindowContext)
         {
-            
 #if DEVELOPMENT_BUILD
             void* baseAddress { (void*)Terabytes(2) };
 #else
@@ -893,6 +894,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Dbg::Game_Replay_State GameReplayState {};
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
+            
+            AddTranslationUnitTimedScopesArray(timedScopes_platformLayer);
             
             void* gameMemoryPtr = VirtualAlloc(baseAddress, Gigabytes(1) + Megabytes(64), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); //TODO: Add large page support?)
             void* debugMemoryPtr = VirtualAlloc((void*)(((u8*)baseAddress) + (Gigabytes(1) + Megabytes(64)) + 1), Megabytes(50) + Kilobytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -1003,6 +1006,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 Win32::ProcessPendingMessages($(Input), $(GameReplayState));
                 
                 { //Poll GamePad Input(s)
+                    TIMED_SCOPE(0);
+                    
                     for (DWORD ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     {
                         Game_Controller* MyGamePad = &Input.Controllers[ControllerIndex + 1]; //Since index 0 is reserved for keyboard
@@ -1073,6 +1078,8 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             
             while (GameRunning)
             {
+                TIMED_SCOPE(0);
+                
                 Win32::Window_Dimension windowDimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
                 Win32::ResizeDIBSection($(globalBackBuffer_forSoftwareRendering), windowDimension.width, windowDimension.height);
@@ -1156,3 +1163,5 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     
     return 0;
 }
+
+TimedScopeInfo timedScopes_platformLayer[__COUNTER__];

@@ -1,13 +1,18 @@
 
 #include <stdio.h>
+#include <assert.h>
 #include "intrinsics.h"
 #include "debug.h"
 
-TimedScopeInfo scopeInfoArray[];
+TimedScopeInfo* translationUnitScopeArrays[2];
+int translationUnitScopeArrayCount = 0;
 
-void BeginTimer(Timer* timer, int counter, char* fileName, char* functionName, int lineNumber, int hitCountInit)
+//#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+
+void BeginTimer(Timer* timer, int translationUnitIndex, int counter, char* fileName, char* functionName, int lineNumber, int hitCountInit)
 {
-    timer->scopeInfo = scopeInfoArray + counter;
+    TimedScopeInfo* timedScopesArray = translationUnitScopeArrays[translationUnitIndex];
+    timer->scopeInfo = timedScopesArray  + counter;
     
     timer->scopeInfo->fileName = fileName;
     timer->scopeInfo->functionName = functionName;
@@ -31,4 +36,10 @@ void EndTimer(Timer* timer)
     printf("hit count: %llu\n", (unsigned long long)timer->scopeInfo->hitCount_cyclesElapsed >> 40);
     printf("cylces to complete: %llu\n\n", ((unsigned long long)timer->scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF));
 #endif
+};
+
+void AddTranslationUnitTimedScopesArray(TimedScopeInfo* timedScopesArray)
+{
+    assert(translationUnitScopeArrayCount < 2);
+    translationUnitScopeArrays[translationUnitScopeArrayCount++] = timedScopesArray;
 };
