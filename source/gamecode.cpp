@@ -441,25 +441,63 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
         
         int myInt4 = myInt2 - myInt2;
     };
-    
-    EndOfFrame_ResetTimingInfo();
 };
 
 TimedScopeInfo timedScopes_gameLayer[__COUNTER__];
 
-void EndOfFrame_ResetTimingInfo()
+void EndOfFrame_ResetTimingInfo(MemoryBlock* debugMemory)
 {
-    local_persist int frameCount{};
+    //Store frame debug information
+    DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
     
-    if(frameCount == 120)
+    if(NOT debugMemory->initialized)
     {
+        debugMemory->initialized = true;
+        
         for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
         {
             TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
             
+            debugState->timedScopesInCode[i].fileName = scopeInfo->fileName;
+            debugState->timedScopesInCode[i].functionName = scopeInfo->functionName;
+            debugState->timedScopesInCode[i].lineNumber = scopeInfo->lineNumber;
+            ++debugState->timedScopeCount;
+        };
+    };
+    
+    if(debugState->timedScopesInCode[0].timeStampCount < 100)
+    {
+        for(int i{}; i < debugState->timedScopeCount; ++i)
+        {
+            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
+            
+            DebugTimeStamp* timeStamp = &debugState->timedScopesInCode[i].timeStamps[debugState->timedScopesInCode[i].timeStampCount];
+            
+            timeStamp->cycleCount = scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF;
+            timeStamp->hitCount = scopeInfo->hitCount_cyclesElapsed >> 40;
+            
+            ++debugState->timedScopesInCode[i].timeStampCount;
+        };
+    }
+    else
+    {
+        //Max time stamps have been captured so begin new timestamp capture cycle
+        for(int i{}; i < debugState->timedScopeCount; ++i)
+        {
+            debugState->timedScopesInCode[i].timeStampCount = 0;
+        };
+    };
+    
+    local_persist int frameCount{};
+    if(frameCount == 120)
+    {
+        for(int i{}; i < debugState->timedScopeCount; ++i)
+        {
+            TimedScope* scopeInfo = &debugState->timedScopesInCode[i];
+            
             printf("In %s ", scopeInfo->fileName);
             printf("%s on line %i took ", scopeInfo->functionName, scopeInfo->lineNumber);
-            printf("%llu cycles this frame - hit count: %llu\n", ((unsigned long long)scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF), (unsigned long long)scopeInfo->hitCount_cyclesElapsed >> 40);
+            printf("%llu cycles this frame - hit count: %llu\n", ((unsigned long long)scopeInfo->timeStamps[0].cycleCount), (unsigned long long)scopeInfo->timeStamps[0].hitCount);
         };
         
         frameCount = 0;
@@ -477,7 +515,7 @@ void EndOfFrame_ResetTimingInfo()
     ++frameCount;
 };
 
-
 extern "C" void DebugFrameEnd(MemoryBlock* debugMemory)
 {
+    EndOfFrame_ResetTimingInfo(debugMemory);
 };

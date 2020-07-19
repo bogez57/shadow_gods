@@ -43,9 +43,31 @@ struct TimedScopeInfo
 
 struct Timer
 {
-    uint64_t startCycles_count{};
+    uint64_t initialCycleCount{};
     uint32_t hitCountInit{};
     TimedScopeInfo* scopeInfo{};
+};
+
+struct DebugTimeStamp
+{
+    uint64_t cycleCount{};
+    uint64_t hitCount{};
+};
+
+struct TimedScope
+{
+    char* fileName{};
+    char* functionName{};
+    int lineNumber{};
+    
+    int timeStampCount{100};
+    DebugTimeStamp timeStamps[100];
+};
+
+struct DebugState
+{
+    int timedScopeCount{};
+    TimedScope timedScopesInCode[200];
 };
 
 TimedScopeInfo timedScopes_gameLayer[];

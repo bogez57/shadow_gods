@@ -898,13 +898,14 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             AddTranslationUnitTimedScopesArray(timedScopes_platformLayer);
             
             void* gameMemoryPtr = VirtualAlloc(baseAddress, Gigabytes(1) + Megabytes(64), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); //TODO: Add large page support?)
-            void* debugMemoryPtr = VirtualAlloc((void*)(((u8*)baseAddress) + (Gigabytes(1) + Megabytes(64)) + 1), Megabytes(50) + Kilobytes(1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            void* debugMemoryPtr = VirtualAlloc((void*)(((u8*)baseAddress) + (Gigabytes(1) + Megabytes(64)) + 1), Megabytes(1) + Megabytes(499), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             if(!gameMemoryPtr) Win32::Dbg::LogErr("Virtual Alloc Failed!");
             if(!debugMemoryPtr) Win32::Dbg::LogErr("Virtual Alloc Failed!");
             
             InitMemoryBlock(&gameMemory, Gigabytes(1), Megabytes(64), gameMemoryPtr);
-            InitMemoryBlock(&debugMemory, Megabytes(50), Kilobytes(1), debugMemoryPtr);
+            InitMemoryBlock(&debugMemory, Megabytes(1), Megabytes(499), debugMemoryPtr);
             
+            //Partition game memory
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "frame");
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "level");
             CreatePartitionFromMemoryBlock($(gameMemory), Megabytes(100), "platform");
@@ -1140,7 +1141,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 
                 FramePerformanceTimer.UpdateTimeCount();
                 
-                GameCode.DebugFrameEnd(&gameMemory);
+                GameCode.DebugFrameEnd(&debugMemory);
                 
                 IsAllTempMemoryCleared(platformMemoryPart);
             };
