@@ -44,7 +44,8 @@ struct Game_State
 {
     Fighter3D fighter0{};
     Fighter3D fighter1{};
-    Camera3D camera{};
+    Camera3D camera3d{};
+    Camera2D camera2d{};
     Image composite;
     Image normalMap;
     Atlas* atlas;

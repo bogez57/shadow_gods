@@ -331,11 +331,13 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     Stage_Data* stage = &gState->stage;
     Fighter3D* fighter0 = &gState->fighter0;
     Fighter3D* fighter1 = &gState->fighter1;
-    Camera3D* camera = &gState->camera;
+    Camera3D* camera3d = &gState->camera3d;
+    Camera2D* camera2d = &gState->camera2d;
     
     Memory_Partition* framePart = GetMemoryPartition(gameMemory, "frame");
     Memory_Partition* levelPart = GetMemoryPartition(gameMemory, "level");
     
+    //TODO: Get software renderer running again so I can draw rectangles again
     if (NOT gameMemory->initialized)
     {
         AddTranslationUnitTimedScopesArray(timedScopes_gameLayer);
@@ -356,10 +358,19 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
         stage->size.width = WidthInMeters(stage->backgroundImg, stage->size.height);
         stage->centerPoint = { (f32)WidthInMeters(stage->backgroundImg, stage->size.height) / 2, (f32)stage->size.height / 2 };
         
+#if 0
         //Camera Init
-        camera->worldPos = {0.0f, 0.0f, -7.0f};
-        camera->rotation = {0.0f, 0.0f, 0.0f};
+        camera3d->worldPos = {0.0f, 0.0f, -7.0f};
+        camera3d->rotation = {0.0f, 0.0f, 0.0f};
+#endif
         
+        f32 heightOfScreen_meters = 720.0f / global_renderingInfo->_pixelsPerMeter;
+        f32 widthMeters = (heightOfScreen_meters * stage->backgroundImg.aspectRatio)/2.0f;
+        camera2d->lookAt = v2{widthMeters, heightOfScreen_meters/2.0f};
+        camera2d->dilatePointOffset_normalized = {0.0f, -0.3f};
+        camera2d->zoomFactor = 1.0f;
+        
+#if 0
         InitArr($(fighter0->mesh.vertAttribs), levelPart, 100);
         
         fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(-.5f * 2.0f); fighter0->mesh.vertAttribs.Push(0.0f * 2.0f);//0
@@ -400,30 +411,53 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
         fighter0->textureID = LoadTexture(global_renderingInfo, fighterTexture);
         
         fighter0->worldTransform.translation = {+1.0f, 0.0f, 0.0f};
+#endif
     };
     
     if(KeyHeld(keyboard->MoveRight))
     {
-        fighter0->worldTransform.translation.x += 0.1f;
+        //fighter0->worldTransform.translation.x += 0.1f;
     };
     
-    UpdateCamera3D(global_renderingInfo, camera->worldPos, camera->rotation);
+    //UpdateCamera3D(global_renderingInfo, camera3d->worldPos, camera3d->rotation);
+    UpdateCamera2D(global_renderingInfo, camera2d->lookAt,  camera2d->zoomFactor);
     
     TestFunc2();
     
     { //Render
         //Push background
         TIMED_SCOPE(1);
-#if 0
+        
+#if 1
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
         Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
+        PushRect(global_renderingInfo, targetRect_worldCoords, v3{0.0f, 1.0f, 0.4f});
 #endif
         
-        TIMED_SCOPE(1);
+        //Render previous frame data
+        if(debugMemory->initialized)
+        {
+            DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
+            
+            //Just take aggregate of all scope times and display as rect for now
+            u64 totalFrameCycleCount{};
+            for(int i{}; i < debugState->timedScopeCount; ++i)
+            {
+                TimedScope* scopeInfo = &debugState->timedScopesInCode[i];
+                
+                totalFrameCycleCount += scopeInfo->timeStamps[scopeInfo->timeStampCount].cycleCount;
+            };
+            
+            Quadf worldPos{v2{1.0f, 1.0f}, v2{2.0f, 1.0f}, v2{2.0f, 3.0f}, v2{1.0f, 3.0f}};
+            PushRect(global_renderingInfo, worldPos, v3{1.0f, 0.0f, 0.0f});
+        };
+        
+#if 0
         //World Transform
         Mat4x4 fighter0_worldTransformMatrix = ProduceWorldTransformMatrix(fighter0->worldTransform.translation, fighter0->worldTransform.rotation, fighter0->worldTransform.scale);
         Mat4x4 fighter1_worldTransformMatrix = ProduceWorldTransformMatrix(fighter1->worldTransform.translation, fighter1->worldTransform.rotation, fighter1->worldTransform.scale);
         PushGeometry(global_renderingInfo, fighter0->id, fighter0->textureID, fighter0->mesh.indicies, fighter0_worldTransformMatrix);
+#endif
         
         IsAllTempMemoryCleared(framePart);
         IsAllTempMemoryCleared(levelPart);
@@ -432,39 +466,12 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
         if (gState->isLevelOver)
             Release($(*levelPart));
     };
-    
-    {
-        TIMED_SCOPE(1);
-        int myInt1 = 3;
-        int myInt2 = 3;
-        int myInt3 = 3;
-        
-        int myInt4 = myInt2 - myInt2;
-    };
 };
 
 TimedScopeInfo timedScopes_gameLayer[__COUNTER__];
 
-void EndOfFrame_ResetTimingInfo(MemoryBlock* debugMemory)
+void UpdateDebugState(DebugState* debugState)
 {
-    //Store frame debug information
-    DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
-    
-    if(NOT debugMemory->initialized)
-    {
-        debugMemory->initialized = true;
-        
-        for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
-        {
-            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
-            
-            debugState->timedScopesInCode[i].fileName = scopeInfo->fileName;
-            debugState->timedScopesInCode[i].functionName = scopeInfo->functionName;
-            debugState->timedScopesInCode[i].lineNumber = scopeInfo->lineNumber;
-            ++debugState->timedScopeCount;
-        };
-    };
-    
     if(debugState->timedScopesInCode[0].timeStampCount < 100)
     {
         for(int i{}; i < debugState->timedScopeCount; ++i)
@@ -487,7 +494,10 @@ void EndOfFrame_ResetTimingInfo(MemoryBlock* debugMemory)
             debugState->timedScopesInCode[i].timeStampCount = 0;
         };
     };
-    
+};
+
+void DrawDebugInfo(DebugState* debugState)
+{
     local_persist int frameCount{};
     if(frameCount == 120)
     {
@@ -503,19 +513,40 @@ void EndOfFrame_ResetTimingInfo(MemoryBlock* debugMemory)
         frameCount = 0;
         printf("\n\n");
     }
-    else
-    {
-        for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
-        {
-            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
-            scopeInfo->hitCount_cyclesElapsed = 0;//This is the only thing we have to reset currently as everything else just gets overwritten every frame
-        };
-    };
     
     ++frameCount;
 };
 
+void EndOfFrame_ResetTimingInfo()
+{
+    for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
+    {
+        TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
+        scopeInfo->hitCount_cyclesElapsed = 0;//This is the only thing we have to reset currently as everything else just gets overwritten every frame
+    };
+};
+
 extern "C" void DebugFrameEnd(MemoryBlock* debugMemory)
 {
-    EndOfFrame_ResetTimingInfo(debugMemory);
+    //Store frame debug information
+    DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
+    
+    if(NOT debugMemory->initialized)
+    {
+        debugMemory->initialized = true;
+        
+        for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
+        {
+            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
+            
+            debugState->timedScopesInCode[i].fileName = scopeInfo->fileName;
+            debugState->timedScopesInCode[i].functionName = scopeInfo->functionName;
+            debugState->timedScopesInCode[i].lineNumber = scopeInfo->lineNumber;
+            ++debugState->timedScopeCount;
+        };
+    };
+    
+    UpdateDebugState(debugState);
+    DrawDebugInfo(debugState);
+    EndOfFrame_ResetTimingInfo();
 };

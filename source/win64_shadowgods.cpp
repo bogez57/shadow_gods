@@ -416,7 +416,7 @@ namespace Win32
     {
         TIMED_SCOPE(0);
         
-        bool renderThroughHardware { true };
+        bool renderThroughHardware { false };
         if (renderThroughHardware)
         {
             RenderViaHardware($(renderingInfo), platformMemoryPart, windowWidth, windowHeight);
