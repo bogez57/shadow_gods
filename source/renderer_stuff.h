@@ -468,6 +468,18 @@ f32 BitmapHeight_Meters(Rendering_Info renderingInfo, Image bitmap)
     return bitmap.height_pxls / renderingInfo._pixelsPerMeter;
 };
 
+Quadf _ProduceQuadFromBottomLeftPoint(v2 originPoint, f32 width, f32 height)
+{
+    Quadf Result;
+    
+    Result.bottomLeft = originPoint;
+    Result.bottomRight = { originPoint.x + width, originPoint.y };
+    Result.topRight = { originPoint.x + width, originPoint.y + height };
+    Result.topLeft = { originPoint.x, originPoint.y + height };
+    
+    return Result;
+};
+
 #endif //GAME_RENDERER_STUFF_IMPL
 
 #ifdef PLATFORM_RENDERER_STUFF_IMPL
@@ -622,20 +634,6 @@ Quadf _ProduceQuadFromBottomMidPoint(v2 originPoint, f32 width, f32 height)
     result.topLeft = { originPoint.x - (width / 2.0f), originPoint.y + height };
     
     return result;
-};
-
-local_func
-Quadf
-_ProduceQuadFromBottomLeftPoint(v2 originPoint, f32 width, f32 height)
-{
-    Quadf Result;
-    
-    Result.bottomLeft = originPoint;
-    Result.bottomRight = { originPoint.x + width, originPoint.y };
-    Result.topRight = { originPoint.x + width, originPoint.y + height };
-    Result.topLeft = { originPoint.x, originPoint.y + height };
-    
-    return Result;
 };
 
 #endif //PLATFORM_RENDERER_STUFF_IMPL

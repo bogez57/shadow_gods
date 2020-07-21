@@ -1141,9 +1141,9 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 
                 FramePerformanceTimer.UpdateTimeCount();
                 
-                GameCode.DebugFrameEnd(&debugMemory);
-                
                 IsAllTempMemoryCleared(platformMemoryPart);
+                
+                GameCode.DebugFrameEnd(&debugMemory);
             };
             
             //Hardware Rendering shutdown procedure

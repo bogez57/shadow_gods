@@ -1,9 +1,9 @@
 //TODO: don't use member functions
 template <typename Type, s64 size>
-class Ring_Buffer
+class StaticRingBuffer
 {
     public:
-    Ring_Buffer() = default;
+    StaticRingBuffer() = default;
     
     void PushBack(Type elem)
     {

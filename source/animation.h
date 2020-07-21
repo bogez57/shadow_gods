@@ -161,7 +161,7 @@ struct AnimationQueue
     
     bool hasIdleAnim { false };
     Animation idleAnim;
-    Ring_Buffer<Animation, 10> queuedAnimations;
+    StaticRingBuffer<Animation, 10> queuedAnimations;
 };
 
 void InitAnimData(AnimationData&& animData, Memory_Partition&& memPart, const char* animDataJsonFilePath, Skeleton skel);
