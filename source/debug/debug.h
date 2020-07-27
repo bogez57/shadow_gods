@@ -70,20 +70,21 @@ struct DebugState
     TimedScope timedScopesInCode[200];
 };
 
-TimedScopeInfo timedScopes_gameLayer[];
-TimedScopeInfo timedScopes_platformLayer[];
+#define MAX_DEBUG_EVENT_COUNT 65533
+uint64_t eventArrIndex;
+uint64_t numEvents;
+TimedScopeInfo debugEventArray[MAX_DEBUG_EVENT_COUNT];
 
-extern TimedScopeInfo* translationUnitScopeArrays[2];
-extern int translationUnitScopeArrayCount;
-
-void BeginTimer(Timer* timer, int translationUnitIndex, int counter, char* fileName, char* functionName, int lineNumber, int hitCountInit = 1);
-void EndTimer(Timer* timer);
-void EndOfFrame_ResetTimingInfo();
-void AddTranslationUnitTimedScopesArray(TimedScopeInfo* scopeInfoArray);
+__declspec(dllexport) void BeginTimer(Timer* timer, int counter, char* fileName, char* functionName, int lineNumber, int hitCountInit = 1);
+__declspec(dllexport) void EndTimer(Timer* timer);
+__declspec(dllexport) void EndOfFrame_ResetTimingInfo();
+__declspec(dllexport) void UpdateDebugState(DebugState* debugState);
+__declspec(dllexport) void EndOfFrame_ResetTimingInfo();
+__declspec(dllexport) void InitDebugState(DebugState* debugState);
 
 //This macro stuff makes it so you can define multiple TIME_SCOPEs in a block. Also has built in compile check so you can't declare 2 TIME_SCOPEs on same line
-#define TIMED_SCOPE__(translationUnitIndex, number, ...) Timer timer_##number{}; BeginTimer(&timer_##number, translationUnitIndex, __COUNTER__, __FILE__, __FUNCTION__, __LINE__, ## __VA_ARGS__); defer { EndTimer(&timer_##number); }
-#define TIMED_SCOPE_(translationUnitIndex, number, ...) TIMED_SCOPE__(translationUnitIndex, number, ## __VA_ARGS__)
-#define TIMED_SCOPE(translationUnitIndex, ...) TIMED_SCOPE_(translationUnitIndex, __LINE__, ## __VA_ARGS__)
+#define TIMED_SCOPE__(number, ...) Timer timer_##number{}; BeginTimer(&timer_##number,__COUNTER__, __FILE__, __FUNCTION__, __LINE__, ## __VA_ARGS__); defer { EndTimer(&timer_##number); }
+#define TIMED_SCOPE_(number, ...) TIMED_SCOPE__(number, ## __VA_ARGS__)
+#define TIMED_SCOPE(...) TIMED_SCOPE_(__LINE__, ## __VA_ARGS__)
 
 #endif

@@ -414,7 +414,7 @@ namespace Win32
     local_func void
         DisplayBufferInWindow(Rendering_Info&& renderingInfo, Memory_Partition* platformMemoryPart, HDC deviceContext, int windowWidth, int windowHeight, Platform_Services platformServices)
     {
-        TIMED_SCOPE(0);
+        TIMED_SCOPE();
         
         bool renderThroughHardware { false };
         if (renderThroughHardware)
@@ -895,8 +895,6 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             Win32::Game_Code GameCode { Win32::Dbg::LoadGameCodeDLL("w:/shadow_gods/build/gamecode.dll") };
             BGZ_ASSERT(GameCode.DLLHandle, "Invalide DLL Handle!");
             
-            AddTranslationUnitTimedScopesArray(timedScopes_platformLayer);
-            
             void* gameMemoryPtr = VirtualAlloc(baseAddress, Gigabytes(1) + Megabytes(64), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); //TODO: Add large page support?)
             void* debugMemoryPtr = VirtualAlloc((void*)(((u8*)baseAddress) + (Gigabytes(1) + Megabytes(64)) + 1), Megabytes(1) + Megabytes(499), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
             if(!gameMemoryPtr) Win32::Dbg::LogErr("Virtual Alloc Failed!");
@@ -1007,7 +1005,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
                 Win32::ProcessPendingMessages($(Input), $(GameReplayState));
                 
                 { //Poll GamePad Input(s)
-                    TIMED_SCOPE(0);
+                    TIMED_SCOPE();
                     
                     for (DWORD ControllerIndex = 0; ControllerIndex < ArrayCount(Input.Controllers); ++ControllerIndex)
                     {
@@ -1079,7 +1077,7 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
             
             while (GameRunning)
             {
-                TIMED_SCOPE(0);
+                TIMED_SCOPE();
                 
                 Win32::Window_Dimension windowDimension = Win32::GetWindowDimension(window);
                 HDC deviceContext = GetDC(window);
@@ -1164,5 +1162,3 @@ int CALLBACK WinMain(HINSTANCE CurrentProgramInstance, HINSTANCE PrevInstance, L
     
     return 0;
 }
-
-TimedScopeInfo timedScopes_platformLayer[__COUNTER__];

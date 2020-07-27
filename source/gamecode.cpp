@@ -223,7 +223,7 @@ f32 WidthInMeters(Image bitmap, f32 heightInMeters)
 
 void TestFunc()
 {
-    TIMED_SCOPE(1);
+    TIMED_SCOPE();
     
     int x = 3;
     x = 34;
@@ -340,11 +340,7 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     //TODO: Get software renderer running again so I can draw rectangles again
     if (NOT gameMemory->initialized)
     {
-        AddTranslationUnitTimedScopesArray(timedScopes_gameLayer);
-        
-        TIMED_SCOPE(1);
-        
-        TestFunc2();
+        TestFunc();
         
         gameMemory->initialized = true;
         
@@ -426,7 +422,6 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     
     { //Render
         //Push background
-        TIMED_SCOPE(1);
         
 #if 1
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
@@ -434,56 +429,8 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
         PushRect(global_renderingInfo, targetRect_worldCoords, v3{0.0f, 1.0f, 0.4f});
 #endif
         
-        //Render previous frame data
-        if(debugMemory->initialized)
-        {
-            struct FrameBar
-            {
-                f32 width{.4f};
-                f32 startingHeight{1.2f};
-                f32 currentHeight{1.2f};
-                v2 worldPos{.4f, .4f};
-            };
+        {//Print out previous frame debug data
             
-            DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
-            
-            //Just take aggregate of all scope times and display as rect for now
-            u64 totalFrameCycleCount{};
-            for(int i{}; i < debugState->timedScopeCount; ++i)
-            {
-                TimedScope* scopeInfo = &debugState->timedScopesInCode[i];
-                totalFrameCycleCount += scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].cycleCount;
-            };
-            BGZ_CONSOLE("Total cycles: %llu\n", totalFrameCycleCount);
-            f32 frameCycleCountNormalized = (f32)((double)totalFrameCycleCount / 2000000.0);
-            
-            local_persist FrameBar frameBars[20];
-            local_persist s32 frameBarIndex{};
-            local_persist bool frameBarBufInit{false};
-            
-            if(NOT frameBarBufInit)
-            {
-                f32 frameBar_perFrameMoveDistance{frameBars[0].width + .3f};
-                frameBarBufInit = true;
-                
-                for(s32 i{}; i < 20; ++i)
-                {
-                    frameBars[i].worldPos.x += (frameBar_perFrameMoveDistance * i);
-                };
-            };
-            
-            frameBars[frameBarIndex].currentHeight = frameBars[frameBarIndex].startingHeight * frameCycleCountNormalized;
-            
-            for(s32 i{}; i < 20; ++i)
-            {
-                Quadf frameBar_newWorldPos = _ProduceQuadFromBottomLeftPoint(frameBars[i].worldPos, frameBars[i].width, frameBars[i].currentHeight);
-                PushRect(global_renderingInfo, frameBar_newWorldPos, v3{1.0f, 0.0f, 0.0f});
-            };
-            
-            if(frameBarIndex < 20)
-                ++frameBarIndex;
-            else
-                frameBarIndex = 0;
         };
         
 #if 0
@@ -502,43 +449,6 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
     };
 };
 
-TimedScopeInfo timedScopes_gameLayer[__COUNTER__];
-
-void UpdateDebugState(DebugState* debugState)
-{
-    if(debugState->timedScopesInCode[0].timeStampCount < 100)
-    {
-        for(int i{}; i < debugState->timedScopeCount; ++i)
-        {
-            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
-            
-            DebugTimeStamp* timeStamp = &debugState->timedScopesInCode[i].timeStamps[debugState->timedScopesInCode[i].timeStampCount];
-            
-            timeStamp->cycleCount = scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF;
-            timeStamp->hitCount = scopeInfo->hitCount_cyclesElapsed >> 40;
-            
-            ++debugState->timedScopesInCode[i].timeStampCount;
-        };
-    }
-    else
-    {
-        //Max time stamps have been captured so begin new timestamp capture cycle
-        for(int i{}; i < debugState->timedScopeCount; ++i)
-        {
-            debugState->timedScopesInCode[i].timeStampCount = 0;
-        };
-    };
-};
-
-void EndOfFrame_ResetTimingInfo()
-{
-    for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
-    {
-        TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
-        scopeInfo->hitCount_cyclesElapsed = 0;//This is the only thing we have to reset currently as everything else just gets overwritten every frame
-    };
-};
-
 extern "C" void DebugFrameEnd(MemoryBlock* debugMemory)
 {
     //Store frame debug information
@@ -547,18 +457,70 @@ extern "C" void DebugFrameEnd(MemoryBlock* debugMemory)
     if(NOT debugMemory->initialized)
     {
         debugMemory->initialized = true;
-        
-        for(int i{}; i < ArrayCount(timedScopes_gameLayer); ++i)
-        {
-            TimedScopeInfo* scopeInfo = timedScopes_gameLayer + i;
-            
-            debugState->timedScopesInCode[i].fileName = scopeInfo->fileName;
-            debugState->timedScopesInCode[i].functionName = scopeInfo->functionName;
-            debugState->timedScopesInCode[i].lineNumber = scopeInfo->lineNumber;
-            ++debugState->timedScopeCount;
-        };
+        InitDebugState(debugState);
     };
     
     UpdateDebugState(debugState);
     EndOfFrame_ResetTimingInfo();
 };
+
+#if 0
+//Render previous frame data
+if(debugMemory->initialized)
+{
+    struct FrameBar
+    {
+        f32 width{.4f};
+        f32 startingHeight{1.2f};
+        f32 currentHeight{1.2f};
+        v2 worldPos{.4f, .4f};
+    };
+    
+    DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
+    
+    //Just take aggregate of all scope times and display as rect for now
+    u64 totalFrameCycleCount{};
+    for(int i{}; i < debugState->timedScopeCount; ++i)
+    {
+        TimedScope* scopeInfo = &debugState->timedScopesInCode[i];
+        
+        printf("fileName: %s\n", scopeInfo->fileName);
+        printf("functionName: %s\n", scopeInfo->functionName);
+        printf("line number: %i\n", scopeInfo->lineNumber);
+        printf("hit count: %llu\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].hitCount);
+        printf("cylces to complete: %llu\n\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].cycleCount);
+        
+        totalFrameCycleCount += scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].cycleCount;
+    };
+    BGZ_CONSOLE("Total cycles: %llu ----------------- \n\n", totalFrameCycleCount);
+    f32 frameCycleCountNormalized = (f32)((double)totalFrameCycleCount / 2000000.0);
+    
+    local_persist FrameBar frameBars[20];
+    local_persist s32 frameBarIndex{};
+    local_persist bool frameBarBufInit{false};
+    
+    if(NOT frameBarBufInit)
+    {
+        f32 frameBar_perFrameMoveDistance{frameBars[0].width + .3f};
+        frameBarBufInit = true;
+        
+        for(s32 i{}; i < 20; ++i)
+        {
+            frameBars[i].worldPos.x += (frameBar_perFrameMoveDistance * i);
+        };
+    };
+    
+    frameBars[frameBarIndex].currentHeight = frameBars[frameBarIndex].startingHeight * frameCycleCountNormalized;
+    
+    for(s32 i{}; i < 20; ++i)
+    {
+        Quadf frameBar_newWorldPos = _ProduceQuadFromBottomLeftPoint(frameBars[i].worldPos, frameBars[i].width, frameBars[i].currentHeight);
+        PushRect(global_renderingInfo, frameBar_newWorldPos, v3{1.0f, 0.0f, 0.0f});
+    };
+    
+    if(frameBarIndex < 20)
+        ++frameBarIndex;
+    else
+        frameBarIndex = 0;
+};
+#endif

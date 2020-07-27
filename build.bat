@@ -28,7 +28,7 @@ pushd build
 
 REM build debug lib
 cl /c ..\source\debug\debug.cpp %CommonCompilerFlags%
-link debug.obj -dll -OUT:debugdll.dll -debug -machine:x64 -incremental:no -nologo -opt:ref -export:BeginTimer -export:EndTimer -export:AddTranslationUnitTimedScopesArray
+link debug.obj -dll -OUT:debugdll.dll -debug -machine:x64 -incremental:no -nologo -opt:ref
 
 REM Clear out pdb files so build directory doesn't get too huge and build app DLL
 REM del *.pdb > NUL 2> NUL

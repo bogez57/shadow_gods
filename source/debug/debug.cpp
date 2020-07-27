@@ -4,15 +4,10 @@
 #include "intrinsics.h"
 #include "debug.h"
 
-TimedScopeInfo* translationUnitScopeArrays[2];
-int translationUnitScopeArrayCount = 0;
-
-//#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
-
-void BeginTimer(Timer* timer, int translationUnitIndex, int counter, char* fileName, char* functionName, int lineNumber, int hitCountInit)
+void BeginTimer(Timer* timer, int counter, char* fileName, char* functionName, int lineNumber, int hitCountInit)
 {
-    TimedScopeInfo* timedScopesArray = translationUnitScopeArrays[translationUnitIndex];
-    timer->scopeInfo = timedScopesArray  + counter;
+    timer->scopeInfo = debugEventArray + numEvents;
+    ThreadSafeAdd(&numEvents, 1);
     
     timer->scopeInfo->fileName = fileName;
     timer->scopeInfo->functionName = functionName;
@@ -38,8 +33,52 @@ void EndTimer(Timer* timer)
 #endif
 };
 
-void AddTranslationUnitTimedScopesArray(TimedScopeInfo* timedScopesArray)
+void UpdateDebugState(DebugState* debugState)
 {
-    assert(translationUnitScopeArrayCount < 2);
-    translationUnitScopeArrays[translationUnitScopeArrayCount++] = timedScopesArray;
+    if(debugState->timedScopesInCode[0].timeStampCount < 100)
+    {
+        for(int i{}; i < debugState->timedScopeCount; ++i)
+        {
+            TimedScopeInfo* scopeInfo = debugEventArray + i;
+            
+            DebugTimeStamp* timeStamp = &debugState->timedScopesInCode[i].timeStamps[debugState->timedScopesInCode[i].timeStampCount];
+            
+            timeStamp->cycleCount = scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF;
+            timeStamp->hitCount = scopeInfo->hitCount_cyclesElapsed >> 40;
+            
+            ++debugState->timedScopesInCode[i].timeStampCount;
+        };
+    }
+    else
+    {
+        //Max time stamps have been captured so begin new timestamp capture cycle
+        for(int i{}; i < debugState->timedScopeCount; ++i)
+        {
+            debugState->timedScopesInCode[i].timeStampCount = 0;
+        };
+    };
+};
+
+void EndOfFrame_ResetTimingInfo()
+{
+    for(int i{}; i < numEvents; ++i)
+    {
+        TimedScopeInfo* scopeInfo = debugEventArray + i;
+        scopeInfo->hitCount_cyclesElapsed = 0;//This is the only thing we have to reset currently as everything else just gets overwritten every frame
+    };
+    
+    numEvents = 0;
+};
+
+void InitDebugState(DebugState* debugState)
+{
+    for(int i{}; i < numEvents; ++i)
+    {
+        TimedScopeInfo* scopeInfo = debugEventArray + i;
+        
+        debugState->timedScopesInCode[i].fileName = scopeInfo->fileName;
+        debugState->timedScopesInCode[i].functionName = scopeInfo->functionName;
+        debugState->timedScopesInCode[i].lineNumber = scopeInfo->lineNumber;
+        ++debugState->timedScopeCount;
+    };
 };
