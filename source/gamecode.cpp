@@ -232,7 +232,7 @@ void TestFunc()
 
 void TestFunc2()
 {
-    for (int i {}; i < 10; ++i)
+    for (int i {}; i < 5; ++i)
         TestFunc();
 }
 
@@ -430,7 +430,21 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
 #endif
         
         {//Print out previous frame debug data
-            
+            if(debugMemory->initialized)
+            {
+                DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
+                
+                for(int i{}; i < debugState->timedScopeCount; ++i)
+                {
+                    TimedScope* scopeInfo = &debugState->timedScopesInCode[i];
+                    
+                    printf("fileName: %s\n", scopeInfo->fileName);
+                    printf("functionName: %s\n", scopeInfo->functionName);
+                    printf("line number: %i\n", scopeInfo->lineNumber);
+                    printf("hit count: %llu\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].hitCount);
+                    printf("cylces to complete: %llu\n\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].cycleCount);
+                };
+            }
         };
         
 #if 0

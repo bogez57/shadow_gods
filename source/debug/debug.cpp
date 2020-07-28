@@ -57,6 +57,8 @@ void UpdateDebugState(DebugState* debugState)
             debugState->timedScopesInCode[i].timeStampCount = 0;
         };
     };
+    
+    debugState->timedScopeCount = (int)numEvents;
 };
 
 void EndOfFrame_ResetTimingInfo()
