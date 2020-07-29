@@ -64,6 +64,8 @@ struct TimedScope
     DebugTimeStamp timeStamps[100];
 };
 
+//TODO: What is a good way to store debug state? since the actual scopes per frame may vary
+//Idea: DebugState contains all scopes ever recorded. Just need a way to index into the correct scope to update that particular scope
 struct DebugState
 {
     int timedScopeCount{};

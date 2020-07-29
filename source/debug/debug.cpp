@@ -35,14 +35,19 @@ void EndTimer(Timer* timer)
 
 void UpdateDebugState(DebugState* debugState)
 {
+    debugState->timedScopeCount = (int)numEvents;
+    
     if(debugState->timedScopesInCode[0].timeStampCount < 100)
     {
         for(int i{}; i < debugState->timedScopeCount; ++i)
         {
             TimedScopeInfo* scopeInfo = debugEventArray + i;
             
-            DebugTimeStamp* timeStamp = &debugState->timedScopesInCode[i].timeStamps[debugState->timedScopesInCode[i].timeStampCount];
+            debugState->timedScopesInCode[i].fileName = scopeInfo->fileName;
+            debugState->timedScopesInCode[i].functionName = scopeInfo->functionName;
+            debugState->timedScopesInCode[i].lineNumber = scopeInfo->lineNumber;
             
+            DebugTimeStamp* timeStamp = &debugState->timedScopesInCode[i].timeStamps[debugState->timedScopesInCode[i].timeStampCount];
             timeStamp->cycleCount = scopeInfo->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF;
             timeStamp->hitCount = scopeInfo->hitCount_cyclesElapsed >> 40;
             
@@ -57,8 +62,6 @@ void UpdateDebugState(DebugState* debugState)
             debugState->timedScopesInCode[i].timeStampCount = 0;
         };
     };
-    
-    debugState->timedScopeCount = (int)numEvents;
 };
 
 void EndOfFrame_ResetTimingInfo()
