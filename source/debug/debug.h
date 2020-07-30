@@ -29,8 +29,9 @@ Defer<F> operator+( defer_dummy, F&& f )
 
 #define defer auto _defer( __LINE__ ) = defer_dummy( ) + [ & ]( )
 
-struct TimedScopeInfo
+struct DebugEvent
 {
+    char* scopeName{};
     char* fileName{};
     char* functionName{};
     int lineNumber{};
@@ -45,7 +46,7 @@ struct Timer
 {
     uint64_t initialCycleCount{};
     uint32_t hitCountInit{};
-    TimedScopeInfo* scopeInfo{};
+    DebugEvent* debugEvent{};
 };
 
 struct DebugTimeStamp
@@ -54,8 +55,9 @@ struct DebugTimeStamp
     uint64_t hitCount{};
 };
 
-struct TimedScope
+struct StoredDebugEvent
 {
+    char* scopeName{};
     char* fileName{};
     char* functionName{};
     int lineNumber{};
@@ -68,16 +70,16 @@ struct TimedScope
 //Idea: DebugState contains all scopes ever recorded. Just need a way to index into the correct scope to update that particular scope
 struct DebugState
 {
-    int timedScopeCount{};
-    TimedScope timedScopesInCode[200];
+    int numStoredDebugEvents{};
+    StoredDebugEvent allStoredDebugEvents[200];
 };
 
 #define MAX_DEBUG_EVENT_COUNT 65533
 uint64_t eventArrIndex;
 uint64_t numEvents;
-TimedScopeInfo debugEventArray[MAX_DEBUG_EVENT_COUNT];
+DebugEvent currentFrameDebugEventArray[MAX_DEBUG_EVENT_COUNT];
 
-__declspec(dllexport) void BeginTimer(Timer* timer, int counter, char* fileName, char* functionName, int lineNumber, int hitCountInit = 1);
+__declspec(dllexport) void BeginTimer(Timer* timer, char* scopeName, char* fileName, char* functionName, int lineNumber, int hitCountInit = 1);
 __declspec(dllexport) void EndTimer(Timer* timer);
 __declspec(dllexport) void EndOfFrame_ResetTimingInfo();
 __declspec(dllexport) void UpdateDebugState(DebugState* debugState);
@@ -85,8 +87,8 @@ __declspec(dllexport) void EndOfFrame_ResetTimingInfo();
 __declspec(dllexport) void InitDebugState(DebugState* debugState);
 
 //This macro stuff makes it so you can define multiple TIME_SCOPEs in a block. Also has built in compile check so you can't declare 2 TIME_SCOPEs on same line
-#define TIMED_SCOPE__(number, ...) Timer timer_##number{}; BeginTimer(&timer_##number,__COUNTER__, __FILE__, __FUNCTION__, __LINE__, ## __VA_ARGS__); defer { EndTimer(&timer_##number); }
-#define TIMED_SCOPE_(number, ...) TIMED_SCOPE__(number, ## __VA_ARGS__)
-#define TIMED_SCOPE(...) TIMED_SCOPE_(__LINE__, ## __VA_ARGS__)
+#define TIMED_SCOPE__(scopeName, number, ...) Timer timer_##number{}; BeginTimer(&timer_##number, scopeName, __FILE__, __FUNCTION__, __LINE__, ## __VA_ARGS__); defer { EndTimer(&timer_##number); }
+#define TIMED_SCOPE_(scopeName, number, ...) TIMED_SCOPE__(scopeName, number, ## __VA_ARGS__)
+#define TIMED_SCOPE(...) TIMED_SCOPE_((char*)__FUNCTION__, __LINE__, ## __VA_ARGS__)
 
 #endif

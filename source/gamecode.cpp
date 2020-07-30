@@ -434,15 +434,15 @@ extern "C" void GameUpdate(MemoryBlock* gameMemory, MemoryBlock* debugMemory, Pl
             {
                 DebugState* debugState = (DebugState*)debugMemory->permanentStorage;
                 
-                for(int i{}; i < debugState->timedScopeCount; ++i)
+                for(int i{}; i < debugState->numStoredDebugEvents; ++i)
                 {
-                    TimedScope* scopeInfo = &debugState->timedScopesInCode[i];
+                    StoredDebugEvent* debugEvent = &debugState->allStoredDebugEvents[i];
                     
-                    printf("fileName: %s\n", scopeInfo->fileName);
-                    printf("functionName: %s\n", scopeInfo->functionName);
-                    printf("line number: %i\n", scopeInfo->lineNumber);
-                    printf("hit count: %llu\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].hitCount);
-                    printf("cylces to complete: %llu\n\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].cycleCount);
+                    printf("fileName: %s\n", debugEvent->fileName);
+                    printf("functionName: %s\n", debugEvent->functionName);
+                    printf("line number: %i\n", debugEvent->lineNumber);
+                    printf("hit count: %llu\n", (unsigned long long)debugEvent->timeStamps[debugEvent->timeStampCount - 1].hitCount);
+                    printf("cylces to complete: %llu\n\n", (unsigned long long)debugEvent->timeStamps[debugEvent->timeStampCount - 1].cycleCount);
                 };
             }
         };
@@ -494,17 +494,17 @@ if(debugMemory->initialized)
     
     //Just take aggregate of all scope times and display as rect for now
     u64 totalFrameCycleCount{};
-    for(int i{}; i < debugState->timedScopeCount; ++i)
+    for(int i{}; i < debugState->numStoredDebugEvents; ++i)
     {
-        TimedScope* scopeInfo = &debugState->timedScopesInCode[i];
+        StoredDebugEvent* debugEvent = &debugState->allStoredDebugEvents[i];
         
-        printf("fileName: %s\n", scopeInfo->fileName);
-        printf("functionName: %s\n", scopeInfo->functionName);
-        printf("line number: %i\n", scopeInfo->lineNumber);
-        printf("hit count: %llu\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].hitCount);
-        printf("cylces to complete: %llu\n\n", (unsigned long long)scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].cycleCount);
+        printf("fileName: %s\n", debugEvent->fileName);
+        printf("functionName: %s\n", debugEvent->functionName);
+        printf("line number: %i\n", debugEvent->lineNumber);
+        printf("hit count: %llu\n", (unsigned long long)debugEvent->timeStamps[debugEvent->timeStampCount - 1].hitCount);
+        printf("cylces to complete: %llu\n\n", (unsigned long long)debugEvent->timeStamps[debugEvent->timeStampCount - 1].cycleCount);
         
-        totalFrameCycleCount += scopeInfo->timeStamps[scopeInfo->timeStampCount - 1].cycleCount;
+        totalFrameCycleCount += debugEvent->timeStamps[debugEvent->timeStampCount - 1].cycleCount;
     };
     BGZ_CONSOLE("Total cycles: %llu ----------------- \n\n", totalFrameCycleCount);
     f32 frameCycleCountNormalized = (f32)((double)totalFrameCycleCount / 2000000.0);
