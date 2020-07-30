@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "intrinsics.h"
 #include "debug.h"
 
@@ -13,17 +14,12 @@ void BeginTimer(Timer* timer, char* scopeName, char* fileName, char* functionNam
     timer->debugEvent->fileName = fileName;
     timer->debugEvent->functionName = functionName;
     timer->debugEvent->lineNumber = lineNumber;
-    timer->hitCountInit = hitCountInit;
-    
-    timer->initialCycleCount = __rdtsc();
+    timer->debugEvent->startCycles = __rdtsc();
 };
 
 void EndTimer(Timer* timer)
 {
-    uint64_t endTime = __rdtsc();
-    uint64_t delta = ((endTime - timer->initialCycleCount) | ((uint64_t)timer->hitCountInit << 40));//So first 3 bytes are reserved for hit count number and last 5 bytes reserved for num of cycles elapsed
-    
-    ThreadSafeAdd(&timer->debugEvent->hitCount_cyclesElapsed, delta);
+    timer->debugEvent->endCycles = __rdtsc();
     
 #if 0
     printf("fileName: %s\n", timer->debugEvent->fileName);
@@ -51,8 +47,8 @@ void UpdateDebugState(DebugState* debugState)
                     debugState->allStoredDebugEvents[i].lineNumber = debugEvent->lineNumber;
                     
                     DebugTimeStamp* timeStamp = &debugState->allStoredDebugEvents[i].timeStamps[debugState->allStoredDebugEvents[i].timeStampCount];
-                    timeStamp->cycleCount += debugEvent->hitCount_cyclesElapsed & 0x000000FFFFFFFFFF;
-                    timeStamp->hitCount += debugEvent->hitCount_cyclesElapsed >> 40;
+                    timeStamp->cycleCount += debugEvent->endCycles - debugEvent->startCycles;
+                    timeStamp->hitCount += 1;
                 };
                 
                 if(j == (numEvents - 1))//Last iteration of loop
@@ -65,6 +61,7 @@ void UpdateDebugState(DebugState* debugState)
         //Max time stamps have been captured so begin new timestamp capture cycle
         for(int i{}; i < debugState->numStoredDebugEvents; ++i)
         {
+            memset(debugState->allStoredDebugEvents[i].timeStamps, 0, (debugState->allStoredDebugEvents[i].timeStampCount * sizeof(DebugTimeStamp)));
             debugState->allStoredDebugEvents[i].timeStampCount = 0;
         };
     };
@@ -75,7 +72,6 @@ void EndOfFrame_ResetTimingInfo()
     for(int i{}; i < numEvents; ++i)
     {
         DebugEvent* debugEvent = currentFrameDebugEventArray + i;
-        debugEvent->hitCount_cyclesElapsed = 0;//This is the only thing we have to reset currently as everything else just gets overwritten every frame
     };
     
     numEvents = 0;
