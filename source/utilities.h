@@ -93,20 +93,6 @@ RoundFloat32ToUInt32(f32 float32)
     return(result);
 }
 
-inline v2i
-RoundFloat32ToInt32(v2 floats)
-{
-    v2i result{};
-    
-    if(floats.x < 0.0f) result.x = (i32)(floats.x - 0.5f);
-    else result.x = (i32)(floats.x + .5f);
-    
-    if(floats.y < 0.0f) result.y = (i32)(floats.y - 0.5f);
-    else result.y = (i32)(floats.y + .5f);
-    
-    return result;
-}
-
 inline b32
 StringCmp(const char* str1, const char* str2)
 {

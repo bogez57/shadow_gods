@@ -12,7 +12,7 @@
 #if 0
 //For static images
 local_func void
-DrawImage(Image&& buffer, Rectf rect, Image image)
+DrawImage(Image&& buffer, Rect rect, Image image)
 {
     ui32* imagePixel = (ui32*)image.data;
     
@@ -78,7 +78,7 @@ DrawImage(Image&& buffer, Rectf rect, Image image)
 //do other fancier things. Though it will still scale)
 //TODO: Will probably end up removing and just combine with DrawImage call so there is just one imaging drawing func
 local_func void
-DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
+DrawBackground(Image&& buffer, Quad targetQuad, Image image)
 {
     ui32* imagePixel = (ui32*)image.data;
     
@@ -126,9 +126,9 @@ DrawBackground(Image&& buffer, Quadf targetQuad, Image image)
 #endif
 
 
-void DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3 rectColor, Rectf clipRect);
+void DrawRectangle(ui32* colorBufferData, v2 colorBufferSize, i32 colorBufferPitch, Quad targetRect_screenCoords, v3 rectColor, Rect clipRect);
 local_func void
-DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, v2 minPoint, v2 maxPoint, v3 lineColor, f32 thickness, Rectf clipRect)
+DrawLine(ui32* colorBufferData, v2 colorBufferSize, i32 colorBufferPitch, v2 minPoint, v2 maxPoint, v3 lineColor, f32 thickness, Rect clipRect)
 {
     v2 lineVector = maxPoint - minPoint;
     
@@ -141,7 +141,7 @@ DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, v2 mi
     v2 topLeft = maxPoint + normalPerpVec;
     v2 topRight = maxPoint - normalPerpVec;
     
-    Quadf targetRect_screenCoords{};
+    Quad targetRect_screenCoords{};
     targetRect_screenCoords.bottomLeft = bottomLeft;
     targetRect_screenCoords.bottomRight = bottomRight;
     targetRect_screenCoords.topLeft = topLeft;
@@ -151,7 +151,7 @@ DrawLine(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, v2 mi
 };
 
 local_func void
-DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, v3 rectColor, Rectf clipRect)
+DrawRectangle(ui32* colorBufferData, v2 colorBufferSize, i32 colorBufferPitch, Quad targetRect_screenCoords, v3 rectColor, Rect clipRect)
 {
     v2 origin = targetRect_screenCoords.bottomLeft;
     v2 targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
@@ -244,7 +244,7 @@ DrawRectangle(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, 
 };
 
 #include <immintrin.h>
-void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, RenderEntry_Texture image, Rectf clipRect)
+void DrawTexture_Optimized(ui32* colorBufferData, v2 colorBufferSize, i32 colorBufferPitch, Quad targetRect_screenCoords, RenderEntry_Texture image, Rect clipRect)
 {
     v2 origin = targetRect_screenCoords.bottomLeft;
     v2 targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
@@ -297,8 +297,8 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
     //Pre calcuations for optimization
     f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
     f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
-    i32 imageWidth = image.size.width - 3;
-    i32 imageHeight = image.size.height - 3;
+    i32 imageWidth = image.width - 3;
+    i32 imageHeight = image.height - 3;
     v2 normalizedXAxis = invertedXAxisSqd * targetRectXAxis;
     v2 normalizedYAxis = invertedYAxisSqd * targetRectYAxis;
     
@@ -376,8 +376,8 @@ void DrawTexture_Optimized(ui32* colorBufferData, v2i colorBufferSize, i32 color
             __m256i sampleTexelAs {}, sampleTexelBs {}, sampleTexelCs {}, sampleTexelDs {};
             for (i32 index {}; index < 8; ++index)
             {
-                BGZ_ASSERT((texelCoords_x.m256_f32[index] >= 0) && (texelCoords_x.m256_f32[index] <= (i32)image.size.width), "x coord is out of range!: ");
-                BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.size.height), "y coord is out of range!");
+                BGZ_ASSERT((texelCoords_x.m256_f32[index] >= 0) && (texelCoords_x.m256_f32[index] <= (i32)image.width), "x coord is out of range!: ");
+                BGZ_ASSERT((texelCoords_y.m256_f32[index] >= 0) && (texelCoords_y.m256_f32[index] <= (i32)image.height), "y coord is out of range!");
                 
                 //Gather 4 texels (in a square pattern) from certain texel Ptr
                 ui8* texelPtr = ((ui8*)image.colorData) + ((ui32)texelCoords_y.m256_f32[index] * image.pitch_pxls) + ((ui32)texelCoords_x.m256_f32[index] * sizeof(ui32)); //size of pixel
@@ -577,264 +577,7 @@ b IsBetween(f32 angleToCheck, f32 startAngle, f32 endAngle)
     return (angleToCheck < endAngle);
 };
 
-//TODO: Will eventually be removed
-local_func void
-DrawTexture_UnOptimized(ui32* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Quadf targetRect_screenCoords, RenderEntry_Texture texture, Rectf clipRect)
-{
-    auto Grab4NearestPixelPtrs_SquarePattern = [](ui8* pixelToSampleFrom, ui32 pitch) -> v4ui32 {
-        v4ui32 result {};
-        
-        result.x = *(ui32*)(pixelToSampleFrom);
-        result.y = *(ui32*)(pixelToSampleFrom + sizeof(ui32));
-        result.z = *(ui32*)(pixelToSampleFrom + pitch);
-        result.w = *(ui32*)(pixelToSampleFrom + pitch + sizeof(ui32));
-        
-        return result;
-    };
-    
-    auto BiLinearLerp = [](v4ui32 pixelsToLerp, f32 percentToLerpInX, f32 percentToLerpInY) -> v4 {
-        v4 newBlendedValue {};
-        v4 texelA = UnPackPixelValues(pixelsToLerp.x, BGRA);
-        v4 texelB = UnPackPixelValues(pixelsToLerp.y, BGRA);
-        v4 texelC = UnPackPixelValues(pixelsToLerp.z, BGRA);
-        v4 texelD = UnPackPixelValues(pixelsToLerp.w, BGRA);
-        
-        v4 ABLerpColor = Lerp(texelA, texelB, percentToLerpInX);
-        v4 CDLerpColor = Lerp(texelC, texelD, percentToLerpInX);
-        newBlendedValue = Lerp(ABLerpColor, CDLerpColor, percentToLerpInY);
-        
-        return newBlendedValue;
-    };
-    
-    v2 origin = targetRect_screenCoords.bottomLeft;
-    v2 targetRectXAxis = targetRect_screenCoords.bottomRight - targetRect_screenCoords.bottomLeft;
-    v2 targetRectYAxis = targetRect_screenCoords.topLeft - targetRect_screenCoords.bottomLeft;
-    
-    f32 widthMax = clipRect.max.x;
-    f32 heightMax = clipRect.max.y;
-    
-    f32 xMin = widthMax;
-    f32 xMax = clipRect.min.x;
-    f32 yMin = heightMax;
-    f32 yMax = clipRect.min.y;
-    
-    { //Optimization to avoid iterating over every pixel on the screen - HH ep 92
-        Array<v2, 4> vecs = { origin, origin + targetRectXAxis, origin + targetRectXAxis + targetRectYAxis, origin + targetRectYAxis };
-        for (i32 vecIndex = 0; vecIndex < vecs.Size(); ++vecIndex)
-        {
-            v2 testVec = vecs[vecIndex];
-            i32 flooredX = FloorF32ToI32(testVec.x);
-            i32 ceiledX = CeilF32ToI32(testVec.x);
-            i32 flooredY = FloorF32ToI32(testVec.y);
-            i32 ceiledY = CeilF32ToI32(testVec.y);
-            
-            if (xMin > flooredX)
-            {
-                xMin = (f32)flooredX;
-            }
-            if (yMin > flooredY)
-            {
-                yMin = (f32)flooredY;
-            }
-            if (xMax < ceiledX)
-            {
-                xMax = (f32)ceiledX;
-            }
-            if (yMax < ceiledY)
-            {
-                yMax = (f32)ceiledY;
-            }
-        }
-        
-        if (xMin < clipRect.min.x)
-        {
-            xMin = clipRect.min.x;
-        }
-        if (yMin < clipRect.min.y)
-        {
-            yMin = clipRect.min.y;
-        }
-        if (xMax > widthMax)
-        {
-            xMax = widthMax;
-        }
-        if (yMax > heightMax)
-        {
-            yMax = heightMax;
-        }
-    };
-    
-    v2 uvRangeForTexture = { texture.uvBounds[1].u - texture.uvBounds[0].u, texture.uvBounds[1].v - texture.uvBounds[0].v };
-    f32 invertedXAxisSqd = 1.0f / MagnitudeSqd(targetRectXAxis);
-    f32 invertedYAxisSqd = 1.0f / MagnitudeSqd(targetRectYAxis);
-    
-    ui8* currentRow = (ui8*)colorBufferData + (i32)xMin * 4 + (i32)yMin * colorBufferPitch;
-    for (f32 screenY = yMin; screenY < yMax; ++screenY)
-    {
-        ui32* destPixel = (ui32*)currentRow;
-        
-        for (f32 screenX = xMin; screenX < xMax; ++screenX)
-        {
-            v2 screenPixelCoord { screenX, screenY };
-            v2 d { screenPixelCoord - origin };
-            
-            f32 u = invertedXAxisSqd * DotProduct(d, targetRectXAxis);
-            f32 v = invertedYAxisSqd * DotProduct(d, targetRectYAxis);
-            
-            //Used to decide, given what screen pixel were on, whether or not that screen pixel falls
-            //within the target rect's bounds or not
-            if (u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f)
-            {
-                f32 textureU = texture.uvBounds[0].u + (uvRangeForTexture.u * u);
-                f32 textureV = texture.uvBounds[0].y + (uvRangeForTexture.v * v);
-                
-                f32 texelPos_x = (textureU * (f32)(texture.size.width));
-                f32 texelPos_y = (textureV * (f32)(texture.size.height));
-                
-                f32 epsilon = 0.00001f; //TODO: Remove????
-                BGZ_ASSERT(((u + epsilon) >= 0.0f) && ((u - epsilon) <= 1.0f), "u is out of range! %f", u);
-                BGZ_ASSERT(((v + epsilon) >= 0.0f) && ((v - epsilon) <= 1.0f), "v is out of range! %f", v);
-                BGZ_ASSERT((texelPos_x >= 0) && (texelPos_x <= (i32)texture.size.width), "x coord is out of range!: %f", texelPos_x);
-                BGZ_ASSERT((texelPos_y >= 0) && (texelPos_y <= (i32)texture.size.height), "x coord is out of range!: %f", texelPos_y);
-                
-                ui8* texelPtr = ((ui8*)texture.colorData) + ((ui32)texelPos_y * texture.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
-                
-                v4ui32 texelSquare {};
-                texelSquare.x = *(ui32*)(texelPtr);
-                texelSquare.y = *(ui32*)(texelPtr + sizeof(ui32));
-                texelSquare.z = *(ui32*)(texelPtr + texture.pitch_pxls);
-                texelSquare.w = *(ui32*)(texelPtr + texture.pitch_pxls + sizeof(ui32));
-                
-                //Blend between all 4 pixels to produce new color for sub pixel accruacy - Bilinear filtering
-                v4 newBlendedTexel = BiLinearLerp(texelSquare, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
-                
-                if(StringCmp(texture.name, "right-forearm"))
-                    int x{};
-                
-                //Linearly Blend with background - Assuming Pre-multiplied alpha
-                v4 backgroundColors = UnPackPixelValues(*destPixel, BGRA);
-                f32 alphaBlend = newBlendedTexel.a / 255.0f;
-                v4 finalBlendedColor = (1.0f - alphaBlend) * backgroundColors + newBlendedTexel;
-                
-                b shadePixel { false };
-                
-                NormalMap normalMap = texture.normalMap;
-                if (normalMap.mapData)
-                {
-                    ui8* normalPtr = ((ui8*)normalMap.mapData) + ((ui32)texelPos_y * texture.pitch_pxls) + ((ui32)texelPos_x * sizeof(ui32)); //size of pixel
-                    
-                    //Grab 4 normals (in a square pattern) to blend
-                    v4ui32 normalSquare_inRGBSpace = Grab4NearestPixelPtrs_SquarePattern(normalPtr, texture.pitch_pxls);
-                    
-                    v4 blendedNormal_inRGBSspace = BiLinearLerp(normalSquare_inRGBSpace, (texelPos_x - Floor(texelPos_x)), (texelPos_y - Floor(texelPos_y)));
-                    
-                    //Convert normal from color value range (0 - 255) to vector range (-1 to 1)
-                    f32 inv255 = 1.0f / 255.0f;
-                    v4 blendedNormal{};
-                    blendedNormal.x = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.r);
-                    blendedNormal.y = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.g);
-                    blendedNormal.z = -1.0f + 2.0f * (inv255 * blendedNormal_inRGBSspace.b);
-                    
-                    { //Rotating and scaling normals (supports non-uniform scaling of normal x and y)
-                        v2 normalXBasis = v2 { CosR(normalMap.rotation), SinR(normalMap.rotation) };
-                        v2 normalYBasis = normalMap.scale.y * PerpendicularOp(normalXBasis);
-                        normalXBasis *= normalMap.scale.x;
-                        
-                        normalXBasis *= (Magnitude(normalYBasis) / Magnitude(normalXBasis));
-                        normalYBasis *= (Magnitude(normalXBasis) / Magnitude(normalYBasis));
-                        
-                        blendedNormal.xy = (blendedNormal.x * normalXBasis) + (blendedNormal.y * normalYBasis);
-                    };
-                    
-                    Normalize($(blendedNormal.xyz));
-                    
-                    if (blendedNormal.z > 0.0f)
-                    {
-                        *destPixel = ((0xFF << 24) | ((ui8)finalBlendedColor.r << 16) | ((ui8)finalBlendedColor.g << 8) | ((ui8)finalBlendedColor.b << 0));
-                    }
-                    else
-                    {
-                        if (normalMap.lightAngle > (PI * 2))
-                            ConvertToCorrectPositiveRadian($(normalMap.lightAngle));
-                        
-                        f32 normalAngle {};
-                        { //Calculate correct raidan angle from normal
-                            if ((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y > 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                            }
-                            else if (blendedNormal.x < 0.0f && blendedNormal.y > 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                                AbsoluteVal($(normalAngle));
-                                normalAngle += (PI / 2.0f);
-                            }
-                            else if (blendedNormal.x < 0.0f && blendedNormal.y < 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.x / blendedNormal.y);
-                                normalAngle -= ((3.0f * PI) / 2.0f);
-                                AbsoluteVal($(normalAngle));
-                            }
-                            else if ((blendedNormal.x + epsilon) > 0.0f && blendedNormal.y < 0.0f)
-                            {
-                                normalAngle = InvTanR(blendedNormal.y / blendedNormal.x);
-                                ConvertNegativeToPositiveAngle_Radians($(normalAngle));
-                            }
-                        };
-                        
-                        f32 thresholdAngle1 = normalMap.lightAngle - normalMap.lightThreshold;
-                        f32 thresholdAngle2 = normalMap.lightAngle + normalMap.lightThreshold;
-                        
-                        if(thresholdAngle1 < 0.0f)
-                            ConvertNegativeToPositiveAngle_Radians($(thresholdAngle1));
-                        else if (thresholdAngle1 > 2*PI)
-                            ConvertToCorrectPositiveRadian($(thresholdAngle1));
-                        
-                        if(thresholdAngle2 < 0.0f)
-                            ConvertNegativeToPositiveAngle_Radians($(thresholdAngle2));
-                        else if (thresholdAngle1 > 2*PI)
-                            ConvertToCorrectPositiveRadian($(thresholdAngle2));
-                        
-                        if(IsBetween(normalAngle, thresholdAngle1, thresholdAngle2))
-                            shadePixel = false;
-                        else
-                            shadePixel = true;
-                        
-#if 0
-                        f32 maxAngle = Max(normalMap.lightAngle, normalAngle);
-                        f32 minAngle = Min(normalMap.lightAngle, normalAngle);
-                        f32 shadeThreholdDirection1 = maxAngle - minAngle;
-                        f32 shadeThreholdDirection2 = ((PI * 2) - maxAngle) + minAngle;
-                        
-                        if (shadeThreholdDirection1 > normalMap.lightThreshold || shadeThreholdDirection2 < normalMap.lightThreshold)
-                            shadePixel = true;
-#endif
-                    }
-                    
-                    if (shadePixel && newBlendedTexel.a > 100.0f)
-                    {
-                        //Shade pixel
-                        *destPixel = ((0xFF << 24) | (0 << 16) | (0 << 8) | (0 << 0));
-                    }
-                    else
-                    {
-                        *destPixel = ((0xFF << 24) | ((ui8)finalBlendedColor.r << 16) | ((ui8)finalBlendedColor.g << 8) | ((ui8)finalBlendedColor.b << 0));
-                    }
-                }
-                else
-                {
-                    *destPixel = ((0xFF << 24) | ((ui8)finalBlendedColor.r << 16) | ((ui8)finalBlendedColor.g << 8) | ((ui8)finalBlendedColor.b << 0));
-                }
-            }
-            
-            ++destPixel;
-        }
-        
-        currentRow += colorBufferPitch;
-    }
-}
-
-void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea) {
+void RenderToImage(Image&& renderTarget, Image sourceImage, Quad targetArea) {
     //DrawImageSlowly($(renderTarget), targetArea, sourceImage, 0.0f);
 };
 
@@ -842,9 +585,9 @@ struct Screen_Region_Render_Work
 {
     Rendering_Info renderingInfo;
     void* colorBufferData;
-    v2i colorBufferSize;
+    v2 colorBufferSize;
     i32 colorBufferPitch;
-    Rectf screenRegionCoords;
+    Rect screenRegionCoords;
 };
 
 //Multi-threaded
@@ -853,13 +596,13 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
     Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
     
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &work->renderingInfo.camera;
+    Camera2D* camera = &work->renderingInfo.camera2d;
     
     f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
-    v2 screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
+    v2 screenSize_meters = (work->colorBufferSize / pixelsPerMeter);
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
-    v2 screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
+    v2 screenDimensions_meters = work->colorBufferSize / pixelsPerMeter;
     camera->viewCenter = screenDimensions_meters / 2.0f;
     
     for (i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
@@ -871,8 +614,8 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
                 
-                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
-                Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
+                Quad imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quad imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
                 DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
                 
@@ -884,8 +627,8 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
-                Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
+                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quad targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
                 
@@ -910,13 +653,13 @@ void DoRenderWork(void* data)
     Screen_Region_Render_Work* work = (Screen_Region_Render_Work*)data;
     
     ui8* currentRenderBufferEntry = work->renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &work->renderingInfo.camera;
+    Camera2D* camera = &work->renderingInfo.camera2d;
     
     f32 pixelsPerMeter = work->renderingInfo._pixelsPerMeter;
-    v2 screenSize_meters = (CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter);
+    v2 screenSize_meters = (work->colorBufferSize / pixelsPerMeter);
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
-    v2 screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
+    v2 screenDimensions_meters = work->colorBufferSize / pixelsPerMeter;
     camera->viewCenter = screenDimensions_meters / 2.0f;
     
     for (i32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
@@ -928,10 +671,10 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Texture textureEntry = *(RenderEntry_Texture*)currentRenderBufferEntry;
                 
-                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
-                Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
+                Quad imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quad imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
-                DrawTexture_UnOptimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
+                DrawTexture_Optimized((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, imageTargetRect_screen, textureEntry, work->screenRegionCoords);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
             }
@@ -941,8 +684,8 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
-                Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
+                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quad targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
                 
@@ -974,7 +717,7 @@ void DoRenderWork(void* data)
 };
 
 struct Platform_Services;
-void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
+void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2 colorBufferSize, i32 colorBufferPitch, Platform_Services* platformServices)
 {
     BGZ_ASSERT(((uintptr)colorBufferData & 63) == 0, "Color buffer memory coming in not aligned to 32 byte boundry!");
     
@@ -993,7 +736,7 @@ void RenderViaSoftware(Rendering_Info&& renderingInfo, void* colorBufferData, v2
         {
             v2 screenRegion_min = v2 { screenRegion_x * singleScreenRegion_width, screenRegion_y * singleScreenRegion_height };
             v2 screenRegion_max = v2 { screenRegion_min.x + singleScreenRegion_width, screenRegion_min.y + singleScreenRegion_height };
-            Rectf screenRegionCoords { screenRegion_min, screenRegion_max };
+            Rect screenRegionCoords { screenRegion_min, screenRegion_max };
             
             Screen_Region_Render_Work* renderWork = &workArray[workIndex];
             

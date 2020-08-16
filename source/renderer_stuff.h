@@ -10,11 +10,11 @@
 /*
 
     Current Renderer assumptions:
-    
+
     1.) User sends world coordinates to renderer. 4 verts pushed per texture/rect.
     2.) Renderer expects all verts to be in meters and not pixels.
     3.) Y axis is going up and bottom left corner of rect is expected to be origin
-    
+
 */
 
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
@@ -27,19 +27,18 @@ struct Camera2D
     f32 zoomFactor {};
 };
 
-struct Rectf
+struct Camera3D
+{
+    
+};
+
+struct Rect
 {
     v2 min {};
     v2 max {};
 };
 
-struct Recti
-{
-    v2i min {};
-    v2i max {};
-};
-
-struct Quadf
+struct Quad
 {
     union
     {
@@ -50,21 +49,6 @@ struct Quadf
             v2 bottomRight;
             v2 topRight;
             v2 topLeft;
-        };
-    };
-};
-
-struct Quadi
-{
-    union
-    {
-        Array<v2i, 4> vertices;
-        struct
-        {
-            v2i bottomLeft;
-            v2i bottomRight;
-            v2i topRight;
-            v2i topLeft;
         };
     };
 };
@@ -80,7 +64,8 @@ struct Game_Render_Cmd_Buffer
 struct Rendering_Info
 {
     Game_Render_Cmd_Buffer cmdBuffer;
-    Camera2D camera;
+    Camera2D camera2d;
+    Camera3D camera3d;
     f32 _pixelsPerMeter {};
 };
 
@@ -135,7 +120,7 @@ struct RenderEntry_Header
 struct RenderEntry_Rect
 {
     RenderEntry_Header header;
-    Quadf worldCoords;
+    Quad worldCoords;
     v3 color {};
 };
 
@@ -145,11 +130,12 @@ struct RenderEntry_Texture
     const char* name;
     ui8* colorData { nullptr };
     NormalMap normalMap {};
-    v2i size {};
+    int width;
+    int height;
     i32 pitch_pxls {};
     v2 dimensions {};
     Array<v2, 2> uvBounds;
-    Quadf targetRect_worldCoords;
+    Quad targetRect_worldCoords;
     b isLoadedOnGPU { false }; //TODO: Eventually remove
 };
 
@@ -176,28 +162,28 @@ v2 viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 
 //Render Commands
 void PushTest(Rendering_Info&& renderingInfo);
-void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
-void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
-void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3 color);
+void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
+void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
+void PushRect(Rendering_Info* renderingInfo, Quad worldVerts, v3 color);
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2 lookAt, v2 dilatePoint_inScreenCoords, f32 zoomFactor);
 void UpdateCamera(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor);
-void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, i32 colorBufferPitch);
+void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2 colorBufferSize, i32 colorBufferPitch);
 
 void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
-//void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
-Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
-Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
+//void RenderToImage(Image&& renderTarget, Image sourceImage, Quad targetArea);
+Quad WorldTransform(Quad localCoords, Object_Transform transformInfo_world);
+Quad CameraTransform(Quad worldCoords, Camera2D camera);
 v2 CameraTransform(v2 worldCoords, Camera2D camera);
-Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
+Quad ProjectionTransform_Ortho(Quad cameraCoords, f32 pixelsPerMeter);
 v2 ProjectionTransform_Ortho(v2 cameraCoords, f32 pixelsPerMeter);
-Rectf _ProduceRectFromCenterPoint(v2 OriginPoint, f32 width, f32 height);
-Rectf _ProduceRectFromBottomMidPoint(v2 OriginPoint, f32 width, f32 height);
-Rectf _ProduceRectFromBottomLeftPoint(v2 originPoint, f32 width, f32 height);
-Quadf _ProduceQuadFromBottomLeftPoint(v2 originPoint, f32 width, f32 height);
-Quadf _ProduceQuadFromBottomMidPoint(v2 originPoint, f32 width, f32 height);
-Quadf ProduceQuadFromCenterPoint(v2 originPoint, f32 width, f32 height);
+Rect _ProduceRectFromCenterPoint(v2 OriginPoint, f32 width, f32 height);
+Rect _ProduceRectFromBottomMidPoint(v2 OriginPoint, f32 width, f32 height);
+Rect _ProduceRectFromBottomLeftPoint(v2 originPoint, f32 width, f32 height);
+Quad _ProduceQuadFromBottomLeftPoint(v2 originPoint, f32 width, f32 height);
+Quad _ProduceQuadFromBottomMidPoint(v2 originPoint, f32 width, f32 height);
+Quad ProduceQuadFromCenterPoint(v2 originPoint, f32 width, f32 height);
 
 #endif //RENDERER_STUFF_INCLUDE_H
 
@@ -233,7 +219,7 @@ void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color,
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3 color)
+void PushRect(Rendering_Info* renderingInfo, Quad worldVerts, v3 color)
 {
     RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect);
     
@@ -244,7 +230,7 @@ void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3 color)
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name, NormalMap normalMap = {})
+void PushTexture(Rendering_Info* renderingInfo, Quad worldVerts, Image&& bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name, NormalMap normalMap = {})
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
     
@@ -253,7 +239,8 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap
     textureEntry->targetRect_worldCoords = worldVerts;
     textureEntry->colorData = bitmap.data;
     textureEntry->normalMap = normalMap;
-    textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
+    textureEntry->width = (int)bitmap.width_pxls;
+    textureEntry->height = (int)bitmap.height_pxls;
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     textureEntry->isLoadedOnGPU = bitmap.isLoadedOnGPU; //TODO: Remove
@@ -266,7 +253,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap
 
 //TODO: Consider not having overloaded function here? The reason this is here is to support current
 //skeleton drawing with regions
-void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap, f32 objectHeight_meters, Array<v2, 2> uvs, const char* name, NormalMap normalMap = {})
+void PushTexture(Rendering_Info* renderingInfo, Quad worldVerts, Image&& bitmap, f32 objectHeight_meters, Array<v2, 2> uvs, const char* name, NormalMap normalMap = {})
 {
     RenderEntry_Texture* textureEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Texture);
     
@@ -278,7 +265,8 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap
     textureEntry->targetRect_worldCoords = worldVerts;
     textureEntry->colorData = bitmap.data;
     textureEntry->normalMap = normalMap;
-    textureEntry->size = v2i { (i32)bitmap.width_pxls, (i32)bitmap.height_pxls };
+    textureEntry->width = (int)bitmap.width_pxls;
+    textureEntry->height = (int)bitmap.height_pxls;
     textureEntry->pitch_pxls = bitmap.pitch_pxls;
     textureEntry->uvBounds = uvs;
     textureEntry->isLoadedOnGPU = bitmap.isLoadedOnGPU; //TODO: Remove
@@ -295,20 +283,20 @@ void UpdateCamera(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f
                && normalizedDilatePointOffset.y >= -1.0f && normalizedDilatePointOffset.y <= 1.0f,
                "Dilate point is not normalized!");
     
-    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
-    renderingInfo->camera.zoomFactor = zoomFactor;
-    renderingInfo->camera.dilatePointOffset_normalized = normalizedDilatePointOffset;
+    renderingInfo->camera2d.lookAt = cameraLookAtCoords_meters;
+    renderingInfo->camera2d.zoomFactor = zoomFactor;
+    renderingInfo->camera2d.dilatePointOffset_normalized = normalizedDilatePointOffset;
 };
 
 void UpdateCamera(Rendering_Info* renderingInfo, v2 cameraLookAtCoords_meters, f32 zoomFactor)
 {
-    renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
-    renderingInfo->camera.zoomFactor = zoomFactor;
+    renderingInfo->camera2d.lookAt = cameraLookAtCoords_meters;
+    renderingInfo->camera2d.zoomFactor = zoomFactor;
 };
 
 void UpdateCamera(Rendering_Info* renderingInfo, f32 zoomFactor)
 {
-    renderingInfo->camera.zoomFactor = zoomFactor;
+    renderingInfo->camera2d.zoomFactor = zoomFactor;
 };
 
 Image LoadBitmap_BGRA(const char* fileName)
@@ -351,9 +339,9 @@ Image LoadBitmap_BGRA(const char* fileName)
     return result;
 };
 
-Quadf ProduceQuadFromCenterPoint(v2 originPoint, f32 width, f32 height)
+Quad ProduceQuadFromCenterPoint(v2 originPoint, f32 width, f32 height)
 {
-    Quadf result;
+    Quad result;
     
     result.bottomLeft = { originPoint.x - (width / 2.0f), originPoint.y - (height / 2.0f) };
     result.bottomRight = { originPoint.x + (width / 2.0f), originPoint.y - (height / 2.0f) };
@@ -373,10 +361,10 @@ f32 BitmapHeight_Meters(Rendering_Info renderingInfo, Image bitmap)
 #ifdef PLATFORM_RENDERER_STUFF_IMPL
 
 local_func
-Rectf
-_DilateAboutArbitraryPoint(v2 PointOfDilation, f32 ScaleFactor, Rectf RectToDilate)
+Rect
+_DilateAboutArbitraryPoint(v2 PointOfDilation, f32 ScaleFactor, Rect RectToDilate)
 {
-    Rectf DilatedRect {};
+    Rect DilatedRect {};
     
     v2 Distance = PointOfDilation - RectToDilate.min;
     Distance *= ScaleFactor;
@@ -400,9 +388,9 @@ v2 _DilateAboutArbitraryPoint(v2 PointOfDilation, f32 ScaleFactor, v2 vectorToDi
     return dilatedVector;
 };
 
-auto _DilateAboutArbitraryPoint(v2 PointOfDilation, f32 ScaleFactor, Quadf QuadToDilate) -> Quadf
+auto _DilateAboutArbitraryPoint(v2 PointOfDilation, f32 ScaleFactor, Quad QuadToDilate) -> Quad
 {
-    Quadf DilatedQuad {};
+    Quad DilatedQuad {};
     
     for (i32 vertIndex = 0; vertIndex < 4; ++vertIndex)
     {
@@ -425,9 +413,9 @@ v2 CameraTransform(v2 worldCoords, Camera2D camera)
     return transformedCoords;
 };
 
-Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
+Quad CameraTransform(Quad worldCoords, Camera2D camera)
 {
-    Quadf transformedCoords {};
+    Quad transformedCoords {};
     
     v2 translationToCameraSpace = camera.viewCenter - camera.lookAt;
     
@@ -448,7 +436,7 @@ v2 ProjectionTransform_Ortho(v2 cameraCoords, f32 pixelsPerMeter)
     return cameraCoords;
 };
 
-Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter)
+Quad ProjectionTransform_Ortho(Quad cameraCoords, f32 pixelsPerMeter)
 {
     for (i32 vertIndex {}; vertIndex < 4; vertIndex++)
         cameraCoords.vertices[vertIndex] *= pixelsPerMeter;
@@ -477,10 +465,10 @@ local_func auto _LinearBlend(ui32 foregroundColor, ui32 backgroundColor, Channel
 };
 
 local_func
-Rectf
+Rect
 _ProduceRectFromCenterPoint(v2 OriginPoint, f32 width, f32 height)
 {
-    Rectf Result;
+    Rect Result;
     
     Result.min = { OriginPoint.x - (width / 2), OriginPoint.y - (height / 2) };
     Result.max = { OriginPoint.x + (width / 2), OriginPoint.y + (height / 2) };
@@ -489,10 +477,10 @@ _ProduceRectFromCenterPoint(v2 OriginPoint, f32 width, f32 height)
 };
 
 local_func
-Rectf
+Rect
 _ProduceRectFromBottomMidPoint(v2 OriginPoint, f32 width, f32 height)
 {
-    Rectf Result;
+    Rect Result;
     
     Result.min = { OriginPoint.x - (width / 2.0f), OriginPoint.y };
     Result.max = { OriginPoint.x + (width / 2.0f), OriginPoint.y + height };
@@ -501,10 +489,10 @@ _ProduceRectFromBottomMidPoint(v2 OriginPoint, f32 width, f32 height)
 };
 
 local_func
-Rectf
+Rect
 _ProduceRectFromBottomLeftPoint(v2 originPoint, f32 width, f32 height)
 {
-    Rectf Result;
+    Rect Result;
     
     Result.min = originPoint;
     Result.max = { originPoint.x + width, originPoint.y + height };
@@ -512,9 +500,9 @@ _ProduceRectFromBottomLeftPoint(v2 originPoint, f32 width, f32 height)
     return Result;
 };
 
-Quadf _ProduceQuadFromBottomMidPoint(v2 originPoint, f32 width, f32 height)
+Quad _ProduceQuadFromBottomMidPoint(v2 originPoint, f32 width, f32 height)
 {
-    Quadf result;
+    Quad result;
     
     result.bottomLeft = { originPoint.x - (width / 2.0f), originPoint.y };
     result.bottomRight = { originPoint.x + (width / 2.0f), originPoint.y };
@@ -525,10 +513,10 @@ Quadf _ProduceQuadFromBottomMidPoint(v2 originPoint, f32 width, f32 height)
 };
 
 local_func
-Quadf
+Quad
 _ProduceQuadFromBottomLeftPoint(v2 originPoint, f32 width, f32 height)
 {
-    Quadf Result;
+    Quad Result;
     
     Result.bottomLeft = originPoint;
     Result.bottomRight = { originPoint.x + width, originPoint.y };

@@ -53,14 +53,14 @@ struct Quadv3
     };
 };
 
+#if 0
 struct Camera3D
 {
     //What goes in here;
     f32 distanceFromMonitor_meters{};//Focal length
     f32 cameraDistanceFromTarget_meters{};//Camera distance above target
 };
-
-global_variable Camera3D globalCamera;
+#endif
 
 mat4x4 OrthographicProjection(f32 aspectRatio)
 {
@@ -175,14 +175,14 @@ GLInit()
 }
 
 local_func ui32
-LoadTexture(ui8* textureData, v2i textureSize)
+LoadTexture(ui8* textureData, int width, int height)
 {
     ui32 textureID {};
     glEnable(GL_TEXTURE_2D);
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
     
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, textureSize.width, textureSize.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, textureData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, textureData);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -197,7 +197,7 @@ LoadTexture(ui8* textureData, v2i textureSize)
 }
 
 local_func void
-DrawTexture(ui32 TextureID, Quadf textureCoords, v2 MinUV, v2 MaxUV)
+DrawTexture(ui32 TextureID, Quad textureCoords, v2 MinUV, v2 MaxUV)
 {
     glBindTexture(GL_TEXTURE_2D, TextureID);
     
@@ -221,7 +221,7 @@ DrawTexture(ui32 TextureID, Quadf textureCoords, v2 MinUV, v2 MaxUV)
 }
 
 local_func void
-DrawQuad(Quadf quad, v4 color)
+DrawQuad(Quad quad, v4 color)
 {
     glBegin(GL_QUADS);
     
@@ -545,11 +545,11 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     glViewport(0, 0, windowWidth, windowHeight);
     
     ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &renderingInfo.camera;
+    Camera2D* camera = &renderingInfo.camera2d;
     
     f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
-    v2i screenSize = { windowWidth, windowHeight };
-    v2 screenSize_meters = CastV2IToV2F(screenSize) / pixelsPerMeter;
+    v2 screenSize = { (f32)windowWidth, (f32)windowHeight };
+    v2 screenSize_meters = screenSize / pixelsPerMeter;
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
     camera->viewCenter = screenSize_meters / 2.0f;
@@ -569,13 +569,13 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 local_persist ui32 textureID{};
                 if (NOT textureEntry.isLoadedOnGPU)
                 {
-                    textureID = LoadTexture(textureEntry.colorData, v2i { textureEntry.size.width, textureEntry.size.height });
+                    textureID = LoadTexture(textureEntry.colorData, textureEntry.width, textureEntry.height);
                 };
                 
                 glBindTexture(GL_TEXTURE_2D, textureID);
                 
-                Quadf imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
-                Quadf imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
+                Quad imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quad imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
                 DrawTexture(textureID, imageTargetRect_screen, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
                 
@@ -586,8 +586,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Rect: {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quadf targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
-                Quadf targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
+                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quad targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 v4 color = { rectEntry.color, 1.0f };
                 

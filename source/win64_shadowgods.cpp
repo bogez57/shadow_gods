@@ -420,7 +420,7 @@ namespace Win32
         }
         else
         {
-            RenderViaSoftware($(renderingInfo), globalBackBuffer_forSoftwareRendering.memory, v2i { globalBackBuffer_forSoftwareRendering.width, globalBackBuffer_forSoftwareRendering.height }, globalBackBuffer_forSoftwareRendering.pitch, &platformServices);
+            RenderViaSoftware($(renderingInfo), globalBackBuffer_forSoftwareRendering.memory, v2 { (f32)globalBackBuffer_forSoftwareRendering.width, (f32)globalBackBuffer_forSoftwareRendering.height }, globalBackBuffer_forSoftwareRendering.pitch, &platformServices);
             
             //Performs screen clear so resizing window doesn't screw up the image displayed
             PatBlt(deviceContext, 0, 0, windowWidth, 0, BLACKNESS);
@@ -429,14 +429,13 @@ namespace Win32
             PatBlt(deviceContext, globalBackBuffer_forSoftwareRendering.width, 0, windowWidth, windowHeight, BLACKNESS);
             
             { //Switched around coordinates and things here so I can treat drawing in game as bottom-up instead of top down
-                v2i displayRect_BottomLeftCoords { 0, 0 };
-                v2i displayRect_Dimensions {};
-                displayRect_Dimensions.width = globalBackBuffer_forSoftwareRendering.width;
-                displayRect_Dimensions.height = globalBackBuffer_forSoftwareRendering.height;
+                v2 displayRect_BottomLeftCoords { 0, 0 };
+                int displayRect_width = globalBackBuffer_forSoftwareRendering.width;
+                int displayRect_height = globalBackBuffer_forSoftwareRendering.height;
                 
                 //Copy game's rendered back buffer to whatever display area size you want
                 StretchDIBits(deviceContext,
-                              displayRect_BottomLeftCoords.x, displayRect_BottomLeftCoords.y, displayRect_Dimensions.width, displayRect_Dimensions.height, //Dest - Area to draw to within window's window
+                              (int)displayRect_BottomLeftCoords.x, (int)displayRect_BottomLeftCoords.y, displayRect_width, displayRect_height, //Dest - Area to draw to within window's window
                               0, 0, globalBackBuffer_forSoftwareRendering.width, globalBackBuffer_forSoftwareRendering.height, //Source - The dimensions/coords of the back buffer the game rendered to
                               globalBackBuffer_forSoftwareRendering.memory,
                               &globalBackBuffer_forSoftwareRendering.Info,

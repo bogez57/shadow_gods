@@ -35,7 +35,10 @@ typedef double f64;
 
 #define Align16(Value) ((Value + 15) & ~15)
 
-//Should I just template things??
+//TODO: add a templated vector type just so if you ever need int or whatever vectors you can still create them.
+//Having both a normal float v2 type and templated version will reduce the need to template 90% of vectors which 
+//will just be floats
+
 typedef union v2
 {
 #ifdef __cplusplus
@@ -211,115 +214,10 @@ struct mat2x2
 
 inline mat4x4 IdentityMatrix();
 
-//Other v2's I might use. Torn on whether or not I should template things but I think for 90 percent of what I'm using vectors for floats should be what I want
-struct v2i
-{
-    v2i() = default;
-    v2i(i32 x, i32 y);
-    
-    union
-    {
-        i32 Elem[2];
-        struct
-        {
-            i32 x, y;
-        };
-        struct
-        {
-            i32 width, height;
-        };
-        struct
-        {
-            i32 u, v;
-        };
-    };
-};
-
-struct v3i
-{
-    v3i() = default;
-    v3i(i32 x, i32 y, i32 z);
-    
-    union
-    {
-        i32 Elem[3];
-        struct
-        {
-            i32 x, y, z;
-        };
-        
-        struct
-        {
-            i32 r, g, b;
-        };
-    };
-};
-
-struct v4i
-{
-    v4i() = default;
-    v4i(i32 x, i32 y, i32 z, i32 w);
-    
-    union
-    {
-        i32 Elem[4];
-        struct
-        {
-            i32 x, y, z, w;
-        };
-        
-        struct
-        {
-            i32 r, g, b, a;
-        };
-    };
-};
-
-struct v4ui32
-{
-    v4ui32() = default;
-    v4ui32(ui32 x, ui32 y, ui32 z, ui32 w);
-    
-    union
-    {
-        i32 Elem[4];
-        struct
-        {
-            ui32 x, y, z, w;
-        };
-        
-        struct
-        {
-            ui32 r, g, b, a;
-        };
-    };
-};
-
-local_func v2 CastV2IToV2F(v2i vecToCast);
-
 #endif
 
+
 #ifdef ATOMIC_TYPES_IMPL
-
-v2 CastV2IToV2F(v2i vecToCast)
-{
-    v2 result{};
-    
-    result.x = (f32)vecToCast.x;
-    result.y = (f32)vecToCast.y;
-    
-    return result;
-}
-
-v2i CastV2FToV2I(v2 vecToCast)
-{
-    v2i result{};
-    
-    result.x = (i32)vecToCast.x;
-    result.y = (i32)vecToCast.y;
-    
-    return result;
-};
 
 inline b
 operator==(v2 a, v2 B)
@@ -766,109 +664,4 @@ Translate(mat4x4 A, v4 T)
     return result;
 };
 
-//Other v2 implementations
-v2i::v2i(i32 x, i32 y)
-: x(x)
-, y(y)
-{}
-
-inline v2i
-operator*(i32 a, v2i B)
-{
-    v2i result;
-    
-    result.x = a * B.x;
-    result.y = a * B.y;
-    
-    return (result);
-}
-
-inline v2i
-operator*(v2i B, i32 a)
-{
-    v2i result = a * B;
-    
-    return (result);
-}
-
-inline v2i&
-operator*=(v2i& B, i32 a)
-{
-    B = a * B;
-    
-    return (B);
-}
-
-inline v2i
-operator+(v2i a, v2i b)
-{
-    v2i result;
-    
-    result.x = a.x + b.x;
-    result.y = a.y + b.y;
-    
-    return (result);
-}
-
-inline v2i&
-operator+=(v2i& a, v2i b)
-{
-    a = a + b;
-    
-    return (a);
-}
-
-inline v2i&
-operator+=(v2i& a, i32 b)
-{
-    a.x = a.x + b;
-    a.y = a.y + b;
-    
-    return (a);
-}
-
-inline v2i&
-operator-=(v2i& a, i32 b)
-{
-    a.x = a.x - b;
-    a.y = a.y - b;
-    
-    return (a);
-}
-
-inline v2i&
-operator-=(v2i& a, v2i b)
-{
-    a.x = a.x - b.x;
-    a.y = a.y - b.y;
-    
-    return (a);
-}
-
-inline v2i
-operator-(v2i a, v2i b)
-{
-    v2i result;
-    
-    result.x = a.x - b.x;
-    result.y = a.y - b.y;
-    
-    return (result);
-}
-
-v3i::v3i(i32 x, i32 y, i32 z)
-: x(x)
-, y(y)
-, z(z)
-{}
-
-/* all v3i suff */
-
-v4i::v4i(i32 x, i32 y, i32 z, i32 w)
-: x(x)
-, y(y)
-, z(z)
-, w(w)
-{}
-
-#endif // ATOMIC_TYPES_IMPL
+#endif //ATOMIC_TYPES_IMPL

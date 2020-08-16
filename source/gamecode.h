@@ -22,7 +22,6 @@ struct Stage_Data
     Fighter player;
     Fighter enemy;
     Fighter enemy2;
-    Game_Camera camera;
 };
 
 struct Game_State
