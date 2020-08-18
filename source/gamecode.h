@@ -5,6 +5,7 @@
 #include "skeleton.h"
 #include "animation.h"
 #include "fighter.h"
+#include "renderer_stuff.h"
 
 struct Game_Camera
 {
@@ -34,4 +35,5 @@ struct Game_State
     Stage_Data stage;
     b isLevelOver{false};
     Image openGLRenderTest{};
+    Cube cube{};
 };

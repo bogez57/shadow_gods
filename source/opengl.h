@@ -300,13 +300,6 @@ struct Transform_v3
     v3 scale{1.0f, 1.0f, 1.0f};
 };
 
-#define NUM_VERTS 8
-struct Cube
-{
-    Array<v3, NUM_VERTS> verts{};
-    v3 centerPoint{};
-};
-
 GLushort indicies[] =
 {
     1, 0, 2,  1, 2, 3,//Front
@@ -318,21 +311,7 @@ GLushort indicies[] =
 };
 
 f32 epsilon = 0.00001f; //TODO: Remove????
-
-v3 CenterOfCube(Array<v3, NUM_VERTS> cubeVerts)//Find center of cube in order to rotate in camera space next
-{
-    f32 sumXs{}, sumYs{}, sumZs{};
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        sumXs += cubeVerts[i].x;
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        sumYs += cubeVerts[i].y;
-    for(i32 i{}; i < NUM_VERTS; ++i)
-        sumZs += cubeVerts[i].z;
-    v3 centerOfCube = v3 { sumXs/8.0f, sumYs/8.0f, sumZs/8.0f };
-    
-    return centerOfCube;
-}
-
+#define NUM_VERTS 8
 
 Array<v4, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
 {
@@ -505,12 +484,11 @@ void DrawCube(Array<v3, NUM_VERTS> cubeVerts_glClipSpace)
     glEnable(GL_TEXTURE_2D);
 };
 
-void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
+void ProjectionTestUsingFullSquare(Camera3D camera3d, RenderEntry_Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
 {
     //World Transform
     mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
     
-    local_persist v3 camPos_world{0.0f, 0.0f, -3.0f};
     local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
     mat4x4 xRotMatrix = XRotation(camRotation.x);
     mat4x4 yRotMatrix = YRotation(camRotation.y);
@@ -519,10 +497,10 @@ void ProjectionTestUsingFullSquare(Cube cube, Transform_v3 worldTransform, f32 w
     v3 xAxis = GetColumn(fullRotMatrix, 0);
     v3 yAxis = GetColumn(fullRotMatrix, 1);
     v3 zAxis = GetColumn(fullRotMatrix, 2);
-    mat4x4 camTransformMatrix = ProduceCameraTransform(xAxis, yAxis, zAxis, camPos_world);
+    mat4x4 camTransformMatrix = ProduceCameraTransform(xAxis, yAxis, zAxis, camera3d.posOffset);
     
     //ProjectionTransform
-    mat4x4 projectionMatrix = ProduceProjectionTransform_UsingFOV(60.0f, 16.0f/9.0f, .1f, 100.0f);
+    mat4x4 projectionMatrix = ProduceProjectionTransform_UsingFOV(camera3d.FOV, camera3d.aspectRatio, camera3d.nearPlane, camera3d.farPlane);
     
     mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
     
@@ -543,19 +521,19 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     };
     
     glViewport(0, 0, windowWidth, windowHeight);
-    
-    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
-    Camera2D* camera = &renderingInfo.camera2d;
-    
     f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
     v2 screenSize = { (f32)windowWidth, (f32)windowHeight };
     v2 screenSize_meters = screenSize / pixelsPerMeter;
-    camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
-    camera->viewCenter = screenSize_meters / 2.0f;
+    ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
+    
+    Camera2D* camera2d = &renderingInfo.camera2d;
+    camera2d->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera2d->dilatePointOffset_normalized));
+    camera2d->viewCenter = screenSize_meters / 2.0f;
+    
+    Camera3D* camera3d = &renderingInfo.camera3d;
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
     glEnable(GL_TEXTURE_2D);
     
     for (i32 entryNumber = 0; entryNumber < renderingInfo.cmdBuffer.entryCount; ++entryNumber)
@@ -574,7 +552,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 glBindTexture(GL_TEXTURE_2D, textureID);
                 
-                Quad imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera);
+                Quad imageTargetRect_camera = CameraTransform(textureEntry.targetRect_worldCoords, *camera2d);
                 Quad imageTargetRect_screen = ProjectionTransform_Ortho(imageTargetRect_camera, pixelsPerMeter);
                 
                 DrawTexture(textureID, imageTargetRect_screen, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
@@ -586,7 +564,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Rect: {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera2d);
                 Quad targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 v4 color = { rectEntry.color, 1.0f };
@@ -602,8 +580,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Line: {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
                 
-                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera);
-                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera);
+                v2 lineMinPoint_camera = CameraTransform(lineEntry.minPoint, *camera2d);
+                v2 lineMaxPoint_camera = CameraTransform(lineEntry.maxPoint, *camera2d);
                 
                 v2 lineMinPoint_screen = ProjectionTransform_Ortho(lineMinPoint_camera, pixelsPerMeter);
                 v2 lineMaxPoint_screen = ProjectionTransform_Ortho(lineMaxPoint_camera, pixelsPerMeter);
@@ -618,38 +596,15 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             }
             break;
             
-            case EntryType_Test:
+            case EntryType_Cube:
             {
-                Cube cube0{}, cube1{};
+                RenderEntry_Cube cube = *(RenderEntry_Cube*)currentRenderBufferEntry;
                 
-                cube0.verts = {
-                    v3{-0.5f, 0.5f, -0.5f }, //0
-                    v3{+0.5f, 0.5f, -0.5f }, //1
-                    v3{-0.5f, -0.5f, -0.5f },//2
-                    v3{+0.5f, -0.5f, -0.5f },//3
-                    v3{+0.5f, -0.5f, +0.5f },//4
-                    v3{+0.5f, +0.5f, +0.5f },//5
-                    v3{-0.5f, +0.5f, +0.5f },//6
-                    v3{-0.5f, -0.5f, +0.5f },//7
-                };
+                local_persist Transform_v3 cube_worldT{};
                 
-                cube1.verts = {
-                    v3{-0.5f, 0.5f, -0.5f }, //0
-                    v3{+0.5f, 0.5f, -0.5f }, //1
-                    v3{-0.5f, -0.5f, -0.5f },//2
-                    v3{+0.5f, -0.5f, -0.5f },//3
-                    v3{+0.5f, -0.5f, +0.5f },//4
-                    v3{+0.5f, +0.5f, +0.5f },//5
-                    v3{-0.5f, +0.5f, +0.5f },//6
-                    v3{-0.5f, -0.5f, +0.5f },//7
-                };
+                cube_worldT.rotation.x += .01f;
                 
-                local_persist Transform_v3 cube0_worldT{}, cube1_worldT{{2.0f, 0.0f, 0.0f}};
-                
-                cube0_worldT.rotation.x += .01f;
-                cube1_worldT.rotation.y += .01f;
-                
-                ProjectionTestUsingFullSquare(cube0, cube0_worldT, (f32)windowWidth, (f32)windowHeight);
+                ProjectionTestUsingFullSquare(*camera3d, cube, cube_worldT, (f32)windowWidth, (f32)windowHeight);
             }break;
             
             InvalidDefaultCase;

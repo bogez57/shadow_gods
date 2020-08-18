@@ -322,12 +322,26 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     
     if (NOT gameMemory->initialized)
     {
-        BGZ_ERRCTXT1("When Initializing game memory and game state");
-        
         gameMemory->initialized = true;
-        
         *gState = {}; //Make sure everything gets properly defaulted/Initialized (constructors are called that need to be)
         
+        PushCamera3d(global_renderingInfo, 60.0f, 16.0f/9.0f, .1f, 100.0f, /*camWorldPosOffset*/v3{0.0f, 0.0f, -3.0f});
+        
+        gState->cube.verts = {
+            v3{-0.5f, 0.5f, -0.5f }, //0
+            v3{+0.5f, 0.5f, -0.5f }, //1
+            v3{-0.5f, -0.5f, -0.5f },//2
+            v3{+0.5f, -0.5f, -0.5f },//3
+            v3{+0.5f, -0.5f, +0.5f },//4
+            v3{+0.5f, +0.5f, +0.5f },//5
+            v3{-0.5f, +0.5f, +0.5f },//6
+            v3{-0.5f, -0.5f, +0.5f },//7
+        };
+    };
+    
+    if(KeyHeld(keyboard->MoveUp))
+    {
+        UpdateCamera3d(global_renderingInfo, v3{0.0f, .03f, 0.0f});
     };
     
     { //Render
@@ -355,7 +369,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         PushTexture(global_renderingInfo, textureTargetRect_worldCoords, $(gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), uvs, "left-bicep-image");
 #endif
         
-        PushTest($(*global_renderingInfo));
+        PushCube(global_renderingInfo, gState->cube.verts);
     };
     
     IsAllTempMemoryCleared(framePart);
