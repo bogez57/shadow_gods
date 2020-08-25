@@ -311,17 +311,16 @@ GLushort indicies[] =
 };
 
 f32 epsilon = 0.00001f; //TODO: Remove????
-#define NUM_VERTS 8
 
-Array<v4, NUM_VERTS> ProjectionTransform_UsingFocalLength(Array<v3, NUM_VERTS> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
+Array<v4, 8> ProjectionTransform_UsingFocalLength(Array<v3, 8> squareVerts_camera, f32 windowWidth_pxls, f32 windowHeight_pxls)
 {
-    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace{};
+    Array<v4, 8> squareVerts_openGLClipSpace{};
     
     f32 focalLength = 1.8f;
     f32 windowWidth_meters = windowWidth_pxls / 100.0f;
     f32 windowHeight_meters = windowHeight_pxls / 100.0f;
     
-    for(i32 vertI{}; vertI < NUM_VERTS; ++vertI)
+    for(i32 vertI{}; vertI < 8; ++vertI)
     {
         squareVerts_openGLClipSpace[vertI].x = (squareVerts_camera[vertI].x * focalLength) / (windowWidth_meters / 2.0f);
         squareVerts_openGLClipSpace[vertI].y = (squareVerts_camera[vertI].y * focalLength) / (windowHeight_meters / 2.0f);
@@ -427,7 +426,7 @@ ProduceCameraTransform(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
 
 mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f32 nearPlane, f32 farPlane)
 {
-    Array<v4, NUM_VERTS> squareVerts_openGLClipSpace{};
+    Array<v4, 8> squareVerts_openGLClipSpace{};
     
     f32 fov = Radians(FOV_inDegrees);
     f32 tanHalfFov = TanR(fov / 2.0f);
@@ -450,19 +449,18 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     return result;
 };
 
-void DrawCube(Array<v3, NUM_VERTS> cubeVerts_glClipSpace)
+void DrawCube(Array<v3, 8> cubeVerts_glClipSpace, v3 color)
 {
-    GLfloat verts[NUM_VERTS * 6] = {};
+    GLfloat verts[8 * 6] = {};
     i32 i{};
-    f32 colorR{0.5f}, colorG{0.0f}, colorB{};
-    for(i32 j{}; j < NUM_VERTS; ++j)
+    for(i32 j{}; j < 8; ++j)
     {
         verts[i++] = cubeVerts_glClipSpace[j].x;
         verts[i++] = cubeVerts_glClipSpace[j].y;
         verts[i++] = cubeVerts_glClipSpace[j].z;
-        verts[i++] = colorR;
-        verts[i++] = colorG;
-        verts[i++] = colorB;
+        verts[i++] = color.r;
+        verts[i++] = color.g;
+        verts[i++] = color.b;
     };
     
     GLuint bufferID;
@@ -484,30 +482,17 @@ void DrawCube(Array<v3, NUM_VERTS> cubeVerts_glClipSpace)
     glEnable(GL_TEXTURE_2D);
 };
 
-void ProjectionTestUsingFullSquare(Camera3D camera3d, RenderEntry_Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
+void ProjectionTestUsingFullSquare(mat4x4 camMatrix, mat4x4 projMatrix, RenderEntry_Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
 {
     //World Transform
     mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
     
-    local_persist v3 camRotation{0.0f, 0.0f, 0.0f};
-    mat4x4 xRotMatrix = XRotation(camRotation.x);
-    mat4x4 yRotMatrix = YRotation(camRotation.y);
-    mat4x4 zRotMatrix = ZRotation(camRotation.z);
-    mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
-    v3 xAxis = GetColumn(fullRotMatrix, 0);
-    v3 yAxis = GetColumn(fullRotMatrix, 1);
-    v3 zAxis = GetColumn(fullRotMatrix, 2);
-    mat4x4 camTransformMatrix = ProduceCameraTransform(xAxis, yAxis, zAxis, camera3d.posOffset);
-    
-    //ProjectionTransform
-    mat4x4 projectionMatrix = ProduceProjectionTransform_UsingFOV(camera3d.FOV, camera3d.aspectRatio, camera3d.nearPlane, camera3d.farPlane);
-    
-    mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
+    mat4x4 fullTransformMatrix = projMatrix * camMatrix * worldTransformMatrix;
     
     GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
     glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
     
-    DrawCube(cube.verts);
+    DrawCube(cube.verts, cube.color);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
@@ -531,7 +516,18 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     camera2d->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera2d->dilatePointOffset_normalized));
     camera2d->viewCenter = screenSize_meters / 2.0f;
     
-    Camera3D* camera3d = &renderingInfo.camera3d;
+    Camera3D camera3d = renderingInfo.camera3d;
+    
+    mat4x4 xRotMatrix = XRotation(camera3d.rotation.x);
+    mat4x4 yRotMatrix = YRotation(camera3d.rotation.y);
+    mat4x4 zRotMatrix = ZRotation(camera3d.rotation.z);
+    mat4x4 fullRotMatrix = xRotMatrix * yRotMatrix * zRotMatrix;
+    v3 xAxis = GetColumn(fullRotMatrix, 0);
+    v3 yAxis = GetColumn(fullRotMatrix, 1);
+    v3 zAxis = GetColumn(fullRotMatrix, 2);
+    
+    mat4x4 camTransformMatrix = ProduceCameraTransform(xAxis, yAxis, zAxis, camera3d.posOffset);
+    mat4x4 projectionMatrix = ProduceProjectionTransform_UsingFOV(camera3d.FOV, camera3d.aspectRatio, camera3d.nearPlane, camera3d.farPlane);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_TEXTURE_2D);
@@ -602,9 +598,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 
                 local_persist Transform_v3 cube_worldT{};
                 
-                cube_worldT.rotation.x += .01f;
-                
-                ProjectionTestUsingFullSquare(*camera3d, cube, cube_worldT, (f32)windowWidth, (f32)windowHeight);
+                ProjectionTestUsingFullSquare(camTransformMatrix, projectionMatrix, cube, cube_worldT, (f32)windowWidth, (f32)windowHeight);
             }break;
             
             InvalidDefaultCase;

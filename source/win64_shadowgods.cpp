@@ -501,19 +501,19 @@ namespace Win32
                         {
                             Win32::ProcessKeyboardMessage($(Keyboard->MoveRight), IsDown);
                         }
-                        else if (VKCode == 'X')
+                        else if (VKCode == 'I')
                         {
                             Win32::ProcessKeyboardMessage($(Keyboard->ActionUp), IsDown);
                         }
-                        else if (VKCode == 'Z')
+                        else if (VKCode == 'K')
                         {
                             Win32::ProcessKeyboardMessage($(Keyboard->ActionDown), IsDown);
                         }
-                        else if (VKCode == 'I')
+                        else if (VKCode == 'L')
                         {
                             Win32::ProcessKeyboardMessage($(Keyboard->ActionRight), IsDown);
                         }
-                        else if (VKCode == 'U')
+                        else if (VKCode == 'J')
                         {
                             Win32::ProcessKeyboardMessage($(Keyboard->ActionLeft), IsDown);
                         }
@@ -531,7 +531,7 @@ namespace Win32
                                 }
                             }
                         }
-                        else if (VKCode == 'L')
+                        else if (VKCode == 'B')
                         {
                             if (IsDown)
                             {

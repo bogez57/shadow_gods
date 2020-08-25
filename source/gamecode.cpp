@@ -337,12 +337,28 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
             v3{-0.5f, +0.5f, +0.5f },//6
             v3{-0.5f, -0.5f, +0.5f },//7
         };
+        
+        gState->cube.color = {1.0f, 0.0f, 0.0f};
     };
     
+    //Update cam position
     if(KeyHeld(keyboard->MoveUp))
-    {
-        UpdateCamera3d(global_renderingInfo, v3{0.0f, .03f, 0.0f});
-    };
+        UpdateCamera3d(global_renderingInfo, v3{0.0f, .03f, 0.0f}/*pos*/, v3{0.0f, 0.0f, 0.0f}/*rotation*/);
+    if(KeyHeld(keyboard->MoveDown))
+        UpdateCamera3d(global_renderingInfo, v3{0.0f, -.03f, 0.0f}, v3{0.0f, 0.0f, 0.0f});
+    if(KeyHeld(keyboard->MoveRight))
+        UpdateCamera3d(global_renderingInfo, v3{0.03f, 0.0f, 0.0f}, v3{0.0f, 0.0f, 0.0f});
+    if(KeyHeld(keyboard->MoveLeft))
+        UpdateCamera3d(global_renderingInfo, v3{-0.03f, 0.0f, 0.0f}, v3{0.0f, 0.0f, 0.0f});
+    
+    if(KeyHeld(keyboard->ActionUp))
+        UpdateCamera3d(global_renderingInfo, v3{0.0f, 0.0f, 0.0f}/*pos*/, v3{-0.01f, 0.0f, 0.0f}/*rotation*/);
+    if(KeyHeld(keyboard->ActionDown))
+        UpdateCamera3d(global_renderingInfo, v3{0.0f, 0.0f, 0.0f}/*pos*/, v3{+0.01f, 0.0f, 0.0f}/*rotation*/);
+    if(KeyHeld(keyboard->ActionLeft))
+        UpdateCamera3d(global_renderingInfo, v3{0.0f, 0.0f, 0.0f}/*pos*/, v3{0.0f, -0.01f, 0.0f}/*rotation*/);
+    if(KeyHeld(keyboard->ActionRight))
+        UpdateCamera3d(global_renderingInfo, v3{0.0f, 0.0f, 0.0f}/*pos*/, v3{0.0f, +0.01f, 0.0f}/*rotation*/);
     
     { //Render
         
@@ -369,7 +385,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         PushTexture(global_renderingInfo, textureTargetRect_worldCoords, $(gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), uvs, "left-bicep-image");
 #endif
         
-        PushCube(global_renderingInfo, gState->cube.verts);
+        PushCube(global_renderingInfo, gState->cube.verts, gState->cube.color);
     };
     
     IsAllTempMemoryCleared(framePart);
