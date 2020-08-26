@@ -61,6 +61,7 @@ struct Quad
 struct Cube
 {
     Array<v3, 8> verts{};
+    Transform_v3 worldTransform{};
     v3 color{};
 };
 
@@ -140,6 +141,7 @@ struct RenderEntry_Cube
 {
     RenderEntry_Header header;
     Array<v3, 8> verts{};
+    Transform_v3 worldTransform{};
     v3 color;
 };
 
@@ -185,7 +187,7 @@ void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, 
 void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
 void PushRect(Rendering_Info* renderingInfo, Quad worldVerts, v3 color);
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness);
-void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, v3 color);
+void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, Transform_v3 worldTransform, v3 color);
 void PushCamera(Rendering_Info* renderingInfo, v2 lookAt, v2 dilatePoint_inScreenCoords, f32 zoomFactor);
 void PushCamera3d(Rendering_Info* renderingInfo, f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane, v3 posOffset);
 void UpdateCamera3d(Rendering_Info* renderingInfo, v3 amountToAddToCurrentPos, v3 amountToAddToCurrentRotation_radians);
@@ -252,12 +254,13 @@ void PushRect(Rendering_Info* renderingInfo, Quad worldVerts, v3 color)
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, v3 color)
+void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, Transform_v3 worldTransform, v3 color)
 {
     RenderEntry_Cube* cubeEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Cube);
     
     cubeEntry->header.type = EntryType_Cube;
     CopyArray(cubeVerts, $(cubeEntry->verts));
+    cubeEntry->worldTransform = worldTransform;
     cubeEntry->color = color;
     
     ++renderingInfo->cmdBuffer.entryCount;

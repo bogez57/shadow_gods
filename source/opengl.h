@@ -293,13 +293,6 @@ DrawLine(v2 minPoint, v2 maxPoint, v3 color, f32 lineThickness)
     glFlush();
 };
 
-struct Transform_v3
-{
-    v3 translation{0.0f, 0.0f, 0.0f};
-    v3 rotation{0.0f, 0.0f, 0.0f};
-    v3 scale{1.0f, 1.0f, 1.0f};
-};
-
 GLushort indicies[] =
 {
     1, 0, 2,  1, 2, 3,//Front
@@ -484,15 +477,7 @@ void DrawCube(Array<v3, 8> cubeVerts_glClipSpace, v3 color)
 
 void ProjectionTestUsingFullSquare(mat4x4 camMatrix, mat4x4 projMatrix, RenderEntry_Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
 {
-    //World Transform
-    mat4x4 worldTransformMatrix = ProduceWorldTransform(worldTransform.translation, worldTransform.rotation, worldTransform.scale);
     
-    mat4x4 fullTransformMatrix = projMatrix * camMatrix * worldTransformMatrix;
-    
-    GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
-    glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
-    
-    DrawCube(cube.verts, cube.color);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
@@ -560,15 +545,6 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_Rect: {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera2d);
-                Quad targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
-                
-                v4 color = { rectEntry.color, 1.0f };
-                
-                glDisable(GL_TEXTURE_2D);
-                DrawQuad(targetRect_screen, color);
-                glEnable(GL_TEXTURE_2D);
-                
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
             }
             break;
@@ -596,9 +572,17 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             {
                 RenderEntry_Cube cube = *(RenderEntry_Cube*)currentRenderBufferEntry;
                 
-                local_persist Transform_v3 cube_worldT{};
+                mat4x4 worldTransformMatrix = ProduceWorldTransform(cube.worldTransform.translation, cube.worldTransform.rotation, cube.worldTransform.scale);
+                mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
                 
-                ProjectionTestUsingFullSquare(camTransformMatrix, projectionMatrix, cube, cube_worldT, (f32)windowWidth, (f32)windowHeight);
+                GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
+                glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
+                
+                glDisable(GL_TEXTURE_2D);
+                DrawCube(cube.verts, cube.color);
+                glEnable(GL_TEXTURE_2D);
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Cube);
             }break;
             
             InvalidDefaultCase;

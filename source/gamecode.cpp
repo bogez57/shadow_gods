@@ -339,6 +339,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         };
         
         gState->cube.color = {1.0f, 0.0f, 0.0f};
+        gState->cube.worldTransform.translation += v3{.4f, 0.0f, 0.0f};
     };
     
     //Update cam position
@@ -385,7 +386,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         PushTexture(global_renderingInfo, textureTargetRect_worldCoords, $(gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), uvs, "left-bicep-image");
 #endif
         
-        PushCube(global_renderingInfo, gState->cube.verts, gState->cube.color);
+        PushCube(global_renderingInfo, gState->cube.verts, gState->cube.worldTransform, gState->cube.color);
     };
     
     IsAllTempMemoryCleared(framePart);
