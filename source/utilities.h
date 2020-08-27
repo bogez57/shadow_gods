@@ -44,13 +44,6 @@ struct Transform
     v2 scale{};
 };
 
-struct Transform_v3
-{
-    v3 translation{0.0f, 0.0f, 0.0f};
-    v3 rotation{0.0f, 0.0f, 0.0f};
-    v3 scale{1.0f, 1.0f, 1.0f};
-};
-
 inline ui32
 SafeTruncateUInt64(ui64 Value)
 {

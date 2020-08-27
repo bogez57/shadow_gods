@@ -37,6 +37,13 @@ struct Camera3D
     f32 farPlane{};
 };
 
+struct Transform_v3
+{
+    v3 translation{0.0f, 0.0f, 0.0f};
+    v3 rotation{0.0f, 0.0f, 0.0f};
+    v3 scale{1.0f, 1.0f, 1.0f};
+};
+
 struct Rect
 {
     v2 min {};
@@ -54,6 +61,21 @@ struct Quad
             v2 bottomRight;
             v2 topRight;
             v2 topLeft;
+        };
+    };
+};
+
+struct Quad_V3
+{
+    union
+    {
+        Array<v3, 4> vertices;
+        struct
+        {
+            v3 bottomLeft;
+            v3 bottomRight;
+            v3 topRight;
+            v3 topLeft;
         };
     };
 };
@@ -133,8 +155,9 @@ struct RenderEntry_Header
 struct RenderEntry_Rect
 {
     RenderEntry_Header header;
-    Quad worldCoords;
+    Quad objectSpaceVerts;
     v3 color {};
+    Transform_v3 worldTransform{};
 };
 
 struct RenderEntry_Cube
@@ -185,7 +208,7 @@ v2 viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 void PushTest(Rendering_Info&& renderingInfo);
 void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
-void PushRect(Rendering_Info* renderingInfo, Quad worldVerts, v3 color);
+void PushRect(Rendering_Info* renderingInfo, v2 min, v2 max, Transform_v3 worldTransform, v3 color);
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness);
 void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, Transform_v3 worldTransform, v3 color);
 void PushCamera(Rendering_Info* renderingInfo, v2 lookAt, v2 dilatePoint_inScreenCoords, f32 zoomFactor);
@@ -243,13 +266,14 @@ void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color,
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushRect(Rendering_Info* renderingInfo, Quad worldVerts, v3 color)
+void PushRect(Rendering_Info* renderingInfo, v2 min, v2 max, Transform_v3 worldTransform, v3 color)
 {
     RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect);
     
     rectEntry->header.type = EntryType_Rect;
     rectEntry->color = color;
-    rectEntry->worldCoords = worldVerts;
+    rectEntry->objectSpaceVerts = objectSpaceVerts;
+    rectEntry->worldTransform = worldTransform;
     
     ++renderingInfo->cmdBuffer.entryCount;
 };

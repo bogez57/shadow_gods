@@ -442,15 +442,15 @@ mat4x4 ProduceProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 aspectRatio, f
     return result;
 };
 
-void DrawCube(Array<v3, 8> cubeVerts_glClipSpace, v3 color)
+void DrawCube(Array<v3, 8> cubeVerts_objSpace, v3 color)
 {
     GLfloat verts[8 * 6] = {};
     i32 i{};
     for(i32 j{}; j < 8; ++j)
     {
-        verts[i++] = cubeVerts_glClipSpace[j].x;
-        verts[i++] = cubeVerts_glClipSpace[j].y;
-        verts[i++] = cubeVerts_glClipSpace[j].z;
+        verts[i++] = cubeVerts_objSpace[j].x;
+        verts[i++] = cubeVerts_objSpace[j].y;
+        verts[i++] = cubeVerts_objSpace[j].z;
         verts[i++] = color.r;
         verts[i++] = color.g;
         verts[i++] = color.b;
@@ -475,9 +475,41 @@ void DrawCube(Array<v3, 8> cubeVerts_glClipSpace, v3 color)
     glEnable(GL_TEXTURE_2D);
 };
 
-void ProjectionTestUsingFullSquare(mat4x4 camMatrix, mat4x4 projMatrix, RenderEntry_Cube cube, Transform_v3 worldTransform, f32 windowWidth, f32 windowHeight)
+void DrawRect(Array<v3, 4> rectVerts_objSpace, v3 color)
 {
+    GLfloat verts[4 * 6] = {};
+    i32 i{};
+    for(i32 j{}; j < 4; ++j)
+    {
+        verts[i++] = rectVerts_objSpace[j].x;
+        verts[i++] = rectVerts_objSpace[j].y;
+        verts[i++] = rectVerts_objSpace[j].z;
+        verts[i++] = color.r;
+        verts[i++] = color.g;
+        verts[i++] = color.b;
+    };
     
+    GLuint bufferID;
+    glGenBuffers(1, &bufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (char*)(sizeof(GLfloat)*3));
+    
+    GLushort indicies[] =
+    {
+        0, 1, 2,
+        0, 2, 3
+    };
+    
+    GLuint indexBufferID;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicies), indicies, GL_STATIC_DRAW);
+    
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 };
 
 void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int windowHeight)
@@ -544,6 +576,24 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             
             case EntryType_Rect: {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
+                
+                mat4x4 worldTransformMatrix = ProduceWorldTransform(rectEntry.worldTransform.translation, rectEntry.worldTransform.rotation, rectEntry.worldTransform.scale);
+                mat4x4 fullTransformMatrix = projectionMatrix * camTransformMatrix * worldTransformMatrix;
+                
+                GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
+                glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
+                
+                //Convert to v3
+                Quad_V3 rectObjectSpaceCoords {
+                    v3{rectEntry.objectSpaceVerts.bottomLeft.x, rectEntry.objectSpaceVerts.bottomLeft.y, 0.0f},
+                    v3{rectEntry.objectSpaceVerts.bottomRight.x, rectEntry.objectSpaceVerts.bottomRight.y, 0.0f},
+                    v3{rectEntry.objectSpaceVerts.topRight.x, rectEntry.objectSpaceVerts.topRight.y, 0.0f},
+                    v3{rectEntry.objectSpaceVerts.topLeft.x, rectEntry.objectSpaceVerts.topLeft.y, 0.0f}
+                };
+                
+                glDisable(GL_TEXTURE_2D);
+                DrawRect(rectObjectSpaceCoords.vertices, rectEntry.color);
+                glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
             }

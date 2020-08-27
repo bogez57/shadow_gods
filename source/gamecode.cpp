@@ -387,6 +387,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 #endif
         
         PushCube(global_renderingInfo, gState->cube.verts, gState->cube.worldTransform, gState->cube.color);
+        PushRect();
     };
     
     IsAllTempMemoryCleared(framePart);

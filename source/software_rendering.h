@@ -627,7 +627,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quad targetRect_camera = CameraTransform(rectEntry.objectSpaceVerts, *camera);
                 Quad targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
@@ -684,7 +684,7 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
-                Quad targetRect_camera = CameraTransform(rectEntry.worldCoords, *camera);
+                Quad targetRect_camera = CameraTransform(rectEntry.objectSpaceVerts, *camera);
                 Quad targetRect_screen = ProjectionTransform_Ortho(targetRect_camera, pixelsPerMeter);
                 
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
