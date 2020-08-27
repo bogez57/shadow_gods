@@ -625,6 +625,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
             
             case EntryType_Rect:
             {
+#if 0
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
                 Quad targetRect_camera = CameraTransform(rectEntry.objectSpaceVerts, *camera);
@@ -633,6 +634,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DrawScreenRegion)
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+#endif
             }
             break;
             
@@ -682,6 +684,7 @@ void DoRenderWork(void* data)
             
             case EntryType_Rect:
             {
+#if 0
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
                 
                 Quad targetRect_camera = CameraTransform(rectEntry.objectSpaceVerts, *camera);
@@ -690,6 +693,7 @@ void DoRenderWork(void* data)
                 DrawRectangle((ui32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screen, rectEntry.color, work->screenRegionCoords);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
+#endif
             }
             break;
             

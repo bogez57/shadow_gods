@@ -583,16 +583,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
                 glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
                 
-                //Convert to v3
-                Quad_V3 rectObjectSpaceCoords {
-                    v3{rectEntry.objectSpaceVerts.bottomLeft.x, rectEntry.objectSpaceVerts.bottomLeft.y, 0.0f},
-                    v3{rectEntry.objectSpaceVerts.bottomRight.x, rectEntry.objectSpaceVerts.bottomRight.y, 0.0f},
-                    v3{rectEntry.objectSpaceVerts.topRight.x, rectEntry.objectSpaceVerts.topRight.y, 0.0f},
-                    v3{rectEntry.objectSpaceVerts.topLeft.x, rectEntry.objectSpaceVerts.topLeft.y, 0.0f}
-                };
-                
                 glDisable(GL_TEXTURE_2D);
-                DrawRect(rectObjectSpaceCoords.vertices, rectEntry.color);
+                DrawRect(rectEntry.objectSpaceVerts.vertices, rectEntry.color);
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
