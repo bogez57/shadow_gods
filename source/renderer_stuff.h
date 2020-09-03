@@ -290,16 +290,16 @@ void PushRect(Rendering_Info* renderingInfo, f32 width, f32 height, Transform_v3
     rectEntry->worldTransform = worldTransform;
 };
 
-void PushRect_Overlay(Rendering_Info* renderingInfo, f32 width, f32 height, f32 screenPosOffsetFromCenter_meters, v3 color)
+void PushRect_Overlay(Rendering_Info* renderingInfo, f32 width, f32 height, v2 screenPosOffsetFromCenter_meters, v3 color)
 {
     RenderEntry_RectOverlay* rectEntryOverlay = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_RectOverlay);
     
     f32 halfWidth{width/2.0f}, halfHeight{height/2.0f};
     Quad screenSpaceVerts_meters{};
-    screenSpaceVerts_meters.bottomLeft = v2{0.0f - halfWidth, 0.0f - halfHeight};
-    screenSpaceVerts_meters.bottomRight = v2{0.0f + halfWidth, 0.0f - halfHeight};
-    screenSpaceVerts_meters.topRight = v2{0.0f + halfWidth, 0.0f + halfHeight};
-    screenSpaceVerts_meters.topLeft = v2{0.0f - halfWidth, 0.0f + halfHeight};
+    screenSpaceVerts_meters.bottomLeft = v2{0.0f - halfWidth, 0.0f - halfHeight} + screenPosOffsetFromCenter_meters;
+    screenSpaceVerts_meters.bottomRight = v2{0.0f + halfWidth, 0.0f - halfHeight} + screenPosOffsetFromCenter_meters;
+    screenSpaceVerts_meters.topRight = v2{0.0f + halfWidth, 0.0f + halfHeight} + screenPosOffsetFromCenter_meters;
+    screenSpaceVerts_meters.topLeft = v2{0.0f - halfWidth, 0.0f + halfHeight} + screenPosOffsetFromCenter_meters;
     
     rectEntryOverlay->header.type = EntryType_RectOverlay;
     rectEntryOverlay->screenPosOffsetVerts_meters = screenSpaceVerts_meters;

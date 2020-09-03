@@ -387,7 +387,8 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
 #endif
         
         PushCube(global_renderingInfo, gState->cube.verts, gState->cube.worldTransform, gState->cube.color);
-        PushRect(global_renderingInfo, .5f, .5f, Transform_v3{v3{-2.0f, 0.0f, 0.0f}}, v3{0.0f, 1.0f, 0.0f});
+        //PushRect(global_renderingInfo, .5f, .5f, Transform_v3{v3{-2.0f, 0.0f, 0.0f}}, v3{0.0f, 1.0f, 0.0f});
+        PushRect_Overlay(global_renderingInfo, .8f, .5f, v2{-1.0f, 0.0f}, v3{0.0f, 1.0f, 0.0f});
     };
     
     IsAllTempMemoryCleared(framePart);
