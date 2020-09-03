@@ -11,9 +11,9 @@
 
     Current Renderer assumptions:
 
-    1.) User sends world coordinates to renderer. 4 verts pushed per texture/rect.
+1.) All object verts are expected to be sent down in objectspace
     2.) Renderer expects all verts to be in meters and not pixels.
-    3.) Y axis is going up and bottom left corner of rect is expected to be origin
+    3.) Y axis is going up and origin is presumed to be at center point of object
 
 */
 
@@ -142,6 +142,7 @@ enum Render_Entry_Type
 {
     EntryType_Line,
     EntryType_Rect,
+    EntryType_RectOverlay,
     EntryType_Cube,
     EntryType_Texture,
     EntryType_Test
@@ -158,6 +159,13 @@ struct RenderEntry_Rect
     Quad_V3 objectSpaceVerts;
     v3 color {};
     Transform_v3 worldTransform{};
+};
+
+struct RenderEntry_RectOverlay
+{
+    RenderEntry_Header header;
+    v3 color {};
+    Quad screenPosOffsetVerts_meters{};
 };
 
 struct RenderEntry_Cube
@@ -208,7 +216,8 @@ v2 viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 void PushTest(Rendering_Info&& renderingInfo);
 void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2, 2> uvs, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Quad worldVerts, Image bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name);
-void PushRect(Rendering_Info* renderingInfo, v3 min, v3 max, Transform_v3 worldTransform, v3 color);
+void PushRect(Rendering_Info* renderingInfo, f32 width, f32 height, Transform_v3 worldTransform, v3 color);
+void PushRect_Overlay(Rendering_Info* renderingInfo, f32 width, f32 height, f32 screenPosOffsetFromCenter_meters, v3 color);
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness);
 void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, Transform_v3 worldTransform, v3 color);
 void PushCamera(Rendering_Info* renderingInfo, v2 lookAt, v2 dilatePoint_inScreenCoords, f32 zoomFactor);
@@ -240,6 +249,8 @@ void* _RenderCmdBuf_Push(Game_Render_Cmd_Buffer* commandBuf, i32 sizeOfCommand)
 {
     void* memoryPointer = (void*)(commandBuf->baseAddress + commandBuf->usedAmount);
     commandBuf->usedAmount += (sizeOfCommand);
+    ++commandBuf->entryCount;
+    
     return memoryPointer;
 };
 #define RenderCmdBuf_Push(commandBuffer, commandType) (commandType*)_RenderCmdBuf_Push(commandBuffer, sizeof(commandType))
@@ -249,8 +260,6 @@ void PushTest(Rendering_Info&& renderingInfo)
     RenderEntry_Test* testEntry = RenderCmdBuf_Push(&renderingInfo.cmdBuffer, RenderEntry_Test);
     
     testEntry->header.type = EntryType_Test;
-    
-    ++renderingInfo.cmdBuffer.entryCount;
 };
 
 void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color, f32 thickness)
@@ -262,28 +271,39 @@ void PushLine(Rendering_Info* renderingInfo, v2 minPoint, v2 maxPoint, v3 color,
     lineEntry->maxPoint = maxPoint;
     lineEntry->color = color;
     lineEntry->thickness = thickness;
-    
-    ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void PushRect(Rendering_Info* renderingInfo, v3 min, v3 max, Transform_v3 worldTransform, v3 color)
+void PushRect(Rendering_Info* renderingInfo, f32 width, f32 height, Transform_v3 worldTransform, v3 color)
 {
-    BGZ_ASSERT(max.z == min.z, "You want a rect to have same z");
-    
     RenderEntry_Rect* rectEntry = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect);
     
+    f32 halfWidth{width/2.0f}, halfHeight{height/2.0f};
     Quad_V3 objectSpaceVerts {};
-    objectSpaceVerts.bottomLeft = min;
-    objectSpaceVerts.bottomRight = v3{max.x, min.y, max.z};
-    objectSpaceVerts.topRight = v3{max.x, max.y, max.z};
-    objectSpaceVerts.topLeft = v3{min.x, max.y, max.z};
+    objectSpaceVerts.bottomLeft = v3{0.0f - halfWidth, 0.0f - halfHeight, worldTransform.translation.z};
+    objectSpaceVerts.bottomRight = v3{0.0f + halfWidth, 0.0f - halfHeight, worldTransform.translation.z};
+    objectSpaceVerts.topRight = v3{0.0f + halfWidth, 0.0f + halfHeight, worldTransform.translation.z};
+    objectSpaceVerts.topLeft = v3{0.0f - halfWidth, 0.0f + halfHeight, worldTransform.translation.z};
     
     rectEntry->header.type = EntryType_Rect;
     rectEntry->color = color;
     rectEntry->objectSpaceVerts = objectSpaceVerts;
     rectEntry->worldTransform = worldTransform;
+};
+
+void PushRect_Overlay(Rendering_Info* renderingInfo, f32 width, f32 height, f32 screenPosOffsetFromCenter_meters, v3 color)
+{
+    RenderEntry_RectOverlay* rectEntryOverlay = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_RectOverlay);
     
-    ++renderingInfo->cmdBuffer.entryCount;
+    f32 halfWidth{width/2.0f}, halfHeight{height/2.0f};
+    Quad screenSpaceVerts_meters{};
+    screenSpaceVerts_meters.bottomLeft = v2{0.0f - halfWidth, 0.0f - halfHeight};
+    screenSpaceVerts_meters.bottomRight = v2{0.0f + halfWidth, 0.0f - halfHeight};
+    screenSpaceVerts_meters.topRight = v2{0.0f + halfWidth, 0.0f + halfHeight};
+    screenSpaceVerts_meters.topLeft = v2{0.0f - halfWidth, 0.0f + halfHeight};
+    
+    rectEntryOverlay->header.type = EntryType_RectOverlay;
+    rectEntryOverlay->screenPosOffsetVerts_meters = screenSpaceVerts_meters;
+    rectEntryOverlay->color = color;
 };
 
 void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, Transform_v3 worldTransform, v3 color)
@@ -294,8 +314,6 @@ void PushCube(Rendering_Info* renderingInfo, Array<v3, 8> cubeVerts, Transform_v
     CopyArray(cubeVerts, $(cubeEntry->verts));
     cubeEntry->worldTransform = worldTransform;
     cubeEntry->color = color;
-    
-    ++renderingInfo->cmdBuffer.entryCount;
 };
 
 void PushTexture(Rendering_Info* renderingInfo, Quad worldVerts, Image&& bitmap, v2 objectSize_meters, Array<v2, 2> uvs, const char* name, NormalMap normalMap = {})
@@ -315,8 +333,6 @@ void PushTexture(Rendering_Info* renderingInfo, Quad worldVerts, Image&& bitmap,
     bitmap.isLoadedOnGPU = true; //TODO: Remove
     
     textureEntry->dimensions = { objectSize_meters.width, objectSize_meters.height };
-    
-    ++renderingInfo->cmdBuffer.entryCount;
 };
 
 //TODO: Consider not having overloaded function here? The reason this is here is to support current
@@ -341,8 +357,6 @@ void PushTexture(Rendering_Info* renderingInfo, Quad worldVerts, Image&& bitmap,
     bitmap.isLoadedOnGPU = true; //TODO: Remove
     
     textureEntry->dimensions = { desiredWidth, desiredHeight };
-    
-    ++renderingInfo->cmdBuffer.entryCount;
 };
 
 void PushCamera3d(Rendering_Info* renderingInfo, f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane, v3 posOffset_fromCenterOfScreen)

@@ -524,8 +524,8 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     
     glViewport(0, 0, windowWidth, windowHeight);
     f32 pixelsPerMeter = renderingInfo._pixelsPerMeter;
-    v2 screenSize = { (f32)windowWidth, (f32)windowHeight };
-    v2 screenSize_meters = screenSize / pixelsPerMeter;
+    v2 screenSize_pixels = { (f32)windowWidth, (f32)windowHeight };
+    v2 screenSize_meters = screenSize_pixels / pixelsPerMeter;
     
     ui8* currentRenderBufferEntry = renderingInfo.cmdBuffer.baseAddress;
     
@@ -571,8 +571,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 DrawTexture(textureID, imageTargetRect_screen, textureEntry.uvBounds[0], textureEntry.uvBounds[1]);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Texture);
-            }
-            break;
+            }break;
             
             case EntryType_Rect: {
                 RenderEntry_Rect rectEntry = *(RenderEntry_Rect*)currentRenderBufferEntry;
@@ -588,8 +587,24 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect);
-            }
-            break;
+            }break;
+            
+            case EntryType_RectOverlay: {
+                RenderEntry_RectOverlay rectEntryOverlay = *(RenderEntry_RectOverlay*)currentRenderBufferEntry;
+                
+                mat4x4 fullTransformMatrix = IdentityMatrix();
+                
+                GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
+                glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
+                
+                Quad screenPosOffset_pixels{};
+                for(i32 i{}; i < 4; ++i)
+                    screenPosOffset_pixels.vertices[i] = rectEntryOverlay.screenPosOffsetVerts_meters.vertices[i] * pixelsPerMeter;
+                
+                DrawRect(screenPosOffset_pixels, rectEntryOverlay.color);
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_RectOverlay);
+            }break;
             
             case EntryType_Line: {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;
@@ -607,8 +622,7 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
                 glEnable(GL_TEXTURE_2D);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_Line);
-            }
-            break;
+            }break;
             
             case EntryType_Cube:
             {
@@ -634,4 +648,4 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
     renderingInfo.cmdBuffer.entryCount = 0;
 };
 
-#endif //OPENGL_INCLUDE_H
+#endif //OPENGL_INCLUDE_H528
