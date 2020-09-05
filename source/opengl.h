@@ -442,9 +442,19 @@ mat4x4 ProducePerspectiveProjectionTransform_UsingFOV(f32 FOV_inDegrees, f32 asp
     return result;
 };
 
-mat4x4 ProduceOrthoProjectionTransform(f32 FOV_inDegrees, f32 aspectRatio, f32 nearPlane, f32 farPlane)
+mat4x4 ProduceOrthoProjectionTransform(f32 width, f32 height, f32 n, f32 f)
 {
-    //TODO: Implement
+    mat4x4 result =
+    {
+        {
+            {(2.0f/width), 0,          0,         0},
+            {0,            (2/height), 0,         0},
+            {0,            0,          1/(f - n), 0},
+            {0,            0,          n/(n-f),   1}
+        },
+    };
+    
+    return result;
 };
 
 void DrawCube(Array<v3, 8> cubeVerts_objSpace, v3 color)
@@ -597,20 +607,27 @@ void RenderViaHardware(Rendering_Info&& renderingInfo, int windowWidth, int wind
             case EntryType_RectOverlay: {
                 RenderEntry_RectOverlay rectEntryOverlay = *(RenderEntry_RectOverlay*)currentRenderBufferEntry;
                 
-                mat4x4 fullTransformMatrix = IdentityMatrix();
+                mat4x4 fullTransformMatrix = ProduceOrthoProjectionTransform(screenSize_meters.width, screenSize_meters.height, 15.0f, .1f);
+                
+                mat4x4 orthoMat = ProduceOrthoProjectionTransform(screenSize_meters.width, screenSize_meters.height, 15.0f, .1f);
+                
+                Quad tmp{};
+                for(i32 i{}; i < 4; ++i)
+                {
+                    v4 test = orthoMat * v4{rectEntryOverlay.screenPosOffsetVerts_meters.vertices[i], 0.0f, 1.0f};
+                    tmp.vertices[i] = v2{test.x, test.y};
+                };
                 
                 GLint transformMatrixUniformLocation = glGetUniformLocation(3, "transformationMatrix");
                 glUniformMatrix4fv(transformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix.elem[0][0]);
                 
-                v2 centerOfScreen = screenSize_pixels / 2.0f;
+                Quad_V3 screenPosOffsetVerts_v3{};
+                screenPosOffsetVerts_v3.bottomLeft = v3{rectEntryOverlay.screenPosOffsetVerts_meters.bottomLeft, 0.0f};
+                screenPosOffsetVerts_v3.bottomRight = v3{rectEntryOverlay.screenPosOffsetVerts_meters.bottomRight, 0.0f};
+                screenPosOffsetVerts_v3.topRight = v3{rectEntryOverlay.screenPosOffsetVerts_meters.topRight, 0.0f};
+                screenPosOffsetVerts_v3.topLeft = v3{rectEntryOverlay.screenPosOffsetVerts_meters.topLeft, 0.0f};
                 
-                Quad_V3 screenPosOffset_pixels{};
-                for(i32 i{}; i < 4; ++i)
-                {
-                    screenPosOffset_pixels.vertices[i].xy = (rectEntryOverlay.screenPosOffsetVerts_meters.vertices[i] * pixelsPerMeter) + centerOfScreen;
-                };
-                
-                DrawRect(screenPosOffset_pixels.vertices, rectEntryOverlay.color);
+                DrawRect(screenPosOffsetVerts_v3.vertices, rectEntryOverlay.color);
                 
                 currentRenderBufferEntry += sizeof(RenderEntry_RectOverlay);
             }break;

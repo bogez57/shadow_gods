@@ -36,7 +36,7 @@ typedef double f64;
 #define Align16(Value) ((Value + 15) & ~15)
 
 //TODO: add a templated vector type just so if you ever need int or whatever vectors you can still create them.
-//Having both a normal float v2 type and templated version will reduce the need to template 90% of vectors which 
+//Having both a normal float v2 type and templated version will reduce the need to template 90% of vectors which
 //will just be floats
 
 typedef union v2
@@ -132,8 +132,9 @@ typedef union v4
 {
 #ifdef __cplusplus
     v4() = default;
-    v4(v2 a, v2 b) : xy(a), zw(b){};
-    v4(v3 a, f32 w) : xyz(a), w(w){};
+    v4(v2 xy, v2 zw) : xy(xy), zw(zw){};
+    v4(v2 xy, f32 z, f32 w) : xy(xy), z(z), w(w){};
+    v4(v3 xyz, f32 w) : xyz(xyz), w(w){};
 #endif
     struct
     {
@@ -664,4 +665,4 @@ Translate(mat4x4 A, v4 T)
     return result;
 };
 
-#endif //ATOMIC_TYPES_IMPL
+#endif //ATOMIC_TYPES_IMPL
