@@ -54,6 +54,21 @@ struct Quadf
     };
 };
 
+struct QuadfV3
+{
+    union
+    {
+        Array<v3f, 4> vertices;
+        struct
+        {
+            v3f bottomLeft;
+            v3f bottomRight;
+            v3f topRight;
+            v3f topLeft;
+        };
+    };
+};
+
 struct Quadi
 {
     union
@@ -198,10 +213,13 @@ void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
 void ConvertToCorrectPositiveRadian(f32&& angle);
 //void RenderToImage(Image&& renderTarget, Image sourceImage, Quadf targetArea);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
+QuadfV3 produceWorldCoords(f32 width, f32 height, TransformV3 worldTransform);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
+QuadfV3 CameraTransform(QuadfV3 worldCoords, Camera2D camera);
 v2f CameraTransform(v2f worldCoords, Camera2D camera);
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
 v2f ProjectionTransform_Ortho(v2f cameraCoords, f32 pixelsPerMeter);
+Quadf ProjectionTransform_Perspective(QuadfV3 obj_cameraCoords);
 Rectf _ProduceRectFromCenterPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomMidPoint(v2f OriginPoint, f32 width, f32 height);
 Rectf _ProduceRectFromBottomLeftPoint(v2f originPoint, f32 width, f32 height);
@@ -439,6 +457,38 @@ v2f CameraTransform(v2f worldCoords, Camera2D camera)
     return transformedCoords;
 };
 
+//Does not take in rotation yet
+QuadfV3 produceWorldCoords(f32 width, f32 height, TransformV3 worldTransform)
+{
+    QuadfV3 objSpaceCoords{};
+    
+    objSpaceCoords.bottomLeft = v3f{(0.0f - (width/2.0f)), (0.0f - (height/2.0f)), 0.0f};
+    objSpaceCoords.bottomRight = v3f{(0.0f + (width/2.0f)), (0.0f - (height/2.0f)), 0.0f};
+    objSpaceCoords.topRight = v3f{(0.0f + (width/2.0f)), (0.0f + (height/2.0f)), 0.0f};
+    objSpaceCoords.topLeft = v3f{(0.0f - (width/2.0f)), (0.0f + (height/2.0f)), 0.0f};
+    
+    QuadfV3 worldSpaceCoords{};
+    for (s32 i {}; i < 4; i++)
+        worldSpaceCoords.vertices[i] = objSpaceCoords.vertices[i] + worldTransform.translation;
+    
+    return worldSpaceCoords;
+};
+
+QuadfV3 CameraTransform(QuadfV3 worldCoords, Camera2D camera)
+{
+    v2f transformedCoords {};
+    v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+    
+    QuadfV3 camSpaceCoords{};
+    for(s32 i{}; i < 4; ++i)
+    {
+        camSpaceCoords.vertices[i] = worldCoords.vertices[i] + v3f{translationToCameraSpace, 0.0f};
+        AbsoluteVal($(camSpaceCoords.vertices[i].z));
+    };
+    
+    return camSpaceCoords;
+};
+
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera)
 {
     Quadf transformedCoords {};
@@ -468,6 +518,21 @@ Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter)
         cameraCoords.vertices[vertIndex] *= pixelsPerMeter;
     
     return cameraCoords;
+};
+
+Quadf ProjectionTransform_Perspective(QuadfV3 obj_cameraCoords)
+{
+    Quadf result{};
+    
+    f32 focalLength = 1.8f;
+    
+    for(s32 i{}; i < 4; ++i)
+    {
+        result.vertices[i].x = focalLength * (obj_cameraCoords.vertices[i].x / obj_cameraCoords.vertices[i].z );
+        result.vertices[i].y = focalLength * (obj_cameraCoords.vertices[i].y / obj_cameraCoords.vertices[i].z );
+    };
+    
+    return result;
 };
 
 local_func auto _LinearBlend(u32 foregroundColor, u32 backgroundColor, ChannelType colorFormat)

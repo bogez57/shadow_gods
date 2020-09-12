@@ -954,8 +954,18 @@ void DoRenderWork(void* data)
             {
                 RenderEntry_Rect3D rectEntry3D = *(RenderEntry_Rect3D*)currentRenderBufferEntry;
                 
+                QuadfV3 targetRect_worldCoords = produceWorldCoords(rectEntry3D.width, rectEntry3D.height, rectEntry3D.worldTransform);
+                QuadfV3 targetRect_camCoords = CameraTransform(targetRect_worldCoords, *camera);
+                Quadf targetRect_projCoords = ProjectionTransform_Perspective(targetRect_camCoords);
+                
+                Quadf targetRect_screenCoords{};
+                for(s32 i{}; i < 4; ++i)
+                    targetRect_screenCoords.vertices[i] = targetRect_projCoords.vertices[i] * pixelsPerMeter;
+                
+                DrawRectangle((u32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screenCoords, rectEntry3D.color, work->screenRegionCoords);
+                
                 currentRenderBufferEntry += sizeof(RenderEntry_Rect3D);
-            };
+            }break;
             
             case EntryType_Line:
             {

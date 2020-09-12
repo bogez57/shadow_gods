@@ -61,6 +61,7 @@ struct v3f
 {
     v3f() = default;
     v3f(f32 x, f32 y, f32 z);
+    v3f(v2f xy, f32 z);
     
     union
     {
@@ -73,6 +74,11 @@ struct v3f
         struct
         {
             f32 r, g, b;
+        };
+        struct
+        {
+            v2f xy;
+            f32 z;
         };
     };
 };
@@ -395,7 +401,12 @@ v3f::v3f(f32 x, f32 y, f32 z)
 : x(x)
 , y(y)
 , z(z)
-{}
+{};
+
+v3f::v3f(v2f xy, f32 z)
+: xy(xy)
+, z(z)
+{};
 
 inline v3f
 operator*(f32 A, v3f B)

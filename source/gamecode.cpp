@@ -347,16 +347,24 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
     { //Render
+#if 0
         Transform rectTransform { {stage->centerPoint}, 2.0f, {1.0f, 1.0f} };
         Quadf targetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, 2.0f, 3.0f);
         Quadf targetRect_worldCoords = ParentTransform(targetRect_localCoords, rectTransform);
         PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
+#endif
         
         f32 rectWidth = 1.0f;
         f32 rectHeight = 1.0f;
-        TransformV3 rectWorldT = TransformV3{v3f{0.0f, 0.0f, 0.0f}, 0.0f};
+        TransformV3 rectWorldT = TransformV3{v3f{stage->camera.lookAt, -2.0f}, 0.0f};
         v3f rectColor = v3f{0.0f, 1.0f, 0.0f};
         PushRect3D(global_renderingInfo, rectWorldT, rectWidth, rectHeight, rectColor);
+        
+        f32 rectWidth2 = 1.0f;
+        f32 rectHeight2 = 1.0f;
+        TransformV3 rectWorldT2 = TransformV3{v3f{stage->camera.lookAt, -3.0f}, 0.0f};
+        v3f rectColor2 = v3f{1.0f, 0.0f, 0.0f};
+        PushRect3D(global_renderingInfo, rectWorldT2, rectWidth2, rectHeight2, rectColor2);
         
 #if 0
         Quadf textureTargetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, gState->openGLRenderTest.aspectRatio * BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest));
