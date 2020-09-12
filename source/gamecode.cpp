@@ -356,13 +356,13 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         f32 rectWidth = 1.0f;
         f32 rectHeight = 1.0f;
-        TransformV3 rectWorldT = TransformV3{v3f{stage->camera.lookAt, -2.0f}, 0.0f};
+        TransformV3 rectWorldT = TransformV3{v3f{stage->camera.lookAt.x - 2.0f, stage->camera.lookAt.y, -2.0f}, 0.0f};
         v3f rectColor = v3f{0.0f, 1.0f, 0.0f};
         PushRect3D(global_renderingInfo, rectWorldT, rectWidth, rectHeight, rectColor);
         
         f32 rectWidth2 = 1.0f;
         f32 rectHeight2 = 1.0f;
-        TransformV3 rectWorldT2 = TransformV3{v3f{stage->camera.lookAt, -3.0f}, 0.0f};
+        TransformV3 rectWorldT2 = TransformV3{v3f{stage->camera.lookAt.x - 2.0f, stage->camera.lookAt.y, -6.0f}, 0.0f};
         v3f rectColor2 = v3f{1.0f, 0.0f, 0.0f};
         PushRect3D(global_renderingInfo, rectWorldT2, rectWidth2, rectHeight2, rectColor2);
         

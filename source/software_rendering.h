@@ -917,6 +917,7 @@ void DoRenderWork(void* data)
     camera->dilatePoint_inScreenCoords = (screenSize_meters / 2.0f) + (Hadamard(screenSize_meters, camera->dilatePointOffset_normalized));
     
     v2f screenDimensions_meters = CastV2IToV2F(work->colorBufferSize) / pixelsPerMeter;
+    v2f screenDimensions_pixels = CastV2IToV2F(work->colorBufferSize);
     camera->viewCenter = screenDimensions_meters / 2.0f;
     
     for (s32 entryNumber = 0; entryNumber < work->renderingInfo.cmdBuffer.entryCount; ++entryNumber)
@@ -955,12 +956,16 @@ void DoRenderWork(void* data)
                 RenderEntry_Rect3D rectEntry3D = *(RenderEntry_Rect3D*)currentRenderBufferEntry;
                 
                 QuadfV3 targetRect_worldCoords = produceWorldCoords(rectEntry3D.width, rectEntry3D.height, rectEntry3D.worldTransform);
-                QuadfV3 targetRect_camCoords = CameraTransform(targetRect_worldCoords, *camera);
+                QuadfV3 targetRect_camCoords = CameraTransform(targetRect_worldCoords, *camera, screenDimensions_meters.width, screenDimensions_meters.height);
                 Quadf targetRect_projCoords = ProjectionTransform_Perspective(targetRect_camCoords);
                 
                 Quadf targetRect_screenCoords{};
                 for(s32 i{}; i < 4; ++i)
+                {
                     targetRect_screenCoords.vertices[i] = targetRect_projCoords.vertices[i] * pixelsPerMeter;
+                    targetRect_screenCoords.vertices[i].x += (screenDimensions_pixels.width / 2.0f);
+                    targetRect_screenCoords.vertices[i].y += (screenDimensions_pixels.height / 2.0f);
+                };
                 
                 DrawRectangle((u32*)work->colorBufferData, work->colorBufferSize, work->colorBufferPitch, targetRect_screenCoords, rectEntry3D.color, work->screenRegionCoords);
                 

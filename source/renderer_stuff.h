@@ -215,7 +215,7 @@ void ConvertToCorrectPositiveRadian(f32&& angle);
 Quadf WorldTransform(Quadf localCoords, Object_Transform transformInfo_world);
 QuadfV3 produceWorldCoords(f32 width, f32 height, TransformV3 worldTransform);
 Quadf CameraTransform(Quadf worldCoords, Camera2D camera);
-QuadfV3 CameraTransform(QuadfV3 worldCoords, Camera2D camera);
+QuadfV3 CameraTransform(QuadfV3 worldCoords, Camera2D camera, f32 screenWidth_meters, f32 screenHeight_meters);
 v2f CameraTransform(v2f worldCoords, Camera2D camera);
 Quadf ProjectionTransform_Ortho(Quadf cameraCoords, f32 pixelsPerMeter);
 v2f ProjectionTransform_Ortho(v2f cameraCoords, f32 pixelsPerMeter);
@@ -474,15 +474,20 @@ QuadfV3 produceWorldCoords(f32 width, f32 height, TransformV3 worldTransform)
     return worldSpaceCoords;
 };
 
-QuadfV3 CameraTransform(QuadfV3 worldCoords, Camera2D camera)
+QuadfV3 CameraTransform(QuadfV3 worldCoords, Camera2D camera, f32 screenWidth_meters, f32 screenHeight_meters)
 {
     v2f transformedCoords {};
     v2f translationToCameraSpace = camera.viewCenter - camera.lookAt;
+    
+    f32 halfScreenWidth_m = screenWidth_meters / 2.0f;
+    f32 halfScreenHeight_m = screenHeight_meters / 2.0f;
     
     QuadfV3 camSpaceCoords{};
     for(s32 i{}; i < 4; ++i)
     {
         camSpaceCoords.vertices[i] = worldCoords.vertices[i] + v3f{translationToCameraSpace, 0.0f};
+        camSpaceCoords.vertices[i].x -= halfScreenWidth_m;
+        camSpaceCoords.vertices[i].y -= halfScreenHeight_m;
         AbsoluteVal($(camSpaceCoords.vertices[i].z));
     };
     
@@ -524,7 +529,7 @@ Quadf ProjectionTransform_Perspective(QuadfV3 obj_cameraCoords)
 {
     Quadf result{};
     
-    f32 focalLength = 1.8f;
+    f32 focalLength = 2.8f;
     
     for(s32 i{}; i < 4; ++i)
     {
