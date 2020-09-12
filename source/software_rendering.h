@@ -950,6 +950,13 @@ void DoRenderWork(void* data)
             }
             break;
             
+            case EntryType_Rect3D:
+            {
+                RenderEntry_Rect3D rectEntry3D = *(RenderEntry_Rect3D*)currentRenderBufferEntry;
+                
+                currentRenderBufferEntry += sizeof(RenderEntry_Rect3D);
+            };
+            
             case EntryType_Line:
             {
                 RenderEntry_Line lineEntry = *(RenderEntry_Line*)currentRenderBufferEntry;

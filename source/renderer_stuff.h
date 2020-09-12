@@ -10,11 +10,11 @@
 /*
 
     Current Renderer assumptions:
-    
+
     1.) User sends world coordinates to renderer. 4 verts pushed per texture/rect.
     2.) Renderer expects all verts to be in meters and not pixels.
     3.) Y axis is going up and bottom left corner of rect is expected to be origin
-    
+
 */
 
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
@@ -67,6 +67,12 @@ struct Quadi
             v2i topLeft;
         };
     };
+};
+
+struct TransformV3
+{
+    v3f translation{};
+    f32 rotation{};
 };
 
 struct Game_Render_Cmd_Buffer
@@ -123,12 +129,22 @@ enum Render_Entry_Type
 {
     EntryType_Line,
     EntryType_Rect,
-    EntryType_Texture
+    EntryType_Texture,
+    EntryType_Rect3D
 };
 
 struct RenderEntry_Header
 {
     Render_Entry_Type type;
+};
+
+struct RenderEntry_Rect3D
+{
+    RenderEntry_Header header;
+    TransformV3 worldTransform{};
+    f32 width{};
+    f32 height{};
+    v3f color{};
 };
 
 struct RenderEntry_Rect
@@ -172,6 +188,7 @@ v2f viewPortDimensions_Meters(Rendering_Info&& renderingInfo);
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, f32 objectHeight_inMeters, Array<v2f, 2> uvs, const char* name);
 void PushTexture(Rendering_Info&& renderingInfo, Quadf worldVerts, Image bitmap, v2f objectSize_meters, Array<v2f, 2> uvs, const char* name);
 void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color);
+void PushRect3D(Rendering_Info* renderingInfo, TransformV3 worldTransform, f32 width, f32 height, v3f color);
 void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenCoords, f32 zoomFactor);
 void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
@@ -213,6 +230,19 @@ void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f col
     lineEntry->maxPoint = maxPoint;
     lineEntry->color = color;
     lineEntry->thickness = thickness;
+    
+    ++renderingInfo->cmdBuffer.entryCount;
+};
+
+void PushRect3D(Rendering_Info* renderingInfo, TransformV3 worldTransform, f32 width, f32 height, v3f color)
+{
+    RenderEntry_Rect3D* rectEntry3D = RenderCmdBuf_Push(&renderingInfo->cmdBuffer, RenderEntry_Rect3D);
+    
+    rectEntry3D->header.type = EntryType_Rect3D;
+    rectEntry3D->worldTransform = worldTransform;
+    rectEntry3D->width = width;
+    rectEntry3D->height = height;
+    rectEntry3D->color = color;
     
     ++renderingInfo->cmdBuffer.entryCount;
 };
