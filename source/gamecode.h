@@ -12,6 +12,7 @@ struct Game_Camera
     v2f dilatePoint_inScreenCoords{};
     v2f dilatePointOffset_normalized{};
     f32 zoomFactor{};
+    f32 zPosition{};
 };
 
 struct Stage_Data

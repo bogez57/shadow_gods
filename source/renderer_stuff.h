@@ -20,6 +20,7 @@
 //TODO: Separate out transform from pushtexture so that user pushes transform and textures separately
 struct Camera2D
 {
+    f32 zPosition{};
     v2f lookAt {};
     v2f viewCenter {};
     v2f dilatePoint_inScreenCoords {};
@@ -206,7 +207,7 @@ void PushRect(Rendering_Info* renderingInfo, Quadf worldVerts, v3f color);
 void PushRect3D(Rendering_Info* renderingInfo, TransformV3 worldTransform, f32 width, f32 height, v3f color);
 void PushLine(Rendering_Info* renderingInfo, v2f minPoint, v2f maxPoint, v3f color, f32 thickness);
 void PushCamera(Rendering_Info* renderingInfo, v2f lookAt, v2f dilatePoint_inScreenCoords, f32 zoomFactor);
-void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor);
+void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, f32 zDistance);
 void RenderViaSoftware(Rendering_Info&& renderBufferInfo, void* colorBufferData, v2i colorBufferSize, s32 colorBufferPitch);
 
 void ConvertNegativeToPositiveAngle_Radians(f32&& angle);
@@ -321,7 +322,7 @@ void PushTexture(Rendering_Info* renderingInfo, Quadf worldVerts, Image&& bitmap
     ++renderingInfo->cmdBuffer.entryCount;
 };
 
-void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f normalizedDilatePointOffset)
+void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor, v2f normalizedDilatePointOffset, f32 zPosition_world)
 {
     BGZ_ASSERT(normalizedDilatePointOffset.x >= -1.0f && normalizedDilatePointOffset.x <= 1.0f
                && normalizedDilatePointOffset.y >= -1.0f && normalizedDilatePointOffset.y <= 1.0f,
@@ -330,6 +331,7 @@ void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, 
     renderingInfo->camera.lookAt = cameraLookAtCoords_meters;
     renderingInfo->camera.zoomFactor = zoomFactor;
     renderingInfo->camera.dilatePointOffset_normalized = normalizedDilatePointOffset;
+    renderingInfo->camera.zPosition = zPosition_world;
 };
 
 void UpdateCamera(Rendering_Info* renderingInfo, v2f cameraLookAtCoords_meters, f32 zoomFactor)
@@ -485,10 +487,13 @@ QuadfV3 CameraTransform(QuadfV3 worldCoords, Camera2D camera, f32 screenWidth_me
     QuadfV3 camSpaceCoords{};
     for(s32 i{}; i < 4; ++i)
     {
-        camSpaceCoords.vertices[i] = worldCoords.vertices[i] + v3f{translationToCameraSpace, 0.0f};
+        f32 zDistanceFromCamera = worldCoords.vertices[i].z - camera.zPosition;
+        AbsoluteVal($(zDistanceFromCamera));
+        
+        camSpaceCoords.vertices[i].xy = worldCoords.vertices[i].xy + translationToCameraSpace;
+        camSpaceCoords.vertices[i].z = zDistanceFromCamera;
         camSpaceCoords.vertices[i].x -= halfScreenWidth_m;
         camSpaceCoords.vertices[i].y -= halfScreenHeight_m;
-        AbsoluteVal($(camSpaceCoords.vertices[i].z));
     };
     
     return camSpaceCoords;
@@ -529,7 +534,7 @@ Quadf ProjectionTransform_Perspective(QuadfV3 obj_cameraCoords)
 {
     Quadf result{};
     
-    f32 focalLength = 2.8f;
+    f32 focalLength = 1.8f;
     
     for(s32 i{}; i < 4; ++i)
     {

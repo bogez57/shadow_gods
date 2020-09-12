@@ -340,11 +340,22 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         stage->camera.dilatePointOffset_normalized = { 0.0f, -0.3f };
         stage->camera.lookAt = { stage->size.width / 2.0f, 10.0f };
         stage->camera.zoomFactor = .4f;
+        stage->camera.zPosition = 0.0f;
         
         //gState->openGLRenderTest = LoadBitmap_BGRA("data/left-bicep.png");
     };
     
-    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
+    if(KeyHeld(keyboard->MoveUp))
+    {
+        stage->camera.zPosition -= .01f;
+    };
+    
+    if(KeyHeld(keyboard->MoveDown))
+    {
+        stage->camera.zPosition += .01f;
+    };
+    
+    UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized, stage->camera.zPosition);
     
     { //Render
 #if 0
@@ -362,7 +373,7 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         
         f32 rectWidth2 = 1.0f;
         f32 rectHeight2 = 1.0f;
-        TransformV3 rectWorldT2 = TransformV3{v3f{stage->camera.lookAt.x - 2.0f, stage->camera.lookAt.y, -6.0f}, 0.0f};
+        TransformV3 rectWorldT2 = TransformV3{v3f{stage->camera.lookAt.x - 2.0f, stage->camera.lookAt.y, -4.0f}, 0.0f};
         v3f rectColor2 = v3f{1.0f, 0.0f, 0.0f};
         PushRect3D(global_renderingInfo, rectWorldT2, rectWidth2, rectHeight2, rectColor2);
         
