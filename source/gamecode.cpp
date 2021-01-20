@@ -74,6 +74,8 @@ global_variable i32 renderBuffer;
 #include "fighter.h"
 #define GAME_RENDERER_STUFF_IMPL
 #include "renderer_stuff.h"
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
 
 //Move out to Renderer eventually
 #if 0
@@ -368,6 +370,19 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         v2 vec2 {.4f, .2f};
         v3 vec3 = { vec2, 1.0f};
         //v4 vec4 = {v3{0.0f, 0.0f, 0.0f}, 1.0f};
+        
+        //Test stb truetype
+        stbtt_fontinfo font;
+        unsigned char *bitmap;
+        int w{},h{};
+        
+        i32 length{};
+        const unsigned char* buff = (unsigned char*)platformServices->ReadEntireFile($(length), "data/arial.ttf");
+        
+        stbtt_InitFont(&font, buff, 0);
+        bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, 225.0f), 'A', &w, &h, 0,0);
+        
+        gState->textSample = LoadBitmap_Text(bitmap, w, h);
     };
     
     Animation playerCurrentAnim = UpdateAnimationState($(player->animQueue), deltaT);
@@ -382,102 +397,20 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
     UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(player->hurtBox), player->world.translation);
     //UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(enemy->hurtBox), enemy->world.translation);
     
-#if 0
-    for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
-    {
-        UpdateHitBoxStatus($(playerCurrentAnim.hitBoxes[hitBoxIndex]), playerCurrentAnim.currentTime);
-        
-        if (playerCurrentAnim.hitBoxes[hitBoxIndex].isActive)
-        {
-            playerCurrentAnim.hitBoxes[hitBoxIndex].pos_worldSpace = { 0.0f, 0.0f };
-            
-            Bone* bone = GetBoneFromSkeleton(&player->skel, playerCurrentAnim.hitBoxes[hitBoxIndex].boneName);
-            UpdateCollisionBoxWorldPos_BasedOnCenterPoint($(playerCurrentAnim.hitBoxes[hitBoxIndex]), bone->worldSpace.translation);
-            b collisionOccurred = CheckForFighterCollisions_AxisAligned(playerCurrentAnim.hitBoxes[hitBoxIndex], enemy->hurtBox);
-            
-            if (collisionOccurred)
-                BGZ_CONSOLE("ahhahha");
-        };
-    };
-#endif
-    
     UpdateCamera(global_renderingInfo, stage->camera.lookAt, stage->camera.zoomFactor, stage->camera.dilatePointOffset_normalized);
     
     { //Render
-#if 0
-        auto DrawFighter = [](Fighter fighter) -> void {
-            for (i32 slotIndex { 17 }; slotIndex < fighter.skel.slots.length - 1; ++slotIndex)
-            {
-                Slot* currentSlot = &fighter.skel.slots[slotIndex];
-                
-                AtlasRegion* region = &currentSlot->regionAttachment.region_image;
-                Array<v2, 2> uvs2 = { v2 { region->u, region->v }, v2 { region->u2, region->v2 } };
-                
-                Quadf region_localCoords = ProduceQuadFromCenterPoint({ 0.0f, 0.0f }, currentSlot->regionAttachment.width, currentSlot->regionAttachment.height);
-                Quadf region_boneSpaceCoords = ParentTransform(region_localCoords, currentSlot->regionAttachment.parentBoneSpace);
-                Quadf region_worldSpaceCoords = ParentTransform(region_localCoords, currentSlot->bone->worldSpace);
-                
-                PushTexture(global_renderingInfo, region_worldSpaceCoords, $(region->page->rendererObject), v2 { currentSlot->regionAttachment.width, currentSlot->regionAttachment.height }, uvs2, region->name);
-            };
-        };
         
         //Push background
-#if 1
         Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
-        Quadf targetRect_worldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
-        //PushTexture(global_renderingInfo, targetRect_worldCoords, $(stage->backgroundImg), stage->size.height, uvs, "background");
-        PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-#endif
+        Quadf targetRect_backgroundWorldCoords = ProduceQuadFromCenterPoint(stage->centerPoint, stage->size.width, stage->size.height);
+        PushRect(global_renderingInfo, targetRect_backgroundWorldCoords, { 0.0f, 1.0f, 0.0f });
+        //PushTexture(global_renderingInfo, targetRect_backgroundWorldCoords, $(stage->backgroundImg), stage->size.height, uvs, "background");
         
-        //Push Fighters
-        DrawFighter(*player);
-        //DrawFighter(*enemy);
-        
-        v2 line_minPoint = {(stage->size.width / 2.0f) - 9.0f, 3.0f };
-        v2 line_maxPoint = {(stage->size.width / 2.0f) - 3.0f, 10.0f };
-        
-        PushLine(global_renderingInfo, line_minPoint, line_maxPoint, {0.0f, 1.0f, 0.0f}/*color*/, 5.0f/*thickness*/);
-        
-#if 0
-        for (i32 i {}; i < player->skel.bones.length; ++i)
-        {
-            Bone bone = player->skel.bones[i];
-            Quadf boneRect = ProduceQuadFromCenterPoint(bone.worldSpace.translation, .1f, .1f);
-            PushRect(global_renderingInfo, boneRect, { 1.0f, 0.0f, 0.0f });
-        }
-#endif
-        
-#if 0
-        { //Draw collision boxes
-            Quadf playerTargetRect_localCoords = ProduceQuadFromCenterPoint(v2 { 0.0f, 0.0f }, player->hurtBox.size.width, player->hurtBox.size.height);
-            //Quadf enemyTargetRect_localCoords = ProduceQuadFromCenterPoint(v2 { 0.0f, 0.0f }, enemy->hurtBox.size.width, enemy->hurtBox.size.height);
-            
-            Quadf playerTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { player->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
-            //Quadf enemyTargetRect_worldCoords = ParentTransform(playerTargetRect_localCoords, Transform { enemy->hurtBox.pos_worldSpace, 0.0f, { 1.0f, 1.0f } });
-            
-            PushRect(global_renderingInfo, playerTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-            //PushRect(global_renderingInfo, enemyTargetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-            
-            for (i32 hitBoxIndex {}; hitBoxIndex < playerCurrentAnim.hitBoxes.length; ++hitBoxIndex)
-            {
-                Quadf playerHitBox_worldCoords = ProduceQuadFromCenterPoint(playerCurrentAnim.hitBoxes[hitBoxIndex].pos_worldSpace, playerCurrentAnim.hitBoxes[hitBoxIndex].size.width, playerCurrentAnim.hitBoxes[hitBoxIndex].size.height);
-                
-                if (playerCurrentAnim.hitBoxes[hitBoxIndex].isActive)
-                    PushRect(global_renderingInfo, playerHitBox_worldCoords, { 0.0f, 1.0f, 0.0f });
-            };
-        }
-#endif
-#endif
-        
-        Quadf targetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, 2.0f, 3.0f);
-        Transform rectTransform { {stage->centerPoint}, 2.0f, {1.0f, 1.0f} };
-        Quadf targetRect_worldCoords = ParentTransform(targetRect_localCoords, rectTransform);
-        PushRect(global_renderingInfo, targetRect_worldCoords, { 1.0f, 0.0f, 0.0f });
-        
-        Quadf textureTargetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, gState->openGLRenderTest.aspectRatio * BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest));
+        Transform rectTransform { {stage->centerPoint}, 0.0f, {1.0f, 1.0f} };
+        Quadf textureTargetRect_localCoords = ProduceQuadFromCenterPoint({0.0f, 0.0f}, gState->textSample.aspectRatio * BitmapHeight_Meters(*global_renderingInfo, gState->textSample), BitmapHeight_Meters(*global_renderingInfo, gState->textSample));
         Quadf textureTargetRect_worldCoords = ParentTransform(textureTargetRect_localCoords, rectTransform);
-        Array<v2, 2> uvs = { v2 { 0.0f, 0.0f }, v2 { 1.0f, 1.0f } };
-        PushTexture(global_renderingInfo, textureTargetRect_worldCoords, $(gState->openGLRenderTest), BitmapHeight_Meters(*global_renderingInfo, gState->openGLRenderTest), uvs, "left-bicep-image");
+        PushTexture(global_renderingInfo, textureTargetRect_worldCoords, $(gState->textSample), BitmapHeight_Meters(*global_renderingInfo, gState->textSample), uvs, "text");
     };
     
     IsAllTempMemoryCleared(framePart);

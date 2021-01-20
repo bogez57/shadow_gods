@@ -335,6 +335,37 @@ Image LoadBitmap_BGRA(const char* fileName)
     return result;
 };
 
+Image LoadBitmap_Text(unsigned char* textBitmapData, int width, int height)
+{
+    Image result;
+    result.width_pxls = width;
+    result.height_pxls = height;
+    
+    i32 totalPixelCountOfImg = result.width_pxls * result.height_pxls;
+    ui8* sourcePixel = (ui8*)textBitmapData;
+    ui32* destPixel = (ui32*)globalPlatformServices->Malloc(totalPixelCountOfImg * sizeof(ui32));
+    ui32* startOfDest = destPixel;
+    for (int i = 0; i < totalPixelCountOfImg; ++i)
+    {
+        ui32 newSwappedPixelColor = ((*sourcePixel << 24) | (*sourcePixel << 16) | (*sourcePixel << 8) | (*sourcePixel << 0));
+        
+#if 0
+        if(newSwappedPixelColor != 0)
+            newSwappedPixelColor = 0xFFFFFFFF;
+#endif
+        
+        *destPixel++ = newSwappedPixelColor;
+        ++sourcePixel;
+    }
+    
+    result.data = (ui8*)startOfDest;
+    
+    result.aspectRatio = (f32)result.width_pxls / (f32)result.height_pxls;
+    result.pitch_pxls = (ui32)result.width_pxls * BYTES_PER_PIXEL;
+    
+    return result;
+};
+
 Quadf ProduceQuadFromCenterPoint(v2 originPoint, f32 width, f32 height)
 {
     Quadf result;

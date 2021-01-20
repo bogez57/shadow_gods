@@ -29,6 +29,7 @@ struct Game_State
 {
     Image composite;
     Image normalMap;
+    Image textSample;
     Atlas* atlas;
     f32 lightAngle{};
     f32 lightThreshold{};

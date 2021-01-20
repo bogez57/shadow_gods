@@ -210,7 +210,6 @@ struct mat2x2
 };
 
 inline mat4x4 IdentityMatrix();
-local_func v2 CastV2IToV2F(v2i vecToCast);
 
 //Other v2's I might use. Torn on whether or not I should template things but I think for 90 percent of what I'm using vectors for floats should be what I want
 struct v2i
@@ -781,7 +780,7 @@ CamTransform(v3 xAxis, v3 yAxis, v3 zAxis, v3 vecToTransform)
     return result;
 };
 
-//Other v2 implementations 
+//Other v2 implementations
 v2i::v2i(i32 x, i32 y)
 : x(x)
 , y(y)
