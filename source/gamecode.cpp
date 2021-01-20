@@ -380,9 +380,10 @@ extern "C" void GameUpdate(Application_Memory* gameMemory, Platform_Services* pl
         const unsigned char* buff = (unsigned char*)platformServices->ReadEntireFile($(length), "data/arial.ttf");
         
         stbtt_InitFont(&font, buff, 0);
-        bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, 225.0f), 'A', &w, &h, 0,0);
-        
+        bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, 625.0f), 'a', &w, &h, 0,0);
         gState->textSample = LoadBitmap_Text(bitmap, w, h);
+        
+        stbtt_FreeBitmap(bitmap, 0);
     };
     
     Animation playerCurrentAnim = UpdateAnimationState($(player->animQueue), deltaT);

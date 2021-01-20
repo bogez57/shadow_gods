@@ -348,15 +348,20 @@ Image LoadBitmap_Text(unsigned char* textBitmapData, int width, int height)
     for (int i = 0; i < totalPixelCountOfImg; ++i)
     {
         ui32 newSwappedPixelColor = ((*sourcePixel << 24) | (*sourcePixel << 16) | (*sourcePixel << 8) | (*sourcePixel << 0));
-        
-#if 0
-        if(newSwappedPixelColor != 0)
-            newSwappedPixelColor = 0xFFFFFFFF;
-#endif
-        
         *destPixel++ = newSwappedPixelColor;
         ++sourcePixel;
     }
+    
+    //Flip to rightside up
+    for(int y{}; y < result.height_pxls/2; ++y)
+    {
+        for(int x{}; x < result.width_pxls; ++x)
+        {
+            int temp = startOfDest[x + (y * result.width_pxls)];
+            startOfDest[x + (y * result.width_pxls)] = startOfDest[x + ((result.height_pxls - 1) * result.width_pxls) - (y * result.width_pxls)];
+            startOfDest[x + ((result.height_pxls - 1) * result.width_pxls) - (y * result.width_pxls)] = temp;
+        };
+    };
     
     result.data = (ui8*)startOfDest;
     
